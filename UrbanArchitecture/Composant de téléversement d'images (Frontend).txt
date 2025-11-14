@@ -1,0 +1,33 @@
+// src/components/marketplace/ImageUploader.tsx
+export const ImageUploader: React.FC<{
+  onUpload: (imageUrl: string) => void;
+}> = ({ onUpload }) => {
+  const [loading, setLoading] = useState(false);
+  const { uploadImage } = useImageUpload();
+
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    
+    setLoading(true);
+    try {
+      const imageUrl = await uploadImage(e.target.files[0]);
+      onUpload(imageUrl);
+    } catch (error) {
+      console.error('Erreur lors du téléversement:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <input 
+        type="file" 
+        accept="image/*"
+        onChange={handleFileUpload}
+        disabled={loading}
+      />
+      {loading && <span>Téléversement en cours...</span>}
+    </div>
+  );
+};

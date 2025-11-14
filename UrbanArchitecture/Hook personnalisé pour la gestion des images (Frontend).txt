@@ -1,0 +1,36 @@
+// src/hooks/useImageUpload.ts
+export const useImageUpload = () => {
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors du téléversement');
+    }
+
+    const data = await response.json();
+    return data.imageUrl;
+  };
+
+  const addImageFromUrl = async (url: string): Promise<string> => {
+    const response = await fetch('/api/images/url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+
+    if (!response.ok) {
+      throw new Error('URL d\'image invalide');
+    }
+
+    const data = await response.json();
+    return data.imageUrl;
+  };
+
+  return { uploadImage, addImageFromUrl };
+};

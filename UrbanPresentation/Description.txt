@@ -1,0 +1,334 @@
+Voici **une refonte complète** du document en intégrant **le nouveau rôle de Vendeuse** (vendeur·se produits) et en améliorant la structure + clarté.
+
+---
+
+# 🌟 **Structure Fonctionnelle du Site Beauté – Marketplace + Coiffure + Vendeuses**
+
+## 👥 **Rôles Utilisateurs**
+
+La plateforme aura désormais **4 rôles principaux** :
+
+| Rôle                        | Description                                                                |
+| --------------------------- | -------------------------------------------------------------------------- |
+| **Client / Utilisateur**    | Achète produits + réserve services coiffure                                |
+| **Prestataire / Coiffeuse** | Propose des services coiffure / beauté (avec abonnement)                   |
+| **Vendeuse / Boutique**     | Vend des produits (extensions, cosmétiques, accessoires) via la plateforme |
+| **Administrateur**          | Gère et supervise la plateforme                                            |
+
+---
+
+## 👩‍💻 **1. Rôle : Client / Utilisateur**
+
+### Inscription
+
+* Gratuit
+* Email + téléphone
+
+### Profil
+
+✅ Infos personnelles
+✅ Adresse
+✅ Historique commandes & RDV
+
+### Fonctions
+
+| Actions                        | Description                             |
+| ------------------------------ | --------------------------------------- |
+| Parcourir produits + vendeuses | Marketplace beauté                      |
+| Acheter produits               | Panier + paiement                       |
+| Réserver une coiffeuse         | Style, horaire, tarif                   |
+| Consulter tutos & inspirations | Lookbook, idées coiffure                |
+| Avis & notation                | Sur prestataires + vendeuses + produits |
+| Chat                           | Avec coiffeuse ou vendeuse              |
+| Suivre commandes & RDV         | Notifications + tracking                |
+
+🎯 **Objectif :** Beauté complète en 1 espace (produits + services)
+
+---
+
+## 💇‍♀️ **2. Rôle : Prestataire / Coiffeuse**
+
+### Abonnement
+
+* Payant : **2 500 – 5 000 FCFA / 2 mois**
+* Active la visibilité + prise de RDV
+
+### Profil
+
+✅ Identité vérifiée
+✅ Portfolio
+✅ Disponibilités + zone d'intervention
+✅ Tarifs
+
+### Fonctions
+
+| Action                | Description          |
+| --------------------- | -------------------- |
+| Créer profil + bio    | Présentation         |
+| Upload photos         | Portfolio            |
+| Déclarer services     | Tarifs, durée, types |
+| Gestion calendrier    | Disponibilité        |
+| Recevoir & gérer RDV  | Accepter / refuser   |
+| Chat client           | Organisation RDV     |
+| Statistiques          | Revenus, RDV, avis   |
+| Renouveler abonnement | Pour rester visible  |
+
+🎯 **Objectif :** Trouver des clientes + gérer business facilement
+
+---
+
+## 👜 **3. Rôle : Vendeuse / Boutique**
+
+### Business Model
+
+* Commission sur ventes **+ abonnement optionnel pour boost visibilité**
+* Possibilité d’ajouter une offre Premium (bannière, mise en avant…)
+
+### Profil Vendeuse
+
+✅ Identité / Boutique vérifiée
+✅ Catalogue produits
+✅ Paramètres livraison
+
+### Fonctions
+
+| Action                            | Description              |
+| --------------------------------- | ------------------------ |
+| Créer profil boutique             | Infos & logo             |
+| Ajouter produits                  | Nom, prix, photos, stock |
+| Gérer commandes                   | Validation, expédition   |
+| Chat client                       | Questions produits       |
+| Gestion stocks                    | Quantité + alertes       |
+| Tableau de bord                   | Commandes, revenus, avis |
+| Promotion                         | Réductions, coupons      |
+| Paiement commissions / abonnement | Selon modèle choisi      |
+
+🎯 **Objectif :** Vendre ses produits beauté facilement
+
+---
+
+## 👑 **4. Rôle : Administrateur**
+
+| Fonction                        | Description                      |
+| ------------------------------- | -------------------------------- |
+| Valider coiffeuses et vendeuses | Vérification identité & contenus |
+| Gestion produits & services     | Contrôle qualité                 |
+| Suivi commandes                 | Livraison, disputes              |
+| Modération contenus             | Avis, photos                     |
+| Gestion paiements               | Commissions, abonnements         |
+| Statistiques                    | Croissance, CA, utilisateurs     |
+| Marketing                       | Bannières, push, promos          |
+
+🎯 **Objectif :** Sécurité + croissance + qualité
+
+---
+
+## 🧱 **Architecture Système**
+
+```
+Frontend (Web + App / PWA)
+   ↓
+API Backend (REST / GraphQL)
+   ↓
+Base de données SQL (roles + produits + services)
+   ↓
+Services externes (Mobile Money / Stripe, SMS, Email)
+```
+
+---
+
+## 📦 **Modules Fonctionnels**
+
+| Module                | Description                       |
+| --------------------- | --------------------------------- |
+| Authentification      | Gestion rôles & comptes           |
+| Catalogue produits    | Extensions + cosmétiques          |
+| Catalogue coiffures   | Services & prestataires           |
+| Marketplace vendeuses | Boutique + commandes              |
+| RDV & Prestations     | Planning coiffeuses               |
+| Paiement              | Mobile Money + carte              |
+| Abonnements           | Coiffeuses + vendeuses premium    |
+| Avis & notations      | Produits, prestataires, boutiques |
+| Chat                  | Client ↔ Coiffeuse / Vendeuse     |
+| Notifications         | SMS, Email, App                   |
+| Dashboard Admin       | Supervision système               |
+
+---
+
+## 🚀 **Bénéfices du modèle**
+
+| Objectif             | Solution                   |
+| -------------------- | -------------------------- |
+| Un hub beauté unique | Produits + coiffure        |
+| Qualité prestataires | Abonnement + vérification  |
+| Revenus plateforme   | Abonnements + commissions  |
+| Scalabilité          | Architecture modulable     |
+| Confiance            | Notations et vérifications |
+
+---
+
+## ✅ **Résumé**
+
+| Élément  | Contenu                                |
+| -------- | -------------------------------------- |
+| Rôles    | Client, Coiffeuse, **Vendeuse**, Admin |
+| Revenus  | Abonnement + commission ventes         |
+| Valeur   | Marketplace beauté + services          |
+| Objectif | Digitaliser l'écosystème beauté        |
+
+---
+
+
+* Ajouter **abonnement Premium vendeuse**
+* Future features : IA guide coupe, AR perruques, Live shopping
+* Programme fidélité + cashback longues clientes
+
+---
+Oui, **c’est totalement possible — et même recommandé** — que chaque type d'utilisateur ait son propre **dashboard personnalisé** sur ce type de plateforme.
+
+En réalité, pour une marketplace + services comme la tienne (client + coiffeuse + vendeuse + admin), **c’est le standard professionnel.**
+
+---
+
+## ✅ Pourquoi chaque utilisateur doit avoir son dashboard ?
+
+### 🎯 1. Expérience utilisateur claire
+
+Chaque rôle a des besoins différents → donc interface différente.
+
+| Rôle      | Besoin          | Dashboard utile pour                             |
+| --------- | --------------- | ------------------------------------------------ |
+| Client    | Consommer       | Voir commandes & RDV, suivre livraison, discuter |
+| Coiffeuse | Vendre services | Gérer RDV, portfolio, calendrier, abonnements    |
+| Vendeuse  | Vendre produits | Gérer commandes, stocks, produits, stats         |
+| Admin     | Superviser      | Monitoring, stats globales, validation           |
+
+---
+
+### ⚙️ 2. Organisation & Productivité
+
+Chacun voit **uniquement ce qui le concerne**, aucun menu inutile.
+
+Exemples :
+
+* **Une coiffeuse** voit son planning → pas les commandes marketplace
+* **Une vendeuse** voit ses stocks → pas les RDV coiffure
+* **Un client** voit ses achats, ses RDV, ses chats
+
+---
+
+### 🔐 3. Sécurité & gestion des rôles (RBAC)
+
+Chaque dashboard = permissions spécifiques → sécurité renforcée
+
+---
+
+### 📈 4. Scalabilité & professionnalisme
+
+Chaque rôle peut évoluer sans toucher aux autres interfaces
+(ajout modules, statistiques, IA recommandations…)
+
+---
+
+## 🖥️ Exemples de Dashboards
+
+### 👤 Dashboard Client
+
+* Mes commandes
+* Mes rendez-vous
+* Suivi livraisons
+* Historique paiements
+* Chat prestataires / vendeuses
+* Notations et avis
+* Coupons & points fidélité
+
+### 💇‍♀️ Dashboard Coiffeuse
+
+* Calendrier & RDV
+* Gestion services & tarifs
+* Portfolio
+* Abonnement & statut ✅/❌
+* Avis clients
+* Revenus & statistiques
+* Chat clients
+
+### 🛍️ Dashboard Vendeuse
+
+* Ajouter / modifier produits
+* Stock & inventaire
+* Commandes
+* Livraison & tracking
+* Promotions / coupons
+* Statistiques ventes
+* Service client / chat
+* Abonnement premium (optionnel)
+
+### 👑 Dashboard Admin
+
+* Validation vendeuses & coiffeuses
+* Gestion catalogue
+* Suivi commandes & litiges
+* Monitoring paiements
+* Statistiques globales (CA, utilisateurs)
+* Contrôle contenus
+* Marketing (bannières, promos)
+
+---
+
+## 💡 Bonnes pratiques UX
+
+Pour réussir :
+
+| Bonne pratique             | Pourquoi                          |
+| -------------------------- | --------------------------------- |
+| Navigation claire          | Moins de confusion                |
+| Tableau de stats visuel    | Lisibilité                        |
+| Notifs en temps réel       | Engagement                        |
+| Mobile-first               | Beauty business = beaucoup mobile |
+| Vue agenda pour coiffeuses | Essentiel                         |
+| Automatisation mails + SMS | Fidélisation                      |
+
+---
+
+## 🌍 Exemples qui font pareil
+
+Similarité avec :
+
+| Type                         | Plateforme                        |
+| ---------------------------- | --------------------------------- |
+| Marketplace                  | Etsy / Jumia / Shopify            |
+| Beauté services              | Fresha / Wecasa                   |
+| Marketplace beauté + service | Glovo Beauty, Treatwell (partiel) |
+
+Donc ton modèle = **solide & moderne** ✅
+
+---
+
+## 🤖 Et plus tard…
+
+Tu peux même ajouter :
+
+* Dashboard Admin Pro (pour salons physiques)
+* Outils Marketing (push, coupons…)
+* IA assistant business pour coiffeuses
+* Live dashboard ventes pour vendeuses
+* Tableau de bord IA "recommandations style" pour clients
+
+---
+
+## 🧠 Conclusion
+
+> Oui, **chaque utilisateur doit avoir son propre dashboard.**
+> C’est techniquement faisable, stratégique, et améliore l'expérience + le business.
+
+---
+
+### Souhaites-tu maintenant que je te fasse :
+
+✅ Schéma dashboards (UX / flow)
+✅ Maquette Figma des dashboards
+✅ Plan technique (roles & permissions RBAC)
+✅ Liste fonctionnalités par page
+✅ Estimation budget dev + planning
+
+Dis-moi ce que tu veux recevoir 👇😊

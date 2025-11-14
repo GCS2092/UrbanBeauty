@@ -1,0 +1,174 @@
+Parfait ! 🔥 On va refaire ce guide en **intégrant Supabase** comme base de données principale et en ajoutant les **coûts / abonnements pour chaque plateforme** afin que tu puisses planifier ton MVP PWA beauté de façon claire et pratique.
+
+---
+
+# 1️⃣ **Déploiement Frontend – Next.js PWA**
+
+### Plateforme recommandée : **Vercel**
+
+* Pourquoi : intégration parfaite avec Next.js (SSR, ISR, PWA, CDN automatique)
+
+### Étapes :
+
+1. Aller sur [https://vercel.com](https://vercel.com)
+2. S’inscrire avec GitHub / GitLab / email
+3. Créer un projet → connecter ton repo Next.js
+4. Configurer les **variables d’environnement** (`.env`) pour API, JWT, DB
+5. Déployer → auto-scaling, HTTPS, CDN intégré
+6. Activer **analytics et cache** pour optimiser les performances
+
+💰 **Coût :** Free Starter (0$/mois), Pro 20$/mois
+
+---
+
+# 2️⃣ **Déploiement Backend – API NestJS**
+
+### Plateformes recommandées : **Render** ou **Railway**
+
+* Pourquoi : facile à déployer, scalable, support Node.js
+
+### Étapes :
+
+1. Aller sur [https://render.com](https://render.com) ou [https://railway.app](https://railway.app)
+2. S’inscrire avec GitHub / GitLab / email
+3. Créer un **service Node.js / API**
+4. Connecter le repo NestJS
+5. Configurer variables d’environnement :
+
+   * `DATABASE_URL`
+   * `JWT_SECRET`
+   * `STRIPE_API_KEY`, `PAYSTACK_SECRET`
+6. Déployer → service auto-scale, HTTPS
+
+💰 **Coût :** Free Starter (0$/mois), plan basique 5$/mois
+
+---
+
+# 3️⃣ **Base de données PostgreSQL – Supabase**
+
+### Pourquoi Supabase
+
+* Managé → pas besoin d’installer PostgreSQL
+* Backups automatiques, SSL, connexion distante sécurisée
+* Intégration facile avec NestJS + Prisma
+
+### Étapes :
+
+1. Aller sur [https://supabase.com](https://supabase.com)
+2. S’inscrire avec GitHub / email
+3. Créer un nouveau **projet** → base PostgreSQL
+4. Récupérer les credentials (`DATABASE_URL`)
+5. Autoriser ton backend à se connecter
+6. (Optionnel) Installer **pgAdmin / DBeaver** pour gestion DB à distance
+
+💰 **Coût :** Free Starter → 500MB DB + 1GB stockage, plan Pro 25$/mois → +2GB DB, +50GB stockage
+
+---
+
+# 4️⃣ **Stockage des médias – images / vidéos**
+
+### Options recommandées :
+
+1. **Cloudinary**
+
+   * S’inscrire : [https://cloudinary.com](https://cloudinary.com)
+   * Créer compte → API Key et Secret
+   * Configurer backend pour uploader / servir images
+
+2. **AWS S3 + CloudFront** (option évolutive)
+
+   * S’inscrire : [https://aws.amazon.com](https://aws.amazon.com)
+   * Créer bucket → config CloudFront pour CDN
+   * Configurer permissions backend/frontend
+
+💰 **Coût :**
+
+* Cloudinary Free → 25k images/mois, 5GB stockage
+* AWS S3 → pay-per-use (ex : 0,023$/GB + requêtes)
+
+---
+
+# 5️⃣ **Paiements – clients et prestataires**
+
+### Plateformes :
+
+1. **Stripe**
+
+   * S’inscrire : [https://stripe.com](https://stripe.com)
+   * Obtenir `API_KEY`
+   * Intégrer backend pour paiements et abonnements
+
+2. **Paystack** (Afrique)
+
+   * S’inscrire : [https://paystack.com](https://paystack.com)
+   * API pour Mobile Money et cartes locales
+   * Configurer Webhooks pour notifications de paiement
+
+💰 **Coût :**
+
+* Stripe → 1,4% + 0,25€ par transaction
+* Paystack → 1,5% par transaction
+
+---
+
+# 6️⃣ **Notifications – push / email**
+
+### Plateformes :
+
+1. **Firebase Cloud Messaging (FCM)**
+
+   * S’inscrire : [https://firebase.google.com](https://firebase.google.com)
+   * Créer projet → récupérer **Server Key** et **Sender ID**
+   * Configurer frontend + backend pour notifications push
+
+2. **Optionnel : SendGrid** pour emails
+
+   * S’inscrire : [https://sendgrid.com](https://sendgrid.com)
+   * Configurer backend → notifications emails clients / prestataires
+
+💰 **Coût :**
+
+* Firebase FCM → Gratuit jusqu’à 1M messages/mois
+* SendGrid → Free jusqu’à 100 emails/jour, payant après
+
+---
+
+# 7️⃣ **Sécurité et CDN**
+
+### Cloudflare
+
+* S’inscrire : [https://cloudflare.com](https://cloudflare.com)
+* Ajouter ton domaine → config DNS + SSL
+* Protection DDOS, cache statique, firewall
+
+💰 **Coût :** Free Plan gratuit, Pro 20$/mois
+
+---
+
+# 8️⃣ **Résumé rapide des inscriptions et services**
+
+| Service / Platform  | Objectif                       | Étapes principales                                         | Coût / Abonnement  |
+| ------------------- | ------------------------------ | ---------------------------------------------------------- | ------------------ |
+| Vercel              | Frontend PWA                   | Inscrire → connecter repo Next.js → déployer → config vars | Free / 20$ Pro     |
+| Render / Railway    | Backend NestJS                 | Inscrire → créer service Node.js → connecter repo → vars   | Free / 5$          |
+| Supabase            | PostgreSQL managé              | Inscrire → créer DB → récupérer credentials → connecter    | Free / 25$ Pro     |
+| Cloudinary / AWS S3 | Stockage médias                | Inscrire → config bucket → backend API                     | Free / pay-per-use |
+| Stripe / Paystack   | Paiement clients + abonnements | Inscrire → obtenir API keys → intégrer backend + webhooks  | % par transaction  |
+| Firebase FCM        | Push notifications             | Inscrire → créer projet → config frontend/backend          | Gratuit            |
+| Cloudflare          | Sécurité + CDN                 | Inscrire → config DNS + SSL                                | Free / 20$ Pro     |
+
+---
+
+💡 **Conseil pratique MVP avec Supabase**
+
+1. Frontend : Next.js + Tailwind → Vercel
+2. Backend : NestJS + Prisma → Render / Railway
+3. DB : Supabase PostgreSQL managé
+4. Stockage : Cloudinary ou S3
+5. Paiement : Stripe + Paystack (abonnement prestataires inclus)
+6. Notifications : Firebase FCM
+7. Sécurité : JWT + RBAC + Cloudflare
+
+---
+
+
