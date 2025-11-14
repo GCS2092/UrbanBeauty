@@ -72,6 +72,7 @@ model User {
   conversations1   Conversation[] @relation("Conversations1") // Conversations où l'utilisateur est participant1
   conversations2   Conversation[] @relation("Conversations2") // Conversations où l'utilisateur est participant2
   messages         Message[] // Messages envoyés
+  notifications    Notification[] // Notifications reçues
 }
 
 model Profile {
@@ -316,6 +317,22 @@ model NotificationToken {
   token     String   @unique // FCM token
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      String?  // 'ORDER', 'MESSAGE', 'BOOKING', 'ORDER_UPDATE', etc.
+  data      String?  // JSON string pour les données supplémentaires
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
 }
 
 model Conversation {

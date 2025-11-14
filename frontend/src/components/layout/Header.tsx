@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useCartStore } from '@/store/cart.store';
 import CurrencySelector from '@/components/shared/CurrencySelector';
+import NotificationsPanel from '@/components/dashboard/NotificationsPanel';
 
 function CartBadge() {
   const itemCount = useCartStore((state) => state.getItemCount());
@@ -87,6 +88,13 @@ export default function Header() {
             <button className="hidden sm:block p-2 text-gray-600 hover:text-pink-600 transition-colors">
               <MagnifyingGlassIcon className="h-5 w-5" />
             </button>
+
+            {/* Notifications */}
+            {isAuthenticated && (
+              <div className="hidden sm:block">
+                <NotificationsPanel />
+              </div>
+            )}
 
             {/* User */}
             {isAuthenticated ? (

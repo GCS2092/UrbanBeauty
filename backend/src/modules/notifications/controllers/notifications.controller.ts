@@ -1,7 +1,10 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
+  Param,
+  Patch,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -56,6 +59,32 @@ export class NotificationsController {
   ) {
     const { userIds, ...sendNotificationDto } = body;
     return this.notificationsService.sendToMultipleUsers(userIds, sendNotificationDto);
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async getUserNotifications(@CurrentUser() user: any) {
+    return this.notificationsService.getUserNotifications(user.userId);
+  }
+
+  @Get('unread-count')
+  @UseGuards(JwtAuthGuard)
+  async getUnreadCount(@CurrentUser() user: any) {
+    return this.notificationsService.getUnreadCount(user.userId);
+  }
+
+  @Patch(':id/read')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async markAsRead(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.notificationsService.markAsRead(id, user.userId);
+  }
+
+  @Patch('mark-all-read')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async markAllAsRead(@CurrentUser() user: any) {
+    return this.notificationsService.markAllAsRead(user.userId);
   }
 }
 

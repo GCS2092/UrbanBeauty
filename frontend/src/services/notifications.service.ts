@@ -1,37 +1,32 @@
 import api from '@/lib/api';
 
-export interface RegisterTokenDto {
-  token: string;
-}
-
-export interface SendNotificationDto {
+export interface Notification {
+  id: string;
+  userId: string;
   title: string;
   body: string;
-  data?: Record<string, string>;
-  userId?: string;
-  topic?: string;
+  type?: string;
+  data?: string;
+  isRead: boolean;
+  createdAt: string;
 }
 
 export const notificationsService = {
-  registerToken: async (token: string): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post<{ success: boolean; message: string }>(
-      '/api/notifications/register-token',
-      { token }
-    );
+  getAll: async (): Promise<Notification[]> => {
+    const response = await api.get<Notification[]>('/api/notifications');
     return response.data;
   },
 
-  send: async (data: SendNotificationDto): Promise<any> => {
-    const response = await api.post('/api/notifications/send', data);
-    return response.data;
+  getUnreadCount: async (): Promise<number> => {
+    const response = await api.get<{ count: number }>('/api/notifications/unread-count');
+    return response.data.count;
   },
 
-  sendToMultiple: async (userIds: string[], data: Omit<SendNotificationDto, 'userId' | 'topic'>): Promise<any> => {
-    const response = await api.post('/api/notifications/send-to-multiple', {
-      ...data,
-      userIds,
-    });
-    return response.data;
+  markAsRead: async (id: string): Promise<void> => {
+    await api.patch(`/api/notifications/${id}/read`);
+  },
+
+  markAllAsRead: async (): Promise<void> => {
+    await api.patch('/api/notifications/mark-all-read');
   },
 };
-

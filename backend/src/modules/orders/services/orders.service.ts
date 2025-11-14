@@ -256,12 +256,25 @@ export class OrdersService {
         });
       } catch (error: any) {
         // Ne pas bloquer la création de commande si la notification échoue
-        // Cela peut arriver si le token FCM n'est pas enregistré
-        if (error?.message?.includes('Token FCM non trouvé')) {
-          console.log(`Token FCM non enregistré pour la vendeuse ${sellerId}`);
-        } else {
-          console.error(`Erreur lors de l'envoi de notification à la vendeuse ${sellerId}:`, error);
-        }
+        // La notification est toujours enregistrée en base même si FCM échoue
+        console.error(`Erreur lors de l'envoi de notification à la vendeuse ${sellerId}:`, error);
+      }
+    }
+
+    // Envoyer une notification au client si connecté
+    if (userId) {
+      try {
+        await this.notificationsService.sendToUser(userId, {
+          title: 'Commande confirmée',
+          body: `Votre commande ${order.orderNumber} a été confirmée avec succès !`,
+          data: {
+            type: 'ORDER',
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+          },
+        });
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi de notification au client:', error);
       }
     }
 

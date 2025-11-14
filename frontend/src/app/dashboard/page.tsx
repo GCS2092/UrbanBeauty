@@ -15,6 +15,7 @@ import {
   ChatBubbleLeftRightIcon,
   BellIcon,
 } from '@heroicons/react/24/outline';
+import NotificationsPanel from '@/components/dashboard/NotificationsPanel';
 
 function DashboardContent() {
   const { user } = useAuth();
@@ -28,10 +29,17 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Bienvenue {user?.profile?.firstName || 'Utilisateur'} !
-        </h1>
-        <p className="text-gray-600 mb-8">Rôle : {user?.role}</p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Bienvenue {user?.profile?.firstName || 'Utilisateur'} !
+            </h1>
+            <p className="text-gray-600">Rôle : {user?.role}</p>
+          </div>
+          <div className="sm:hidden">
+            <NotificationsPanel />
+          </div>
+        </div>
 
         {user?.role === 'ADMIN' && (
           <div className="mb-8 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">

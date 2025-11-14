@@ -39,18 +39,35 @@ export class NotificationsService {
   }
 
   async sendToUser(userId: string, sendNotificationDto: SendNotificationDto) {
+    // Enregistrer la notification dans la base de données
+    await this.prisma.notification.create({
+      data: {
+        userId,
+        title: sendNotificationDto.title,
+        body: sendNotificationDto.body,
+        type: sendNotificationDto.data?.type || null,
+        data: sendNotificationDto.data ? JSON.stringify(sendNotificationDto.data) : null,
+      },
+    });
+
+    // Envoyer la notification FCM si le token existe
     const token = await this.getUserFCMToken(userId);
     
-    if (!token) {
-      throw new NotFoundException('Token FCM non trouvé pour cet utilisateur');
+    if (token) {
+      try {
+        await this.firebaseService.sendNotification(
+          token,
+          sendNotificationDto.title,
+          sendNotificationDto.body,
+          sendNotificationDto.data,
+        );
+      } catch (error) {
+        // Ne pas bloquer si l'envoi FCM échoue, la notification est déjà enregistrée
+        console.error('Erreur lors de l\'envoi FCM:', error);
+      }
     }
 
-    return this.firebaseService.sendNotification(
-      token,
-      sendNotificationDto.title,
-      sendNotificationDto.body,
-      sendNotificationDto.data,
-    );
+    return { success: true, message: 'Notification envoyée' };
   }
 
   async sendToMultipleUsers(userIds: string[], sendNotificationDto: SendNotificationDto) {
@@ -86,6 +103,52 @@ export class NotificationsService {
       sendNotificationDto.body,
       sendNotificationDto.data,
     );
+  }
+
+  async getUserNotifications(userId: string) {
+    return this.prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+  }
+
+  async getUnreadCount(userId: string) {
+    return this.prisma.notification.count({
+      where: {
+        userId,
+        isRead: false,
+      },
+    });
+  }
+
+  async markAsRead(notificationId: string, userId: string) {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id: notificationId },
+    });
+
+    if (!notification) {
+      throw new NotFoundException('Notification introuvable');
+    }
+
+    if (notification.userId !== userId) {
+      throw new NotFoundException('Notification introuvable');
+    }
+
+    return this.prisma.notification.update({
+      where: { id: notificationId },
+      data: { isRead: true },
+    });
+  }
+
+  async markAllAsRead(userId: string) {
+    return this.prisma.notification.updateMany({
+      where: {
+        userId,
+        isRead: false,
+      },
+      data: { isRead: true },
+    });
   }
 }
 
