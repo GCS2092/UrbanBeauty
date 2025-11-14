@@ -12,20 +12,27 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { UploadService } from './upload.service';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
 import * as uuid from 'uuid';
+import { ensureUploadsDirectory } from './ensure-uploads-dir';
 
 @Controller('upload')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'VENDEUSE', 'COIFFEUSE')
 export class UploadController {
-  constructor(private readonly uploadService: UploadService) {}
+  constructor(private readonly uploadService: UploadService) {
+    // S'assurer que le dossier uploads existe au démarrage
+    ensureUploadsDirectory();
+  }
 
   @Post('image')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads',
+        destination: (req, file, cb) => {
+          const uploadsDir = ensureUploadsDirectory();
+          cb(null, uploadsDir);
+        },
         filename: (req, file, cb) => {
           const uniqueName = `${uuid.v4()}${extname(file.originalname)}`;
           cb(null, uniqueName);

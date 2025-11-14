@@ -21,7 +21,11 @@ export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 
   @Get()
-  findAll() {
+  findAll(@CurrentUser() user?: any) {
+    // Si l'utilisateur est connecté et est une coiffeuse, retourner seulement ses services
+    if (user?.role === 'COIFFEUSE' && user?.userId) {
+      return this.servicesService.findByProvider(user.userId);
+    }
     return this.servicesService.findAll();
   }
 

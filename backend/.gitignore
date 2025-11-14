@@ -46,6 +46,10 @@ lerna-debug.log*
 .temp
 .tmp
 
+# uploads directory (fichiers temporaires avant upload vers Cloudinary)
+/uploads/*
+!/uploads/.gitkeep
+
 # Runtime data
 pids
 *.pid

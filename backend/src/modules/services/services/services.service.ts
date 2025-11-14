@@ -47,6 +47,45 @@ export class ServicesService {
     }));
   }
 
+  async findByProvider(userId: string) {
+    // Trouver le profil de l'utilisateur
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+    });
+
+    if (!profile) {
+      return [];
+    }
+
+    const services = await this.prisma.service.findMany({
+      where: {
+        providerId: profile.id,
+      },
+      include: {
+        provider: {
+          include: {
+            user: true,
+          },
+        },
+        images: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Formater la réponse pour correspondre au format attendu par le frontend
+    return services.map(service => ({
+      ...service,
+      provider: service.provider ? {
+        id: service.provider.id,
+        firstName: service.provider.firstName || '',
+        lastName: service.provider.lastName || '',
+        rating: service.provider.rating || null,
+      } : null,
+    }));
+  }
+
   async findOne(id: string) {
     const service = await this.prisma.service.findUnique({
       where: { id },

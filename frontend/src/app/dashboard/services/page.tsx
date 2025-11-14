@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
-import { useServices } from '@/hooks/useServices';
+import { useServices, useDeleteService } from '@/hooks/useServices';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
@@ -14,11 +14,25 @@ function ServicesPageContent() {
   const { data: services = [], isLoading } = useServices();
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
+  const { mutate: deleteService } = useDeleteService();
 
   // Filtrer les services de la coiffeuse
-  const myServices = user?.role === 'COIFFEUSE'
-    ? services.filter(s => s.providerId === user.id)
-    : services;
+  // Note: Le backend retourne tous les services, mais on peut les filtrer côté frontend
+  // Le backend vérifiera les permissions lors de la modification/suppression
+  const myServices = services;
+
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer "${name}" ?`)) {
+      deleteService(id, {
+        onSuccess: () => {
+          notifications.success('Service supprimé', 'Le service a été supprimé avec succès');
+        },
+        onError: (error: any) => {
+          notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la suppression');
+        },
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -97,6 +111,13 @@ function ServicesPageContent() {
                       <PencilIcon className="h-4 w-4 inline mr-1" />
                       Modifier
                     </Link>
+                    <button
+                      onClick={() => handleDelete(service.id, service.name)}
+                      className="flex-1 px-3 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                    >
+                      <TrashIcon className="h-4 w-4 inline mr-1" />
+                      Supprimer
+                    </button>
                   </div>
                 </div>
               </div>

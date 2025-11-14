@@ -15,6 +15,15 @@ export class UploadService {
 
   async uploadToCloudinary(filePath: string) {
     try {
+      // Vérifier que Cloudinary est configuré
+      const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
+      const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
+      const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
+
+      if (!cloudName || !apiKey || !apiSecret) {
+        throw new Error('Cloudinary n\'est pas configuré. Veuillez définir CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY et CLOUDINARY_API_SECRET dans les variables d\'environnement.');
+      }
+
       const result = await cloudinary.uploader.upload(filePath, {
         folder: 'urbanbeauty',
         resource_type: 'image',
