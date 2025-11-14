@@ -364,12 +364,33 @@ function GuestCheckoutForm({
     billingAddress: '',
     notes: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Créer la commande guest via API
-    notifications.success('Commande créée', 'Votre commande a été enregistrée avec succès');
-    router.push('/order-success');
+    setIsSubmitting(true);
+
+    try {
+      const orderItems = items.map((item: any) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      }));
+
+      const orderData = {
+        ...formData,
+        items: orderItems,
+        couponCode: appliedCoupon?.code,
+      };
+
+      const newOrder = await ordersService.create(orderData);
+      notifications.success('Commande passée', `Votre commande #${newOrder.orderNumber} a été enregistrée !`);
+      useCartStore.getState().clearCart();
+      router.push(`/order-success?orderId=${newOrder.id}`);
+    } catch (error: any) {
+      notifications.error('Erreur de commande', error?.response?.data?.message || 'Une erreur est survenue lors de la commande.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

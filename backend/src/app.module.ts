@@ -13,6 +13,8 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { ProfileModule } from './modules/profile/profile.module';
+import { FirebaseModule } from './modules/firebase/firebase.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { ProfileModule } from './modules/profile/profile.module';
     UploadModule,
     BookingsModule,
     ProfileModule,
+    FirebaseModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

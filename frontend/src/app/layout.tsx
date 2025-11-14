@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Providers } from "./providers";
 import NotificationProvider from "@/components/admin/NotificationProvider";
+import FCMProvider from "@/components/notifications/FCMProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,9 +29,11 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
           <NotificationProvider>
-            <Header />
-            <main>{children}</main>
-            <Footer />
+            <FCMProvider>
+              <Header />
+              <main>{children}</main>
+              <Footer />
+            </FCMProvider>
           </NotificationProvider>
         </Providers>
       </body>
