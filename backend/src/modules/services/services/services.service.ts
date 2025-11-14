@@ -12,11 +12,7 @@ export class ServicesService {
       include: {
         provider: {
           include: {
-            user: {
-              include: {
-                profile: true,
-              },
-            },
+            user: true,
           },
         },
         images: true,
@@ -34,8 +30,8 @@ export class ServicesService {
       ...service,
       provider: service.provider ? {
         id: service.provider.id,
-        firstName: service.provider.user?.profile?.firstName || '',
-        lastName: service.provider.user?.profile?.lastName || '',
+        firstName: service.provider.firstName || '',
+        lastName: service.provider.lastName || '',
         rating: service.provider.rating || null,
       } : null,
     }));
@@ -47,11 +43,7 @@ export class ServicesService {
       include: {
         provider: {
           include: {
-            user: {
-              include: {
-                profile: true,
-              },
-            },
+            user: true,
           },
         },
         images: true,
@@ -67,8 +59,8 @@ export class ServicesService {
       ...service,
       provider: service.provider ? {
         id: service.provider.id,
-        firstName: service.provider.user?.profile?.firstName || '',
-        lastName: service.provider.user?.profile?.lastName || '',
+        firstName: service.provider.firstName || '',
+        lastName: service.provider.lastName || '',
         rating: service.provider.rating || null,
       } : null,
     };
