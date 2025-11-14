@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import ProductCard from '@/components/shared/ProductCard';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -7,6 +8,24 @@ import { useProducts } from '@/hooks/useProducts';
 
 export default function ProductsPage() {
   const { data: products = [], isLoading, error } = useProducts();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Extraire les catégories uniques
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    products.forEach(product => {
+      if (product.category?.name) {
+        cats.add(product.category.name);
+      }
+    });
+    return Array.from(cats);
+  }, [products]);
+
+  // Filtrer les produits par catégorie
+  const filteredProducts = useMemo(() => {
+    if (!selectedCategory) return products;
+    return products.filter(product => product.category?.name === selectedCategory);
+  }, [products, selectedCategory]);
 
   if (isLoading) {
     return (
@@ -24,6 +43,9 @@ export default function ProductsPage() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600">Erreur lors du chargement des produits</p>
+          <Link href="/" className="text-pink-600 hover:text-pink-700 mt-4 inline-block">
+            Retour à l'accueil
+          </Link>
         </div>
       </div>
     );
@@ -45,25 +67,36 @@ export default function ProductsPage() {
           <p className="mt-2 text-gray-600">Découvrez notre sélection de produits beauté</p>
         </div>
 
-        {/* Filtres (placeholder) */}
+        {/* Filtres */}
         <div className="mb-8 flex flex-wrap gap-4">
-          <button className="px-4 py-2 bg-pink-600 text-white rounded-full text-sm font-medium">
-            Tous
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              selectedCategory === null
+                ? 'bg-pink-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Tous ({products.length})
           </button>
-          <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200">
-            Soin Visage
-          </button>
-          <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200">
-            Soin Cheveux
-          </button>
-          <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200">
-            Soin Corps
-          </button>
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                selectedCategory === category
+                  ? 'bg-pink-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {category} ({products.filter(p => p.category?.name === category).length})
+            </button>
+          ))}
         </div>
 
         {/* Grille de produits */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <ProductCard 
               key={product.id} 
               id={product.id}
@@ -76,9 +109,21 @@ export default function ProductsPage() {
         </div>
 
         {/* Message si pas de produits */}
-        {products.length === 0 && (
+        {filteredProducts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">Aucun produit disponible pour le moment.</p>
+            <p className="text-gray-500">
+              {selectedCategory 
+                ? `Aucun produit dans la catégorie "${selectedCategory}".`
+                : 'Aucun produit disponible pour le moment.'}
+            </p>
+            {selectedCategory && (
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className="mt-4 text-pink-600 hover:text-pink-700 font-medium"
+              >
+                Voir tous les produits
+              </button>
+            )}
           </div>
         )}
       </div>

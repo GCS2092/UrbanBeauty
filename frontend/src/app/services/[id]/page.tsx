@@ -6,7 +6,7 @@ import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useService } from '@/hooks/useServices';
 
 export default function ServiceDetailPage({ params }: { params: { id: string } }) {
-  const { data: service, isLoading, error } = useService(params.id);
+  const { data: service, isLoading, error } = useService(params?.id || '');
 
   if (isLoading) {
     return (

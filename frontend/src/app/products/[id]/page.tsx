@@ -5,7 +5,7 @@ import { ArrowLeftIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { useProduct } from '@/hooks/useProducts';
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  const { data: product, isLoading, error } = useProduct(params.id);
+  const { data: product, isLoading, error } = useProduct(params?.id || '');
 
   if (isLoading) {
     return (

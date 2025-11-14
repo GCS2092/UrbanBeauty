@@ -14,7 +14,8 @@ export function useProduct(id: string) {
   return useQuery({
     queryKey: ['products', id],
     queryFn: () => productsService.getById(id),
-    enabled: !!id,
+    enabled: !!id && id !== '',
+    retry: 1,
   });
 }
 
