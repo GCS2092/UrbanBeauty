@@ -7,6 +7,7 @@ import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useCreateService } from '@/hooks/useServices';
 import { useNotifications } from '@/components/admin/NotificationProvider';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 function NewServiceForm() {
   const router = useRouter();
