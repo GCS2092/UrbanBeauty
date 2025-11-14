@@ -3,6 +3,25 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+// Fonction utilitaire pour générer un slug
+function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+    .replace(/[^a-z0-9]+/g, '-') // Remplacer les caractères spéciaux par des tirets
+    .replace(/^-+|-+$/g, ''); // Supprimer les tirets en début/fin
+}
+
+// Fonction pour générer un numéro unique
+function generateOrderNumber(): string {
+  return `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+}
+
+function generateBookingNumber(): string {
+  return `BK-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+}
+
 async function main() {
   console.log('🌱 Début du seed...');
 
@@ -12,6 +31,9 @@ async function main() {
     update: {},
     create: {
       name: 'Soin Visage',
+      slug: generateSlug('Soin Visage'),
+      description: 'Produits de soin pour le visage',
+      isActive: true,
     },
   });
 
@@ -20,6 +42,9 @@ async function main() {
     update: {},
     create: {
       name: 'Soin Cheveux',
+      slug: generateSlug('Soin Cheveux'),
+      description: 'Produits de soin pour les cheveux',
+      isActive: true,
     },
   });
 
@@ -28,6 +53,9 @@ async function main() {
     update: {},
     create: {
       name: 'Soin Corps',
+      slug: generateSlug('Soin Corps'),
+      description: 'Produits de soin pour le corps',
+      isActive: true,
     },
   });
 
@@ -36,6 +64,9 @@ async function main() {
     update: {},
     create: {
       name: 'Maquillage',
+      slug: generateSlug('Maquillage'),
+      description: 'Produits de maquillage',
+      isActive: true,
     },
   });
 
@@ -100,27 +131,40 @@ async function main() {
       data: [
         {
           name: 'Tresses Africaines',
+          slug: generateSlug('Tresses Africaines'),
           description: 'Création de tresses africaines traditionnelles avec des techniques modernes.',
           price: 80,
           duration: 180,
+          category: 'Tresses',
           providerId: coiffeuse.profile.id,
           available: true,
+          maxBookingsPerDay: 3,
+          advanceBookingDays: 7,
+          isFeatured: true,
         },
         {
           name: 'Pose de Perruque',
+          slug: generateSlug('Pose de Perruque'),
           description: 'Pose professionnelle de perruque avec préparation du cuir chevelu.',
           price: 120,
           duration: 120,
+          category: 'Pose',
           providerId: coiffeuse.profile.id,
           available: true,
+          maxBookingsPerDay: 4,
+          advanceBookingDays: 5,
         },
         {
           name: 'Locks Entretien',
+          slug: generateSlug('Locks Entretien'),
           description: 'Entretien et retouche de locks avec produits naturels.',
           price: 95,
           duration: 150,
+          category: 'Entretien',
           providerId: coiffeuse.profile.id,
           available: true,
+          maxBookingsPerDay: 5,
+          advanceBookingDays: 3,
         },
       ],
     });
@@ -156,35 +200,69 @@ async function main() {
       data: [
         {
           name: 'Masque Hydratant Intensif',
+          slug: generateSlug('Masque Hydratant Intensif'),
           description: 'Un masque hydratant intensif pour une peau éclatante et nourrie. Formulé avec des ingrédients naturels.',
           price: 29.99,
+          originalPrice: 39.99,
+          isOnSale: true,
+          discountPercentage: 25,
+          brand: 'UrbanBeauty',
+          volume: '50ml',
+          ingredients: 'Aloe Vera, Acide Hyaluronique, Vitamine E',
+          skinType: 'Tous types',
           categoryId: categories[0].id,
           stock: 15,
+          lowStockThreshold: 5,
           sellerId: vendeuse.id,
+          isActive: true,
+          isFeatured: true,
         },
         {
           name: 'Sérum Vitamine C',
+          slug: generateSlug('Sérum Vitamine C'),
           description: 'Sérum anti-âge à la vitamine C pour un teint éclatant et une peau ferme.',
           price: 45.00,
+          brand: 'UrbanBeauty',
+          volume: '30ml',
+          ingredients: 'Vitamine C, Acide Ascorbique, Acide Hyaluronique',
+          skinType: 'Peau normale à grasse',
           categoryId: categories[0].id,
           stock: 8,
+          lowStockThreshold: 3,
           sellerId: vendeuse.id,
+          isActive: true,
+          isFeatured: true,
         },
         {
           name: 'Shampooing Réparateur',
+          slug: generateSlug('Shampooing Réparateur'),
           description: 'Shampooing réparateur pour cheveux abîmés avec kératine et huiles naturelles.',
           price: 18.50,
+          brand: 'UrbanBeauty',
+          volume: '250ml',
+          ingredients: 'Kératine, Huile d\'Argan, Beurre de Karité',
           categoryId: categories[1].id,
           stock: 20,
+          lowStockThreshold: 5,
           sellerId: vendeuse.id,
+          isActive: true,
         },
         {
           name: 'Huile Capillaire Nourrissante',
+          slug: generateSlug('Huile Capillaire Nourrissante'),
           description: 'Huile capillaire 100% naturelle pour nourrir et faire briller les cheveux.',
           price: 24.99,
+          originalPrice: 29.99,
+          isOnSale: true,
+          discountPercentage: 17,
+          brand: 'UrbanBeauty',
+          volume: '100ml',
+          ingredients: 'Huile de Coco, Huile d\'Argan, Jojoba',
           categoryId: categories[1].id,
           stock: 12,
+          lowStockThreshold: 4,
           sellerId: vendeuse.id,
+          isActive: true,
         },
       ],
     });
