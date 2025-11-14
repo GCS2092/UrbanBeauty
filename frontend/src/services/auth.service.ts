@@ -30,7 +30,7 @@ export interface AuthResponse {
 
 export const authService = {
   register: async (data: RegisterDto): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/register', data);
+    const response = await api.post<AuthResponse>('/api/auth/register', data);
     if (response.data.access_token) {
       localStorage.setItem('access_token', response.data.access_token);
     }
@@ -38,7 +38,7 @@ export const authService = {
   },
 
   login: async (data: LoginDto): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/login', data);
+    const response = await api.post<AuthResponse>('/api/auth/login', data);
     if (response.data.access_token) {
       localStorage.setItem('access_token', response.data.access_token);
     }
@@ -51,7 +51,7 @@ export const authService = {
   },
 
   getMe: async () => {
-    const response = await api.get('/auth/me');
+    const response = await api.get('/api/auth/me');
     return response.data;
   },
 
