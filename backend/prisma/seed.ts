@@ -361,39 +361,39 @@ async function main() {
     // URLs optimisées pour produits beauté/cosmétiques
     const productImages = {
       masque: [
-        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       serum: [
-        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       shampooing: [
-        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       huile: [
-        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       creme: [
-        'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       maquillage: [
-        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       corps: [
-        'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
     };
 
