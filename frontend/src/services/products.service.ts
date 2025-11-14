@@ -56,6 +56,11 @@ export interface CreateProductDto {
   price: number;
   stock: number;
   categoryId: string;
+  brand?: string;
+  sku?: string;
+  volume?: string;
+  ingredients?: string;
+  skinType?: string;
   images?: ImageDto[];
 }
 
