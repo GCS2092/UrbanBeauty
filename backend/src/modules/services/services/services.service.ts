@@ -3,6 +3,16 @@ import { PrismaService } from '../../../prisma.service';
 import { CreateServiceDto } from '../dto/create-service.dto';
 import { UpdateServiceDto } from '../dto/update-service.dto';
 
+// Fonction utilitaire pour générer un slug
+function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+    .replace(/[^a-z0-9]+/g, '-') // Remplacer les caractères spéciaux par des tirets
+    .replace(/^-+|-+$/g, ''); // Supprimer les tirets en début/fin
+}
+
 @Injectable()
 export class ServicesService {
   constructor(private prisma: PrismaService) {}
@@ -79,6 +89,7 @@ export class ServicesService {
     return this.prisma.service.create({
       data: {
         ...createServiceDto,
+        slug: generateSlug(createServiceDto.name),
         providerId: profile.id,
         available: createServiceDto.available ?? true,
       },

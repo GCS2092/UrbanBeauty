@@ -3,6 +3,16 @@ import { PrismaService } from '../../../prisma.service';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 
+// Fonction utilitaire pour générer un slug
+function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+    .replace(/[^a-z0-9]+/g, '-') // Remplacer les caractères spéciaux par des tirets
+    .replace(/^-+|-+$/g, ''); // Supprimer les tirets en début/fin
+}
+
 @Injectable()
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
@@ -58,6 +68,7 @@ export class ProductsService {
     return this.prisma.product.create({
       data: {
         ...createProductDto,
+        slug: generateSlug(createProductDto.name),
         sellerId: userId,
       },
       include: {
