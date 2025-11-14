@@ -7,11 +7,15 @@ import {
   UserIcon, 
   MagnifyingGlassIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { isAuthenticated, user, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
@@ -50,9 +54,67 @@ export default function Header() {
             </button>
 
             {/* User */}
-            <Link href="/auth/login" className="hidden sm:block p-2 text-gray-600 hover:text-pink-600 transition-colors">
-              <UserIcon className="h-5 w-5" />
-            </Link>
+            {isAuthenticated ? (
+              <div className="hidden sm:block relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center space-x-2 p-2 text-gray-600 hover:text-pink-600 transition-colors"
+                >
+                  <UserIcon className="h-5 w-5" />
+                  <ChevronDownIcon className="h-4 w-4" />
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
+                    <Link
+                      href="/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Tableau de bord
+                    </Link>
+                    <Link
+                      href="/dashboard/profile"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Mon profil
+                    </Link>
+                    {user?.role === 'COIFFEUSE' && (
+                      <Link
+                        href="/dashboard/services"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Mes services
+                      </Link>
+                    )}
+                    {user?.role === 'VENDEUSE' && (
+                      <Link
+                        href="/dashboard/products"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Mes produits
+                      </Link>
+                    )}
+                    <div className="border-t border-gray-100 my-1"></div>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setUserMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                    >
+                      Déconnexion
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link href="/auth/login" className="hidden sm:block p-2 text-gray-600 hover:text-pink-600 transition-colors">
+                <UserIcon className="h-5 w-5" />
+              </Link>
+            )}
 
             {/* Cart */}
             <Link href="/cart" className="relative p-2 text-gray-600 hover:text-pink-600 transition-colors">
@@ -92,9 +154,23 @@ export default function Header() {
             <Link href="/prestataires" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
               Prestataires
             </Link>
-            <Link href="/auth/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              Connexion
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  Tableau de bord
+                </Link>
+                <button
+                  onClick={logout}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                >
+                  Déconnexion
+                </button>
+              </>
+            ) : (
+              <Link href="/auth/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                Connexion
+              </Link>
+            )}
           </div>
         )}
       </nav>
