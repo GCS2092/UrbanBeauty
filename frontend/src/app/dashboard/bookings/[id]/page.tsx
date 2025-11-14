@@ -124,11 +124,11 @@ function BookingDetailContent() {
             </span>
           </div>
 
-          {canEdit && booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
+          {canEdit && (booking.status === 'PENDING' || booking.status === 'CONFIRMED') && (
             <div className="mb-4 p-4 bg-gray-50 rounded-lg">
               <p className="text-sm font-medium text-gray-700 mb-2">Changer le statut :</p>
               <div className="flex gap-2">
-                {booking.status !== 'CONFIRMED' && (
+                {booking.status === 'PENDING' && (
                   <button
                     onClick={() => handleStatusChange('CONFIRMED')}
                     disabled={isUpdating}
@@ -137,7 +137,7 @@ function BookingDetailContent() {
                     Confirmer
                   </button>
                 )}
-                {booking.status !== 'CANCELLED' && (
+                {(booking.status === 'PENDING' || booking.status === 'CONFIRMED') && (
                   <button
                     onClick={() => handleStatusChange('CANCELLED')}
                     disabled={isUpdating}
