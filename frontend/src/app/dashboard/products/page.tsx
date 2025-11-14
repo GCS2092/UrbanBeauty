@@ -112,9 +112,9 @@ function ProductsPageContent() {
                   <div className="mt-4 flex gap-2">
                     <Link
                       href={`/dashboard/products/${product.id}/edit`}
-                      className="flex-1 text-center px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                      className="flex-1 text-center px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors inline-flex items-center justify-center"
                     >
-                      <PencilIcon className="h-4 w-4 inline mr-1" />
+                      <PencilIcon className="h-4 w-4 mr-1" />
                       Modifier
                     </Link>
                     <button

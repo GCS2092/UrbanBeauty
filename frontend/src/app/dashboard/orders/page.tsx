@@ -3,12 +3,15 @@
 import Link from 'next/link';
 import { ArrowLeftIcon, EyeIcon } from '@heroicons/react/24/outline';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
+import { useAuth } from '@/hooks/useAuth';
 import { useOrders } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 function OrdersPageContent() {
-  const { data: orders = [], isLoading, error } = useOrders();
+  const { user } = useAuth();
+  const isSeller = user?.role === 'VENDEUSE';
+  const { data: orders = [], isLoading, error } = useOrders(false, isSeller);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -56,13 +59,19 @@ function OrdersPageContent() {
           Retour au tableau de bord
         </Link>
 
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Mes Commandes</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-8">
+          {isSeller ? 'Commandes de mes produits' : 'Mes Commandes'}
+        </h1>
 
         {orders.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <span className="text-6xl mb-4 block">📦</span>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Aucune commande</h2>
-            <p className="text-gray-600 mb-6">Vous n'avez pas encore passé de commande</p>
+            <p className="text-gray-600 mb-6">
+              {isSeller 
+                ? 'Aucune commande n\'a été passée pour vos produits pour le moment'
+                : 'Vous n\'avez pas encore passé de commande'}
+            </p>
             <Link
               href="/products"
               className="inline-block bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors"
@@ -85,6 +94,11 @@ function OrdersPageContent() {
                     <p className="text-sm text-gray-600 mt-1">
                       {order.items.length} article{order.items.length > 1 ? 's' : ''}
                     </p>
+                    {isSeller && order.user && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Client : {order.user.profile?.firstName} {order.user.profile?.lastName} ({order.customerEmail})
+                      </p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-900 text-lg mb-2">{order.total.toFixed(2)} €</p>

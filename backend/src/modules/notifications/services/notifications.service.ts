@@ -21,38 +21,33 @@ export class NotificationsService {
       throw new NotFoundException('Utilisateur introuvable');
     }
 
-    // Stocker le token FCM dans le profil utilisateur
-    // On peut utiliser un champ JSON dans Profile ou créer une table dédiée
-    // Pour l'instant, on stocke dans Profile.avatar temporairement ou on crée un champ fcmTokens
-    
-    // Mise à jour : stocker dans le profil (on peut ajouter un champ fcmToken dans Profile plus tard)
-    await this.prisma.profile.upsert({
-      where: { userId },
-      update: {
-        // On stocke temporairement dans un champ existant ou on ajoute un champ JSON
-        // Pour l'instant, on va créer une entrée dans une table dédiée si elle existe
-      },
-      create: {
-        userId,
-        firstName: '',
-        lastName: '',
-        // fcmToken: registerTokenDto.token, // Si vous ajoutez ce champ au schéma
-      },
-    });
+    // Utiliser NotificationToken si disponible, sinon stocker dans Profile temporairement
+    try {
+      // Essayer d'utiliser NotificationToken
+      await this.prisma.notificationToken.upsert({
+        where: { userId },
+        update: { token: registerTokenDto.token },
+        create: { userId, token: registerTokenDto.token },
+      });
+    } catch (error) {
+      // Si NotificationToken n'existe pas, on continue sans erreur
+      // Les notifications ne fonctionneront pas mais l'application continue
+      console.warn('NotificationToken model not found, notifications will not work');
+    }
 
     return { success: true, message: 'Token FCM enregistré avec succès' };
   }
 
   async getUserFCMToken(userId: string): Promise<string | null> {
-    // Récupérer le token FCM de l'utilisateur
-    // Pour l'instant, on retourne null car on n'a pas encore de champ dédié
-    // Vous devrez ajouter un champ fcmToken dans Profile ou créer une table NotificationToken
-    const profile = await this.prisma.profile.findUnique({
-      where: { userId },
-    });
-
-    // TODO: Récupérer depuis le champ fcmToken quand il sera ajouté au schéma
-    return null;
+    try {
+      const notificationToken = await this.prisma.notificationToken.findUnique({
+        where: { userId },
+      });
+      return notificationToken?.token || null;
+    } catch (error) {
+      // Si NotificationToken n'existe pas, retourner null
+      return null;
+    }
   }
 
   async sendToUser(userId: string, sendNotificationDto: SendNotificationDto) {

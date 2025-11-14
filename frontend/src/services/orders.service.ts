@@ -67,9 +67,12 @@ export interface CreateOrderDto {
 }
 
 export const ordersService = {
-  getAll: async (all?: boolean): Promise<Order[]> => {
-    const params = all ? '?all=true' : '';
-    const response = await api.get<Order[]>(`/api/orders${params}`);
+  getAll: async (all?: boolean, seller?: boolean): Promise<Order[]> => {
+    const params = new URLSearchParams();
+    if (all) params.append('all', 'true');
+    if (seller) params.append('seller', 'true');
+    const queryString = params.toString();
+    const response = await api.get<Order[]>(`/api/orders${queryString ? `?${queryString}` : ''}`);
     return response.data;
   },
 

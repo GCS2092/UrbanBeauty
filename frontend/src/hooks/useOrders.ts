@@ -3,10 +3,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersService, CreateOrderDto } from '@/services/orders.service';
 
-export function useOrders(all?: boolean) {
+export function useOrders(all?: boolean, seller?: boolean) {
   return useQuery({
-    queryKey: ['orders', all],
-    queryFn: () => ordersService.getAll(all),
+    queryKey: ['orders', all, seller],
+    queryFn: () => ordersService.getAll(all, seller),
   });
 }
 

@@ -3,6 +3,7 @@ import { PrismaService } from '../../../prisma.service';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { CouponsService } from '../../coupons/services/coupons.service';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 
 // Fonction utilitaire pour générer un numéro de commande
 function generateOrderNumber(): string {
@@ -16,6 +17,7 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private couponsService: CouponsService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async findAll(userId?: string) {
@@ -49,6 +51,39 @@ export class OrdersService {
         createdAt: 'desc',
       },
     });
+  }
+
+  async findBySeller(sellerId: string) {
+    // Récupérer toutes les commandes qui contiennent des produits du vendeur
+    const orders = await this.prisma.order.findMany({
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                images: true,
+                category: true,
+              },
+            },
+          },
+        },
+        coupon: true,
+        payment: true,
+        user: {
+          include: {
+            profile: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Filtrer les commandes qui contiennent au moins un produit du vendeur
+    return orders.filter(order => 
+      order.items.some(item => item.product.sellerId === sellerId)
+    );
   }
 
   async findOne(id: string) {
@@ -178,8 +213,25 @@ export class OrdersService {
       },
     });
 
-    // Mettre à jour le stock des produits
+    // Mettre à jour le stock des produits et notifier les vendeuses
+    const sellerProducts = new Map<string, Array<{ name: string; quantity: number }>>();
+    
     for (const item of createOrderDto.items) {
+      const product = await this.prisma.product.findUnique({
+        where: { id: item.productId },
+        select: { sellerId: true, name: true },
+      });
+      
+      if (product?.sellerId) {
+        if (!sellerProducts.has(product.sellerId)) {
+          sellerProducts.set(product.sellerId, []);
+        }
+        sellerProducts.get(product.sellerId)!.push({
+          name: product.name,
+          quantity: item.quantity,
+        });
+      }
+
       await this.prisma.product.update({
         where: { id: item.productId },
         data: {
@@ -187,6 +239,30 @@ export class OrdersService {
           salesCount: { increment: item.quantity },
         },
       });
+    }
+
+    // Envoyer des notifications aux vendeuses concernées
+    for (const [sellerId, products] of sellerProducts.entries()) {
+      try {
+        const productNames = products.map(p => `${p.name} (x${p.quantity})`).join(', ');
+        await this.notificationsService.sendToUser(sellerId, {
+          title: 'Nouvelle commande reçue',
+          body: `Une commande a été passée pour vos produits : ${productNames}`,
+          data: {
+            type: 'ORDER',
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+          },
+        });
+      } catch (error: any) {
+        // Ne pas bloquer la création de commande si la notification échoue
+        // Cela peut arriver si le token FCM n'est pas enregistré
+        if (error?.message?.includes('Token FCM non trouvé')) {
+          console.log(`Token FCM non enregistré pour la vendeuse ${sellerId}`);
+        } else {
+          console.error(`Erreur lors de l'envoi de notification à la vendeuse ${sellerId}:`, error);
+        }
+      }
     }
 
     return order;

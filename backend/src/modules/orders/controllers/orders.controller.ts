@@ -24,10 +24,14 @@ export class OrdersController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  findAll(@CurrentUser() user: any, @Query('all') all?: string) {
+  findAll(@CurrentUser() user: any, @Query('all') all?: string, @Query('seller') seller?: string) {
     // Si admin et paramètre 'all', retourner toutes les commandes
     if (user.role === 'ADMIN' && all === 'true') {
       return this.ordersService.findAll();
+    }
+    // Si vendeuse et paramètre 'seller', retourner les commandes contenant ses produits
+    if (user.role === 'VENDEUSE' && seller === 'true') {
+      return this.ordersService.findBySeller(user.userId);
     }
     // Sinon, retourner uniquement les commandes de l'utilisateur
     return this.ordersService.findAll(user.userId);
@@ -39,7 +43,18 @@ export class OrdersController {
     const order = await this.ordersService.findOne(id);
     
     // Vérifier que l'utilisateur peut accéder à cette commande
-    if (user.role !== 'ADMIN' && order.userId !== user.userId) {
+    if (user.role === 'ADMIN') {
+      // Admin peut voir toutes les commandes
+      return order;
+    } else if (user.role === 'VENDEUSE') {
+      // Vendeuse peut voir les commandes contenant ses produits
+      const hasSellerProduct = order.items.some(item => item.product.sellerId === user.userId);
+      if (!hasSellerProduct) {
+        throw new ForbiddenException('Vous n\'êtes pas autorisé à accéder à cette commande');
+      }
+      return order;
+    } else if (order.userId !== user.userId) {
+      // Client peut voir uniquement ses propres commandes
       throw new ForbiddenException('Vous n\'êtes pas autorisé à accéder à cette commande');
     }
     
