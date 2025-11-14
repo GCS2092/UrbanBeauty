@@ -12,6 +12,8 @@ import { ServicesService } from '../services/services.service';
 import { CreateServiceDto } from '../dto/create-service.dto';
 import { UpdateServiceDto } from '../dto/update-service.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../../shared/decorators/current-user.decorator';
 
 @Controller('services')
@@ -41,13 +43,15 @@ export class ServicesController {
     @Body() updateServiceDto: UpdateServiceDto,
     @CurrentUser() user: any,
   ) {
-    return this.servicesService.update(id, updateServiceDto, user.userId);
+    // Admin peut modifier n'importe quel service, sinon seulement les siens
+    return this.servicesService.update(id, updateServiceDto, user.role === 'ADMIN' ? undefined : user.userId);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.servicesService.remove(id, user.userId);
+    // Admin peut supprimer n'importe quel service, sinon seulement les siens
+    return this.servicesService.remove(id, user.role === 'ADMIN' ? undefined : user.userId);
   }
 }
 

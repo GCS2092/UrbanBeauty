@@ -108,7 +108,7 @@ export class ServicesService {
     });
   }
 
-  async update(id: string, updateServiceDto: UpdateServiceDto, userId: string) {
+  async update(id: string, updateServiceDto: UpdateServiceDto, userId?: string) {
     const service = await this.prisma.service.findUnique({
       where: { id },
       include: {
@@ -120,13 +120,15 @@ export class ServicesService {
       throw new NotFoundException('Service introuvable');
     }
 
-    // Vérifier que l'utilisateur est le prestataire
-    const profile = await this.prisma.profile.findUnique({
-      where: { userId },
-    });
+    // Si userId est fourni, vérifier que l'utilisateur est le prestataire (sauf admin)
+    if (userId) {
+      const profile = await this.prisma.profile.findUnique({
+        where: { userId },
+      });
 
-    if (!profile || service.providerId !== profile.id) {
-      throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier ce service');
+      if (!profile || service.providerId !== profile.id) {
+        throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier ce service');
+      }
     }
 
     return this.prisma.service.update({

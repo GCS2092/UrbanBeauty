@@ -78,11 +78,11 @@ export class ProductsService {
     });
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto, userId: string) {
+  async update(id: string, updateProductDto: UpdateProductDto, userId?: string) {
     const product = await this.findOne(id);
 
-    // Vérifier que l'utilisateur est le vendeur
-    if (product.sellerId !== userId) {
+    // Si userId est fourni, vérifier que l'utilisateur est le vendeur (sauf admin)
+    if (userId && product.sellerId !== userId) {
       throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier ce produit');
     }
 
@@ -96,11 +96,11 @@ export class ProductsService {
     });
   }
 
-  async remove(id: string, userId: string) {
+  async remove(id: string, userId?: string) {
     const product = await this.findOne(id);
 
-    // Vérifier que l'utilisateur est le vendeur
-    if (product.sellerId !== userId) {
+    // Si userId est fourni, vérifier que l'utilisateur est le vendeur (sauf admin)
+    if (userId && product.sellerId !== userId) {
       throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer ce produit');
     }
 
