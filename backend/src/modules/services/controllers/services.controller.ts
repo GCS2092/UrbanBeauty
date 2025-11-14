@@ -30,8 +30,8 @@ export class ServicesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.servicesService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user?: any) {
+    return this.servicesService.findOne(id, user?.userId);
   }
 
   @Post()

@@ -90,17 +90,24 @@ function EditServiceForm({ serviceId }: { serviceId: string }) {
     );
   }
 
-  if (!service) {
+  if (serviceError || (!service && !loadingService)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600">Service introuvable</p>
+          <p className="text-red-600 mb-4">Service introuvable ou inaccessible</p>
+          <p className="text-sm text-gray-600 mb-4">
+            {serviceError?.message || 'Vérifiez que vous avez les permissions nécessaires pour modifier ce service.'}
+          </p>
           <Link href="/dashboard/services" className="text-pink-600 hover:text-pink-700 mt-4 inline-block">
             Retour aux services
           </Link>
         </div>
       </div>
     );
+  }
+
+  if (!service) {
+    return null;
   }
 
   return (

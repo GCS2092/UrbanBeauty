@@ -86,7 +86,7 @@ export class ServicesService {
     }));
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, userId?: string) {
     const service = await this.prisma.service.findUnique({
       where: { id },
       include: {
@@ -101,6 +101,17 @@ export class ServicesService {
 
     if (!service) {
       throw new NotFoundException('Service introuvable');
+    }
+
+    // Si userId est fourni et que l'utilisateur n'est pas admin, vérifier les permissions
+    if (userId) {
+      const profile = await this.prisma.profile.findUnique({
+        where: { userId },
+      });
+
+      // Si l'utilisateur n'est pas admin et n'est pas le propriétaire du service, vérifier les permissions
+      // Pour l'instant, on permet l'accès en lecture pour tous les utilisateurs authentifiés
+      // La modification sera vérifiée dans le contrôleur
     }
 
     // Formater la réponse pour correspondre au format attendu par le frontend

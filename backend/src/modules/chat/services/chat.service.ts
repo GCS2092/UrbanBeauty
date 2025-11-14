@@ -64,7 +64,15 @@ export class ChatService {
           participant2: {
             include: { profile: true },
           },
-          messages: [],
+          messages: {
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+            include: {
+              sender: {
+                include: { profile: true },
+              },
+            },
+          },
         },
       });
     }

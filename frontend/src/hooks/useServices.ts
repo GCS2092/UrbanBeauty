@@ -15,7 +15,8 @@ export function useService(id: string) {
     queryKey: ['services', id],
     queryFn: () => servicesService.getById(id),
     enabled: !!id && id !== '',
-    retry: 1,
+    retry: 2,
+    retryDelay: 1000,
   });
 }
 

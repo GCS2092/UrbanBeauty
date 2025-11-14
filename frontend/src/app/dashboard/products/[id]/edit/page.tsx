@@ -12,7 +12,7 @@ import ImageUploader from '@/components/admin/ImageUploader';
 
 function EditProductForm({ productId }: { productId: string }) {
   const router = useRouter();
-  const { data: product, isLoading: loadingProduct } = useProduct(productId);
+  const { data: product, isLoading: loadingProduct, error: productError } = useProduct(productId);
   const { mutate: updateProduct, isPending } = useUpdateProduct();
   const { data: categories = [] } = useCategories();
   const notifications = useNotifications();
@@ -101,17 +101,24 @@ function EditProductForm({ productId }: { productId: string }) {
     );
   }
 
-  if (!product) {
+  if (productError || (!product && !loadingProduct)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600">Produit introuvable</p>
+          <p className="text-red-600 mb-4">Produit introuvable ou inaccessible</p>
+          <p className="text-sm text-gray-600 mb-4">
+            {productError?.message || 'Vérifiez que vous avez les permissions nécessaires pour modifier ce produit.'}
+          </p>
           <Link href="/dashboard/products" className="text-pink-600 hover:text-pink-700 mt-4 inline-block">
             Retour aux produits
           </Link>
         </div>
       </div>
     );
+  }
+
+  if (!product) {
+    return null;
   }
 
   return (
