@@ -122,7 +122,7 @@ function AnalyticsContent() {
                   <div>
                     <p className="text-sm font-medium text-gray-600">Revenus</p>
                     <p className="text-2xl font-bold text-green-600 mt-2">
-                      {formatCurrency(stats?.totalRevenue || 0, currency)}
+                      {formatCurrency(stats ? stats.totalRevenue : 0, currency)}
                     </p>
                   </div>
                   <ChartBarIcon className="h-8 w-8 text-green-600" />
@@ -188,7 +188,7 @@ function AnalyticsContent() {
                   <div>
                     <p className="text-sm font-medium text-gray-600">Revenus</p>
                     <p className="text-2xl font-bold text-green-600 mt-2">
-                      {formatCurrency(stats?.totalRevenue || 0, currency)}
+                      {formatCurrency(stats ? stats.totalRevenue : 0, currency)}
                     </p>
                   </div>
                   <ChartBarIcon className="h-8 w-8 text-green-600" />
