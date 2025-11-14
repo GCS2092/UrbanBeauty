@@ -72,7 +72,42 @@ async function main() {
 
   const categories = [categoryVisage, categoryCheveux, categoryCorps, categoryMaquillage];
 
-  console.log('✅ Catégories créées');
+  // Ajouter des images aux catégories
+  await prisma.category.updateMany({
+    where: { name: { in: ['Soin Visage', 'Soin Cheveux', 'Soin Corps', 'Maquillage'] } },
+    data: {},
+  });
+
+  // Mettre à jour les catégories avec des images
+  await prisma.category.update({
+    where: { id: categoryVisage.id },
+    data: {
+      image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&q=80',
+    },
+  });
+
+  await prisma.category.update({
+    where: { id: categoryCheveux.id },
+    data: {
+      image: 'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=600&q=80',
+    },
+  });
+
+  await prisma.category.update({
+    where: { id: categoryCorps.id },
+    data: {
+      image: 'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=600&q=80',
+    },
+  });
+
+  await prisma.category.update({
+    where: { id: categoryMaquillage.id },
+    data: {
+      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&q=80',
+    },
+  });
+
+  console.log('✅ Catégories créées avec images');
 
   // Hash du mot de passe
   const hashedPassword = await bcrypt.hash('password123', 10);
@@ -125,50 +160,101 @@ async function main() {
 
   console.log('✅ Utilisateur COIFFEUSE créé : coiffeuse@test.com / password123');
 
-  // Créer des services pour la coiffeuse
+  // Créer des services pour la coiffeuse avec images
   if (coiffeuse.profile) {
-    await prisma.service.createMany({
-      data: [
-        {
-          name: 'Tresses Africaines',
-          slug: generateSlug('Tresses Africaines'),
-          description: 'Création de tresses africaines traditionnelles avec des techniques modernes.',
-          price: 80,
-          duration: 180,
-          category: 'Tresses',
-          providerId: coiffeuse.profile.id,
-          available: true,
-          maxBookingsPerDay: 3,
-          advanceBookingDays: 7,
-          isFeatured: true,
-        },
-        {
-          name: 'Pose de Perruque',
-          slug: generateSlug('Pose de Perruque'),
-          description: 'Pose professionnelle de perruque avec préparation du cuir chevelu.',
-          price: 120,
-          duration: 120,
-          category: 'Pose',
-          providerId: coiffeuse.profile.id,
-          available: true,
-          maxBookingsPerDay: 4,
-          advanceBookingDays: 5,
-        },
-        {
-          name: 'Locks Entretien',
-          slug: generateSlug('Locks Entretien'),
-          description: 'Entretien et retouche de locks avec produits naturels.',
-          price: 95,
-          duration: 150,
-          category: 'Entretien',
-          providerId: coiffeuse.profile.id,
-          available: true,
-          maxBookingsPerDay: 5,
-          advanceBookingDays: 3,
-        },
+    // Images de services de coiffure depuis Unsplash
+    const serviceImages = {
+      tresses: [
+        'https://images.unsplash.com/photo-1560869713-7d563b47e0b0?w=800&q=80',
+        'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=800&q=80',
       ],
+      perruque: [
+        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80',
+        'https://images.unsplash.com/photo-1560869713-7d563b47e0b0?w=800&q=80',
+      ],
+      locks: [
+        'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=800&q=80',
+        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80',
+      ],
+    };
+
+    const tresses = await prisma.service.create({
+      data: {
+        name: 'Tresses Africaines',
+        slug: generateSlug('Tresses Africaines'),
+        description: 'Création de tresses africaines traditionnelles avec des techniques modernes.',
+        price: 80,
+        duration: 180,
+        category: 'Tresses',
+        providerId: coiffeuse.profile.id,
+        available: true,
+        maxBookingsPerDay: 3,
+        advanceBookingDays: 7,
+        isFeatured: true,
+        images: {
+          create: serviceImages.tresses.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Tresses Africaines',
+            title: 'Tresses Africaines - Service de coiffure',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
     });
-    console.log('✅ Services créés pour la coiffeuse');
+
+    const perruque = await prisma.service.create({
+      data: {
+        name: 'Pose de Perruque',
+        slug: generateSlug('Pose de Perruque'),
+        description: 'Pose professionnelle de perruque avec préparation du cuir chevelu.',
+        price: 120,
+        duration: 120,
+        category: 'Pose',
+        providerId: coiffeuse.profile.id,
+        available: true,
+        maxBookingsPerDay: 4,
+        advanceBookingDays: 5,
+        images: {
+          create: serviceImages.perruque.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Pose de Perruque',
+            title: 'Pose de Perruque - Service de coiffure',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const locks = await prisma.service.create({
+      data: {
+        name: 'Locks Entretien',
+        slug: generateSlug('Locks Entretien'),
+        description: 'Entretien et retouche de locks avec produits naturels.',
+        price: 95,
+        duration: 150,
+        category: 'Entretien',
+        providerId: coiffeuse.profile.id,
+        available: true,
+        maxBookingsPerDay: 5,
+        advanceBookingDays: 3,
+        images: {
+          create: serviceImages.locks.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Locks Entretien',
+            title: 'Locks Entretien - Service de coiffure',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    console.log('✅ Services créés avec images pour la coiffeuse');
   }
 
   // Créer un utilisateur VENDEUSE de test
@@ -194,79 +280,148 @@ async function main() {
 
   console.log('✅ Utilisateur VENDEUSE créé : vendeuse@test.com / password123');
 
-  // Créer des produits pour la vendeuse
+  // Créer des produits pour la vendeuse avec images
   if (vendeuse.profile) {
-    await prisma.product.createMany({
-      data: [
-        {
-          name: 'Masque Hydratant Intensif',
-          slug: generateSlug('Masque Hydratant Intensif'),
-          description: 'Un masque hydratant intensif pour une peau éclatante et nourrie. Formulé avec des ingrédients naturels.',
-          price: 29.99,
-          originalPrice: 39.99,
-          isOnSale: true,
-          discountPercentage: 25,
-          brand: 'UrbanBeauty',
-          volume: '50ml',
-          ingredients: 'Aloe Vera, Acide Hyaluronique, Vitamine E',
-          skinType: 'Tous types',
-          categoryId: categories[0].id,
-          stock: 15,
-          lowStockThreshold: 5,
-          sellerId: vendeuse.id,
-          isActive: true,
-          isFeatured: true,
-        },
-        {
-          name: 'Sérum Vitamine C',
-          slug: generateSlug('Sérum Vitamine C'),
-          description: 'Sérum anti-âge à la vitamine C pour un teint éclatant et une peau ferme.',
-          price: 45.00,
-          brand: 'UrbanBeauty',
-          volume: '30ml',
-          ingredients: 'Vitamine C, Acide Ascorbique, Acide Hyaluronique',
-          skinType: 'Peau normale à grasse',
-          categoryId: categories[0].id,
-          stock: 8,
-          lowStockThreshold: 3,
-          sellerId: vendeuse.id,
-          isActive: true,
-          isFeatured: true,
-        },
-        {
-          name: 'Shampooing Réparateur',
-          slug: generateSlug('Shampooing Réparateur'),
-          description: 'Shampooing réparateur pour cheveux abîmés avec kératine et huiles naturelles.',
-          price: 18.50,
-          brand: 'UrbanBeauty',
-          volume: '250ml',
-          ingredients: 'Kératine, Huile d\'Argan, Beurre de Karité',
-          categoryId: categories[1].id,
-          stock: 20,
-          lowStockThreshold: 5,
-          sellerId: vendeuse.id,
-          isActive: true,
-        },
-        {
-          name: 'Huile Capillaire Nourrissante',
-          slug: generateSlug('Huile Capillaire Nourrissante'),
-          description: 'Huile capillaire 100% naturelle pour nourrir et faire briller les cheveux.',
-          price: 24.99,
-          originalPrice: 29.99,
-          isOnSale: true,
-          discountPercentage: 17,
-          brand: 'UrbanBeauty',
-          volume: '100ml',
-          ingredients: 'Huile de Coco, Huile d\'Argan, Jojoba',
-          categoryId: categories[1].id,
-          stock: 12,
-          lowStockThreshold: 4,
-          sellerId: vendeuse.id,
-          isActive: true,
-        },
+    // Images de produits cosmétiques depuis Unsplash (libres d'utilisation)
+    const productImages = {
+      masque: [
+        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=800&q=80',
+        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800&q=80',
       ],
+      serum: [
+        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800&q=80',
+        'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=800&q=80',
+      ],
+      shampooing: [
+        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=800&q=80',
+        'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80',
+      ],
+      huile: [
+        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=800&q=80',
+        'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80',
+      ],
+    };
+
+    // Créer les produits
+    const masque = await prisma.product.create({
+      data: {
+        name: 'Masque Hydratant Intensif',
+        slug: generateSlug('Masque Hydratant Intensif'),
+        description: 'Un masque hydratant intensif pour une peau éclatante et nourrie. Formulé avec des ingrédients naturels.',
+        price: 29.99,
+        originalPrice: 39.99,
+        isOnSale: true,
+        discountPercentage: 25,
+        brand: 'UrbanBeauty',
+        volume: '50ml',
+        ingredients: 'Aloe Vera, Acide Hyaluronique, Vitamine E',
+        skinType: 'Tous types',
+        categoryId: categories[0].id,
+        stock: 15,
+        lowStockThreshold: 5,
+        sellerId: vendeuse.id,
+        isActive: true,
+        isFeatured: true,
+        images: {
+          create: productImages.masque.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Masque Hydratant Intensif',
+            title: 'Masque Hydratant Intensif - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
     });
-    console.log('✅ Produits créés pour la vendeuse');
+
+    const serum = await prisma.product.create({
+      data: {
+        name: 'Sérum Vitamine C',
+        slug: generateSlug('Sérum Vitamine C'),
+        description: 'Sérum anti-âge à la vitamine C pour un teint éclatant et une peau ferme.',
+        price: 45.00,
+        brand: 'UrbanBeauty',
+        volume: '30ml',
+        ingredients: 'Vitamine C, Acide Ascorbique, Acide Hyaluronique',
+        skinType: 'Peau normale à grasse',
+        categoryId: categories[0].id,
+        stock: 8,
+        lowStockThreshold: 3,
+        sellerId: vendeuse.id,
+        isActive: true,
+        isFeatured: true,
+        images: {
+          create: productImages.serum.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Sérum Vitamine C',
+            title: 'Sérum Vitamine C - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const shampooing = await prisma.product.create({
+      data: {
+        name: 'Shampooing Réparateur',
+        slug: generateSlug('Shampooing Réparateur'),
+        description: 'Shampooing réparateur pour cheveux abîmés avec kératine et huiles naturelles.',
+        price: 18.50,
+        brand: 'UrbanBeauty',
+        volume: '250ml',
+        ingredients: 'Kératine, Huile d\'Argan, Beurre de Karité',
+        categoryId: categories[1].id,
+        stock: 20,
+        lowStockThreshold: 5,
+        sellerId: vendeuse.id,
+        isActive: true,
+        images: {
+          create: productImages.shampooing.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Shampooing Réparateur',
+            title: 'Shampooing Réparateur - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const huile = await prisma.product.create({
+      data: {
+        name: 'Huile Capillaire Nourrissante',
+        slug: generateSlug('Huile Capillaire Nourrissante'),
+        description: 'Huile capillaire 100% naturelle pour nourrir et faire briller les cheveux.',
+        price: 24.99,
+        originalPrice: 29.99,
+        isOnSale: true,
+        discountPercentage: 17,
+        brand: 'UrbanBeauty',
+        volume: '100ml',
+        ingredients: 'Huile de Coco, Huile d\'Argan, Jojoba',
+        categoryId: categories[1].id,
+        stock: 12,
+        lowStockThreshold: 4,
+        sellerId: vendeuse.id,
+        isActive: true,
+        images: {
+          create: productImages.huile.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Huile Capillaire Nourrissante',
+            title: 'Huile Capillaire Nourrissante - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    console.log('✅ Produits créés avec images pour la vendeuse');
   }
 
   // Créer un utilisateur ADMIN de test
