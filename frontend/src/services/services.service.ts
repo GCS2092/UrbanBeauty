@@ -3,10 +3,18 @@ import api from '@/lib/api';
 export interface Service {
   id: string;
   name: string;
+  slug: string;
   description?: string;
   price: number;
   duration: number;
+  category?: string;
   available: boolean;
+  maxBookingsPerDay?: number;
+  advanceBookingDays?: number;
+  views?: number;
+  bookingsCount?: number;
+  averageRating?: number;
+  isFeatured?: boolean;
   providerId: string;
   provider?: {
     id: string;
@@ -17,6 +25,11 @@ export interface Service {
   images?: Array<{
     id: string;
     url: string;
+    type?: string;
+    alt?: string;
+    title?: string;
+    order?: number;
+    isPrimary?: boolean;
   }>;
   createdAt: string;
   updatedAt: string;

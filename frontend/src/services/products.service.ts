@@ -3,9 +3,25 @@ import api from '@/lib/api';
 export interface Product {
   id: string;
   name: string;
+  slug: string;
   description: string;
   price: number;
+  originalPrice?: number;
+  discountPrice?: number;
+  isOnSale?: boolean;
+  discountPercentage?: number;
+  brand?: string;
+  volume?: string;
+  ingredients?: string;
+  skinType?: string;
+  sku?: string;
   stock: number;
+  lowStockThreshold?: number;
+  isActive?: boolean;
+  isFeatured?: boolean;
+  views?: number;
+  salesCount?: number;
+  averageRating?: number;
   categoryId: string;
   category?: {
     id: string;
@@ -14,6 +30,11 @@ export interface Product {
   images?: Array<{
     id: string;
     url: string;
+    type?: string;
+    alt?: string;
+    title?: string;
+    order?: number;
+    isPrimary?: boolean;
   }>;
   sellerId: string;
   createdAt: string;
