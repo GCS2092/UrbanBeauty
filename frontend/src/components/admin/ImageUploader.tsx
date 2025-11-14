@@ -48,7 +48,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
       );
 
       onChange([
-        ...images,
+        ...images.map(img => ({ url: img.url, type: img.type || 'URL' as const })),
         {
           url: response.data.url,
           type: 'UPLOADED',
@@ -69,7 +69,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
   const handleUrlAdd = (index: number, url: string) => {
     if (!url.trim()) return;
 
-    const newImages = [...images];
+    const newImages = [...images.map(img => ({ url: img.url, type: img.type || 'URL' as const }))];
     if (index >= newImages.length) {
       newImages.push({ url: url.trim(), type: 'URL' });
     } else {
@@ -80,7 +80,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
   };
 
   const handleRemove = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
+    const newImages = images.filter((_, i) => i !== index).map(img => ({ url: img.url, type: img.type || 'URL' as const }));
     onChange(newImages);
   };
 
