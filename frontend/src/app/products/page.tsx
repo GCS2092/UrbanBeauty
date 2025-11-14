@@ -94,19 +94,20 @@ export default function ProductsPage() {
           ))}
         </div>
 
-        {/* Grille de produits */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                 {filteredProducts.map((product) => (
-                   <ProductCard
-                     key={product.id}
-                     id={product.id}
-                     name={product.name}
-                     price={product.price}
-                     category={product.category?.name}
-                     image={product.images?.[0]?.url}
-                     stock={product.stock}
-                   />
-                 ))}
+        {/* Grille de produits - améliorée pour bien occuper l'espace */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+          {filteredProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              id={product.id}
+              name={product.name}
+              price={product.price}
+              category={product.category?.name}
+              image={product.images?.[0]?.url}
+              stock={product.stock}
+              description={product.description}
+            />
+          ))}
         </div>
 
         {/* Message si pas de produits */}

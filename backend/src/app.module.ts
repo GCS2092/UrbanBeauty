@@ -10,6 +10,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { UsersModule } from './modules/users/users.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { OrdersModule } from './modules/orders/orders.module';
     UsersModule,
     CouponsModule,
     OrdersModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

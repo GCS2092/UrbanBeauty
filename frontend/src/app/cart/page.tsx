@@ -10,12 +10,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { couponsService } from '@/services/coupons.service';
 import { ordersService } from '@/services/orders.service';
+import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
 
 export default function CartPage() {
   const router = useRouter();
   const { items, removeItem, updateQuantity, getTotal, clearCart } = useCartStore();
   const { isAuthenticated, user } = useAuth();
   const notifications = useNotifications();
+  const currency = getSelectedCurrency();
   
   const [checkoutMode, setCheckoutMode] = useState<'choice' | 'register' | 'guest' | 'checkout'>('choice');
   const [couponCode, setCouponCode] = useState('');
@@ -300,21 +302,21 @@ export default function CartPage() {
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between text-gray-600">
                   <span>Sous-total</span>
-                  <span>{subtotal.toFixed(2)} €</span>
+                  <span>{formatCurrency(subtotal, currency)}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Réduction</span>
-                    <span>-{discount.toFixed(2)} €</span>
+                    <span>-{formatCurrency(discount, currency)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-gray-600">
                   <span>Livraison</span>
-                  <span>{shipping === 0 ? 'Gratuite' : `${shipping.toFixed(2)} €`}</span>
+                  <span>{shipping === 0 ? 'Gratuite' : formatCurrency(shipping, currency)}</span>
                 </div>
                 <div className="border-t pt-2 flex justify-between text-lg font-semibold text-gray-900">
                   <span>Total</span>
-                  <span>{total.toFixed(2)} €</span>
+                  <span>{formatCurrency(total, currency)}</span>
                 </div>
               </div>
               
@@ -486,24 +488,24 @@ function GuestCheckoutForm({
                   </div>
                 ))}
                 <div className="border-t pt-2">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Sous-total</span>
-                    <span>{subtotal.toFixed(2)} €</span>
-                  </div>
-                  {discount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Réduction</span>
-                      <span>-{discount.toFixed(2)} €</span>
+                    <div className="flex justify-between text-gray-600">
+                      <span>Sous-total</span>
+                      <span>{formatCurrency(subtotal, currency)}</span>
                     </div>
-                  )}
-                  <div className="flex justify-between text-gray-600">
-                    <span>Livraison</span>
-                    <span>{shipping === 0 ? 'Gratuite' : `${shipping.toFixed(2)} €`}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-lg mt-2">
-                    <span>Total</span>
-                    <span>{total.toFixed(2)} €</span>
-                  </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Réduction</span>
+                        <span>-{formatCurrency(discount, currency)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-gray-600">
+                      <span>Livraison</span>
+                      <span>{shipping === 0 ? 'Gratuite' : formatCurrency(shipping, currency)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-lg mt-2">
+                      <span>Total</span>
+                      <span>{formatCurrency(total, currency)}</span>
+                    </div>
                 </div>
               </div>
             </div>

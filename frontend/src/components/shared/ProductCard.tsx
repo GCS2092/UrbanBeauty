@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart.store';
 import { useNotifications } from '@/components/admin/NotificationProvider';
+import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
 
 interface ProductCardProps {
   id: string;
@@ -13,11 +14,13 @@ interface ProductCardProps {
   image?: string;
   category?: string;
   stock?: number;
+  description?: string;
 }
 
-export default function ProductCard({ id, name, price, image, category, stock = 0 }: ProductCardProps) {
+export default function ProductCard({ id, name, price, image, category, stock = 0, description }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const notifications = useNotifications();
+  const currency = getSelectedCurrency();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -40,35 +43,40 @@ export default function ProductCard({ id, name, price, image, category, stock = 
   };
 
   return (
-    <Link href={`/products/${id}`} className="group">
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+    <Link href={`/products/${id}`} className="group flex flex-col h-full">
+      <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 flex-shrink-0">
         {image ? (
           <Image
             src={image}
             alt={name}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-110"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-pink-100 to-rose-100">
-            <span className="text-4xl">✨</span>
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-100 to-rose-100">
+            <span className="text-6xl">✨</span>
           </div>
         )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
       </div>
-      <div className="mt-4">
+      <div className="mt-4 flex flex-col flex-grow">
         {category && (
-          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{category}</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1 line-clamp-1">{category}</p>
         )}
-        <h3 className="text-sm font-medium text-gray-900 group-hover:text-pink-600 transition-colors">
+        <h3 className="text-sm font-semibold text-gray-900 group-hover:text-pink-600 transition-colors line-clamp-2 min-h-[2.5rem]">
           {name}
         </h3>
-        <p className="mt-1 text-sm font-semibold text-gray-900">{price.toFixed(2)} €</p>
+        {description && (
+          <p className="mt-2 text-xs text-gray-600 line-clamp-2 flex-grow">
+            {description}
+          </p>
+        )}
+        <p className="mt-2 text-base font-bold text-pink-600">{formatCurrency(price, currency)}</p>
         <button
           onClick={handleAddToCart}
           disabled={stock <= 0}
-          className="mt-2 w-full flex items-center justify-center gap-2 bg-pink-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-3 w-full flex items-center justify-center gap-2 bg-pink-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ShoppingBagIcon className="h-4 w-4" />
           {stock <= 0 ? 'Épuisé' : 'Ajouter'}
@@ -77,4 +85,3 @@ export default function ProductCard({ id, name, price, image, category, stock = 
     </Link>
   );
 }
-

@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartStore } from '@/store/cart.store';
+import CurrencySelector from '@/components/shared/CurrencySelector';
 
 function CartBadge() {
   const itemCount = useCartStore((state) => state.getItemCount());
@@ -61,6 +62,11 @@ export default function Header() {
 
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
+            {/* Currency Selector */}
+            <div className="hidden sm:block">
+              <CurrencySelector />
+            </div>
+            
             {/* Search */}
             <button className="hidden sm:block p-2 text-gray-600 hover:text-pink-600 transition-colors">
               <MagnifyingGlassIcon className="h-5 w-5" />

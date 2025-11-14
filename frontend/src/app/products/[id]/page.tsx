@@ -7,6 +7,7 @@ import { useProduct } from '@/hooks/useProducts';
 import { useParams } from 'next/navigation';
 import { useCartStore } from '@/store/cart.store';
 import { useNotifications } from '@/components/admin/NotificationProvider';
+import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -14,6 +15,7 @@ export default function ProductDetailPage() {
   const { data: product, isLoading, error } = useProduct(productId);
   const addItem = useCartStore((state) => state.addItem);
   const notifications = useNotifications();
+  const currency = getSelectedCurrency();
   const [quantity, setQuantity] = useState(1);
 
   const handleAddToCart = () => {
@@ -84,7 +86,7 @@ export default function ProductDetailPage() {
           <div>
             <p className="text-sm text-gray-500 uppercase tracking-wide mb-2">{product.category?.name || 'Produit'}</p>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
-            <p className="text-3xl font-bold text-pink-600 mb-6">{product.price.toFixed(2)} €</p>
+                  <p className="text-3xl font-bold text-pink-600 mb-6">{formatCurrency(product.price, currency)}</p>
             
             <p className="text-gray-600 mb-6">{product.description}</p>
 
