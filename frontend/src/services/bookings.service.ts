@@ -90,5 +90,10 @@ export const bookingsService = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/api/bookings/${id}`);
   },
+
+  getAvailability: async (serviceId: string, date: string) => {
+    const response = await api.get(`/api/bookings/availability/${serviceId}?date=${date}`);
+    return response.data;
+  },
 };
 

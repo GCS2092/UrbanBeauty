@@ -92,6 +92,74 @@ export class BookingsService {
     return booking;
   }
 
+  async getAvailableSlots(serviceId: string, date: string) {
+    // Vérifier que le service existe
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Service introuvable');
+    }
+
+    // Récupérer toutes les réservations pour ce service à cette date
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        serviceId,
+        date: new Date(date),
+        status: {
+          not: 'CANCELLED',
+        },
+      },
+      select: {
+        startTime: true,
+        endTime: true,
+      },
+    });
+
+    // Générer les créneaux disponibles (9h-18h par défaut, avec des créneaux de la durée du service)
+    const startHour = 9; // 9h
+    const endHour = 18; // 18h
+    const slotDuration = service.duration; // Durée du service en minutes
+    const slots: Array<{ time: string; available: boolean }> = [];
+
+    // Créer les créneaux de 30 minutes
+    for (let hour = startHour; hour < endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const slotTime = new Date(`${date}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`);
+        const slotEndTime = new Date(slotTime.getTime() + slotDuration * 60000);
+
+        // Vérifier si le créneau chevauche avec une réservation existante
+        const isAvailable = !bookings.some(booking => {
+          const bookingStart = new Date(booking.startTime);
+          const bookingEnd = new Date(booking.endTime);
+          
+          // Vérifier si le créneau chevauche avec la réservation
+          return (slotTime < bookingEnd && slotEndTime > bookingStart);
+        });
+
+        // Vérifier que le créneau ne dépasse pas l'heure de fin
+        if (slotEndTime.getHours() <= endHour) {
+          slots.push({
+            time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+            available: isAvailable,
+          });
+        }
+      }
+    }
+
+    return {
+      serviceId,
+      date,
+      duration: slotDuration,
+      slots,
+      bookedSlots: bookings.map(b => ({
+        start: new Date(b.startTime).toISOString(),
+        end: new Date(b.endTime).toISOString(),
+      })),
+    };
+  }
+
   async create(createBookingDto: CreateBookingDto, userId: string) {
     // Vérifier que le service existe
     const service = await this.prisma.service.findUnique({

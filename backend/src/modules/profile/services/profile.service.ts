@@ -44,5 +44,78 @@ export class ProfileService {
       },
     });
   }
+
+  async findByProviderId(providerId: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: providerId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+        services: {
+          include: {
+            images: true,
+          },
+          where: {
+            available: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+        portfolio: {
+          orderBy: {
+            order: 'asc',
+          },
+        },
+      },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Prestataire introuvable');
+    }
+
+    // Récupérer les avis pour ce prestataire (via les services)
+    const serviceIds = profile.services.map(s => s.id);
+    const reviews = await this.prisma.review.findMany({
+      where: {
+        serviceId: {
+          in: serviceIds,
+        },
+        isPublished: true,
+      },
+      include: {
+        user: {
+          include: {
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+        service: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 10,
+    });
+
+    return {
+      ...profile,
+      reviews,
+    };
+  }
 }
 

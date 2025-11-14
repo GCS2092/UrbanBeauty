@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { BookingsService } from '../services/bookings.service';
 import { CreateBookingDto } from '../dto/create-booking.dto';
@@ -31,6 +32,14 @@ export class BookingsController {
     }
     // Sinon, retourner les réservations de l'utilisateur
     return this.bookingsService.findAll(user.userId);
+  }
+
+  @Get('availability/:serviceId')
+  getAvailability(@Param('serviceId') serviceId: string, @Query('date') date: string) {
+    if (!date) {
+      throw new BadRequestException('La date est requise');
+    }
+    return this.bookingsService.getAvailableSlots(serviceId, date);
   }
 
   @Get(':id')
