@@ -21,33 +21,21 @@ export class NotificationsService {
       throw new NotFoundException('Utilisateur introuvable');
     }
 
-    // Utiliser NotificationToken si disponible, sinon stocker dans Profile temporairement
-    try {
-      // Essayer d'utiliser NotificationToken
-      await this.prisma.notificationToken.upsert({
-        where: { userId },
-        update: { token: registerTokenDto.token },
-        create: { userId, token: registerTokenDto.token },
-      });
-    } catch (error) {
-      // Si NotificationToken n'existe pas, on continue sans erreur
-      // Les notifications ne fonctionneront pas mais l'application continue
-      console.warn('NotificationToken model not found, notifications will not work');
-    }
+    // Enregistrer ou mettre à jour le token FCM
+    await this.prisma.notificationToken.upsert({
+      where: { userId },
+      update: { token: registerTokenDto.token },
+      create: { userId, token: registerTokenDto.token },
+    });
 
     return { success: true, message: 'Token FCM enregistré avec succès' };
   }
 
   async getUserFCMToken(userId: string): Promise<string | null> {
-    try {
-      const notificationToken = await this.prisma.notificationToken.findUnique({
-        where: { userId },
-      });
-      return notificationToken?.token || null;
-    } catch (error) {
-      // Si NotificationToken n'existe pas, retourner null
-      return null;
-    }
+    const notificationToken = await this.prisma.notificationToken.findUnique({
+      where: { userId },
+    });
+    return notificationToken?.token || null;
   }
 
   async sendToUser(userId: string, sendNotificationDto: SendNotificationDto) {
