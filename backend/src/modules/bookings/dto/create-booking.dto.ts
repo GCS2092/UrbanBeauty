@@ -19,6 +19,10 @@ export class CreateBookingDto {
 
   @IsString()
   @IsOptional()
+  clientName?: string; // Nom complet du client (pour réservations guest)
+
+  @IsString()
+  @IsOptional()
   clientPhone?: string;
 
   @IsString()

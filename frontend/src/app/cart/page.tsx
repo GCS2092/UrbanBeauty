@@ -10,7 +10,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { couponsService } from '@/services/coupons.service';
 import { ordersService } from '@/services/orders.service';
-import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
+import { formatCurrency, getSelectedCurrency, setSelectedCurrency, Currency } from '@/utils/currency';
+import CurrencySelector from '@/components/shared/CurrencySelector';
 
 export default function CartPage() {
   const router = useRouter();
@@ -189,7 +190,13 @@ export default function CartPage() {
           Continuer les achats
         </Link>
 
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Panier</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold text-gray-900">Panier</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600">Devise :</span>
+            <CurrencySelector />
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Liste des articles */}

@@ -49,9 +49,10 @@ export class BookingsController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  create(@Body() createBookingDto: CreateBookingDto, @CurrentUser() user: any) {
-    return this.bookingsService.create(createBookingDto, user.userId);
+  create(@Body() createBookingDto: CreateBookingDto, @CurrentUser() user?: any) {
+    // Permettre les réservations sans authentification (guest bookings)
+    const userId = user?.userId;
+    return this.bookingsService.create(createBookingDto, userId);
   }
 
   @Patch(':id')

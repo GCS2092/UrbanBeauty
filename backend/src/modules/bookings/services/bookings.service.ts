@@ -160,7 +160,7 @@ export class BookingsService {
     };
   }
 
-  async create(createBookingDto: CreateBookingDto, userId: string) {
+  async create(createBookingDto: CreateBookingDto, userId?: string) {
     // Vérifier que le service existe
     const service = await this.prisma.service.findUnique({
       where: { id: createBookingDto.serviceId },
@@ -175,6 +175,11 @@ export class BookingsService {
 
     if (!service.available) {
       throw new BadRequestException('Ce service n\'est pas disponible pour le moment');
+    }
+
+    // Pour les réservations guest, vérifier que les informations client sont fournies
+    if (!userId && (!createBookingDto.clientName || !createBookingDto.clientEmail || !createBookingDto.clientPhone)) {
+      throw new BadRequestException('Les informations client (nom, email, téléphone) sont requises pour les réservations sans compte');
     }
 
     const bookingDate = new Date(createBookingDto.date);
@@ -215,12 +220,13 @@ export class BookingsService {
     return this.prisma.booking.create({
       data: {
         bookingNumber: generateBookingNumber(),
-        userId,
+        userId: userId || null,
         serviceId: createBookingDto.serviceId,
         date: bookingDate,
         startTime,
         endTime,
         location: createBookingDto.location,
+        clientName: createBookingDto.clientName,
         clientPhone: createBookingDto.clientPhone,
         clientEmail: createBookingDto.clientEmail,
         notes: createBookingDto.notes,

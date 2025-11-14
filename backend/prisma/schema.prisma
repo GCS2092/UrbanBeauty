@@ -229,14 +229,15 @@ model OrderItem {
 model Booking {
   id                 String        @id @default(uuid())
   bookingNumber      String        @unique // Numéro de réservation unique
-  userId             String
-  user               User          @relation(fields: [userId], references: [id])
+  userId             String? // Peut être null pour les réservations guest
+  user               User?         @relation(fields: [userId], references: [id])
   serviceId          String
   service            Service       @relation(fields: [serviceId], references: [id])
   date               DateTime // Date du rendez-vous
   startTime          DateTime // Heure de début
   endTime            DateTime // Heure de fin (calculée)
   location           String? // Lieu du rendez-vous
+  clientName         String? // Nom complet du client (pour réservations guest)
   clientPhone        String? // Téléphone du client
   clientEmail        String? // Email du client
   status             BookingStatus @default(PENDING)

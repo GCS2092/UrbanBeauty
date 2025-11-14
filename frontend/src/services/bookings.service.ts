@@ -3,12 +3,13 @@ import api from '@/lib/api';
 export interface Booking {
   id: string;
   bookingNumber: string;
-  userId: string;
+  userId?: string; // Peut être null pour les réservations guest
   serviceId: string;
   date: string;
   startTime: string;
   endTime: string;
   location?: string;
+  clientName?: string; // Pour les réservations guest
   clientPhone?: string;
   clientEmail?: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
@@ -51,6 +52,7 @@ export interface CreateBookingDto {
   date: string;
   startTime: string;
   location?: string;
+  clientName?: string; // Pour les réservations guest
   clientPhone?: string;
   clientEmail?: string;
   notes?: string;
