@@ -8,8 +8,8 @@ import { ArrowLeftIcon, TagIcon, CreditCardIcon } from '@heroicons/react/24/outl
 import { useCartStore } from '@/store/cart.store';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
+import { useCreateOrder } from '@/hooks/useOrders';
 import { couponsService } from '@/services/coupons.service';
-import { ordersService } from '@/services/orders.service';
 import { formatCurrency, getSelectedCurrency, convertCurrency } from '@/utils/currency';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 
@@ -17,6 +17,7 @@ function CheckoutContent() {
   const router = useRouter();
   const { items, getTotal, clearCart } = useCartStore();
   const { user } = useAuth();
+  const { mutate: createOrder, isPending: isSubmitting } = useCreateOrder();
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
 
@@ -32,7 +33,6 @@ function CheckoutContent() {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [discount, setDiscount] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (user?.profile) {
@@ -75,30 +75,30 @@ function CheckoutContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    try {
-      const orderItems = items.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.price,
-      }));
+    const orderItems = items.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price,
+    }));
 
-      const orderData = {
-        ...formData,
-        items: orderItems,
-        couponCode: appliedCoupon?.code,
-      };
+    const orderData = {
+      ...formData,
+      items: orderItems,
+      couponCode: appliedCoupon?.code,
+      shippingCost: subtotal > 50 ? 0 : 5.99,
+    };
 
-      const newOrder = await ordersService.create(orderData);
-      notifications.success('Commande passée', `Votre commande #${newOrder.orderNumber} a été enregistrée !`);
-      clearCart();
-      router.push(`/order-success?orderNumber=${newOrder.orderNumber}`);
-    } catch (error: any) {
-      notifications.error('Erreur de commande', error?.response?.data?.message || 'Une erreur est survenue lors de la commande.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    createOrder(orderData, {
+      onSuccess: (newOrder) => {
+        notifications.success('Commande passée', `Votre commande #${newOrder.orderNumber} a été enregistrée !`);
+        clearCart();
+        router.push(`/order-success?orderNumber=${newOrder.orderNumber}`);
+      },
+      onError: (error: any) => {
+        notifications.error('Erreur de commande', error?.response?.data?.message || 'Une erreur est survenue lors de la commande.');
+      },
+    });
   };
 
   if (items.length === 0) {

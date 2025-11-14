@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
@@ -10,9 +11,17 @@ import Image from 'next/image';
 
 function AdminProductsContent() {
   const router = useRouter();
-  const { data: products = [], isLoading, error } = useProducts();
+  const { data: products = [], isLoading, error, refetch } = useProducts();
   const { mutate: deleteProduct } = useDeleteProduct();
   const notifications = useNotifications();
+
+  // Rafraîchir automatiquement toutes les 30 secondes pour voir les mises à jour de stock
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   if (isLoading) {
     return (

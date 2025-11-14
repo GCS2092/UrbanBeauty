@@ -24,7 +24,9 @@ export function useCreateOrder() {
   return useMutation({
     mutationFn: (data: CreateOrderDto) => ordersService.create(data),
     onSuccess: () => {
+      // Invalider les queries pour rafraîchir les données
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] }); // Rafraîchir les produits pour mettre à jour le stock
     },
   });
 }

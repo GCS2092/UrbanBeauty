@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
@@ -12,10 +13,18 @@ import Image from 'next/image';
 
 function ProductsPageContent() {
   const { user } = useAuth();
-  const { data: products = [], isLoading } = useProducts();
+  const { data: products = [], isLoading, refetch } = useProducts();
   const { mutate: deleteProduct } = useDeleteProduct();
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
+
+  // Rafraîchir automatiquement toutes les 30 secondes pour voir les mises à jour de stock
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   // Filtrer les produits de la vendeuse
   const myProducts = user?.role === 'VENDEUSE' 

@@ -7,6 +7,7 @@ export function useProducts() {
   return useQuery({
     queryKey: ['products'],
     queryFn: () => productsService.getAll(),
+    refetchInterval: 30000, // Rafraîchir toutes les 30 secondes pour mettre à jour le stock
   });
 }
 
