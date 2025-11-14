@@ -32,7 +32,14 @@ function AnalyticsContent() {
   const myBookings = isProvider ? bookings : [];
 
   // Calculer les statistiques pour les vendeuses
-  const sellerStats = isSeller ? {
+  const sellerStats: {
+    totalProducts: number;
+    totalOrders: number;
+    pendingOrders: number;
+    completedOrders: number;
+    totalRevenue: number;
+    lowStockProducts: number;
+  } | null = isSeller ? {
     totalProducts: myProducts.length,
     totalOrders: myOrders.length,
     pendingOrders: myOrders.filter(o => o.status === 'PENDING' || o.status === 'PROCESSING').length,
@@ -49,7 +56,13 @@ function AnalyticsContent() {
   } : null;
 
   // Calculer les statistiques pour les coiffeuses
-  const providerStats = isProvider ? {
+  const providerStats: {
+    totalServices: number;
+    totalBookings: number;
+    pendingBookings: number;
+    completedBookings: number;
+    totalRevenue: number;
+  } | null = isProvider ? {
     totalServices: myServices.length,
     totalBookings: myBookings.length,
     pendingBookings: myBookings.filter(b => b.status === 'PENDING').length,
