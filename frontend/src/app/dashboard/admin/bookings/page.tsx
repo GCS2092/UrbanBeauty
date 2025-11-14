@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { useBookings } from '@/hooks/useBookings';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 function AdminBookingsContent() {
-  // TODO: Créer un hook useBookings pour récupérer les réservations
-  const bookings: any[] = [];
+  const { data: bookings = [], isLoading } = useBookings();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -21,7 +23,12 @@ function AdminBookingsContent() {
 
         <h1 className="text-4xl font-bold text-gray-900 mb-8">Gestion des Réservations</h1>
 
-        {bookings.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Chargement...</p>
+          </div>
+        ) : bookings.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <span className="text-6xl mb-4 block">📅</span>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Aucune réservation</h2>
@@ -63,16 +70,26 @@ function AdminBookingsContent() {
                         <div className="text-sm text-gray-900">{booking.service?.name || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{booking.clientName || booking.clientEmail}</div>
+                        <div className="text-sm text-gray-900">
+                          {booking.user?.profile ? `${booking.user.profile.firstName} ${booking.user.profile.lastName}` : booking.user?.email || booking.clientEmail || 'N/A'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-gray-500">
-                          {new Date(booking.date).toLocaleDateString('fr-FR')}
+                          {format(new Date(booking.date), 'dd MMM yyyy', { locale: fr })}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                          {booking.status}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          booking.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                          booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                          booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {booking.status === 'PENDING' ? 'En attente' :
+                           booking.status === 'CONFIRMED' ? 'Confirmée' :
+                           booking.status === 'CANCELLED' ? 'Annulée' :
+                           'Terminée'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

@@ -43,7 +43,7 @@ export default function CartPage() {
       
       setDiscount(discount);
       setAppliedCoupon({ code: coupon.code, discount });
-      notifications.success('Coupon appliqué', `Vous bénéficiez de ${discount.toFixed(2)} € de réduction !`);
+      notifications.success('Coupon appliqué', `Vous bénéficiez de ${formatCurrency(discount, currency)} de réduction !`);
     } catch (error: any) {
       notifications.error('Coupon invalide', error?.response?.data?.message || 'Le code coupon n\'est pas valide');
       setCouponCode('');
@@ -143,13 +143,13 @@ export default function CartPage() {
               {items.map((item) => (
                 <div key={item.id} className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">{item.name} x{item.quantity}</span>
-                  <span className="font-medium">{(item.price * item.quantity).toFixed(2)} €</span>
+                  <span className="font-medium">{formatCurrency(item.price * item.quantity, currency)}</span>
                 </div>
               ))}
               <div className="border-t pt-2 mt-2">
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span>{subtotal.toFixed(2)} €</span>
+                  <span>{formatCurrency(subtotal, currency)}</span>
                 </div>
               </div>
             </div>
@@ -212,7 +212,7 @@ export default function CartPage() {
                 )}
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                  <p className="text-sm text-gray-600">{item.price.toFixed(2)} €</p>
+                  <p className="text-sm text-gray-600">{formatCurrency(item.price, currency)}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 border border-gray-300 rounded-lg">
@@ -234,7 +234,7 @@ export default function CartPage() {
                     </button>
                   </div>
                   <span className="text-gray-900 font-medium w-20 text-right">
-                    {(item.price * item.quantity).toFixed(2)} €
+                    {formatCurrency(item.price * item.quantity, currency)}
                   </span>
                   <button
                     onClick={() => removeItem(item.productId)}
@@ -294,7 +294,7 @@ export default function CartPage() {
                     </button>
                   </div>
                   <p className="text-xs text-green-700 mt-1">
-                    -{appliedCoupon.discount.toFixed(2)} €
+                    -{formatCurrency(appliedCoupon.discount, currency)}
                   </p>
                 </div>
               )}
@@ -322,7 +322,7 @@ export default function CartPage() {
               
               {subtotal < 50 && (
                 <p className="text-xs text-gray-500 mb-4 text-center">
-                  Ajoutez {(50 - subtotal).toFixed(2)} € pour la livraison gratuite
+                  Ajoutez {formatCurrency(50 - subtotal, currency)} pour la livraison gratuite
                 </p>
               )}
 
@@ -355,6 +355,7 @@ function GuestCheckoutForm({
 }: any) {
   const router = useRouter();
   const notifications = useNotifications();
+  const currency = getSelectedCurrency();
   const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
@@ -484,7 +485,7 @@ function GuestCheckoutForm({
                 {items.map((item: any) => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <span className="text-gray-600">{item.name} x{item.quantity}</span>
-                    <span>{(item.price * item.quantity).toFixed(2)} €</span>
+                    <span>{formatCurrency(item.price * item.quantity, currency)}</span>
                   </div>
                 ))}
                 <div className="border-t pt-2">

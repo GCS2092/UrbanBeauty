@@ -3,9 +3,26 @@
 import Link from 'next/link';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrders } from '@/hooks/useOrders';
+import { useBookings } from '@/hooks/useBookings';
+import { 
+  ShoppingBagIcon, 
+  CalendarIcon, 
+  UserIcon,
+  CubeIcon,
+  ScissorsIcon,
+  ChartBarIcon,
+} from '@heroicons/react/24/outline';
 
 function DashboardContent() {
   const { user } = useAuth();
+  const { data: orders = [] } = useOrders();
+  const isProvider = user?.role === 'COIFFEUSE';
+  const { data: bookings = [] } = useBookings(isProvider);
+
+  const pendingOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'PROCESSING').length;
+  const pendingBookings = bookings.filter(b => b.status === 'PENDING').length;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -31,33 +48,152 @@ function DashboardContent() {
           </div>
         )}
 
+        {/* Stats rapides */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {user?.role === 'CLIENT' && (
+            <>
+              <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Commandes</p>
+                    <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
+                  </div>
+                  <ShoppingBagIcon className="h-8 w-8 text-pink-600" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Réservations</p>
+                    <p className="text-2xl font-bold text-gray-900">{bookings.length}</p>
+                  </div>
+                  <CalendarIcon className="h-8 w-8 text-pink-600" />
+                </div>
+              </div>
+            </>
+          )}
+
+          {user?.role === 'COIFFEUSE' && (
+            <>
+              <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Réservations</p>
+                    <p className="text-2xl font-bold text-gray-900">{bookings.length}</p>
+                  </div>
+                  <CalendarIcon className="h-8 w-8 text-pink-600" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">En attente</p>
+                    <p className="text-2xl font-bold text-yellow-600">{pendingBookings}</p>
+                  </div>
+                  <CalendarIcon className="h-8 w-8 text-yellow-600" />
+                </div>
+              </div>
+            </>
+          )}
+
+          {user?.role === 'VENDEUSE' && (
+            <>
+              <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Commandes</p>
+                    <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
+                  </div>
+                  <ShoppingBagIcon className="h-8 w-8 text-pink-600" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">En attente</p>
+                    <p className="text-2xl font-bold text-yellow-600">{pendingOrders}</p>
+                  </div>
+                  <ShoppingBagIcon className="h-8 w-8 text-yellow-600" />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Mes Commandes */}
-          <Link
-            href="/dashboard/orders"
-            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
-          >
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Mes Commandes</h2>
-            <p className="text-gray-600">Suivez vos commandes</p>
-          </Link>
+          {(user?.role === 'CLIENT' || user?.role === 'VENDEUSE') && (
+            <Link
+              href="/dashboard/orders"
+              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+            >
+              <ShoppingBagIcon className="h-8 w-8 text-pink-600 mb-3" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Mes Commandes</h2>
+              <p className="text-gray-600">Suivez vos commandes</p>
+            </Link>
+          )}
 
           {/* Mes Réservations */}
-          <Link
-            href="/dashboard/bookings"
-            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
-          >
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Mes Réservations</h2>
-            <p className="text-gray-600">Gérez vos rendez-vous</p>
-          </Link>
+          {(user?.role === 'CLIENT' || user?.role === 'COIFFEUSE') && (
+            <Link
+              href="/dashboard/bookings"
+              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+            >
+              <CalendarIcon className="h-8 w-8 text-pink-600 mb-3" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                {user?.role === 'COIFFEUSE' ? 'Mes Réservations Reçues' : 'Mes Réservations'}
+              </h2>
+              <p className="text-gray-600">
+                {user?.role === 'COIFFEUSE' ? 'Gérez les réservations de vos services' : 'Gérez vos rendez-vous'}
+              </p>
+            </Link>
+          )}
+
+          {/* Mes Produits (VENDEUSE) */}
+          {user?.role === 'VENDEUSE' && (
+            <Link
+              href="/dashboard/products"
+              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+            >
+              <CubeIcon className="h-8 w-8 text-pink-600 mb-3" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Mes Produits</h2>
+              <p className="text-gray-600">Gérez votre catalogue</p>
+            </Link>
+          )}
+
+          {/* Mes Services (COIFFEUSE) */}
+          {user?.role === 'COIFFEUSE' && (
+            <Link
+              href="/dashboard/services"
+              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+            >
+              <ScissorsIcon className="h-8 w-8 text-pink-600 mb-3" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Mes Services</h2>
+              <p className="text-gray-600">Gérez vos services</p>
+            </Link>
+          )}
 
           {/* Mon Profil */}
           <Link
             href="/dashboard/profile"
             className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
           >
+            <UserIcon className="h-8 w-8 text-pink-600 mb-3" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Mon Profil</h2>
             <p className="text-gray-600">Modifiez vos informations</p>
           </Link>
+
+          {/* Analytics (VENDEUSE/COIFFEUSE) */}
+          {(user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE') && (
+            <Link
+              href="/dashboard/analytics"
+              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+            >
+              <ChartBarIcon className="h-8 w-8 text-pink-600 mb-3" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Statistiques</h2>
+              <p className="text-gray-600">Consultez vos performances</p>
+            </Link>
+          )}
         </div>
       </div>
     </div>

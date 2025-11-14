@@ -3,10 +3,14 @@
 import Link from 'next/link';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { useOrders } from '@/hooks/useOrders';
+import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 function AdminOrdersContent() {
-  // TODO: Créer un hook useOrders pour récupérer les commandes
-  const orders: any[] = [];
+  const { data: orders = [], isLoading } = useOrders(true);
+  const currency = getSelectedCurrency();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -21,7 +25,12 @@ function AdminOrdersContent() {
 
         <h1 className="text-4xl font-bold text-gray-900 mb-8">Gestion des Commandes</h1>
 
-        {orders.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Chargement...</p>
+          </div>
+        ) : orders.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <span className="text-6xl mb-4 block">📦</span>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Aucune commande</h2>
@@ -63,16 +72,28 @@ function AdminOrdersContent() {
                         <div className="text-sm text-gray-900">{order.customerName || order.customerEmail}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{order.total?.toFixed(2)} €</span>
+                        <span className="text-sm font-medium text-gray-900">{formatCurrency(order.total, currency)}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                          {order.status}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                          order.status === 'PROCESSING' ? 'bg-blue-100 text-blue-800' :
+                          order.status === 'PAID' ? 'bg-green-100 text-green-800' :
+                          order.status === 'SHIPPED' ? 'bg-purple-100 text-purple-800' :
+                          order.status === 'DELIVERED' ? 'bg-gray-100 text-gray-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {order.status === 'PENDING' ? 'En attente' :
+                           order.status === 'PROCESSING' ? 'En traitement' :
+                           order.status === 'PAID' ? 'Payée' :
+                           order.status === 'SHIPPED' ? 'Expédiée' :
+                           order.status === 'DELIVERED' ? 'Livrée' :
+                           'Annulée'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-gray-500">
-                          {new Date(order.createdAt).toLocaleDateString('fr-FR')}
+                          {format(new Date(order.createdAt), 'dd MMM yyyy', { locale: fr })}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
