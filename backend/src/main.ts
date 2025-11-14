@@ -45,6 +45,10 @@ async function bootstrap() {
     }
   } catch (error) {
     logger.error('❌ Failed to start application', error);
+    // Log stack trace for debugging
+    if (error instanceof Error) {
+      logger.error('Stack trace:', error.stack);
+    }
     process.exit(1);
   }
 }
