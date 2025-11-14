@@ -17,7 +17,7 @@ import * as uuid from 'uuid';
 
 @Controller('upload')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'VENDEUSE')
+@Roles('ADMIN', 'VENDEUSE', 'COIFFEUSE')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 

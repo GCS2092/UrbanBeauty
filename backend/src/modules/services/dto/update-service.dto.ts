@@ -1,4 +1,6 @@
-import { IsString, IsNumber, IsOptional, Min, IsBoolean } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, IsBoolean, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ImageDto } from './create-service.dto';
 
 export class UpdateServiceDto {
   @IsString()
@@ -22,5 +24,15 @@ export class UpdateServiceDto {
   @IsBoolean()
   @IsOptional()
   available?: boolean;
+
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ImageDto)
+  @IsOptional()
+  images?: ImageDto[];
 }
 

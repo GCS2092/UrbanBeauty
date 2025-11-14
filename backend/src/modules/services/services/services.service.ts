@@ -86,12 +86,24 @@ export class ServicesService {
       throw new NotFoundException('Profil introuvable. Veuillez compléter votre profil.');
     }
 
+    const { images, ...serviceData } = createServiceDto;
+
     return this.prisma.service.create({
       data: {
-        ...createServiceDto,
+        ...serviceData,
         slug: generateSlug(createServiceDto.name),
         providerId: profile.id,
         available: createServiceDto.available ?? true,
+        images: images && images.length > 0 ? {
+          create: images.map((img, index) => ({
+            url: img.url,
+            type: (img.type || 'URL') as 'URL' | 'UPLOADED',
+            alt: img.alt || createServiceDto.name,
+            title: img.title || createServiceDto.name,
+            order: img.order ?? index,
+            isPrimary: img.isPrimary ?? (index === 0),
+          })),
+        } : undefined,
       },
       include: {
         provider: {
@@ -131,9 +143,33 @@ export class ServicesService {
       }
     }
 
+    const { images, ...serviceData } = updateServiceDto;
+
+    // Si des images sont fournies, supprimer les anciennes et créer les nouvelles
+    if (images !== undefined) {
+      // Supprimer les anciennes images
+      await this.prisma.image.deleteMany({
+        where: { serviceId: id },
+      });
+    }
+
     return this.prisma.service.update({
       where: { id },
-      data: updateServiceDto,
+      data: {
+        ...serviceData,
+        ...(images && images.length > 0 ? {
+          images: {
+            create: images.map((img, index) => ({
+              url: img.url,
+              type: (img.type || 'URL') as 'URL' | 'UPLOADED',
+              alt: img.alt || service.name,
+              title: img.title || service.name,
+              order: img.order ?? index,
+              isPrimary: img.isPrimary ?? (index === 0),
+            })),
+          },
+        } : {}),
+      },
       include: {
         provider: {
           include: {

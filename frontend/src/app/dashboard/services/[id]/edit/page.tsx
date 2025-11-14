@@ -7,6 +7,7 @@ import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useService, useUpdateService } from '@/hooks/useServices';
 import { useNotifications } from '@/components/admin/NotificationProvider';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 function EditServiceForm({ serviceId }: { serviceId: string }) {
   const router = useRouter();
@@ -22,6 +23,7 @@ function EditServiceForm({ serviceId }: { serviceId: string }) {
     category: '',
     available: true,
   });
+  const [images, setImages] = useState<Array<{ url: string; type: 'URL' | 'UPLOADED' }>>([]);
 
   useEffect(() => {
     if (service) {
@@ -33,6 +35,14 @@ function EditServiceForm({ serviceId }: { serviceId: string }) {
         category: service.category || '',
         available: service.available ?? true,
       });
+      setImages(
+        service.images && service.images.length > 0
+          ? service.images.map((img) => ({
+              url: img.url,
+              type: (img.type || 'URL') as 'URL' | 'UPLOADED',
+            }))
+          : []
+      );
     }
   }, [service]);
 
@@ -49,6 +59,12 @@ function EditServiceForm({ serviceId }: { serviceId: string }) {
           duration: parseInt(formData.duration),
           available: formData.available,
           category: formData.category || undefined,
+          images: images.length > 0 ? images.map((img, index) => ({
+            url: img.url,
+            type: img.type,
+            order: index,
+            isPrimary: index === 0,
+          })) : undefined,
         },
       },
       {
@@ -186,6 +202,17 @@ function EditServiceForm({ serviceId }: { serviceId: string }) {
             <label htmlFor="available" className="ml-2 block text-sm text-gray-700">
               Service disponible
             </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Images du service
+            </label>
+            <ImageUploader
+              images={images}
+              onChange={setImages}
+              maxImages={5}
+            />
           </div>
 
           <div className="flex gap-4 pt-4">

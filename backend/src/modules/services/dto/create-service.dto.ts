@@ -1,4 +1,31 @@
-import { IsString, IsNumber, IsNotEmpty, Min, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsNumber, IsNotEmpty, Min, IsOptional, IsBoolean, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class ImageDto {
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @IsString()
+  @IsOptional()
+  type?: 'URL' | 'UPLOADED';
+
+  @IsString()
+  @IsOptional()
+  alt?: string;
+
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @IsNumber()
+  @IsOptional()
+  order?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  isPrimary?: boolean;
+}
 
 export class CreateServiceDto {
   @IsString()
@@ -20,5 +47,15 @@ export class CreateServiceDto {
   @IsBoolean()
   @IsOptional()
   available?: boolean;
+
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ImageDto)
+  @IsOptional()
+  images?: ImageDto[];
 }
 
