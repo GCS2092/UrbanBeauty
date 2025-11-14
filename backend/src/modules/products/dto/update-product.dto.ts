@@ -1,4 +1,6 @@
-import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ImageDto } from './create-product.dto';
 
 export class UpdateProductDto {
   @IsString()
@@ -22,5 +24,11 @@ export class UpdateProductDto {
   @Min(0)
   @IsOptional()
   stock?: number;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ImageDto)
+  images?: ImageDto[];
 }
 

@@ -65,11 +65,23 @@ export class ProductsService {
       throw new NotFoundException('Catégorie introuvable');
     }
 
+    const { images, ...productData } = createProductDto;
+
     return this.prisma.product.create({
       data: {
-        ...createProductDto,
+        ...productData,
         slug: generateSlug(createProductDto.name),
         sellerId: userId,
+        images: images && images.length > 0 ? {
+          create: images.map((img, index) => ({
+            url: img.url,
+            type: (img.type || 'URL') as 'URL' | 'UPLOADED',
+            alt: img.alt || createProductDto.name,
+            title: img.title || createProductDto.name,
+            order: img.order ?? index,
+            isPrimary: img.isPrimary ?? (index === 0),
+          })),
+        } : undefined,
       },
       include: {
         category: true,
@@ -88,7 +100,21 @@ export class ProductsService {
 
     return this.prisma.product.update({
       where: { id },
-      data: updateProductDto,
+      data: {
+        ...productData,
+        ...(images && images.length > 0 ? {
+          images: {
+            create: images.map((img, index) => ({
+              url: img.url,
+              type: (img.type || 'URL') as 'URL' | 'UPLOADED',
+              alt: img.alt || product.name,
+              title: img.title || product.name,
+              order: img.order ?? index,
+              isPrimary: img.isPrimary ?? (index === 0),
+            })),
+          },
+        } : {}),
+      },
       include: {
         category: true,
         images: true,

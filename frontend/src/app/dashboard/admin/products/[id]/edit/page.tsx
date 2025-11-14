@@ -22,6 +22,7 @@ function EditProductForm({ productId }: { productId: string }) {
     price: '',
     stock: '',
     categoryId: '',
+    imageUrls: [''],
   });
 
   useEffect(() => {
@@ -32,12 +33,30 @@ function EditProductForm({ productId }: { productId: string }) {
         price: product.price.toString(),
         stock: product.stock.toString(),
         categoryId: product.categoryId,
+        imageUrls: product.images && product.images.length > 0 
+          ? product.images.map(img => img.url)
+          : [''],
       });
     }
   }, [product]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Filtrer les URLs vides et créer les images
+    const images = formData.imageUrls
+      .filter(url => url.trim() !== '')
+      .map((url, index) => ({
+        url: url.trim(),
+        type: 'URL' as const,
+        order: index,
+        isPrimary: index === 0,
+      }));
+
+    if (images.length === 0) {
+      notifications.error('Erreur', 'Veuillez ajouter au moins une image');
+      return;
+    }
 
     updateProduct(
       {
@@ -48,6 +67,7 @@ function EditProductForm({ productId }: { productId: string }) {
           price: parseFloat(formData.price),
           stock: parseInt(formData.stock),
           categoryId: formData.categoryId,
+          images,
         },
       },
       {
@@ -181,6 +201,51 @@ function EditProductForm({ productId }: { productId: string }) {
             </select>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Images (URLs) *
+            </label>
+            <div className="space-y-2">
+              {formData.imageUrls.map((url, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => {
+                      const newUrls = [...formData.imageUrls];
+                      newUrls[index] = e.target.value;
+                      setFormData({ ...formData, imageUrls: newUrls });
+                    }}
+                    placeholder="https://example.com/image.jpg"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
+                  />
+                  {formData.imageUrls.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newUrls = formData.imageUrls.filter((_, i) => i !== index);
+                        setFormData({ ...formData, imageUrls: newUrls });
+                      }}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, imageUrls: [...formData.imageUrls, ''] })}
+                className="text-sm text-pink-600 hover:text-pink-700 font-medium"
+              >
+                + Ajouter une autre image
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Ajoutez au moins une image URL. Vous pouvez ajouter plusieurs images.
+            </p>
+          </div>
+
           <div className="flex items-center justify-end space-x-4 pt-4">
             <Link
               href="/dashboard/admin/products"
@@ -202,10 +267,11 @@ function EditProductForm({ productId }: { productId: string }) {
   );
 }
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default function EditProductPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const productId = typeof params === 'object' && 'id' in params ? params.id : '';
   return (
     <ProtectedRoute requiredRole="ADMIN">
-      <EditProductForm productId={params?.id || ''} />
+      <EditProductForm productId={productId} />
     </ProtectedRoute>
   );
 }

@@ -4,9 +4,12 @@ import Link from 'next/link';
 import { ArrowLeftIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useService } from '@/hooks/useServices';
+import { useParams } from 'next/navigation';
 
-export default function ServiceDetailPage({ params }: { params: { id: string } }) {
-  const { data: service, isLoading, error } = useService(params?.id || '');
+export default function ServiceDetailPage() {
+  const params = useParams();
+  const serviceId = typeof params?.id === 'string' ? params.id : '';
+  const { data: service, isLoading, error } = useService(serviceId);
 
   if (isLoading) {
     return (

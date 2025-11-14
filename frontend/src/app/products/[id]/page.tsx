@@ -1,11 +1,15 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeftIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { useProduct } from '@/hooks/useProducts';
+import { useParams } from 'next/navigation';
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  const { data: product, isLoading, error } = useProduct(params?.id || '');
+export default function ProductDetailPage() {
+  const params = useParams();
+  const productId = typeof params?.id === 'string' ? params.id : '';
+  const { data: product, isLoading, error } = useProduct(productId);
 
   if (isLoading) {
     return (

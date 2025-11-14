@@ -41,12 +41,22 @@ export interface Product {
   updatedAt: string;
 }
 
+export interface ImageDto {
+  url: string;
+  type?: 'URL' | 'UPLOADED';
+  alt?: string;
+  title?: string;
+  order?: number;
+  isPrimary?: boolean;
+}
+
 export interface CreateProductDto {
   name: string;
   description: string;
   price: number;
   stock: number;
   categoryId: string;
+  images?: ImageDto[];
 }
 
 export const productsService = {
