@@ -45,6 +45,8 @@ export default function Home() {
               price={product.price}
               category={product.category?.name}
               image={product.images?.[0]?.url}
+              stock={product.stock}
+              sellerId={product.sellerId}
             />
           ))}
         </div>

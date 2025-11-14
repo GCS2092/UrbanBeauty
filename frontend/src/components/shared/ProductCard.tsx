@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart.store';
+import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
 
@@ -15,12 +16,17 @@ interface ProductCardProps {
   category?: string;
   stock?: number;
   description?: string;
+  sellerId?: string; // ID du vendeur pour vérifier si c'est le produit de l'utilisateur
 }
 
-export default function ProductCard({ id, name, price, image, category, stock = 0, description }: ProductCardProps) {
+export default function ProductCard({ id, name, price, image, category, stock = 0, description, sellerId }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
+  const { user } = useAuth();
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
+  
+  // Masquer le bouton pour les admins et pour les vendeuses si c'est leur propre produit
+  const canAddToCart = user?.role !== 'ADMIN' && !(user?.role === 'VENDEUSE' && sellerId === user?.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -68,7 +74,7 @@ export default function ProductCard({ id, name, price, image, category, stock = 
           {name}
         </h3>
         <p className="mt-1 sm:mt-2 text-sm sm:text-base font-bold text-pink-600">{formatCurrency(price, currency)}</p>
-        {stock > 0 && (
+        {canAddToCart && stock > 0 && (
           <button
             onClick={handleAddToCart}
             className="mt-2 w-full flex items-center justify-center gap-1 bg-pink-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-[10px] sm:text-xs font-medium hover:bg-pink-700 transition-colors"
@@ -77,7 +83,7 @@ export default function ProductCard({ id, name, price, image, category, stock = 
             <span className="hidden sm:inline">Ajouter</span>
           </button>
         )}
-        {stock <= 0 && (
+        {canAddToCart && stock <= 0 && (
           <div className="mt-2 w-full text-center text-[10px] sm:text-xs text-gray-500 py-1.5 sm:py-2 bg-gray-100 rounded-md">
             Épuisé
           </div>

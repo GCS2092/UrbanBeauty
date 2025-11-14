@@ -139,12 +139,13 @@ function DashboardContent() {
                 </div>
               </div>
             </>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Mes Commandes */}
-          {(user?.role === 'CLIENT' || user?.role === 'VENDEUSE') && (
+          {/* Mes Commandes - CLIENT seulement */}
+          {user?.role === 'CLIENT' && (
             <Link
               href="/dashboard/orders"
               className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
@@ -152,6 +153,18 @@ function DashboardContent() {
               <ShoppingBagIcon className="h-8 w-8 text-pink-600 mb-3" />
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Mes Commandes</h2>
               <p className="text-gray-600">Suivez vos commandes</p>
+            </Link>
+          )}
+
+          {/* Commandes Vendeuse */}
+          {user?.role === 'VENDEUSE' && (
+            <Link
+              href="/dashboard/orders"
+              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+            >
+              <ShoppingBagIcon className="h-8 w-8 text-pink-600 mb-3" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Commandes Reçues</h2>
+              <p className="text-gray-600">Gérez les commandes de vos produits</p>
             </Link>
           )}
 
@@ -205,15 +218,17 @@ function DashboardContent() {
             <p className="text-gray-600">Modifiez vos informations</p>
           </Link>
 
-          {/* Messages */}
-          <Link
-            href="/dashboard/chat"
-            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
-          >
-            <ChatBubbleLeftRightIcon className="h-8 w-8 text-pink-600 mb-3" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Messages</h2>
-            <p className="text-gray-600">Discutez avec les autres utilisateurs</p>
-          </Link>
+          {/* Messages - Masquer pour les admins */}
+          {user?.role !== 'ADMIN' && (
+            <Link
+              href="/dashboard/chat"
+              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+            >
+              <ChatBubbleLeftRightIcon className="h-8 w-8 text-pink-600 mb-3" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Messages</h2>
+              <p className="text-gray-600">Discutez avec les autres utilisateurs</p>
+            </Link>
+          )}
 
           {/* Analytics (VENDEUSE/COIFFEUSE) */}
           {(user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE') && (

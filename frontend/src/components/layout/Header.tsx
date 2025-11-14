@@ -168,11 +168,13 @@ export default function Header() {
               </Link>
             )}
 
-            {/* Cart */}
-            <Link href="/cart" className="relative p-2 text-gray-600 hover:text-pink-600 transition-colors">
-              <ShoppingBagIcon className="h-5 w-5" />
-              <CartBadge />
-            </Link>
+            {/* Cart - Masquer pour les admins */}
+            {user?.role !== 'ADMIN' && (
+              <Link href="/cart" className="relative p-2 text-gray-600 hover:text-pink-600 transition-colors">
+                <ShoppingBagIcon className="h-5 w-5" />
+                <CartBadge />
+              </Link>
+            )}
 
             {/* Mobile menu button */}
             <button
