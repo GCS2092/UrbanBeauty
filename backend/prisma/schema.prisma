@@ -62,12 +62,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  profile  Profile?
-  orders   Order[]
-  products Product[] @relation("UserProducts") // Pour les vendeuses
-  bookings Booking[] // Pour les clients
-  reviews  Review[] // Avis laissés
-  payments Payment[] // Paiements effectués
+  profile          Profile?
+  notificationToken NotificationToken?
+  orders           Order[]
+  products         Product[] @relation("UserProducts") // Pour les vendeuses
+  bookings         Booking[] // Pour les clients
+  reviews          Review[] // Avis laissés
+  payments         Payment[] // Paiements effectués
 }
 
 model Profile {
@@ -302,4 +303,13 @@ model Coupon {
   orders        Order[] // Commandes utilisant ce coupon
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model NotificationToken {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique // FCM token
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
