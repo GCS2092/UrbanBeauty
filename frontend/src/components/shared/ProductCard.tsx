@@ -43,44 +43,45 @@ export default function ProductCard({ id, name, price, image, category, stock = 
   };
 
   return (
-    <Link href={`/products/${id}`} className="group flex flex-col h-full bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+    <Link href={`/products/${id}`} className="group flex flex-col h-full bg-white rounded-lg shadow-sm hover:shadow-md transition-all overflow-hidden">
       <div className="relative aspect-square overflow-hidden bg-gray-100 flex-shrink-0">
         {image ? (
           <Image
             src={image}
             alt={name}
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 20vw, (max-width: 1280px) 16vw, 14vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-100 to-rose-100">
-            <span className="text-6xl">✨</span>
+            <span className="text-4xl sm:text-5xl">✨</span>
           </div>
         )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
       </div>
-      <div className="p-4 flex flex-col flex-grow">
+      <div className="p-2 sm:p-3 flex flex-col flex-grow">
         {category && (
-          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1 line-clamp-1">{category}</p>
+          <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide mb-1 line-clamp-1">{category}</p>
         )}
-        <h3 className="text-sm sm:text-base font-semibold text-gray-900 group-hover:text-pink-600 transition-colors line-clamp-2 min-h-[2.5rem]">
+        <h3 className="text-xs sm:text-sm font-semibold text-gray-900 group-hover:text-pink-600 transition-colors line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
           {name}
         </h3>
-        {description && (
-          <p className="mt-2 text-xs text-gray-600 line-clamp-2 flex-grow">
-            {description}
-          </p>
+        <p className="mt-1 sm:mt-2 text-sm sm:text-base font-bold text-pink-600">{formatCurrency(price, currency)}</p>
+        {stock > 0 && (
+          <button
+            onClick={handleAddToCart}
+            className="mt-2 w-full flex items-center justify-center gap-1 bg-pink-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-[10px] sm:text-xs font-medium hover:bg-pink-700 transition-colors"
+          >
+            <ShoppingBagIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Ajouter</span>
+          </button>
         )}
-        <p className="mt-2 text-base sm:text-lg font-bold text-pink-600">{formatCurrency(price, currency)}</p>
-        <button
-          onClick={handleAddToCart}
-          disabled={stock <= 0}
-          className="mt-3 w-full flex items-center justify-center gap-2 bg-pink-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ShoppingBagIcon className="h-4 w-4" />
-          {stock <= 0 ? 'Épuisé' : 'Ajouter'}
-        </button>
+        {stock <= 0 && (
+          <div className="mt-2 w-full text-center text-[10px] sm:text-xs text-gray-500 py-1.5 sm:py-2 bg-gray-100 rounded-md">
+            Épuisé
+          </div>
+        )}
       </div>
     </Link>
   );
