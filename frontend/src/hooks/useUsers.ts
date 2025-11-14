@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usersService, UpdateUserRoleDto } from '@/services/users.service';
+import { usersService, UpdateUserRoleDto, CreateUserDto } from '@/services/users.service';
 
 export function useUsers(role?: string) {
   return useQuery({
@@ -24,6 +24,40 @@ export function useUpdateUserRole() {
   return useMutation({
     mutationFn: ({ id, role }: { id: string; role: 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN' }) =>
       usersService.updateRole(id, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateUserDto) => usersService.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useUpdateUserStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      usersService.updateStatus(id, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => usersService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },

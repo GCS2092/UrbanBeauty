@@ -3,15 +3,83 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
-import { ArrowLeftIcon, PencilIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
-import { useUsers, useUpdateUserRole } from '@/hooks/useUsers';
+import { ArrowLeftIcon, PencilIcon, ShieldCheckIcon, PlusIcon, TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { useUsers, useUpdateUserRole, useCreateUser, useUpdateUserStatus, useDeleteUser } from '@/hooks/useUsers';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 
 function AdminUsersContent() {
   const [selectedRole, setSelectedRole] = useState<string>('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    email: '',
+    password: '',
+    role: 'CLIENT' as 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN',
+    firstName: '',
+    lastName: '',
+    phone: '',
+  });
+  
   const { data: users = [], isLoading, error } = useUsers(selectedRole || undefined);
   const { mutate: updateRole } = useUpdateUserRole();
+  const { mutate: createUser, isPending: isCreating } = useCreateUser();
+  const { mutate: updateStatus } = useUpdateUserStatus();
+  const { mutate: deleteUser } = useDeleteUser();
   const notifications = useNotifications();
+
+  const handleCreate = () => {
+    if (!createForm.email || !createForm.password) {
+      notifications.error('Champs requis', 'Email et mot de passe sont obligatoires');
+      return;
+    }
+
+    createUser(createForm, {
+      onSuccess: () => {
+        notifications.success('Utilisateur créé', 'L\'utilisateur a été créé avec succès');
+        setShowCreateModal(false);
+        setCreateForm({
+          email: '',
+          password: '',
+          role: 'CLIENT',
+          firstName: '',
+          lastName: '',
+          phone: '',
+        });
+      },
+      onError: (error: any) => {
+        notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la création');
+      },
+    });
+  };
+
+  const handleToggleStatus = (userId: string, currentStatus: boolean) => {
+    updateStatus(
+      { id: userId, isActive: !currentStatus },
+      {
+        onSuccess: () => {
+          notifications.success(
+            currentStatus ? 'Utilisateur bloqué' : 'Utilisateur débloqué',
+            `L'utilisateur a été ${currentStatus ? 'bloqué' : 'débloqué'} avec succès`
+          );
+        },
+        onError: (error: any) => {
+          notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la modification');
+        },
+      }
+    );
+  };
+
+  const handleDelete = (userId: string, userName: string) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur "${userName}" ? Cette action est irréversible.`)) {
+      deleteUser(userId, {
+        onSuccess: () => {
+          notifications.success('Utilisateur supprimé', 'L\'utilisateur a été supprimé avec succès');
+        },
+        onError: (error: any) => {
+          notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la suppression');
+        },
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -26,17 +94,26 @@ function AdminUsersContent() {
 
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
-          <select
-            value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-          >
-            <option value="">Tous les rôles</option>
-            <option value="CLIENT">Clients</option>
-            <option value="COIFFEUSE">Coiffeuses</option>
-            <option value="VENDEUSE">Vendeuses</option>
-            <option value="ADMIN">Admins</option>
-          </select>
+          <div className="flex items-center gap-4">
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+            >
+              <option value="">Tous les rôles</option>
+              <option value="CLIENT">Clients</option>
+              <option value="COIFFEUSE">Coiffeuses</option>
+              <option value="VENDEUSE">Vendeuses</option>
+              <option value="ADMIN">Admins</option>
+            </select>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5" />
+              Créer un utilisateur
+            </button>
+          </div>
         </div>
 
         {isLoading && (
@@ -70,6 +147,9 @@ function AdminUsersContent() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Téléphone
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Statut
+                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -78,7 +158,7 @@ function AdminUsersContent() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                       Aucun utilisateur trouvé
                     </td>
                   </tr>
@@ -106,11 +186,19 @@ function AdminUsersContent() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-gray-900">{user.profile?.phone || 'N/A'}</span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          user.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {user.isActive !== false ? 'Actif' : 'Bloqué'}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
                           <Link
                             href={`/dashboard/admin/users/${user.id}/edit`}
                             className="text-blue-600 hover:text-blue-900"
+                            title="Modifier"
                           >
                             <PencilIcon className="h-5 w-5" />
                           </Link>
@@ -135,8 +223,27 @@ function AdminUsersContent() {
                                 );
                               }
                             }}
+                            title="Modifier le rôle"
                           >
                             <ShieldCheckIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            className={user.isActive !== false ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}
+                            onClick={() => handleToggleStatus(user.id, user.isActive !== false)}
+                            title={user.isActive !== false ? 'Bloquer' : 'Débloquer'}
+                          >
+                            {user.isActive !== false ? (
+                              <XMarkIcon className="h-5 w-5" />
+                            ) : (
+                              <CheckIcon className="h-5 w-5" />
+                            )}
+                          </button>
+                          <button
+                            className="text-red-600 hover:text-red-900"
+                            onClick={() => handleDelete(user.id, `${user.profile?.firstName} ${user.profile?.lastName}` || user.email)}
+                            title="Supprimer"
+                          >
+                            <TrashIcon className="h-5 w-5" />
                           </button>
                         </div>
                       </td>
@@ -148,6 +255,107 @@ function AdminUsersContent() {
           </div>
         </div>
       </div>
+
+      {/* Modal de création */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Créer un utilisateur</h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
+                <input
+                  type="password"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rôle *</label>
+                <select
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as any })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                >
+                  <option value="CLIENT">Client</option>
+                  <option value="COIFFEUSE">Coiffeuse</option>
+                  <option value="VENDEUSE">Vendeuse</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                <input
+                  type="text"
+                  value={createForm.firstName}
+                  onChange={(e) => setCreateForm({ ...createForm, firstName: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                <input
+                  type="text"
+                  value={createForm.lastName}
+                  onChange={(e) => setCreateForm({ ...createForm, lastName: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                <input
+                  type="tel"
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={isCreating}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreating ? 'Création...' : 'Créer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
