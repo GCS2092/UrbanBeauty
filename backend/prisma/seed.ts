@@ -72,32 +72,32 @@ async function main() {
 
   const categories = [categoryVisage, categoryCheveux, categoryCorps, categoryMaquillage];
 
-  // Mettre à jour les catégories avec de belles images haute qualité
+  // Mettre à jour les catégories avec de belles images de femmes noires avec coiffures afro
   await prisma.category.update({
     where: { id: categoryVisage.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&q=90&fit=crop&auto=format',
+      image: 'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
     },
   });
 
   await prisma.category.update({
     where: { id: categoryCheveux.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=1200&q=90&fit=crop&auto=format',
+      image: 'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
     },
   });
 
   await prisma.category.update({
     where: { id: categoryCorps.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=1200&q=90&fit=crop&auto=format',
+      image: 'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
     },
   });
 
   await prisma.category.update({
     where: { id: categoryMaquillage.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=90&fit=crop&auto=format',
+      image: 'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
     },
   });
 
@@ -156,23 +156,22 @@ async function main() {
 
   // Créer des services pour la coiffeuse avec images
   if (coiffeuse.profile) {
-    // Images de services de coiffure depuis Unsplash - Haute qualité
-    // URLs optimisées pour coiffures africaines et services beauté
+    // Images de services de coiffure - Femmes noires avec coiffures afro, tresses, locks
     const serviceImages = {
       tresses: [
-        'https://images.unsplash.com/photo-1560869713-7d563b47e0b0?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       perruque: [
-        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1560869713-7d563b47e0b0?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       locks: [
-        'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
     };
 
