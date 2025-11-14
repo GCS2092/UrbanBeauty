@@ -8,6 +8,7 @@ export interface OrderItem {
   product?: {
     id: string;
     name: string;
+    sellerId?: string;
     images?: Array<{ url: string }>;
   };
 }
