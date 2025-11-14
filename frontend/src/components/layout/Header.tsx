@@ -45,37 +45,39 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex md:items-center md:space-x-8">
-            <Link 
-              href="/products" 
-              className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Produits
-            </Link>
-            <Link 
-              href="/services" 
-              className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Services
-            </Link>
-            <Link 
-              href="/lookbook" 
-              className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Lookbook
-            </Link>
-            <Link 
-              href="/prestataires" 
-              className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Prestataires
-            </Link>
-          </div>
+          {/* Desktop Navigation - Masquer pour les utilisateurs connectés */}
+          {!isAuthenticated && (
+            <div className="hidden md:flex md:items-center md:space-x-8">
+              <Link 
+                href="/products" 
+                className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Produits
+              </Link>
+              <Link 
+                href="/services" 
+                className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Services
+              </Link>
+              <Link 
+                href="/lookbook" 
+                className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Lookbook
+              </Link>
+              <Link 
+                href="/prestataires" 
+                className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Prestataires
+              </Link>
+            </div>
+          )}
 
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
@@ -191,37 +193,41 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile menu - Masquer navigation publique pour utilisateurs connectés */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-100 py-4 space-y-2">
-            <Link 
-              href="/products" 
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Produits
-            </Link>
-            <Link 
-              href="/services" 
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Services
-            </Link>
-            <Link 
-              href="/lookbook" 
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Lookbook
-            </Link>
-            <Link 
-              href="/prestataires" 
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Prestataires
-            </Link>
+            {!isAuthenticated && (
+              <>
+                <Link 
+                  href="/products" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Produits
+                </Link>
+                <Link 
+                  href="/services" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Services
+                </Link>
+                <Link 
+                  href="/lookbook" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Lookbook
+                </Link>
+                <Link 
+                  href="/prestataires" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Prestataires
+                </Link>
+              </>
+            )}
             {isAuthenticated ? (
               <>
                 <Link 
