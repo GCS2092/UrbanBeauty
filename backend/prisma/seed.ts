@@ -694,8 +694,202 @@ async function main() {
       },
     });
 
-    console.log('✅ Produits créés avec images pour la vendeuse (10 produits au total)');
+    // Ajouter encore plus de produits pour une plateforme complète
+    const nettoyant = await prisma.product.create({
+      data: {
+        name: 'Nettoyant Visage Purifiant',
+        slug: generateSlug('Nettoyant Visage Purifiant'),
+        description: 'Nettoyant visage doux et purifiant pour éliminer les impuretés sans dessécher la peau.',
+        price: 22.99,
+        brand: 'UrbanBeauty',
+        volume: '200ml',
+        ingredients: 'Acide salicylique, Extrait de thé vert, Niacinamide',
+        skinType: 'Peau grasse à mixte',
+        categoryId: categories[0].id,
+        stock: 22,
+        lowStockThreshold: 8,
+        sellerId: vendeuse.id,
+        isActive: true,
+        images: {
+          create: productImages.masque.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Nettoyant Visage Purifiant',
+            title: 'Nettoyant Visage Purifiant - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const tonique = await prisma.product.create({
+      data: {
+        name: 'Tonique Équilibrant',
+        slug: generateSlug('Tonique Équilibrant'),
+        description: 'Tonique rafraîchissant pour équilibrer le pH de la peau et resserrer les pores.',
+        price: 18.50,
+        brand: 'UrbanBeauty',
+        volume: '150ml',
+        ingredients: 'Hamamélis, Acide glycolique, Aloe Vera',
+        skinType: 'Tous types',
+        categoryId: categories[0].id,
+        stock: 16,
+        lowStockThreshold: 6,
+        sellerId: vendeuse.id,
+        isActive: true,
+        images: {
+          create: productImages.serum.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Tonique Équilibrant',
+            title: 'Tonique Équilibrant - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const mascara = await prisma.product.create({
+      data: {
+        name: 'Mascara Volume Intense',
+        slug: generateSlug('Mascara Volume Intense'),
+        description: 'Mascara longue tenue pour des cils volumineux et recourbés toute la journée.',
+        price: 19.99,
+        brand: 'UrbanBeauty',
+        volume: '8ml',
+        ingredients: 'Cire de carnauba, Fibres de soie, Vitamine E',
+        skinType: 'Tous types',
+        categoryId: categories[3].id,
+        stock: 35,
+        lowStockThreshold: 12,
+        sellerId: vendeuse.id,
+        isActive: true,
+        isFeatured: true,
+        images: {
+          create: productImages.maquillage.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Mascara Volume Intense',
+            title: 'Mascara Volume Intense - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const palette = await prisma.product.create({
+      data: {
+        name: 'Palette Fards à Paupières',
+        slug: generateSlug('Palette Fards à Paupières'),
+        description: 'Palette de 12 nuances mat et satinées pour créer des looks variés.',
+        price: 42.99,
+        originalPrice: 49.99,
+        isOnSale: true,
+        discountPercentage: 14,
+        brand: 'UrbanBeauty',
+        volume: '12 x 1.5g',
+        ingredients: 'Talc, Mica, Oxydes de fer',
+        skinType: 'Tous types',
+        categoryId: categories[3].id,
+        stock: 12,
+        lowStockThreshold: 4,
+        sellerId: vendeuse.id,
+        isActive: true,
+        isFeatured: true,
+        images: {
+          create: productImages.maquillage.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Palette Fards à Paupières',
+            title: 'Palette Fards à Paupières - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const gommage = await prisma.product.create({
+      data: {
+        name: 'Gommage Corps Exfoliant',
+        slug: generateSlug('Gommage Corps Exfoliant'),
+        description: 'Gommage doux pour le corps aux grains de sucre et huiles nourrissantes.',
+        price: 26.99,
+        brand: 'UrbanBeauty',
+        volume: '300ml',
+        ingredients: 'Sucre de canne, Huile de coco, Beurre de karité',
+        skinType: 'Tous types',
+        categoryId: categories[2].id,
+        stock: 14,
+        lowStockThreshold: 5,
+        sellerId: vendeuse.id,
+        isActive: true,
+        images: {
+          create: productImages.corps.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Gommage Corps Exfoliant',
+            title: 'Gommage Corps Exfoliant - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const soinYeux = await prisma.product.create({
+      data: {
+        name: 'Soin Contour des Yeux',
+        slug: generateSlug('Soin Contour des Yeux'),
+        description: 'Soin anti-cernes et anti-poches pour un regard frais et éclatant.',
+        price: 35.99,
+        brand: 'UrbanBeauty',
+        volume: '15ml',
+        ingredients: 'Caféine, Acide hyaluronique, Vitamine K',
+        skinType: 'Tous types',
+        categoryId: categories[0].id,
+        stock: 20,
+        lowStockThreshold: 7,
+        sellerId: vendeuse.id,
+        isActive: true,
+        images: {
+          create: productImages.creme.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Soin Contour des Yeux',
+            title: 'Soin Contour des Yeux - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    console.log('✅ Produits créés avec images pour la vendeuse (16 produits au total)');
   }
+
+  // Créer l'admin slovengama@gmail.com
+  const adminSloven = await prisma.user.upsert({
+    where: { email: 'slovengama@gmail.com' },
+    update: {},
+    create: {
+      email: 'slovengama@gmail.com',
+      password: hashedPassword,
+      role: 'ADMIN',
+      profile: {
+        create: {
+          firstName: 'Sloven',
+          lastName: 'Gama',
+          phone: '+33612345682',
+        },
+      },
+    },
+  });
+
+  console.log('✅ Utilisateur ADMIN créé : slovengama@gmail.com / password123');
 
   // Créer un utilisateur ADMIN de test
   await prisma.user.upsert({
@@ -723,6 +917,7 @@ async function main() {
   console.log('   COIFFEUSE : coiffeuse@test.com / password123');
   console.log('   VENDEUSE  : vendeuse@test.com / password123');
   console.log('   ADMIN     : admin@test.com / password123');
+  console.log('   ADMIN     : slovengama@gmail.com / password123 ⭐');
 }
 
 main()
