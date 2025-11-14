@@ -61,6 +61,7 @@ export interface CreateProductDto {
   volume?: string;
   ingredients?: string;
   skinType?: string;
+  lowStockThreshold?: number;
   images?: ImageDto[];
 }
 

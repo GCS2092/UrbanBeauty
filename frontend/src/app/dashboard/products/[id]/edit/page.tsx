@@ -28,6 +28,7 @@ function EditProductForm({ productId }: { productId: string }) {
     volume: '',
     ingredients: '',
     skinType: '',
+    lowStockThreshold: '10',
   });
   const [images, setImages] = useState<Array<{ url: string; type: 'URL' | 'UPLOADED' }>>([]);
 
@@ -44,6 +45,7 @@ function EditProductForm({ productId }: { productId: string }) {
         volume: product.volume || '',
         ingredients: product.ingredients || '',
         skinType: product.skinType || '',
+        lowStockThreshold: product.lowStockThreshold?.toString() || '10',
       });
       setImages(
         product.images && product.images.length > 0
@@ -73,6 +75,7 @@ function EditProductForm({ productId }: { productId: string }) {
           volume: formData.volume || undefined,
           ingredients: formData.ingredients || undefined,
           skinType: formData.skinType || undefined,
+          lowStockThreshold: parseInt(formData.lowStockThreshold) || undefined,
         },
       },
       {

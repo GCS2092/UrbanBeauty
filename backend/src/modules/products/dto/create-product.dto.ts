@@ -67,6 +67,11 @@ export class CreateProductDto {
   @IsOptional()
   skinType?: string;
 
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  lowStockThreshold?: number;
+
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
