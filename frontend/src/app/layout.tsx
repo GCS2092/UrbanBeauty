@@ -8,6 +8,8 @@ import { Providers } from "./providers";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: 'swap', // Évite les avertissements de préchargement
+  preload: true,
 });
 
 export const metadata: Metadata = {
