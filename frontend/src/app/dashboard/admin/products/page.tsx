@@ -1,13 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { useProducts } from '@/hooks/useProducts';
+import { useProducts, useDeleteProduct } from '@/hooks/useProducts';
+import { useNotifications } from '@/components/admin/NotificationProvider';
 import Image from 'next/image';
 
 function AdminProductsContent() {
+  const router = useRouter();
   const { data: products = [], isLoading, error } = useProducts();
+  const { mutate: deleteProduct } = useDeleteProduct();
+  const notifications = useNotifications();
 
   if (isLoading) {
     return (
@@ -144,8 +149,14 @@ function AdminProductsContent() {
                           className="text-red-600 hover:text-red-900"
                           onClick={() => {
                             if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
-                              // TODO: Implémenter la suppression
-                              console.log('Supprimer produit:', product.id);
+                              deleteProduct(product.id, {
+                                onSuccess: () => {
+                                  notifications.success('Produit supprimé', 'Le produit a été supprimé avec succès');
+                                },
+                                onError: (error: any) => {
+                                  notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la suppression');
+                                },
+                              });
                             }
                           }}
                         >
