@@ -8,6 +8,8 @@ import { ArrowLeftIcon, TrashIcon, PlusIcon, MinusIcon, TagIcon } from '@heroico
 import { useCartStore } from '@/store/cart.store';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
+import { couponsService } from '@/services/coupons.service';
+import { ordersService } from '@/services/orders.service';
 
 export default function CartPage() {
   const router = useRouter();
@@ -24,15 +26,25 @@ export default function CartPage() {
   const shipping = subtotal > 50 ? 0 : 5.99; // Livraison gratuite au-dessus de 50€
   const total = subtotal - discount + shipping;
 
-  const handleApplyCoupon = () => {
-    // TODO: Appeler l'API pour valider le coupon
-    if (couponCode.toUpperCase() === 'WELCOME10') {
-      const discountAmount = subtotal * 0.1; // 10% de réduction
-      setDiscount(discountAmount);
-      setAppliedCoupon({ code: couponCode, discount: discountAmount });
-      notifications.success('Coupon appliqué', 'Vous bénéficiez de 10% de réduction !');
-    } else {
-      notifications.error('Coupon invalide', 'Le code coupon n\'est pas valide');
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      notifications.error('Code requis', 'Veuillez entrer un code coupon');
+      return;
+    }
+
+    try {
+      const { coupon, discount } = await couponsService.validate({
+        code: couponCode,
+        totalAmount: subtotal,
+        userId: user?.id,
+      });
+      
+      setDiscount(discount);
+      setAppliedCoupon({ code: coupon.code, discount });
+      notifications.success('Coupon appliqué', `Vous bénéficiez de ${discount.toFixed(2)} € de réduction !`);
+    } catch (error: any) {
+      notifications.error('Coupon invalide', error?.response?.data?.message || 'Le code coupon n\'est pas valide');
+      setCouponCode('');
     }
   };
 
@@ -47,6 +59,14 @@ export default function CartPage() {
     } else {
       setCheckoutMode('choice');
     }
+  };
+
+  const handleGuestCheckout = () => {
+    if (items.length === 0) {
+      notifications.error('Panier vide', 'Votre panier est vide');
+      return;
+    }
+    setCheckoutMode('guest');
   };
 
   if (items.length === 0) {
@@ -106,7 +126,7 @@ export default function CartPage() {
                 Créer un compte (Recommandé)
               </Link>
               <button
-                onClick={() => setCheckoutMode('guest')}
+                onClick={handleGuestCheckout}
                 className="flex-1 bg-white text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors border-2 border-gray-300"
               >
                 Commander sans compte
@@ -447,9 +467,10 @@ function GuestCheckoutForm({
 
               <button
                 type="submit"
-                className="w-full bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors"
+                disabled={isSubmitting}
+                className="w-full bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Confirmer la commande
+                {isSubmitting ? 'Traitement...' : 'Confirmer la commande'}
               </button>
             </form>
           </div>
