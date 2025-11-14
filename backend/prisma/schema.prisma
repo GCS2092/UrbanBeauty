@@ -55,74 +55,114 @@ enum PaymentStatus {
 // MODELS
 // ------------------------
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  password      String
-  role          Role      @default(CLIENT)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(CLIENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  profile       Profile?
-  orders        Order[]
-  products      Product[]  @relation("UserProducts") // Pour les vendeuses
-  bookings      Booking[]  // Pour les clients
-  reviews       Review[]   // Avis laissés
-  payments      Payment[]  // Paiements effectués
+  profile  Profile?
+  orders   Order[]
+  products Product[] @relation("UserProducts") // Pour les vendeuses
+  bookings Booking[] // Pour les clients
+  reviews  Review[] // Avis laissés
+  payments Payment[] // Paiements effectués
 }
 
 model Profile {
-  id         String    @id @default(uuid())
-  userId     String    @unique
-  user       User      @relation(fields: [userId], references: [id])
-  firstName  String
-  lastName   String
-  phone      String?
-  address    String?
-  avatar     String?
-  isProvider Boolean   @default(false)
-  
-  services   Service[]
-  portfolio  Image[]
-  rating     Float?
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id])
+  firstName         String
+  lastName          String
+  phone             String?
+  address           String?
+  city              String? // Ville
+  postalCode        String? // Code postal
+  country           String? // Pays
+  avatar            String?
+  bio               String? // Biographie
+  specialties       String[] // Spécialités (array)
+  experience        Int? // Années d'expérience
+  website           String? // Site web
+  instagram         String? // Instagram
+  facebook          String? // Facebook
+  tiktok            String? // TikTok
+  isProvider        Boolean   @default(false)
+  totalBookings     Int       @default(0) // Total réservations
+  completedBookings Int       @default(0) // Réservations complétées
+  cancellationRate  Float? // Taux d'annulation
+  services          Service[]
+  portfolio         Image[]
+  rating            Float?
 }
 
 model Product {
-  id          String      @id @default(uuid())
-  name        String
-  description String
-  price       Float
-  categoryId  String
-  category    Category    @relation(fields: [categoryId], references: [id])
-  images      Image[]
-  stock       Int
-  orders      OrderItem[]
-  reviews     Review[]    // Ajout de la relation avec Review
-  sellerId    String
-  seller      User        @relation("UserProducts", fields: [sellerId], references: [id])
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                 String      @id @default(uuid())
+  name               String
+  slug               String      @unique
+  description        String
+  price              Float
+  originalPrice      Float? // Prix original (avant promotion)
+  discountPrice      Float? // Prix en promotion
+  isOnSale           Boolean     @default(false)
+  discountPercentage Int? // Pourcentage de réduction
+  brand              String? // Marque du produit
+  volume             String? // Volume/contenance (ex: "50ml", "250g")
+  ingredients        String? // Liste des ingrédients
+  skinType           String? // Type de peau (ex: "Tous types", "Peau sensible")
+  sku                String?     @unique // Stock Keeping Unit
+  categoryId         String
+  category           Category    @relation(fields: [categoryId], references: [id])
+  images             Image[]
+  stock              Int
+  lowStockThreshold  Int? // Seuil d'alerte stock bas
+  isActive           Boolean     @default(true)
+  isFeatured         Boolean     @default(false)
+  views              Int         @default(0)
+  salesCount         Int         @default(0)
+  averageRating      Float? // Note moyenne calculée
+  orders             OrderItem[]
+  reviews            Review[]
+  sellerId           String
+  seller             User        @relation("UserProducts", fields: [sellerId], references: [id])
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 }
 
 model Service {
-  id          String    @id @default(uuid())
-  name        String
-  description String?
-  price       Float
-  duration    Int       // en minutes
-  available   Boolean   @default(true)
-  providerId  String
-  provider    Profile   @relation(fields: [providerId], references: [id])
-  bookings    Booking[]
-  reviews     Review[]
-  images      Image[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                 String    @id @default(uuid())
+  name               String
+  slug               String    @unique
+  description        String?
+  price              Float
+  duration           Int // en minutes
+  category           String? // Catégorie de service (ex: "Tresses", "Locks", "Pose perruque")
+  available          Boolean   @default(true)
+  maxBookingsPerDay  Int? // Nombre max de réservations/jour
+  advanceBookingDays Int? // Jours à l'avance pour réserver
+  views              Int       @default(0)
+  bookingsCount      Int       @default(0)
+  averageRating      Float? // Note moyenne calculée
+  isFeatured         Boolean   @default(false)
+  providerId         String
+  provider           Profile   @relation(fields: [providerId], references: [id])
+  bookings           Booking[]
+  reviews            Review[]
+  images             Image[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 model Image {
   id          String    @id @default(uuid())
   url         String
   type        ImageType
+  alt         String? // Texte alternatif
+  title       String? // Titre de l'image
+  order       Int? // Ordre d'affichage
+  isPrimary   Boolean   @default(false) // Image principale
   productId   String?
   product     Product?  @relation(fields: [productId], references: [id])
   serviceId   String?
@@ -134,72 +174,108 @@ model Image {
 }
 
 model Category {
-  id       String    @id @default(uuid())
-  name     String    @unique
-  products Product[]
+  id          String     @id @default(uuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  image       String? // Image de la catégorie
+  isActive    Boolean    @default(true)
+  order       Int? // Ordre d'affichage
+  parentId    String? // Catégorie parente (pour sous-catégories)
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
 }
 
 model Order {
-  id         String      @id @default(uuid())
-  userId     String
-  user       User        @relation(fields: [userId], references: [id])
-  items      OrderItem[]
-  total      Float
-  status     OrderStatus @default(PENDING)
-  payment    Payment?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id                    String      @id @default(uuid())
+  orderNumber           String      @unique // Numéro de commande unique
+  userId                String
+  user                  User        @relation(fields: [userId], references: [id])
+  customerEmail         String // Email du client (pour notifications)
+  customerName          String // Nom complet du client
+  customerPhone         String? // Téléphone du client
+  shippingAddress       String // Adresse de livraison
+  billingAddress        String? // Adresse de facturation
+  shippingMethod        String? // Méthode de livraison
+  shippingCost          Float       @default(0) // Coût de livraison
+  trackingNumber        String? // Numéro de suivi
+  estimatedDeliveryDate DateTime? // Date de livraison estimée
+  notes                 String? // Notes de la commande
+  cancellationReason    String? // Raison d'annulation
+  items                 OrderItem[]
+  total                 Float
+  status                OrderStatus @default(PENDING)
+  payment               Payment?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 }
 
 model OrderItem {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order   @relation(fields: [orderId], references: [id])
   productId String
-  product   Product  @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
   quantity  Int
   price     Float
 }
 
 model Booking {
-  id          String        @id @default(uuid())
-  userId      String
-  user        User         @relation(fields: [userId], references: [id])
-  serviceId   String
-  service     Service      @relation(fields: [serviceId], references: [id])
-  date        DateTime
-  status      BookingStatus @default(PENDING)
-  notes       String?
-  payment     Payment?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id                 String        @id @default(uuid())
+  bookingNumber      String        @unique // Numéro de réservation unique
+  userId             String
+  user               User          @relation(fields: [userId], references: [id])
+  serviceId          String
+  service            Service       @relation(fields: [serviceId], references: [id])
+  date               DateTime // Date du rendez-vous
+  startTime          DateTime // Heure de début
+  endTime            DateTime // Heure de fin (calculée)
+  location           String? // Lieu du rendez-vous
+  clientPhone        String? // Téléphone du client
+  clientEmail        String? // Email du client
+  status             BookingStatus @default(PENDING)
+  notes              String?
+  reminderSent       Boolean       @default(false) // Rappel envoyé
+  cancellationReason String? // Raison d'annulation
+  rescheduleCount    Int           @default(0) // Nombre de reports
+  payment            Payment?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 }
 
 model Payment {
-  id                String        @id @default(uuid())
-  amount           Float
-  status           PaymentStatus  @default(PENDING)
-  provider         String        // ex: 'stripe', 'mobile_money'
-  transactionId    String?       // ID externe du paiement
-  userId           String
-  user             User          @relation(fields: [userId], references: [id])
-  bookingId        String?       @unique
-  booking          Booking?      @relation(fields: [bookingId], references: [id])
-  orderId          String?       @unique
-  order            Order?        @relation(fields: [orderId], references: [id])
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id            String        @id @default(uuid())
+  amount        Float
+  currency      String        @default("EUR") // Devise
+  status        PaymentStatus @default(PENDING)
+  provider      String // ex: 'stripe', 'mobile_money'
+  paymentMethod String? // Méthode (carte, mobile money, etc.)
+  transactionId String? // ID externe du paiement
+  refundAmount  Float? // Montant remboursé
+  refundReason  String? // Raison du remboursement
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  bookingId     String?       @unique
+  booking       Booking?      @relation(fields: [bookingId], references: [id])
+  orderId       String?       @unique
+  order         Order?        @relation(fields: [orderId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }
 
 model Review {
-  id          String    @id @default(uuid())
-  rating      Int       // 1-5
-  comment     String?
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  productId   String?
-  product     Product?  @relation(fields: [productId], references: [id])
-  serviceId   String?
-  service     Service?  @relation(fields: [serviceId], references: [id])
-  createdAt   DateTime  @default(now())
+  id                 String   @id @default(uuid())
+  rating             Int // 1-5
+  comment            String?
+  isVerifiedPurchase Boolean  @default(false) // Achat vérifié
+  isPublished        Boolean  @default(true) // Avis publié
+  helpfulCount       Int      @default(0) // Nombre de "utile"
+  userId             String
+  user               User     @relation(fields: [userId], references: [id])
+  productId          String?
+  product            Product? @relation(fields: [productId], references: [id])
+  serviceId          String?
+  service            Service? @relation(fields: [serviceId], references: [id])
+  createdAt          DateTime @default(now())
 }
