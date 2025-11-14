@@ -66,7 +66,7 @@ export class CategoriesService {
     const updateData: any = { ...updateCategoryDto };
     
     // Si le nom change, régénérer le slug
-    if (updateCategoryDto.name && updateCategoryDto.name !== category.name) {
+    if ('name' in updateCategoryDto && updateCategoryDto.name && updateCategoryDto.name !== category.name) {
       updateData.slug = generateSlug(updateCategoryDto.name);
     }
 
