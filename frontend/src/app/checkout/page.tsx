@@ -358,7 +358,7 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRole={['CLIENT', 'VENDEUSE', 'COIFFEUSE']}>
       <CheckoutContent />
     </ProtectedRoute>
   );

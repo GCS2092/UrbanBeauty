@@ -13,10 +13,16 @@ import { ordersService } from '@/services/orders.service';
 import { formatCurrency, getSelectedCurrency, setSelectedCurrency, Currency } from '@/utils/currency';
 import CurrencySelector from '@/components/shared/CurrencySelector';
 
-export default function CartPage() {
+function CartPageContent() {
   const router = useRouter();
   const { items, removeItem, updateQuantity, getTotal, clearCart } = useCartStore();
   const { isAuthenticated, user } = useAuth();
+  
+  // Rediriger les admins
+  if (user?.role === 'ADMIN') {
+    router.push('/dashboard/admin');
+    return null;
+  }
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
   

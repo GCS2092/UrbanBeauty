@@ -106,6 +106,7 @@ export default function ProductsPage() {
               image={product.images?.[0]?.url}
               stock={product.stock}
               description={product.description}
+              sellerId={product.sellerId}
             />
           ))}
         </div>
