@@ -98,6 +98,16 @@ export class ProductsService {
       throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier ce produit');
     }
 
+    const { images, ...productData } = updateProductDto;
+
+    // Si des images sont fournies, supprimer les anciennes et créer les nouvelles
+    if (images !== undefined) {
+      // Supprimer les anciennes images
+      await this.prisma.image.deleteMany({
+        where: { productId: id },
+      });
+    }
+
     return this.prisma.product.update({
       where: { id },
       data: {
