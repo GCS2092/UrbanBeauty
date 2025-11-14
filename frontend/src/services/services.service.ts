@@ -35,12 +35,23 @@ export interface Service {
   updatedAt: string;
 }
 
+export interface ImageDto {
+  url: string;
+  type?: 'URL' | 'UPLOADED';
+  alt?: string;
+  title?: string;
+  order?: number;
+  isPrimary?: boolean;
+}
+
 export interface CreateServiceDto {
   name: string;
   description?: string;
   price: number;
   duration: number;
   available?: boolean;
+  category?: string;
+  images?: ImageDto[];
 }
 
 export const servicesService = {
