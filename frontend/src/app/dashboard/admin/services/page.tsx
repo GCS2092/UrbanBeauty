@@ -1,13 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { useServices } from '@/hooks/useServices';
+import { useServices, useDeleteService } from '@/hooks/useServices';
+import { useNotifications } from '@/components/admin/NotificationProvider';
 import Image from 'next/image';
 
 function AdminServicesContent() {
+  const router = useRouter();
   const { data: services = [], isLoading, error } = useServices();
+  const { mutate: deleteService } = useDeleteService();
+  const notifications = useNotifications();
 
   if (isLoading) {
     return (
@@ -137,8 +142,14 @@ function AdminServicesContent() {
                           className="text-red-600 hover:text-red-900"
                           onClick={() => {
                             if (confirm('Êtes-vous sûr de vouloir supprimer ce service ?')) {
-                              // TODO: Implémenter la suppression
-                              console.log('Supprimer service:', service.id);
+                              deleteService(service.id, {
+                                onSuccess: () => {
+                                  notifications.success('Service supprimé', 'Le service a été supprimé avec succès');
+                                },
+                                onError: (error: any) => {
+                                  notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la suppression');
+                                },
+                              });
                             }
                           }}
                         >

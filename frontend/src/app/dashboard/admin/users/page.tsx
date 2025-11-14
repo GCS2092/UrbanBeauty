@@ -1,12 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon, PencilIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { useUsers, useUpdateUserRole } from '@/hooks/useUsers';
+import { useNotifications } from '@/components/admin/NotificationProvider';
 
 function AdminUsersContent() {
-  // TODO: Créer un hook useUsers pour récupérer les utilisateurs
-  const users: any[] = [];
+  const [selectedRole, setSelectedRole] = useState<string>('');
+  const { data: users = [], isLoading, error } = useUsers(selectedRole || undefined);
+  const { mutate: updateRole } = useUpdateUserRole();
+  const notifications = useNotifications();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -19,7 +24,33 @@ function AdminUsersContent() {
           Retour à l'administration
         </Link>
 
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Gestion des Utilisateurs</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
+          <select
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+          >
+            <option value="">Tous les rôles</option>
+            <option value="CLIENT">Clients</option>
+            <option value="COIFFEUSE">Coiffeuses</option>
+            <option value="VENDEUSE">Vendeuses</option>
+            <option value="ADMIN">Admins</option>
+          </select>
+        </div>
+
+        {isLoading && (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Chargement des utilisateurs...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-12">
+            <p className="text-red-600">Erreur lors du chargement des utilisateurs</p>
+          </div>
+        )}
 
         {/* Tableau des utilisateurs */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -86,8 +117,23 @@ function AdminUsersContent() {
                           <button
                             className="text-purple-600 hover:text-purple-900"
                             onClick={() => {
-                              // TODO: Implémenter la modification du rôle
-                              console.log('Modifier rôle:', user.id);
+                              const newRole = prompt(
+                                `Modifier le rôle de ${user.profile?.firstName} ${user.profile?.lastName}\n\nRôle actuel: ${user.role}\n\nNouveaux rôles: CLIENT, COIFFEUSE, VENDEUSE, ADMIN`,
+                                user.role
+                              );
+                              if (newRole && ['CLIENT', 'COIFFEUSE', 'VENDEUSE', 'ADMIN'].includes(newRole)) {
+                                updateRole(
+                                  { id: user.id, role: newRole as any },
+                                  {
+                                    onSuccess: () => {
+                                      notifications.success('Rôle modifié', 'Le rôle a été modifié avec succès');
+                                    },
+                                    onError: (error: any) => {
+                                      notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la modification du rôle');
+                                    },
+                                  }
+                                );
+                              }
                             }}
                           >
                             <ShieldCheckIcon className="h-5 w-5" />

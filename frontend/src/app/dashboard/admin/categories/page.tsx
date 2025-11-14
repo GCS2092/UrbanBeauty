@@ -1,17 +1,38 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useCategories, useDeleteCategory } from '@/hooks/useCategories';
+import { useNotifications } from '@/components/admin/NotificationProvider';
 
 function AdminCategoriesContent() {
-  // TODO: Créer un hook useCategories pour récupérer les catégories
-  const categories = [
-    { id: '1', name: 'Soin Visage', slug: 'soin-visage', isActive: true, productCount: 8 },
-    { id: '2', name: 'Soin Cheveux', slug: 'soin-cheveux', isActive: true, productCount: 4 },
-    { id: '3', name: 'Soin Corps', slug: 'soin-corps', isActive: true, productCount: 2 },
-    { id: '4', name: 'Maquillage', slug: 'maquillage', isActive: true, productCount: 2 },
-  ];
+  const router = useRouter();
+  const { data: categories = [], isLoading, error } = useCategories();
+  const { mutate: deleteCategory } = useDeleteCategory();
+  const notifications = useNotifications();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement des catégories...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">Erreur lors du chargement des catégories</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -50,7 +71,9 @@ function AdminCategoriesContent() {
                 </span>
               </div>
               <p className="text-sm text-gray-600 mb-2">Slug: {category.slug}</p>
-              <p className="text-sm text-gray-600 mb-4">{category.productCount} produits</p>
+              {category.description && (
+                <p className="text-sm text-gray-600 mb-2">{category.description}</p>
+              )}
               <div className="flex items-center space-x-2">
                 <Link
                   href={`/dashboard/admin/categories/${category.id}/edit`}
@@ -63,8 +86,14 @@ function AdminCategoriesContent() {
                   className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
                   onClick={() => {
                     if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
-                      // TODO: Implémenter la suppression
-                      console.log('Supprimer catégorie:', category.id);
+                      deleteCategory(category.id, {
+                        onSuccess: () => {
+                          notifications.success('Catégorie supprimée', 'La catégorie a été supprimée avec succès');
+                        },
+                        onError: (error: any) => {
+                          notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la suppression');
+                        },
+                      });
                     }
                   }}
                 >
