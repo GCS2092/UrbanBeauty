@@ -378,6 +378,7 @@ function GuestCheckoutForm({
       const orderItems = items.map((item: any) => ({
         productId: item.productId,
         quantity: item.quantity,
+        price: item.price,
       }));
 
       const orderData = {
