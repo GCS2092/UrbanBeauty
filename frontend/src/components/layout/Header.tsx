@@ -11,6 +11,19 @@ import {
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/hooks/useAuth';
+import { useCartStore } from '@/store/cart.store';
+
+function CartBadge() {
+  const itemCount = useCartStore((state) => state.getItemCount());
+  
+  if (itemCount === 0) return null;
+  
+  return (
+    <span className="absolute top-0 right-0 h-4 w-4 bg-pink-600 text-white text-xs rounded-full flex items-center justify-center">
+      {itemCount > 9 ? '9+' : itemCount}
+    </span>
+  );
+}
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -128,9 +141,7 @@ export default function Header() {
             {/* Cart */}
             <Link href="/cart" className="relative p-2 text-gray-600 hover:text-pink-600 transition-colors">
               <ShoppingBagIcon className="h-5 w-5" />
-              <span className="absolute top-0 right-0 h-4 w-4 bg-pink-600 text-white text-xs rounded-full flex items-center justify-center">
-                0
-              </span>
+              <CartBadge />
             </Link>
 
             {/* Mobile menu button */}

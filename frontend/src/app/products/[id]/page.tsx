@@ -5,11 +5,35 @@ import Link from 'next/link';
 import { ArrowLeftIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { useProduct } from '@/hooks/useProducts';
 import { useParams } from 'next/navigation';
+import { useCartStore } from '@/store/cart.store';
+import { useNotifications } from '@/components/admin/NotificationProvider';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const productId = typeof params?.id === 'string' ? params.id : '';
   const { data: product, isLoading, error } = useProduct(productId);
+  const addItem = useCartStore((state) => state.addItem);
+  const notifications = useNotifications();
+  const [quantity, setQuantity] = useState(1);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    
+    if (product.stock <= 0) {
+      notifications.warning('Stock épuisé', 'Ce produit n\'est plus disponible');
+      return;
+    }
+
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.images?.[0]?.url,
+      stock: product.stock,
+    }, quantity);
+    
+    notifications.success('Ajouté au panier', `${product.name} a été ajouté à votre panier`);
+  };
 
   if (isLoading) {
     return (
@@ -68,10 +92,35 @@ export default function ProductDetailPage() {
               <p className="text-sm text-gray-500 mb-2">Stock disponible : <span className="text-gray-900 font-medium">{product.stock}</span></p>
             </div>
 
+            {product.stock > 0 && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Quantité</label>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    -
+                  </button>
+                  <span className="text-lg font-medium w-12 text-center">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                    className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-4">
-              <button className="flex-1 bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors flex items-center justify-center">
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock <= 0}
+                className="flex-1 bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <ShoppingBagIcon className="h-5 w-5 mr-2" />
-                Ajouter au panier
+                {product.stock <= 0 ? 'Épuisé' : 'Ajouter au panier'}
               </button>
             </div>
           </div>

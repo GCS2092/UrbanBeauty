@@ -96,16 +96,17 @@ export default function ProductsPage() {
 
         {/* Grille de produits */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map((product) => (
-            <ProductCard 
-              key={product.id} 
-              id={product.id}
-              name={product.name}
-              price={product.price}
-              category={product.category?.name}
-              image={product.images?.[0]?.url}
-            />
-          ))}
+                 {filteredProducts.map((product) => (
+                   <ProductCard
+                     key={product.id}
+                     id={product.id}
+                     name={product.name}
+                     price={product.price}
+                     category={product.category?.name}
+                     image={product.images?.[0]?.url}
+                     stock={product.stock}
+                   />
+                 ))}
         </div>
 
         {/* Message si pas de produits */}

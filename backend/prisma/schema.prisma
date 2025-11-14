@@ -190,8 +190,8 @@ model Category {
 model Order {
   id                    String      @id @default(uuid())
   orderNumber           String      @unique // Numéro de commande unique
-  userId                String
-  user                  User        @relation(fields: [userId], references: [id])
+  userId                String? // Peut être null pour les commandes guest
+  user                  User?       @relation(fields: [userId], references: [id])
   customerEmail         String // Email du client (pour notifications)
   customerName          String // Nom complet du client
   customerPhone         String? // Téléphone du client
@@ -203,9 +203,13 @@ model Order {
   estimatedDeliveryDate DateTime? // Date de livraison estimée
   notes                 String? // Notes de la commande
   cancellationReason    String? // Raison d'annulation
-  items                 OrderItem[]
-  total                 Float
+  couponId              String? // Coupon appliqué
+  coupon                Coupon?     @relation(fields: [couponId], references: [id])
+  subtotal              Float // Sous-total avant réduction
+  discount              Float       @default(0) // Montant de la réduction
+  total                 Float // Total final
   status                OrderStatus @default(PENDING)
+  items                 OrderItem[]
   payment               Payment?
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -278,4 +282,24 @@ model Review {
   serviceId          String?
   service            Service? @relation(fields: [serviceId], references: [id])
   createdAt          DateTime @default(now())
+}
+
+model Coupon {
+  id            String   @id @default(uuid())
+  code          String   @unique // Code du coupon (ex: "WELCOME10")
+  description   String? // Description du coupon
+  discountType  String // "PERCENTAGE" ou "FIXED"
+  discountValue Float // Valeur de la réduction (pourcentage ou montant fixe)
+  minPurchase   Float? // Montant minimum d'achat requis
+  maxDiscount   Float? // Réduction maximale (pour les pourcentages)
+  validFrom     DateTime // Date de début de validité
+  validUntil    DateTime // Date de fin de validité
+  usageLimit    Int? // Nombre maximum d'utilisations totales
+  usageCount    Int      @default(0) // Nombre d'utilisations actuelles
+  userLimit     Int? // Nombre maximum d'utilisations par utilisateur
+  isActive      Boolean  @default(true) // Coupon actif/inactif
+  applicableTo  String? // "ALL", "PRODUCTS", "SERVICES", ou IDs spécifiques
+  orders        Order[] // Commandes utilisant ce coupon
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
