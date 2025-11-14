@@ -11,7 +11,7 @@ import ImageUploader from '@/components/admin/ImageUploader';
 
 function EditServiceForm({ serviceId }: { serviceId: string }) {
   const router = useRouter();
-  const { data: service, isLoading: loadingService } = useService(serviceId);
+  const { data: service, isLoading: loadingService, error: serviceError } = useService(serviceId);
   const { mutate: updateService, isPending } = useUpdateService();
   const notifications = useNotifications();
 
