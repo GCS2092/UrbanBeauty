@@ -42,17 +42,13 @@ function CartPageContent() {
     }
 
     try {
-      const coupon = await couponsService.validate(couponCode);
+      const coupon = await couponsService.validate({ code: couponCode, totalAmount: subtotal });
       if (coupon.valid) {
         setAppliedCoupon(coupon);
-        if (coupon.discountType === 'PERCENTAGE') {
-          setDiscount((subtotal * coupon.discountValue) / 100);
-        } else {
-          setDiscount(coupon.discountValue);
-        }
-        notifications.success('Code appliqué', `Réduction de ${coupon.discountValue}${coupon.discountType === 'PERCENTAGE' ? '%' : '€'} appliquée`);
+        setDiscount(coupon.discount);
+        notifications.success('Code appliqué', `Réduction de ${coupon.discount}€ appliquée`);
       } else {
-        notifications.error('Code invalide', coupon.message || 'Ce code promo n\'est pas valide');
+        notifications.error('Code invalide', 'Ce code promo n\'est pas valide');
       }
     } catch (error: any) {
       notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la validation du code');
@@ -237,7 +233,7 @@ function CartPageContent() {
                 </div>
                 {appliedCoupon && (
                   <p className="mt-2 text-sm text-green-600">
-                    Code {appliedCoupon.code} appliqué : -{appliedCoupon.discountValue}{appliedCoupon.discountType === 'PERCENTAGE' ? '%' : '€'}
+                    Code {appliedCoupon.coupon.code} appliqué : -{appliedCoupon.discount}€
                   </p>
                 )}
               </div>
