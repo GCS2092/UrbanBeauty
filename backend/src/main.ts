@@ -5,8 +5,10 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Set global prefix for all routes
-  app.setGlobalPrefix('api');
+  // Set global prefix for all routes (except root routes)
+  app.setGlobalPrefix('api', {
+    exclude: ['/', '/health', '/test-db'],
+  });
   
   // Enable CORS
   app.enableCors({
