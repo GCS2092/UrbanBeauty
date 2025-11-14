@@ -60,6 +60,15 @@ function AnalyticsContent() {
   } : null;
 
   const stats = sellerStats || providerStats;
+  
+  // Type guards pour TypeScript
+  const isSellerStats = (s: typeof stats): s is typeof sellerStats => {
+    return s !== null && 'totalProducts' in s;
+  };
+  
+  const isProviderStats = (s: typeof stats): s is typeof providerStats => {
+    return s !== null && 'totalServices' in s;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -82,7 +91,7 @@ function AnalyticsContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Produits</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.totalProducts || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">{isSellerStats(stats) ? stats.totalProducts : 0}</p>
                   </div>
                   <CubeIcon className="h-8 w-8 text-pink-600" />
                 </div>
@@ -92,7 +101,7 @@ function AnalyticsContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Commandes totales</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.totalOrders || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">{isSellerStats(stats) ? stats.totalOrders : 0}</p>
                   </div>
                   <ShoppingBagIcon className="h-8 w-8 text-blue-600" />
                 </div>
@@ -102,7 +111,7 @@ function AnalyticsContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">En attente</p>
-                    <p className="text-3xl font-bold text-yellow-600 mt-2">{stats?.pendingOrders || 0}</p>
+                    <p className="text-3xl font-bold text-yellow-600 mt-2">{isSellerStats(stats) ? stats.pendingOrders : 0}</p>
                   </div>
                   <ShoppingBagIcon className="h-8 w-8 text-yellow-600" />
                 </div>
@@ -124,7 +133,7 @@ function AnalyticsContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Commandes complétées</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.completedOrders || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">{isSellerStats(stats) ? stats.completedOrders : 0}</p>
                   </div>
                   <ShoppingBagIcon className="h-8 w-8 text-green-600" />
                 </div>
@@ -134,7 +143,7 @@ function AnalyticsContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Stock bas</p>
-                    <p className="text-3xl font-bold text-red-600 mt-2">{stats?.lowStockProducts || 0}</p>
+                    <p className="text-3xl font-bold text-red-600 mt-2">{isSellerStats(stats) ? stats.lowStockProducts : 0}</p>
                   </div>
                   <CubeIcon className="h-8 w-8 text-red-600" />
                 </div>
@@ -148,7 +157,7 @@ function AnalyticsContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Services</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.totalServices || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">{isProviderStats(stats) ? stats.totalServices : 0}</p>
                   </div>
                   <ScissorsIcon className="h-8 w-8 text-purple-600" />
                 </div>
@@ -158,7 +167,7 @@ function AnalyticsContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Réservations</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.totalBookings || 0}</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">{isProviderStats(stats) ? stats.totalBookings : 0}</p>
                   </div>
                   <ChartBarIcon className="h-8 w-8 text-blue-600" />
                 </div>
@@ -168,7 +177,7 @@ function AnalyticsContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">En attente</p>
-                    <p className="text-3xl font-bold text-yellow-600 mt-2">{stats?.pendingBookings || 0}</p>
+                    <p className="text-3xl font-bold text-yellow-600 mt-2">{isProviderStats(stats) ? stats.pendingBookings : 0}</p>
                   </div>
                   <ChartBarIcon className="h-8 w-8 text-yellow-600" />
                 </div>
