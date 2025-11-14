@@ -57,7 +57,6 @@ export default function NotificationProvider({ children }: { children: ReactNode
   }, []);
 
   const value: NotificationContextType = {
-    notifications,
     showNotification,
     removeNotification,
     success: (title: string, message?: string) => showNotification('success', title, message),
