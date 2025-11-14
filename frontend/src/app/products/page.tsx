@@ -1,53 +1,33 @@
+'use client';
+
 import Link from 'next/link';
 import ProductCard from '@/components/shared/ProductCard';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { useProducts } from '@/hooks/useProducts';
 
 export default function ProductsPage() {
-  // Données d'exemple - à remplacer par des appels API
-  const products = [
-    {
-      id: '1',
-      name: 'Masque Hydratant Intensif',
-      price: 29.99,
-      category: 'Soin Visage',
-      image: undefined,
-    },
-    {
-      id: '2',
-      name: 'Sérum Vitamine C',
-      price: 45.00,
-      category: 'Soin Visage',
-      image: undefined,
-    },
-    {
-      id: '3',
-      name: 'Shampooing Réparateur',
-      price: 18.50,
-      category: 'Soin Cheveux',
-      image: undefined,
-    },
-    {
-      id: '4',
-      name: 'Crème Mains Nourrissante',
-      price: 12.99,
-      category: 'Soin Corps',
-      image: undefined,
-    },
-    {
-      id: '5',
-      name: 'Baume à Lèvres Réparateur',
-      price: 8.99,
-      category: 'Soin Visage',
-      image: undefined,
-    },
-    {
-      id: '6',
-      name: 'Huile Capillaire Nourrissante',
-      price: 24.99,
-      category: 'Soin Cheveux',
-      image: undefined,
-    },
-  ];
+  const { data: products = [], isLoading, error } = useProducts();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement des produits...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">Erreur lors du chargement des produits</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -84,7 +64,14 @@ export default function ProductsPage() {
         {/* Grille de produits */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product) => (
-            <ProductCard key={product.id} {...product} />
+            <ProductCard 
+              key={product.id} 
+              id={product.id}
+              name={product.name}
+              price={product.price}
+              category={product.category?.name}
+              image={product.images?.[0]?.url}
+            />
           ))}
         </div>
 

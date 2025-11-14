@@ -1,38 +1,44 @@
-// Configuration de l'API
+import axios from 'axios';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://urbanbeauty.onrender.com';
 
-export const apiConfig = {
+// Créer une instance axios
+export const api = axios.create({
   baseURL: API_URL,
-  endpoints: {
-    health: `${API_URL}/health`,
-    testDb: `${API_URL}/test-db`,
-    products: `${API_URL}/api/products`,
-    services: `${API_URL}/api/services`,
-    auth: `${API_URL}/api/auth`,
+  headers: {
+    'Content-Type': 'application/json',
   },
-};
+});
 
-// Fonction utilitaire pour les appels API
-export async function fetchAPI(endpoint: string, options?: RequestInit) {
-  const url = `${apiConfig.baseURL}${endpoint}`;
-  
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+// Intercepteur pour ajouter le token JWT
+api.interceptors.request.use(
+  (config) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-}
+);
 
+// Intercepteur pour gérer les erreurs
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expiré ou invalide
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('access_token');
+        window.location.href = '/auth/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;

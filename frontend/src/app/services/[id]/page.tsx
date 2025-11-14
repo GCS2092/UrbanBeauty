@@ -1,18 +1,38 @@
+'use client';
+
 import Link from 'next/link';
-import { ArrowLeftIcon, CalendarIcon, ClockIcon, StarIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import { useService } from '@/hooks/useServices';
 
 export default function ServiceDetailPage({ params }: { params: { id: string } }) {
-  // Données d'exemple - à remplacer par un appel API
-  const service = {
-    id: params.id,
-    name: 'Tresses Africaines',
-    price: 80,
-    duration: 180,
-    provider: 'Marie K.',
-    rating: 4.8,
-    description: 'Création de tresses africaines traditionnelles avec des techniques modernes. Parfait pour tous les types de cheveux.',
-  };
+  const { data: service, isLoading, error } = useService(params.id);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !service) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">Service introuvable</p>
+          <Link href="/services" className="text-pink-600 hover:text-pink-700 mt-4 inline-block">
+            Retour aux services
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const rating = service.provider?.rating || 4.5;
 
   return (
     <div className="min-h-screen bg-white">
@@ -27,8 +47,12 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Image */}
-          <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
-            <span className="text-8xl">💇‍♀️</span>
+          <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center overflow-hidden">
+            {service.images?.[0]?.url ? (
+              <img src={service.images[0].url} alt={service.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-8xl">💇‍♀️</span>
+            )}
           </div>
 
           {/* Détails */}
@@ -41,21 +65,25 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
                   <StarIconSolid
                     key={i}
                     className={`h-5 w-5 ${
-                      i < Math.floor(service.rating)
+                      i < Math.floor(rating)
                         ? 'text-yellow-400'
                         : 'text-gray-300'
                     }`}
                   />
                 ))}
-                <span className="ml-2 text-sm text-gray-600">{service.rating}</span>
+                <span className="ml-2 text-sm text-gray-600">{rating}</span>
               </div>
-              <span className="text-gray-400">•</span>
-              <span className="text-sm text-gray-600">par {service.provider}</span>
+              {service.provider && (
+                <>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-sm text-gray-600">par {service.provider.firstName} {service.provider.lastName}</span>
+                </>
+              )}
             </div>
 
             <p className="text-3xl font-bold text-pink-600 mb-6">{service.price.toFixed(2)} €</p>
             
-            <p className="text-gray-600 mb-6">{service.description}</p>
+            <p className="text-gray-600 mb-6">{service.description || 'Aucune description disponible'}</p>
 
             <div className="space-y-4 mb-6">
               <div className="flex items-center text-gray-600">

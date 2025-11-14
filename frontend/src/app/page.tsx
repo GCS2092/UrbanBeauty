@@ -1,81 +1,21 @@
+'use client';
+
 import Hero from '@/components/shared/Hero';
 import ProductCard from '@/components/shared/ProductCard';
 import ServiceCard from '@/components/shared/ServiceCard';
 import Link from 'next/link';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
-
-// Données d'exemple - à remplacer par des appels API plus tard
-const featuredProducts = [
-  {
-    id: '1',
-    name: 'Masque Hydratant Intensif',
-    price: 29.99,
-    category: 'Soin Visage',
-    image: undefined,
-  },
-  {
-    id: '2',
-    name: 'Sérum Vitamine C',
-    price: 45.00,
-    category: 'Soin Visage',
-    image: undefined,
-  },
-  {
-    id: '3',
-    name: 'Shampooing Réparateur',
-    price: 18.50,
-    category: 'Soin Cheveux',
-    image: undefined,
-  },
-  {
-    id: '4',
-    name: 'Crème Mains Nourrissante',
-    price: 12.99,
-    category: 'Soin Corps',
-    image: undefined,
-  },
-];
-
-const featuredServices = [
-  {
-    id: '1',
-    name: 'Tresses Africaines',
-    price: 80,
-    duration: 180,
-    provider: 'Marie K.',
-    rating: 4.8,
-    image: undefined,
-  },
-  {
-    id: '2',
-    name: 'Pose de Perruque',
-    price: 120,
-    duration: 120,
-    provider: 'Sophie L.',
-    rating: 4.9,
-    image: undefined,
-  },
-  {
-    id: '3',
-    name: 'Coiffure Événement',
-    price: 65,
-    duration: 90,
-    provider: 'Amélie D.',
-    rating: 4.7,
-    image: undefined,
-  },
-  {
-    id: '4',
-    name: 'Locks Entretien',
-    price: 95,
-    duration: 150,
-    provider: 'Julie M.',
-    rating: 4.6,
-    image: undefined,
-  },
-];
+import { useProducts } from '@/hooks/useProducts';
+import { useServices } from '@/hooks/useServices';
 
 export default function Home() {
+  const { data: products = [] } = useProducts();
+  const { data: services = [] } = useServices();
+
+  // Prendre les 4 premiers produits et services
+  const featuredProducts = products.slice(0, 4);
+  const featuredServices = services.slice(0, 4);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -98,7 +38,14 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {featuredProducts.map((product) => (
-            <ProductCard key={product.id} {...product} />
+            <ProductCard 
+              key={product.id}
+              id={product.id}
+              name={product.name}
+              price={product.price}
+              category={product.category?.name}
+              image={product.images?.[0]?.url}
+            />
           ))}
         </div>
         <div className="mt-8 text-center sm:hidden">
@@ -130,7 +77,16 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {featuredServices.map((service) => (
-              <ServiceCard key={service.id} {...service} />
+              <ServiceCard 
+                key={service.id}
+                id={service.id}
+                name={service.name}
+                price={service.price}
+                duration={service.duration}
+                provider={service.provider ? `${service.provider.firstName} ${service.provider.lastName}` : undefined}
+                rating={service.provider?.rating}
+                image={service.images?.[0]?.url}
+              />
             ))}
           </div>
           <div className="mt-8 text-center sm:hidden">

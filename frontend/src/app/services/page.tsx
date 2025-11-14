@@ -1,47 +1,33 @@
+'use client';
+
 import Link from 'next/link';
 import ServiceCard from '@/components/shared/ServiceCard';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { useServices } from '@/hooks/useServices';
 
 export default function ServicesPage() {
-  // Données d'exemple - à remplacer par des appels API
-  const services = [
-    {
-      id: '1',
-      name: 'Tresses Africaines',
-      price: 80,
-      duration: 180,
-      provider: 'Marie K.',
-      rating: 4.8,
-      image: undefined,
-    },
-    {
-      id: '2',
-      name: 'Pose de Perruque',
-      price: 120,
-      duration: 120,
-      provider: 'Sophie L.',
-      rating: 4.9,
-      image: undefined,
-    },
-    {
-      id: '3',
-      name: 'Coiffure Événement',
-      price: 65,
-      duration: 90,
-      provider: 'Amélie D.',
-      rating: 4.7,
-      image: undefined,
-    },
-    {
-      id: '4',
-      name: 'Locks Entretien',
-      price: 95,
-      duration: 150,
-      provider: 'Julie M.',
-      rating: 4.6,
-      image: undefined,
-    },
-  ];
+  const { data: services = [], isLoading, error } = useServices();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement des services...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">Erreur lors du chargement des services</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -62,7 +48,16 @@ export default function ServicesPage() {
         {/* Grille de services */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {services.map((service) => (
-            <ServiceCard key={service.id} {...service} />
+            <ServiceCard 
+              key={service.id}
+              id={service.id}
+              name={service.name}
+              price={service.price}
+              duration={service.duration}
+              provider={service.provider ? `${service.provider.firstName} ${service.provider.lastName}` : undefined}
+              rating={service.provider?.rating}
+              image={service.images?.[0]?.url}
+            />
           ))}
         </div>
 

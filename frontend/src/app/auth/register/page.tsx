@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function RegisterPage() {
-  const router = useRouter();
+  const { register, isRegistering, registerError } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -14,30 +14,19 @@ export default function RegisterPage() {
     phone: '',
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
     try {
-      // TODO: Appel API réel
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // });
-      
-      // Pour l'instant, simulation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirection vers dashboard
-      router.push('/dashboard');
+      register(formData, {
+        onError: (err: any) => {
+          setError(err?.response?.data?.message || 'Une erreur est survenue lors de l\'inscription');
+        },
+      });
     } catch (err) {
-      setError('Une erreur est survenue lors de l\'inscription');
-    } finally {
-      setLoading(false);
+      setError('Une erreur est survenue');
     }
   };
 
@@ -47,9 +36,9 @@ export default function RegisterPage() {
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Inscription</h2>
         <p className="text-gray-600 mb-6">Créez votre compte UrbanBeauty</p>
 
-        {error && (
+        {(error || registerError) && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+            {error || (registerError as any)?.response?.data?.message || 'Une erreur est survenue lors de l\'inscription'}
           </div>
         )}
 
@@ -129,10 +118,10 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={isRegistering}
             className="w-full bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Inscription...' : 'S\'inscrire'}
+            {isRegistering ? 'Inscription...' : 'S\'inscrire'}
           </button>
         </form>
 

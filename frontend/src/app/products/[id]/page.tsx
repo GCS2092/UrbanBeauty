@@ -1,16 +1,35 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowLeftIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
+import { useProduct } from '@/hooks/useProducts';
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  // Données d'exemple - à remplacer par un appel API
-  const product = {
-    id: params.id,
-    name: 'Masque Hydratant Intensif',
-    price: 29.99,
-    category: 'Soin Visage',
-    description: 'Un masque hydratant intensif pour une peau éclatante et nourrie. Formulé avec des ingrédients naturels pour une hydratation profonde et durable.',
-    stock: 15,
-  };
+  const { data: product, isLoading, error } = useProduct(params.id);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">Produit introuvable</p>
+          <Link href="/products" className="text-pink-600 hover:text-pink-700 mt-4 inline-block">
+            Retour aux produits
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -25,13 +44,17 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Image */}
-          <div className="aspect-square bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center">
-            <span className="text-8xl">✨</span>
+          <div className="aspect-square bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center overflow-hidden">
+            {product.images?.[0]?.url ? (
+              <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-8xl">✨</span>
+            )}
           </div>
 
           {/* Détails */}
           <div>
-            <p className="text-sm text-gray-500 uppercase tracking-wide mb-2">{product.category}</p>
+            <p className="text-sm text-gray-500 uppercase tracking-wide mb-2">{product.category?.name || 'Produit'}</p>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
             <p className="text-3xl font-bold text-pink-600 mb-6">{product.price.toFixed(2)} €</p>
             
