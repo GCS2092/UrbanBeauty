@@ -227,7 +227,7 @@ export class ServicesService {
     });
   }
 
-  async remove(id: string, userId?: string) {
+  async remove(id: string, userId?: string, userRole?: string) {
     const service = await this.prisma.service.findUnique({
       where: { id },
     });
@@ -236,8 +236,8 @@ export class ServicesService {
       throw new NotFoundException('Service introuvable');
     }
 
-    // Si userId est fourni, vérifier que l'utilisateur est le prestataire (sauf admin)
-    if (userId) {
+    // Si userId est fourni et que l'utilisateur n'est pas admin, vérifier que l'utilisateur est le prestataire
+    if (userId && userRole !== 'ADMIN') {
       const profile = await this.prisma.profile.findUnique({
         where: { userId },
       });
