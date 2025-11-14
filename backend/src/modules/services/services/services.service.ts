@@ -149,7 +149,7 @@ export class ServicesService {
     });
   }
 
-  async remove(id: string, userId: string) {
+  async remove(id: string, userId?: string) {
     const service = await this.prisma.service.findUnique({
       where: { id },
     });
@@ -158,12 +158,15 @@ export class ServicesService {
       throw new NotFoundException('Service introuvable');
     }
 
-    const profile = await this.prisma.profile.findUnique({
-      where: { userId },
-    });
+    // Si userId est fourni, vérifier que l'utilisateur est le prestataire (sauf admin)
+    if (userId) {
+      const profile = await this.prisma.profile.findUnique({
+        where: { userId },
+      });
 
-    if (!profile || service.providerId !== profile.id) {
-      throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer ce service');
+      if (!profile || service.providerId !== profile.id) {
+        throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer ce service');
+      }
     }
 
     await this.prisma.service.delete({
