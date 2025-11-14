@@ -72,12 +72,6 @@ async function main() {
 
   const categories = [categoryVisage, categoryCheveux, categoryCorps, categoryMaquillage];
 
-  // Ajouter des images aux catégories
-  await prisma.category.updateMany({
-    where: { name: { in: ['Soin Visage', 'Soin Cheveux', 'Soin Corps', 'Maquillage'] } },
-    data: {},
-  });
-
   // Mettre à jour les catégories avec des images
   await prisma.category.update({
     where: { id: categoryVisage.id },
