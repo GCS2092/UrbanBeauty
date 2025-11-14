@@ -22,6 +22,10 @@ export function useAuth() {
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
       router.push('/dashboard');
     },
+    onError: (error) => {
+      // Les erreurs sont gérées dans le composant qui appelle login()
+      console.error('Login error:', error);
+    },
   });
 
   const { data: user, isLoading } = useQuery({

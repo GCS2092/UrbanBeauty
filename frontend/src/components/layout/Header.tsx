@@ -46,16 +46,32 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-8">
-            <Link href="/products" className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors">
+            <Link 
+              href="/products" 
+              className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Produits
             </Link>
-            <Link href="/services" className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors">
+            <Link 
+              href="/services" 
+              className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Services
             </Link>
-            <Link href="/lookbook" className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors">
+            <Link 
+              href="/lookbook" 
+              className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Lookbook
             </Link>
-            <Link href="/prestataires" className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors">
+            <Link 
+              href="/prestataires" 
+              className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Prestataires
             </Link>
           </div>
@@ -168,32 +184,59 @@ export default function Header() {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-100 py-4 space-y-2">
-            <Link href="/products" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            <Link 
+              href="/products" 
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Produits
             </Link>
-            <Link href="/services" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            <Link 
+              href="/services" 
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Services
             </Link>
-            <Link href="/lookbook" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            <Link 
+              href="/lookbook" 
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Lookbook
             </Link>
-            <Link href="/prestataires" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            <Link 
+              href="/prestataires" 
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               Prestataires
             </Link>
             {isAuthenticated ? (
               <>
-                <Link href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <Link 
+                  href="/dashboard" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   Tableau de bord
                 </Link>
                 <button
-                  onClick={logout}
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
                   className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
                 >
                   Déconnexion
                 </button>
               </>
             ) : (
-              <Link href="/auth/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+              <Link 
+                href="/auth/login" 
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Connexion
               </Link>
             )}

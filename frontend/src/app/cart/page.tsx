@@ -195,50 +195,54 @@ export default function CartPage() {
           {/* Liste des articles */}
           <div className="lg:col-span-2 space-y-4">
             {items.map((item) => (
-              <div key={item.id} className="bg-white rounded-lg shadow-sm p-6 flex items-center gap-4">
+              <div key={item.id} className="bg-white rounded-lg shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 {item.image ? (
-                  <div className="relative h-20 w-20 rounded-lg overflow-hidden">
+                  <div className="relative h-24 w-24 sm:h-20 sm:w-20 rounded-lg overflow-hidden flex-shrink-0">
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
                       className="object-cover"
+                      sizes="(max-width: 640px) 96px, 80px"
                     />
                   </div>
                 ) : (
-                  <div className="h-20 w-20 bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center">
+                  <div className="h-24 w-24 sm:h-20 sm:w-20 bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <span className="text-2xl">✨</span>
                   </div>
                 )}
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{item.name}</h3>
+                <div className="flex-1 min-w-0 w-full sm:w-auto">
+                  <h3 className="font-semibold text-gray-900 truncate">{item.name}</h3>
                   <p className="text-sm text-gray-600">{formatCurrency(item.price, currency)}</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-start">
                   <div className="flex items-center gap-2 border border-gray-300 rounded-lg">
                     <button
                       onClick={() => updateQuantity(item.productId, item.quantity - 1)}
                       className="p-2 hover:bg-gray-50"
+                      aria-label="Diminuer la quantité"
                     >
                       <MinusIcon className="h-4 w-4" />
                     </button>
-                    <span className="px-4 py-2 text-gray-900 font-medium min-w-[3rem] text-center">
+                    <span className="px-3 sm:px-4 py-2 text-gray-900 font-medium min-w-[2rem] sm:min-w-[3rem] text-center">
                       {item.quantity}
                     </span>
                     <button
                       onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                       disabled={item.quantity >= item.stock}
                       className="p-2 hover:bg-gray-50 disabled:opacity-50"
+                      aria-label="Augmenter la quantité"
                     >
                       <PlusIcon className="h-4 w-4" />
                     </button>
                   </div>
-                  <span className="text-gray-900 font-medium w-20 text-right">
+                  <span className="text-gray-900 font-medium text-right sm:w-20">
                     {formatCurrency(item.price * item.quantity, currency)}
                   </span>
                   <button
                     onClick={() => removeItem(item.productId)}
                     className="text-red-600 hover:text-red-700 p-2"
+                    aria-label="Supprimer du panier"
                   >
                     <TrashIcon className="h-5 w-5" />
                   </button>

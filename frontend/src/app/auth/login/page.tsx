@@ -16,15 +16,14 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
 
-    try {
-      login(formData, {
-        onError: (err: any) => {
-          setError(err?.response?.data?.message || 'Email ou mot de passe incorrect');
-        },
-      });
-    } catch (err) {
-      setError('Une erreur est survenue');
-    }
+    login(formData, {
+      onSuccess: () => {
+        // La redirection est gérée par useAuth
+      },
+      onError: (err: any) => {
+        setError(err?.response?.data?.message || 'Email ou mot de passe incorrect');
+      },
+    });
   };
 
   return (
