@@ -90,11 +90,11 @@ export class ProductsService {
     });
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto, userId?: string) {
+  async update(id: string, updateProductDto: UpdateProductDto, userId?: string, userRole?: string) {
     const product = await this.findOne(id);
 
-    // Si userId est fourni, vérifier que l'utilisateur est le vendeur (sauf admin)
-    if (userId && product.sellerId !== userId) {
+    // Si userId est fourni et que l'utilisateur n'est pas admin, vérifier que l'utilisateur est le vendeur
+    if (userId && userRole !== 'ADMIN' && product.sellerId !== userId) {
       throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier ce produit');
     }
 
@@ -132,11 +132,11 @@ export class ProductsService {
     });
   }
 
-  async remove(id: string, userId?: string) {
+  async remove(id: string, userId?: string, userRole?: string) {
     const product = await this.findOne(id);
 
-    // Si userId est fourni, vérifier que l'utilisateur est le vendeur (sauf admin)
-    if (userId && product.sellerId !== userId) {
+    // Si userId est fourni et que l'utilisateur n'est pas admin, vérifier que l'utilisateur est le vendeur
+    if (userId && userRole !== 'ADMIN' && product.sellerId !== userId) {
       throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer ce produit');
     }
 

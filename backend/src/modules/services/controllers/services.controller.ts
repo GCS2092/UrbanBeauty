@@ -48,14 +48,14 @@ export class ServicesController {
     @CurrentUser() user: any,
   ) {
     // Admin peut modifier n'importe quel service, sinon seulement les siens
-    return this.servicesService.update(id, updateServiceDto, user.role === 'ADMIN' ? undefined : user.userId);
+    return this.servicesService.update(id, updateServiceDto, user.role === 'ADMIN' ? undefined : user.userId, user.role);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     // Admin peut supprimer n'importe quel service, sinon seulement les siens
-    return this.servicesService.remove(id, user.role === 'ADMIN' ? undefined : user.userId);
+    return this.servicesService.remove(id, user.role === 'ADMIN' ? undefined : user.userId, user.role);
   }
 }
 

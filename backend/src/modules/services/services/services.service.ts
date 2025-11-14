@@ -103,16 +103,8 @@ export class ServicesService {
       throw new NotFoundException('Service introuvable');
     }
 
-    // Si userId est fourni et que l'utilisateur n'est pas admin, vérifier les permissions
-    if (userId) {
-      const profile = await this.prisma.profile.findUnique({
-        where: { userId },
-      });
-
-      // Si l'utilisateur n'est pas admin et n'est pas le propriétaire du service, vérifier les permissions
-      // Pour l'instant, on permet l'accès en lecture pour tous les utilisateurs authentifiés
-      // La modification sera vérifiée dans le contrôleur
-    }
+    // L'accès en lecture est permis pour tous les utilisateurs authentifiés
+    // La modification sera vérifiée dans le contrôleur et le service update()
 
     // Formater la réponse pour correspondre au format attendu par le frontend
     return {
@@ -170,7 +162,7 @@ export class ServicesService {
     });
   }
 
-  async update(id: string, updateServiceDto: UpdateServiceDto, userId?: string) {
+  async update(id: string, updateServiceDto: UpdateServiceDto, userId?: string, userRole?: string) {
     const service = await this.prisma.service.findUnique({
       where: { id },
       include: {
@@ -182,8 +174,8 @@ export class ServicesService {
       throw new NotFoundException('Service introuvable');
     }
 
-    // Si userId est fourni, vérifier que l'utilisateur est le prestataire (sauf admin)
-    if (userId) {
+    // Si userId est fourni et que l'utilisateur n'est pas admin, vérifier que l'utilisateur est le prestataire
+    if (userId && userRole !== 'ADMIN') {
       const profile = await this.prisma.profile.findUnique({
         where: { userId },
       });

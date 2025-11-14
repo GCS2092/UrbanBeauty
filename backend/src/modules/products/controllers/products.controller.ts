@@ -45,14 +45,14 @@ export class ProductsController {
     @CurrentUser() user: any,
   ) {
     // Admin peut modifier n'importe quel produit, sinon seulement les siens
-    return this.productsService.update(id, updateProductDto, user.role === 'ADMIN' ? undefined : user.userId);
+    return this.productsService.update(id, updateProductDto, user.role === 'ADMIN' ? undefined : user.userId, user.role);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     // Admin peut supprimer n'importe quel produit, sinon seulement les siens
-    return this.productsService.remove(id, user.role === 'ADMIN' ? undefined : user.userId);
+    return this.productsService.remove(id, user.role === 'ADMIN' ? undefined : user.userId, user.role);
   }
 }
 
