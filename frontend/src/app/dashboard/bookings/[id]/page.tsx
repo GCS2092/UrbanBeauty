@@ -232,9 +232,9 @@ function BookingDetailContent() {
                 <p className="text-gray-600">
                   <span className="font-medium">Email :</span> {booking.user.email}
                 </p>
-                {booking.user.profile?.phone && (
+                {booking.user?.profile?.phone && (
                   <p className="text-gray-600">
-                    <span className="font-medium">Téléphone :</span> {booking.user.profile.phone}
+                    <span className="font-medium">Téléphone :</span> {booking.user?.profile?.phone}
                   </p>
                 )}
                 {booking.clientPhone && (

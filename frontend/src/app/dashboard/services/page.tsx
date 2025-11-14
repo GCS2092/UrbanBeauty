@@ -17,7 +17,7 @@ function ServicesPageContent() {
 
   // Filtrer les services de la coiffeuse
   const myServices = user?.role === 'COIFFEUSE'
-    ? services.filter(s => s.providerId === user.profile?.id)
+    ? services.filter(s => s.providerId === user.id)
     : services;
 
   if (isLoading) {

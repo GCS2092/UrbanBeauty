@@ -28,6 +28,35 @@ export interface AuthResponse {
   };
 }
 
+export interface UserMeResponse {
+  id: string;
+  email: string;
+  role: string;
+  profile?: {
+    id: string;
+    userId: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    address?: string;
+    avatar?: string;
+    bio?: string;
+    city?: string;
+    country?: string;
+    postalCode?: string;
+    website?: string;
+    instagram?: string;
+    facebook?: string;
+    tiktok?: string;
+    specialties?: string[];
+    experience?: number;
+    isProvider: boolean;
+    rating?: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const authService = {
   register: async (data: RegisterDto): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>('/api/auth/register', data);
@@ -50,8 +79,8 @@ export const authService = {
     window.location.href = '/auth/login';
   },
 
-  getMe: async () => {
-    const response = await api.get('/api/auth/me');
+  getMe: async (): Promise<UserMeResponse> => {
+    const response = await api.get<UserMeResponse>('/api/auth/me');
     return response.data;
   },
 

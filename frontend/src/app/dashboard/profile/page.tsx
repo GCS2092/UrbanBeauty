@@ -37,6 +37,18 @@ function ProfilePageContent() {
         country: user.profile.country || '',
         postalCode: user.profile.postalCode || '',
       });
+    } else if (user) {
+      // Si l'utilisateur existe mais n'a pas de profil, initialiser avec des valeurs vides
+      setFormData({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        address: '',
+        bio: '',
+        city: '',
+        country: '',
+        postalCode: '',
+      });
     }
   }, [user]);
 
