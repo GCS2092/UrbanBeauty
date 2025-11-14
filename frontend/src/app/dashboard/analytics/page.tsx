@@ -62,12 +62,12 @@ function AnalyticsContent() {
   const stats = sellerStats || providerStats;
   
   // Type guards pour TypeScript
-  const isSellerStats = (s: typeof stats): s is typeof sellerStats => {
-    return s !== null && 'totalProducts' in s;
+  const isSellerStats = (s: typeof stats): s is NonNullable<typeof sellerStats> => {
+    return s !== null && s !== undefined && 'totalProducts' in s;
   };
   
-  const isProviderStats = (s: typeof stats): s is typeof providerStats => {
-    return s !== null && 'totalServices' in s;
+  const isProviderStats = (s: typeof stats): s is NonNullable<typeof providerStats> => {
+    return s !== null && s !== undefined && 'totalServices' in s;
   };
 
   return (
