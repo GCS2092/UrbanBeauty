@@ -2,17 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { useProduct } from '@/hooks/useProducts';
 import { useParams } from 'next/navigation';
 import { useCartStore } from '@/store/cart.store';
+import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const productId = typeof params?.id === 'string' ? params.id : '';
   const { data: product, isLoading, error } = useProduct(productId);
+  const { isAuthenticated } = useAuth();
   const addItem = useCartStore((state) => state.addItem);
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
@@ -115,15 +119,34 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            <div className="flex gap-4">
+            <div className="space-y-3">
               <button
                 onClick={handleAddToCart}
                 disabled={product.stock <= 0}
-                className="flex-1 bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingBagIcon className="h-5 w-5 mr-2" />
                 {product.stock <= 0 ? 'Épuisé' : 'Ajouter au panier'}
               </button>
+              {product.sellerId && (
+                <button
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      notifications.info(
+                        'Connexion requise',
+                        'Créez un compte pour discuter directement avec la vendeuse. La prise en charge sera beaucoup plus rapide !'
+                      );
+                      router.push('/auth/register?redirect=' + encodeURIComponent(`/products/${product.id}`));
+                    } else {
+                      // Créer ou ouvrir la conversation
+                      router.push(`/dashboard/chat?userId=${product.sellerId}`);
+                    }
+                  }}
+                  className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center"
+                >
+                  💬 Discuter avec la vendeuse
+                </button>
+              )}
             </div>
           </div>
         </div>

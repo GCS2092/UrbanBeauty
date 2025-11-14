@@ -271,7 +271,7 @@ export class OrdersService {
   async update(id: string, updateOrderDto: UpdateOrderDto) {
     const order = await this.findOne(id);
 
-    return this.prisma.order.update({
+    const updatedOrder = await this.prisma.order.update({
       where: { id },
       data: updateOrderDto,
       include: {
@@ -282,8 +282,42 @@ export class OrdersService {
         },
         coupon: true,
         payment: true,
+        user: {
+          include: {
+            profile: true,
+          },
+        },
       },
     });
+
+    // Envoyer une notification au client si le statut change
+    if (updateOrderDto.status && updateOrderDto.status !== order.status && updatedOrder.userId) {
+      try {
+        const statusLabels: Record<string, string> = {
+          PENDING: 'En attente',
+          PROCESSING: 'En traitement',
+          PAID: 'Payée',
+          SHIPPED: 'Expédiée',
+          DELIVERED: 'Livrée',
+          CANCELLED: 'Annulée',
+        };
+
+        await this.notificationsService.sendToUser(updatedOrder.userId, {
+          title: 'Mise à jour de commande',
+          body: `Le statut de votre commande ${updatedOrder.orderNumber} a été mis à jour : ${statusLabels[updateOrderDto.status] || updateOrderDto.status}`,
+          data: {
+            type: 'ORDER_UPDATE',
+            orderId: updatedOrder.id,
+            orderNumber: updatedOrder.orderNumber,
+            status: updateOrderDto.status,
+          },
+        });
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi de notification:', error);
+      }
+    }
+
+    return updatedOrder;
   }
 
   async remove(id: string) {

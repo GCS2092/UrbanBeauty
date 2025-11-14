@@ -12,6 +12,8 @@ import {
   CubeIcon,
   ScissorsIcon,
   ChartBarIcon,
+  ChatBubbleLeftRightIcon,
+  BellIcon,
 } from '@heroicons/react/24/outline';
 
 function DashboardContent() {
@@ -181,6 +183,16 @@ function DashboardContent() {
             <UserIcon className="h-8 w-8 text-pink-600 mb-3" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Mon Profil</h2>
             <p className="text-gray-600">Modifiez vos informations</p>
+          </Link>
+
+          {/* Messages */}
+          <Link
+            href="/dashboard/chat"
+            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+          >
+            <ChatBubbleLeftRightIcon className="h-8 w-8 text-pink-600 mb-3" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Messages</h2>
+            <p className="text-gray-600">Discutez avec les autres utilisateurs</p>
           </Link>
 
           {/* Analytics (VENDEUSE/COIFFEUSE) */}

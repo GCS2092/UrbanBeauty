@@ -15,6 +15,7 @@ import { BookingsModule } from './modules/bookings/bookings.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { FirebaseModule } from './modules/firebase/firebase.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     ProfileModule,
     FirebaseModule,
     NotificationsModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

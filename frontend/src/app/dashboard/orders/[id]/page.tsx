@@ -2,9 +2,12 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useState } from 'react';
 import { ArrowLeftIcon, TruckIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
-import { useOrder } from '@/hooks/useOrders';
+import { useOrder, useUpdateOrder } from '@/hooks/useOrders';
+import { useAuth } from '@/hooks/useAuth';
+import { useNotifications } from '@/components/admin/NotificationProvider';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
@@ -14,7 +17,15 @@ function OrderDetailContent() {
   const params = useParams();
   const orderId = typeof params?.id === 'string' ? params.id : '';
   const { data: order, isLoading, error } = useOrder(orderId);
+  const { mutate: updateOrder, isPending: isUpdating } = useUpdateOrder();
+  const { user } = useAuth();
+  const notifications = useNotifications();
   const currency = getSelectedCurrency();
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [newStatus, setNewStatus] = useState<string>('');
+  const [trackingNumber, setTrackingNumber] = useState<string>('');
+
+  const canUpdateStatus = user?.role === 'ADMIN' || user?.role === 'VENDEUSE';
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -95,10 +106,24 @@ function OrderDetailContent() {
                 Passée le {format(new Date(order.createdAt), 'dd MMMM yyyy à HH:mm', { locale: fr })}
               </p>
             </div>
-            <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
-              {getStatusIcon(order.status)}
-              {getStatusLabel(order.status)}
-            </span>
+            <div className="flex items-center gap-4">
+              <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
+                {getStatusIcon(order.status)}
+                {getStatusLabel(order.status)}
+              </span>
+              {canUpdateStatus && (
+                <button
+                  onClick={() => {
+                    setNewStatus(order.status);
+                    setTrackingNumber(order.trackingNumber || '');
+                    setShowStatusModal(true);
+                  }}
+                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors text-sm font-medium"
+                >
+                  Modifier le statut
+                </button>
+              )}
+            </div>
           </div>
 
           {order.trackingNumber && (
@@ -199,6 +224,85 @@ function OrderDetailContent() {
             </div>
           )}
         </div>
+
+        {/* Modal de modification de statut */}
+        {showStatusModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Modifier le statut de la commande</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nouveau statut *
+                  </label>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
+                  >
+                    <option value="PENDING">En attente</option>
+                    <option value="PROCESSING">En traitement</option>
+                    <option value="PAID">Payée</option>
+                    <option value="SHIPPED">Expédiée</option>
+                    <option value="DELIVERED">Livrée</option>
+                    <option value="CANCELLED">Annulée</option>
+                  </select>
+                </div>
+
+                {newStatus === 'SHIPPED' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Numéro de suivi
+                    </label>
+                    <input
+                      type="text"
+                      value={trackingNumber}
+                      onChange={(e) => setTrackingNumber(e.target.value)}
+                      placeholder="Ex: TRACK123456"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowStatusModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateOrder(
+                        {
+                          id: orderId,
+                          data: {
+                            status: newStatus as any,
+                            ...(newStatus === 'SHIPPED' && trackingNumber ? { trackingNumber } : {}),
+                          },
+                        },
+                        {
+                          onSuccess: () => {
+                            notifications.success('Statut mis à jour', 'Le statut de la commande a été mis à jour avec succès');
+                            setShowStatusModal(false);
+                          },
+                          onError: (error: any) => {
+                            notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la mise à jour');
+                          },
+                        }
+                      );
+                    }}
+                    disabled={isUpdating}
+                    className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isUpdating ? 'Mise à jour...' : 'Enregistrer'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

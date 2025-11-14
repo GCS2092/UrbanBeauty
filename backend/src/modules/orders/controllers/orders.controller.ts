@@ -70,8 +70,19 @@ export class OrdersController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
+  @Roles('ADMIN', 'VENDEUSE')
+  async update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto, @CurrentUser() user: any) {
+    const order = await this.ordersService.findOne(id);
+    
+    // Vérifier les permissions
+    if (user.role === 'VENDEUSE') {
+      // Vendeuse peut seulement modifier les commandes contenant ses produits
+      const hasSellerProduct = order.items.some(item => item.product.sellerId === user.userId);
+      if (!hasSellerProduct) {
+        throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier cette commande');
+      }
+    }
+    
     return this.ordersService.update(id, updateOrderDto);
   }
 

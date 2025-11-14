@@ -69,6 +69,9 @@ model User {
   bookings         Booking[] // Pour les clients
   reviews          Review[] // Avis laissés
   payments         Payment[] // Paiements effectués
+  conversations1   Conversation[] @relation("Conversations1") // Conversations où l'utilisateur est participant1
+  conversations2   Conversation[] @relation("Conversations2") // Conversations où l'utilisateur est participant2
+  messages         Message[] // Messages envoyés
 }
 
 model Profile {
@@ -313,4 +316,37 @@ model NotificationToken {
   token     String   @unique // FCM token
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  participant1Id String
+  participant1   User   @relation("Conversations1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2Id String
+  participant2   User   @relation("Conversations2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  lastMessageAt DateTime?
+  lastMessage   String?
+  unreadCount1  Int     @default(0) // Messages non lus pour participant1
+  unreadCount2  Int     @default(0) // Messages non lus pour participant2
+  messages      Message[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([participant1Id, participant2Id])
+  @@index([participant1Id])
+  @@index([participant2Id])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
 }
