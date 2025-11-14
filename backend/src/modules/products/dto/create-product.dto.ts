@@ -47,6 +47,26 @@ export class CreateProductDto {
   @Min(0)
   stock: number;
 
+  @IsString()
+  @IsOptional()
+  brand?: string;
+
+  @IsString()
+  @IsOptional()
+  sku?: string;
+
+  @IsString()
+  @IsOptional()
+  volume?: string;
+
+  @IsString()
+  @IsOptional()
+  ingredients?: string;
+
+  @IsString()
+  @IsOptional()
+  skinType?: string;
+
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
