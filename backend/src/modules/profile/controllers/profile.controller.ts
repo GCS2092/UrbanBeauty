@@ -14,6 +14,11 @@ export class ProfileController {
     return this.profileService.findOne(user.userId);
   }
 
+  @Get('providers')
+  getAllProviders() {
+    return this.profileService.findAllProviders();
+  }
+
   @Get('provider/:id')
   getProviderProfile(@Param('id') id: string) {
     return this.profileService.findByProviderId(id);

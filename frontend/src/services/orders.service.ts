@@ -43,6 +43,15 @@ export interface Order {
     id: string;
     status: string;
   };
+  user?: {
+    id: string;
+    email: string;
+    profile?: {
+      firstName: string;
+      lastName: string;
+      avatar?: string;
+    };
+  };
   createdAt: string;
   updatedAt: string;
 }
