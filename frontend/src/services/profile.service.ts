@@ -42,8 +42,8 @@ export interface UpdateProfileDto {
 
 export const profileService = {
   getMyProfile: async (): Promise<Profile> => {
-    const response = await api.get<Profile>('/api/auth/me');
-    return response.data.profile;
+    const response = await api.get<Profile>('/api/profile');
+    return response.data;
   },
 
   update: async (data: UpdateProfileDto): Promise<Profile> => {
