@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN';
+  requiredRole?: 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN' | Array<'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN'>;
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
@@ -16,8 +16,11 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/auth/login');
-    } else if (!isLoading && isAuthenticated && requiredRole && user?.role !== requiredRole) {
-      router.push('/dashboard');
+    } else if (!isLoading && isAuthenticated && requiredRole) {
+      const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+      if (!allowedRoles.includes(user?.role as any)) {
+        router.push('/dashboard');
+      }
     }
   }, [isAuthenticated, isLoading, user, requiredRole, router]);
 
@@ -36,14 +39,17 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return null;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">Accès refusé. Vous n'avez pas les permissions nécessaires.</p>
+  if (requiredRole) {
+    const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    if (!allowedRoles.includes(user?.role as any)) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600">Accès refusé. Vous n'avez pas les permissions nécessaires.</p>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   return <>{children}</>;

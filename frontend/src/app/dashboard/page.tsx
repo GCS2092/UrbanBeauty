@@ -19,10 +19,13 @@ import NotificationsPanel from '@/components/dashboard/NotificationsPanel';
 
 function DashboardContent() {
   const { user } = useAuth();
-  const { data: orders = [] } = useOrders();
+  // Pour les vendeuses, récupérer seulement leurs commandes (celles contenant leurs produits)
+  const { data: orders = [] } = useOrders(false, user?.role === 'VENDEUSE');
   const isProvider = user?.role === 'COIFFEUSE';
   const { data: bookings = [] } = useBookings(isProvider);
 
+  // Filtrer les commandes en attente pour les vendeuses (celles contenant leurs produits)
+  // Pour les vendeuses, le backend retourne déjà les commandes filtrées, donc on compte directement
   const pendingOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'PROCESSING').length;
   const pendingBookings = bookings.filter(b => b.status === 'PENDING').length;
 
