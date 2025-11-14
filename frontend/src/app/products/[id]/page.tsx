@@ -16,7 +16,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const productId = typeof params?.id === 'string' ? params.id : '';
   const { data: product, isLoading, error } = useProduct(productId);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const addItem = useCartStore((state) => state.addItem);
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
@@ -119,35 +119,38 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            <div className="space-y-3">
-              <button
-                onClick={handleAddToCart}
-                disabled={product.stock <= 0}
-                className="w-full bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ShoppingBagIcon className="h-5 w-5 mr-2" />
-                {product.stock <= 0 ? 'Épuisé' : 'Ajouter au panier'}
-              </button>
-              {product.sellerId && (
+            {/* Masquer les boutons pour les admins */}
+            {user?.role !== 'ADMIN' && (
+              <div className="space-y-3">
                 <button
-                  onClick={() => {
-                    if (!isAuthenticated) {
-                      notifications.info(
-                        'Connexion requise',
-                        'Créez un compte pour discuter directement avec la vendeuse. La prise en charge sera beaucoup plus rapide !'
-                      );
-                      router.push('/auth/register?redirect=' + encodeURIComponent(`/products/${product.id}`));
-                    } else {
-                      // Créer ou ouvrir la conversation
-                      router.push(`/dashboard/chat?userId=${product.sellerId}`);
-                    }
-                  }}
-                  className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center"
+                  onClick={handleAddToCart}
+                  disabled={product.stock <= 0}
+                  className="w-full bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  💬 Discuter avec la vendeuse
+                  <ShoppingBagIcon className="h-5 w-5 mr-2" />
+                  {product.stock <= 0 ? 'Épuisé' : 'Ajouter au panier'}
                 </button>
-              )}
-            </div>
+                {product.sellerId && user?.id !== product.sellerId && (
+                  <button
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        notifications.info(
+                          'Connexion requise',
+                          'Créez un compte pour discuter directement avec la vendeuse. La prise en charge sera beaucoup plus rapide !'
+                        );
+                        router.push('/auth/register?redirect=' + encodeURIComponent(`/products/${product.id}`));
+                      } else {
+                        // Créer ou ouvrir la conversation
+                        router.push(`/dashboard/chat?userId=${product.sellerId}`);
+                      }
+                    }}
+                    className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center"
+                  >
+                    💬 Discuter avec la vendeuse
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

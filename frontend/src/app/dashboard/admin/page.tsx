@@ -19,9 +19,8 @@ function AdminDashboardContent() {
     { name: 'Produits', value: '16', icon: ShoppingBagIcon, href: '/dashboard/admin/products', color: 'bg-pink-500' },
     { name: 'Services', value: '6', icon: SparklesIcon, href: '/dashboard/admin/services', color: 'bg-purple-500' },
     { name: 'Utilisateurs', value: '5', icon: UserGroupIcon, href: '/dashboard/admin/users', color: 'bg-blue-500' },
-    { name: 'Commandes', value: '0', icon: ShoppingBagIcon, href: '/dashboard/admin/orders', color: 'bg-green-500' },
-    { name: 'Réservations', value: '0', icon: CalendarIcon, href: '/dashboard/admin/bookings', color: 'bg-yellow-500' },
     { name: 'Catégories', value: '4', icon: TagIcon, href: '/dashboard/admin/categories', color: 'bg-indigo-500' },
+    { name: 'Coupons', value: '0', icon: TagIcon, href: '/dashboard/admin/coupons', color: 'bg-green-500' },
   ];
 
   return (
@@ -137,36 +136,6 @@ function AdminDashboardContent() {
               Gérez tous les utilisateurs : clients, coiffeuses, vendeuses. Modifier les rôles et permissions.
             </p>
             <span className="text-blue-600 font-medium">Gérer les utilisateurs →</span>
-          </Link>
-
-          {/* Gestion Commandes */}
-          <Link
-            href="/dashboard/admin/orders"
-            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center mb-4">
-              <ShoppingBagIcon className="h-8 w-8 text-green-600 mr-3" />
-              <h3 className="text-xl font-semibold text-gray-900">Gestion Commandes</h3>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Suivez toutes les commandes : statut, livraison, remboursements.
-            </p>
-            <span className="text-green-600 font-medium">Voir les commandes →</span>
-          </Link>
-
-          {/* Gestion Réservations */}
-          <Link
-            href="/dashboard/admin/bookings"
-            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center mb-4">
-              <CalendarIcon className="h-8 w-8 text-yellow-600 mr-3" />
-              <h3 className="text-xl font-semibold text-gray-900">Gestion Réservations</h3>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Gérez toutes les réservations de services : confirmer, annuler, modifier.
-            </p>
-            <span className="text-yellow-600 font-medium">Voir les réservations →</span>
           </Link>
 
           {/* Gestion Catégories */}

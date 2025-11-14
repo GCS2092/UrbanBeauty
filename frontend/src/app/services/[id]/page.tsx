@@ -186,37 +186,40 @@ function ServiceDetailContent() {
               </div>
             </div>
 
-            {!showBookingForm ? (
-              <div className="space-y-3">
-                <button
-                  onClick={() => setShowBookingForm(true)}
-                  className="w-full bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors flex items-center justify-center"
-                >
-                  <CalendarIcon className="h-5 w-5 mr-2" />
-                  Réserver maintenant
-                </button>
-                {service.provider && (
-                  <button
-                    onClick={() => {
-                      if (!isAuthenticated) {
-                        notifications.info(
-                          'Connexion requise',
-                          'Créez un compte pour discuter directement avec le prestataire. La prise en charge sera beaucoup plus rapide !'
-                        );
-                        router.push('/auth/register?redirect=' + encodeURIComponent(`/services/${service.id}`));
-                      } else {
-                        // Créer ou ouvrir la conversation
-                        router.push(`/dashboard/chat?userId=${service.provider.id}`);
-                      }
-                    }}
-                    className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center"
-                  >
-                    💬 Discuter avec {service.provider.firstName}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <form onSubmit={handleBookingSubmit} className="bg-gray-50 rounded-lg p-6 space-y-4">
+              {/* Masquer les boutons pour les admins et le propriétaire du service */}
+              {user?.role !== 'ADMIN' && user?.id !== service.provider?.id && (
+                <>
+                  {!showBookingForm ? (
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => setShowBookingForm(true)}
+                        className="w-full bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors flex items-center justify-center"
+                      >
+                        <CalendarIcon className="h-5 w-5 mr-2" />
+                        Réserver maintenant
+                      </button>
+                      {service.provider && (
+                        <button
+                          onClick={() => {
+                            if (!isAuthenticated) {
+                              notifications.info(
+                                'Connexion requise',
+                                'Créez un compte pour discuter directement avec le prestataire. La prise en charge sera beaucoup plus rapide !'
+                              );
+                              router.push('/auth/register?redirect=' + encodeURIComponent(`/services/${service.id}`));
+                            } else {
+                              // Créer ou ouvrir la conversation
+                              router.push(`/dashboard/chat?userId=${service.provider.id}`);
+                            }
+                          }}
+                          className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center"
+                        >
+                          💬 Discuter avec {service.provider.firstName}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <form onSubmit={handleBookingSubmit} className="bg-gray-50 rounded-lg p-6 space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Formulaire de réservation</h3>
                 
                 {!isAuthenticated && (
@@ -367,8 +370,10 @@ function ServiceDetailContent() {
                     {isPending ? 'Réservation...' : 'Confirmer la réservation'}
                   </button>
                 </div>
-              </form>
-            )}
+                    </form>
+                  )}
+                </>
+              )}
           </div>
         </div>
       </div>
