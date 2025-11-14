@@ -72,32 +72,32 @@ async function main() {
 
   const categories = [categoryVisage, categoryCheveux, categoryCorps, categoryMaquillage];
 
-  // Mettre à jour les catégories avec des images
+  // Mettre à jour les catégories avec de belles images
   await prisma.category.update({
     where: { id: categoryVisage.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&q=80',
+      image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&q=90&fit=crop',
     },
   });
 
   await prisma.category.update({
     where: { id: categoryCheveux.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=600&q=80',
+      image: 'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=1200&q=90&fit=crop',
     },
   });
 
   await prisma.category.update({
     where: { id: categoryCorps.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=600&q=80',
+      image: 'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=1200&q=90&fit=crop',
     },
   });
 
   await prisma.category.update({
     where: { id: categoryMaquillage.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&q=80',
+      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=90&fit=crop',
     },
   });
 
@@ -156,19 +156,22 @@ async function main() {
 
   // Créer des services pour la coiffeuse avec images
   if (coiffeuse.profile) {
-    // Images de services de coiffure depuis Unsplash
+    // Images de services de coiffure depuis Unsplash - Haute qualité
     const serviceImages = {
       tresses: [
-        'https://images.unsplash.com/photo-1560869713-7d563b47e0b0?w=800&q=80',
-        'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=800&q=80',
+        'https://images.unsplash.com/photo-1560869713-7d563b47e0b0?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=1200&q=90&fit=crop',
       ],
       perruque: [
-        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80',
-        'https://images.unsplash.com/photo-1560869713-7d563b47e0b0?w=800&q=80',
+        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1560869713-7d563b47e0b0?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=1200&q=90&fit=crop',
       ],
       locks: [
-        'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=800&q=80',
-        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80',
+        'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=90&fit=crop',
       ],
     };
 
@@ -248,7 +251,85 @@ async function main() {
       },
     });
 
-    console.log('✅ Services créés avec images pour la coiffeuse');
+    // Ajouter plus de services pour rendre la plateforme plus belle
+    const boxBraids = await prisma.service.create({
+      data: {
+        name: 'Box Braids',
+        slug: generateSlug('Box Braids'),
+        description: 'Pose de box braids modernes et élégantes, parfaites pour tous les types d\'événements.',
+        price: 150,
+        duration: 240,
+        category: 'Tresses',
+        providerId: coiffeuse.profile.id,
+        available: true,
+        maxBookingsPerDay: 2,
+        advanceBookingDays: 10,
+        isFeatured: true,
+        images: {
+          create: serviceImages.tresses.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Box Braids',
+            title: 'Box Braids - Service de coiffure',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const crochetBraids = await prisma.service.create({
+      data: {
+        name: 'Crochet Braids',
+        slug: generateSlug('Crochet Braids'),
+        description: 'Pose de crochet braids rapide et protectrice. Idéale pour protéger vos cheveux naturels.',
+        price: 110,
+        duration: 180,
+        category: 'Tresses',
+        providerId: coiffeuse.profile.id,
+        available: true,
+        maxBookingsPerDay: 3,
+        advanceBookingDays: 7,
+        images: {
+          create: serviceImages.tresses.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Crochet Braids',
+            title: 'Crochet Braids - Service de coiffure',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const coiffureEvenement = await prisma.service.create({
+      data: {
+        name: 'Coiffure Événement',
+        slug: generateSlug('Coiffure Événement'),
+        description: 'Coiffure sur mesure pour vos événements spéciaux : mariage, anniversaire, soirée.',
+        price: 85,
+        duration: 120,
+        category: 'Coiffure',
+        providerId: coiffeuse.profile.id,
+        available: true,
+        maxBookingsPerDay: 4,
+        advanceBookingDays: 14,
+        isFeatured: true,
+        images: {
+          create: serviceImages.perruque.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Coiffure Événement',
+            title: 'Coiffure Événement - Service de coiffure',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    console.log('✅ Services créés avec images pour la coiffeuse (6 services au total)');
   }
 
   // Créer un utilisateur VENDEUSE de test
@@ -276,23 +357,42 @@ async function main() {
 
   // Créer des produits pour la vendeuse avec images
   if (vendeuse.profile) {
-    // Images de produits cosmétiques depuis Unsplash (libres d'utilisation)
+    // Images de produits cosmétiques depuis Unsplash - Haute qualité et pertinentes
     const productImages = {
       masque: [
-        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=800&q=80',
-        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800&q=80',
+        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=1200&q=90&fit=crop',
       ],
       serum: [
-        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800&q=80',
-        'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=800&q=80',
+        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&q=90&fit=crop',
       ],
       shampooing: [
-        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=800&q=80',
-        'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80',
+        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=1200&q=90&fit=crop',
       ],
       huile: [
-        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=800&q=80',
-        'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80',
+        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1608248543803-ba4f8a7db4c5?w=1200&q=90&fit=crop',
+      ],
+      creme: [
+        'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1200&q=90&fit=crop',
+      ],
+      maquillage: [
+        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&q=90&fit=crop',
+      ],
+      corps: [
+        'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&q=90&fit=crop',
+        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1200&q=90&fit=crop',
       ],
     };
 
@@ -415,7 +515,184 @@ async function main() {
       },
     });
 
-    console.log('✅ Produits créés avec images pour la vendeuse');
+    // Ajouter plus de produits pour rendre la plateforme plus belle
+    const creme = await prisma.product.create({
+      data: {
+        name: 'Crème Visage Anti-Âge',
+        slug: generateSlug('Crème Visage Anti-Âge'),
+        description: 'Crème anti-âge enrichie en collagène et peptides pour réduire les rides et raffermir la peau.',
+        price: 55.00,
+        originalPrice: 65.00,
+        isOnSale: true,
+        discountPercentage: 15,
+        brand: 'UrbanBeauty',
+        volume: '50ml',
+        ingredients: 'Collagène, Peptides, Rétinol, Acide Hyaluronique',
+        skinType: 'Peau mature',
+        categoryId: categories[0].id,
+        stock: 10,
+        lowStockThreshold: 3,
+        sellerId: vendeuse.id,
+        isActive: true,
+        isFeatured: true,
+        images: {
+          create: productImages.creme.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Crème Visage Anti-Âge',
+            title: 'Crème Visage Anti-Âge - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const fondTeint = await prisma.product.create({
+      data: {
+        name: 'Fond de Teint Matifiant',
+        slug: generateSlug('Fond de Teint Matifiant'),
+        description: 'Fond de teint longue tenue à fini mat, couvrant et résistant à l\'eau. Disponible en 12 nuances.',
+        price: 32.99,
+        brand: 'UrbanBeauty',
+        volume: '30ml',
+        ingredients: 'Pigments minéraux, Acide salicylique, Vitamine E',
+        skinType: 'Tous types',
+        categoryId: categories[3].id,
+        stock: 25,
+        lowStockThreshold: 8,
+        sellerId: vendeuse.id,
+        isActive: true,
+        isFeatured: true,
+        images: {
+          create: productImages.maquillage.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Fond de Teint Matifiant',
+            title: 'Fond de Teint Matifiant - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const rougeALevres = await prisma.product.create({
+      data: {
+        name: 'Rouge à Lèvres Liquide',
+        slug: generateSlug('Rouge à Lèvres Liquide'),
+        description: 'Rouge à lèvres liquide longue tenue, mat et confortable. Disponible en 8 teintes tendance.',
+        price: 24.99,
+        brand: 'UrbanBeauty',
+        volume: '6ml',
+        ingredients: 'Cire de carnauba, Huiles végétales, Pigments',
+        skinType: 'Tous types',
+        categoryId: categories[3].id,
+        stock: 30,
+        lowStockThreshold: 10,
+        sellerId: vendeuse.id,
+        isActive: true,
+        images: {
+          create: productImages.maquillage.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Rouge à Lèvres Liquide',
+            title: 'Rouge à Lèvres Liquide - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const laitCorps = await prisma.product.create({
+      data: {
+        name: 'Lait Corps Hydratant',
+        slug: generateSlug('Lait Corps Hydratant'),
+        description: 'Lait hydratant pour le corps à l\'aloe vera et beurre de karité. Texture légère et non grasse.',
+        price: 19.99,
+        brand: 'UrbanBeauty',
+        volume: '400ml',
+        ingredients: 'Aloe Vera, Beurre de Karité, Huile d\'Amande',
+        skinType: 'Tous types',
+        categoryId: categories[2].id,
+        stock: 18,
+        lowStockThreshold: 6,
+        sellerId: vendeuse.id,
+        isActive: true,
+        images: {
+          create: productImages.corps.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Lait Corps Hydratant',
+            title: 'Lait Corps Hydratant - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const baumeLevres = await prisma.product.create({
+      data: {
+        name: 'Baume à Lèvres Réparateur',
+        slug: generateSlug('Baume à Lèvres Réparateur'),
+        description: 'Baume à lèvres ultra-nourrissant avec miel et beurre de cacao. Apaise et répare les lèvres gercées.',
+        price: 8.99,
+        brand: 'UrbanBeauty',
+        volume: '10ml',
+        ingredients: 'Miel, Beurre de Cacao, Cire d\'Abeille, Vitamine E',
+        skinType: 'Tous types',
+        categoryId: categories[0].id,
+        stock: 40,
+        lowStockThreshold: 15,
+        sellerId: vendeuse.id,
+        isActive: true,
+        images: {
+          create: productImages.creme.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Baume à Lèvres Réparateur',
+            title: 'Baume à Lèvres Réparateur - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    const masqueCheveux = await prisma.product.create({
+      data: {
+        name: 'Masque Capillaire Réparateur',
+        slug: generateSlug('Masque Capillaire Réparateur'),
+        description: 'Masque capillaire intensif pour cheveux abîmés. Formulé avec kératine et huiles naturelles.',
+        price: 28.99,
+        originalPrice: 34.99,
+        isOnSale: true,
+        discountPercentage: 17,
+        brand: 'UrbanBeauty',
+        volume: '200ml',
+        ingredients: 'Kératine, Huile d\'Argan, Beurre de Karité, Avocat',
+        categoryId: categories[1].id,
+        stock: 14,
+        lowStockThreshold: 5,
+        sellerId: vendeuse.id,
+        isActive: true,
+        isFeatured: true,
+        images: {
+          create: productImages.shampooing.map((url, index) => ({
+            url,
+            type: 'URL',
+            alt: 'Masque Capillaire Réparateur',
+            title: 'Masque Capillaire Réparateur - UrbanBeauty',
+            order: index,
+            isPrimary: index === 0,
+          })),
+        },
+      },
+    });
+
+    console.log('✅ Produits créés avec images pour la vendeuse (10 produits au total)');
   }
 
   // Créer un utilisateur ADMIN de test
