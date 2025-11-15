@@ -90,7 +90,7 @@ function ChatContent() {
 
         <h1 className="text-4xl font-bold text-gray-900 mb-8">Messages</h1>
 
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden" style={{ height: 'calc(100vh - 250px)' }}>
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden" style={{ height: 'calc(100vh - 200px)', minHeight: '500px' }}>
           <div className="flex flex-col md:flex-row h-full">
             {/* Liste des conversations */}
             <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-gray-200 overflow-y-auto flex-shrink-0">
