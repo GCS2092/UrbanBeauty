@@ -216,7 +216,7 @@ function ServiceDetailContent() {
                           }}
                           className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center"
                         >
-                          💬 Discuter avec {service.provider.firstName}
+                          💬 Discuter avec {service.provider?.firstName || 'le prestataire'}
                         </button>
                       )}
                     </div>
