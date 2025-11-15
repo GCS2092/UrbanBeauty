@@ -16,6 +16,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   orderNumber: string;
+  trackingCode?: string;
   userId?: string;
   customerEmail: string;
   customerName: string;
