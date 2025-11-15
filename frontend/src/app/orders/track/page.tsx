@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MagnifyingGlassIcon, ShoppingBagIcon, CheckCircleIcon, ClockIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, ShoppingBagIcon, CheckCircleIcon, ClockIcon, XCircleIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import api from '@/lib/api';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
@@ -42,8 +42,75 @@ export default function TrackOrderPage() {
   const currency = getSelectedCurrency();
   const [trackingCode, setTrackingCode] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(false);
   const [error, setError] = useState('');
+
+  // Charger les commandes récentes depuis localStorage au montage
+  useEffect(() => {
+    loadRecentOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadRecentOrders = async () => {
+    if (typeof window === 'undefined') return;
+    
+    const savedCodes = localStorage.getItem('recent_tracking_codes');
+    if (!savedCodes) return;
+
+    try {
+      const codes = JSON.parse(savedCodes) as string[];
+      setIsLoadingRecent(true);
+      
+      const ordersPromises = codes.map(async (code) => {
+        try {
+          const response = await api.get(`/api/orders/track/${code}`);
+          return response.data;
+        } catch {
+          return null;
+        }
+      });
+
+      const orders = (await Promise.all(ordersPromises)).filter((o): o is Order => o !== null);
+      // Trier par date de création (plus récentes en premier)
+      orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setRecentOrders(orders);
+    } catch (error) {
+      console.error('Erreur lors du chargement des commandes récentes:', error);
+    } finally {
+      setIsLoadingRecent(false);
+    }
+  };
+
+  const saveTrackingCode = (code: string) => {
+    if (typeof window === 'undefined') return;
+    
+    const savedCodes = localStorage.getItem('recent_tracking_codes');
+    let codes: string[] = savedCodes ? JSON.parse(savedCodes) : [];
+    
+    // Ajouter le code s'il n'existe pas déjà
+    if (!codes.includes(code)) {
+      codes.unshift(code); // Ajouter au début
+      // Garder seulement les 10 dernières commandes
+      codes = codes.slice(0, 10);
+      localStorage.setItem('recent_tracking_codes', JSON.stringify(codes));
+    }
+  };
+
+  const removeRecentOrder = (code: string) => {
+    if (typeof window === 'undefined') return;
+    
+    const savedCodes = localStorage.getItem('recent_tracking_codes');
+    if (!savedCodes) return;
+
+    const codes = JSON.parse(savedCodes) as string[];
+    const filteredCodes = codes.filter(c => c !== code);
+    localStorage.setItem('recent_tracking_codes', JSON.stringify(filteredCodes));
+    
+    // Recharger les commandes récentes
+    loadRecentOrders();
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,13 +124,34 @@ export default function TrackOrderPage() {
     setError('');
     
     try {
-      const response = await api.get(`/api/orders/track/${trackingCode.trim().toUpperCase()}`);
+      const code = trackingCode.trim().toUpperCase();
+      const response = await api.get(`/api/orders/track/${code}`);
       setOrder(response.data);
+      saveTrackingCode(code); // Sauvegarder le code pour les commandes récentes
+      loadRecentOrders(); // Recharger la liste des commandes récentes
       notifications.success('Commande trouvée', 'Votre commande a été trouvée avec succès');
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Commande introuvable avec ce code');
       setOrder(null);
       notifications.error('Erreur', 'Aucune commande trouvée avec ce code de suivi');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectRecentOrder = async (code: string) => {
+    setTrackingCode(code);
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const response = await api.get(`/api/orders/track/${code}`);
+      setOrder(response.data);
+      notifications.success('Commande chargée', 'Détails de la commande affichés');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Commande introuvable avec ce code');
+      setOrder(null);
+      notifications.error('Erreur', 'Impossible de charger cette commande');
     } finally {
       setIsLoading(false);
     }
@@ -105,12 +193,64 @@ export default function TrackOrderPage() {
           </p>
         </div>
 
+        {/* Commandes récentes */}
+        {recentOrders.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Mes commandes récentes</h2>
+            {isLoadingRecent ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-600 mx-auto"></div>
+                <p className="mt-2 text-sm text-gray-600">Chargement...</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentOrders.map((recentOrder) => (
+                  <div
+                    key={recentOrder.trackingCode}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => handleSelectRecentOrder(recentOrder.trackingCode)}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          {getStatusBadge(recentOrder.status)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            Commande #{recentOrder.orderNumber}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Code: {recentOrder.trackingCode} • {new Date(recentOrder.createdAt).toLocaleDateString('fr-FR')}
+                          </p>
+                          <p className="text-sm font-semibold text-pink-600 mt-1">
+                            {formatCurrency(recentOrder.total, currency)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeRecentOrder(recentOrder.trackingCode);
+                      }}
+                      className="ml-4 p-2 text-gray-400 hover:text-red-600 transition-colors"
+                      title="Retirer de la liste"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Formulaire de recherche */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <form onSubmit={handleSearch} className="flex gap-4">
             <div className="flex-1">
               <label htmlFor="trackingCode" className="block text-sm font-medium text-gray-700 mb-2">
-                Code de suivi
+                Rechercher une commande par code de suivi
               </label>
               <div className="relative">
                 <input
