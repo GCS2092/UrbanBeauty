@@ -387,9 +387,9 @@ async function main() {
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',
       ],
       maquillage: [
+        'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=90&fit=crop&auto=format',
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       corps: [
         'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=1200&q=90&fit=crop&auto=format',
