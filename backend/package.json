@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "build:render": "npx prisma generate && npx prisma migrate deploy && nest build",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -15,6 +16,7 @@
     "lint": "eslint \"src/**/*.ts\" --fix",
     "prisma:studio": "prisma studio",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "prisma:seed": "ts-node prisma/seed.ts"
   },
