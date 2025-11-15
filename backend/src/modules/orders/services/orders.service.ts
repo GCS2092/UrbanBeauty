@@ -127,6 +127,49 @@ export class OrdersService {
     return order;
   }
 
+  async findByTrackingCode(trackingCode: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { trackingCode },
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                images: true,
+              },
+            },
+          },
+        },
+        coupon: true,
+        payment: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Commande introuvable avec ce code de suivi');
+    }
+
+    // Ne pas retourner les informations sensibles pour les invités
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      trackingCode: order.trackingCode,
+      status: order.status,
+      total: order.total,
+      subtotal: order.subtotal,
+      discount: order.discount,
+      shippingCost: order.shippingCost,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      shippingAddress: order.shippingAddress,
+      items: order.items,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      estimatedDeliveryDate: order.estimatedDeliveryDate,
+      trackingNumber: order.trackingNumber,
+    };
+  }
+
   async create(createOrderDto: CreateOrderDto, userId?: string) {
     // Vérifier que tous les produits existent et ont du stock
     const productIds = createOrderDto.items.map(item => item.productId);
