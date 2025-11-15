@@ -164,15 +164,13 @@ function ServiceDetailContent() {
               {service.provider && (
                 <>
                   <span className="text-gray-400 hidden sm:inline">•</span>
-                  {service.provider && (
-                    <Link
-                      href={`/prestataires/${service.provider.id}`}
-                      className="text-sm text-pink-600 hover:text-pink-700 font-medium flex items-center gap-1"
-                    >
-                      <UserIcon className="h-4 w-4" />
-                      {service.provider.firstName} {service.provider.lastName}
-                    </Link>
-                  )}
+                  <Link
+                    href={`/prestataires/${service.provider.id}`}
+                    className="text-sm text-pink-600 hover:text-pink-700 font-medium flex items-center gap-1"
+                  >
+                    <UserIcon className="h-4 w-4" />
+                    {service.provider.firstName} {service.provider.lastName}
+                  </Link>
                 </>
               )}
             </div>
