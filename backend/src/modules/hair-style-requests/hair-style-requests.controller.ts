@@ -6,10 +6,14 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
+import { PrismaService } from '../../prisma.service';
 
 @Controller('hair-style-requests')
 export class HairStyleRequestsController {
-  constructor(private readonly hairStyleRequestsService: HairStyleRequestsService) {}
+  constructor(
+    private readonly hairStyleRequestsService: HairStyleRequestsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -23,9 +27,15 @@ export class HairStyleRequestsController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('COIFFEUSE', 'ADMIN')
-  findAll(@Query('providerId') providerId?: string, @CurrentUser() user?: any) {
-    // Si c'est un prestataire, utiliser son profileId
-    const providerIdToUse = user?.role === 'COIFFEUSE' ? user.profileId : providerId;
+  async findAll(@Query('providerId') providerId?: string, @CurrentUser() user?: any) {
+    // Si c'est un prestataire, récupérer son profileId
+    let providerIdToUse = providerId;
+    if (user?.role === 'COIFFEUSE') {
+      const profile = await this.prisma.profile.findUnique({
+        where: { userId: user.userId },
+      });
+      providerIdToUse = profile?.id;
+    }
     return this.hairStyleRequestsService.findAll(providerIdToUse);
   }
 
@@ -45,13 +55,19 @@ export class HairStyleRequestsController {
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('COIFFEUSE', 'ADMIN')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateHairStyleRequestDto,
     @CurrentUser() user: any,
   ) {
-    const providerId = user.role === 'COIFFEUSE' ? user.profileId : undefined;
-    return this.hairStyleRequestsService.update(id, providerId, updateDto);
+    let providerId: string | undefined;
+    if (user.role === 'COIFFEUSE') {
+      const profile = await this.prisma.profile.findUnique({
+        where: { userId: user.userId },
+      });
+      providerId = profile?.id;
+    }
+    return this.hairStyleRequestsService.update(id, providerId || '', updateDto);
   }
 }
 

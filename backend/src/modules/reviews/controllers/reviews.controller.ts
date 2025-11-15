@@ -19,10 +19,14 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../../shared/decorators/current-user.decorator';
+import { PrismaService } from '../../../prisma.service';
 
 @Controller('reviews')
 export class ReviewsController {
-  constructor(private readonly reviewsService: ReviewsService) {}
+  constructor(
+    private readonly reviewsService: ReviewsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -72,13 +76,21 @@ export class ReviewsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('COIFFEUSE')
   @HttpCode(HttpStatus.OK)
-  replyToReview(
+  async replyToReview(
     @Param('id') id: string,
     @CurrentUser() user: any,
     @Body() replyDto: ReplyReviewDto,
   ) {
-    // Récupérer le profileId du prestataire
-    return this.reviewsService.replyToReview(id, user.profileId, replyDto);
+    // Récupérer le profileId depuis la base de données
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId: user.userId },
+    });
+    
+    if (!profile) {
+      throw new Error('Profil introuvable');
+    }
+    
+    return this.reviewsService.replyToReview(id, profile.id, replyDto);
   }
 
   @Post(':id/helpful')

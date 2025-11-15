@@ -6,6 +6,7 @@ import { PrismaService } from '../../prisma.service';
 @Module({
   controllers: [HairStyleRequestsController],
   providers: [HairStyleRequestsService, PrismaService],
+  exports: [HairStyleRequestsService],
 })
 export class HairStyleRequestsModule {}
 
