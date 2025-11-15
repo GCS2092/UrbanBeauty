@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { requestNotificationPermission, onMessageListener } from '@/lib/firebase';
+import { requestNotificationPermission, onMessageListener, messaging } from '@/lib/firebase';
 import api from '@/lib/api';
 import { useAuth } from './useAuth';
 import { useNotifications as useAppNotifications } from '@/components/admin/NotificationProvider';
@@ -21,8 +21,8 @@ export function useFCMNotifications() {
       setPermission(Notification.permission);
     }
 
-    // Demander la permission et obtenir le token si l'utilisateur est connecté
-    if (isAuthenticated && permission === 'default') {
+    // Si l'utilisateur a déjà accordé la permission, récupérer le token
+    if (isAuthenticated && permission === 'granted' && !token) {
       requestNotificationPermission().then((fcmToken) => {
         if (fcmToken) {
           setToken(fcmToken);
@@ -53,26 +53,34 @@ export function useFCMNotifications() {
     }
 
     // Écouter les messages en foreground
-    onMessageListener().then((payload: any) => {
-      if (payload && payload.notification) {
-        // Afficher une notification dans l'app
-        appNotifications.info(
-          payload.notification.title || 'Notification',
-          payload.notification.body || '',
-        );
+    if (messaging) {
+      const unsubscribe = onMessageListener((payload: any) => {
+        if (payload && payload.notification) {
+          // Afficher une notification dans l'app
+          appNotifications.info(
+            payload.notification.title || 'Notification',
+            payload.notification.body || '',
+          );
 
-        // Afficher aussi une notification native du navigateur
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(payload.notification.title || 'Notification', {
-            body: payload.notification.body || '',
-            icon: '/icon-192x192.png',
-            badge: '/badge-72x72.png',
-            tag: payload.data?.type || 'notification',
-            data: payload.data,
-          });
+          // Afficher aussi une notification native du navigateur
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(payload.notification.title || 'Notification', {
+              body: payload.notification.body || '',
+              icon: '/icon-192x192.png',
+              badge: '/badge-72x72.png',
+              tag: payload.data?.type || 'notification',
+              data: payload.data,
+            });
+          }
         }
-      }
-    });
+      });
+
+      return () => {
+        if (unsubscribe) {
+          unsubscribe();
+        }
+      };
+    }
   }, [isAuthenticated, permission, token, isRegistered, appNotifications]);
 
   const requestPermission = async () => {

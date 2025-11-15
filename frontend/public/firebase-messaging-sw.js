@@ -5,7 +5,9 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
-// Configuration Firebase (remplacer par vos valeurs)
+// Configuration Firebase - Les valeurs sont injectées par le build
+// Pour la production, ces valeurs doivent être dans les variables d'environnement
+// et injectées via un script de build ou un template
 const firebaseConfig = {
   apiKey: "AIzaSyCGVYzNfAxMi8FIyJcQHFCdsEma1sh7ui8",
   authDomain: "urbanbeauty-15ac0.firebaseapp.com",
@@ -46,19 +48,53 @@ self.addEventListener('notificationclick', (event) => {
   
   event.notification.close();
 
+  // Déterminer l'URL à ouvrir selon le type de notification
+  const notificationData = event.notification.data || {};
+  let targetUrl = '/';
+  
+  // Navigation selon le type de notification
+  if (notificationData.type === 'message' || notificationData.type === 'chat') {
+    targetUrl = notificationData.conversationId 
+      ? `/dashboard/chat?conversationId=${notificationData.conversationId}`
+      : notificationData.userId 
+      ? `/dashboard/chat?userId=${notificationData.userId}`
+      : '/dashboard/chat';
+  } else if (notificationData.type === 'order') {
+    targetUrl = notificationData.orderId 
+      ? `/dashboard/orders/${notificationData.orderId}`
+      : '/dashboard/orders';
+  } else if (notificationData.type === 'booking') {
+    targetUrl = notificationData.bookingId 
+      ? `/dashboard/bookings/${notificationData.bookingId}`
+      : '/dashboard/bookings';
+  } else if (notificationData.type === 'product') {
+    targetUrl = notificationData.productId 
+      ? `/products/${notificationData.productId}`
+      : '/products';
+  } else if (notificationData.type === 'service') {
+    targetUrl = notificationData.serviceId 
+      ? `/services/${notificationData.serviceId}`
+      : '/services';
+  } else if (notificationData.url) {
+    targetUrl = notificationData.url;
+  }
+
   // Ouvrir ou focus la fenêtre de l'application
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Si une fenêtre est déjà ouverte, la focus
+      // Si une fenêtre est déjà ouverte, la focus et naviguer
       for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
+        if ('focus' in client && 'navigate' in client) {
+          client.focus();
+          if (client.navigate) {
+            client.navigate(targetUrl);
+          }
+          return;
         }
       }
       // Sinon, ouvrir une nouvelle fenêtre
       if (clients.openWindow) {
-        const url = event.notification.data?.url || '/';
-        return clients.openWindow(url);
+        return clients.openWindow(targetUrl);
       }
     })
   );

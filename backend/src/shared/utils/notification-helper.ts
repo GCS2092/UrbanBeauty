@@ -13,18 +13,13 @@ export class NotificationHelper {
 
   /**
    * Récupère le token FCM d'un utilisateur
-   * TODO: Ajouter un champ fcmToken dans Profile ou créer une table NotificationToken
    */
   async getUserToken(userId: string): Promise<string | null> {
-    // Pour l'instant, on retourne null car on n'a pas encore de champ dédié
-    // Vous devrez ajouter un champ fcmToken dans Profile
-    const profile = await this.prisma.profile.findUnique({
+    const notificationToken = await this.prisma.notificationToken.findUnique({
       where: { userId },
-      select: { userId: true }, // TODO: ajouter fcmToken ici
     });
 
-    // TODO: return profile?.fcmToken || null;
-    return null;
+    return notificationToken?.token || null;
   }
 
   /**
@@ -60,9 +55,10 @@ export class NotificationHelper {
       'Commande confirmée',
       `Votre commande #${orderNumber} a été enregistrée avec succès`,
       {
-        type: 'ORDER_CREATED',
+        type: 'order',
         orderId,
         orderNumber,
+        url: `/dashboard/orders/${orderId}`,
       },
     );
   }
@@ -84,10 +80,11 @@ export class NotificationHelper {
       'Commande mise à jour',
       `Votre commande #${orderNumber} est maintenant ${statusLabels[status] || status}`,
       {
-        type: 'ORDER_UPDATED',
+        type: 'order',
         orderId,
         orderNumber,
         status,
+        url: `/dashboard/orders/${orderId}`,
       },
     );
   }
@@ -101,9 +98,10 @@ export class NotificationHelper {
       'Réservation confirmée',
       `Votre réservation #${bookingNumber} pour "${serviceName}" a été enregistrée`,
       {
-        type: 'BOOKING_CREATED',
+        type: 'booking',
         bookingId,
         bookingNumber,
+        url: `/dashboard/bookings/${bookingId}`,
       },
     );
   }
@@ -129,10 +127,34 @@ export class NotificationHelper {
       'Réservation mise à jour',
       `La réservation #${bookingNumber} de ${clientName} est maintenant ${statusLabels[status] || status}`,
       {
-        type: 'BOOKING_UPDATED',
+        type: 'booking',
         bookingId,
         bookingNumber,
         status,
+        url: `/dashboard/bookings/${bookingId}`,
+      },
+    );
+  }
+
+  /**
+   * Envoie une notification de nouveau message
+   */
+  async notifyNewMessage(
+    userId: string,
+    senderName: string,
+    message: string,
+    conversationId: string,
+    senderId?: string,
+  ) {
+    return this.notifyUser(
+      userId,
+      `Nouveau message de ${senderName}`,
+      message.length > 50 ? message.substring(0, 50) + '...' : message,
+      {
+        type: 'message',
+        conversationId,
+        userId: senderId || '',
+        url: `/dashboard/chat?conversationId=${conversationId}`,
       },
     );
   }

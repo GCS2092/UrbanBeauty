@@ -32,6 +32,24 @@ if (typeof window !== 'undefined') {
 
 export { app, messaging };
 
+// Fonction pour enregistrer le service worker
+export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    return null;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/',
+    });
+    console.log('Service Worker registered:', registration);
+    return registration;
+  } catch (error) {
+    console.error('Service Worker registration failed:', error);
+    return null;
+  }
+}
+
 // Fonction pour demander la permission et obtenir le token
 export async function requestNotificationPermission(): Promise<string | null> {
   if (typeof window === 'undefined') {
@@ -42,6 +60,9 @@ export async function requestNotificationPermission(): Promise<string | null> {
     console.log('This browser does not support notifications');
     return null;
   }
+
+  // Enregistrer le service worker d'abord
+  await registerServiceWorker();
 
   if (!messaging) {
     const supported = await isSupported();
@@ -61,8 +82,15 @@ export async function requestNotificationPermission(): Promise<string | null> {
         return null;
       }
 
+      // Attendre que le service worker soit prêt
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        console.log('Service Worker ready:', registration);
+      }
+
       const token = await getToken(messaging, {
         vapidKey,
+        serviceWorkerRegistration: await navigator.serviceWorker.ready,
       });
       
       if (token) {
@@ -83,16 +111,17 @@ export async function requestNotificationPermission(): Promise<string | null> {
 }
 
 // Fonction pour écouter les messages en foreground
-export function onMessageListener() {
-  return new Promise((resolve) => {
-    if (messaging) {
-      onMessage(messaging, (payload) => {
-        console.log('Message received in foreground:', payload);
-        resolve(payload);
-      });
-    } else {
-      resolve(null);
-    }
+export function onMessageListener(callback: (payload: any) => void) {
+  if (!messaging) {
+    console.warn('Messaging not initialized');
+    return () => {};
+  }
+
+  const unsubscribe = onMessage(messaging, (payload) => {
+    console.log('Message received in foreground:', payload);
+    callback(payload);
   });
+
+  return unsubscribe;
 }
 

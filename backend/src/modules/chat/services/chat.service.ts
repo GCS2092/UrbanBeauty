@@ -238,13 +238,26 @@ export class ChatService {
 
     // Envoyer une notification à l'autre participant
     try {
+      // Récupérer le nom de l'expéditeur
+      const sender = await this.prisma.user.findUnique({
+        where: { id: senderId },
+        include: { profile: true },
+      });
+      
+      const senderName = sender?.profile 
+        ? `${sender.profile.firstName} ${sender.profile.lastName}`
+        : sender?.email || 'Quelqu\'un';
+
       await this.notificationsService.sendToUser(otherParticipantId, {
-        title: 'Nouveau message',
-        body: createMessageDto.content.substring(0, 100),
+        title: `Nouveau message de ${senderName}`,
+        body: createMessageDto.content.length > 100 
+          ? createMessageDto.content.substring(0, 100) + '...'
+          : createMessageDto.content,
         data: {
-          type: 'MESSAGE',
+          type: 'message',
           conversationId,
-          senderId,
+          userId: senderId,
+          url: `/dashboard/chat?conversationId=${conversationId}`,
         },
       });
     } catch (error) {
