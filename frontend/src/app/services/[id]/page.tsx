@@ -177,7 +177,7 @@ function ServiceDetailContent() {
 
             <p className="text-2xl sm:text-3xl font-bold text-pink-600 mb-6">{formatCurrency(service.price, currency)}</p>
             
-            <p className="text-gray-600 mb-6">{service.description || 'Aucune description disponible'}</p>
+            <p className="text-sm text-gray-600 mb-6 line-clamp-4">{service.description || 'Aucune description disponible'}</p>
 
             <div className="space-y-3 mb-6">
               <div className="flex items-center text-gray-600">

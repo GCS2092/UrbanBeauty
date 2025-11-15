@@ -16,6 +16,7 @@ import { ProfileModule } from './modules/profile/profile.module';
 import { FirebaseModule } from './modules/firebase/firebase.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { HairStyleRequestsModule } from './modules/hair-style-requests/hair-style-requests.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ChatModule } from './modules/chat/chat.module';
     FirebaseModule,
     NotificationsModule,
     ChatModule,
+    HairStyleRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -204,14 +204,11 @@ function AdminUsersContent() {
                           >
                             <PencilIcon className="h-5 w-5" />
                           </Link>
-                          <button
-                            className="text-purple-600 hover:text-purple-900"
-                            onClick={() => {
-                              const newRole = prompt(
-                                `Modifier le rôle de ${user.profile?.firstName} ${user.profile?.lastName}\n\nRôle actuel: ${user.role}\n\nNouveaux rôles: CLIENT, COIFFEUSE, VENDEUSE, ADMIN`,
-                                user.role
-                              );
-                              if (newRole && ['CLIENT', 'COIFFEUSE', 'VENDEUSE', 'ADMIN'].includes(newRole)) {
+                          <select
+                            value={user.role}
+                            onChange={(e) => {
+                              const newRole = e.target.value;
+                              if (['CLIENT', 'COIFFEUSE', 'VENDEUSE', 'ADMIN'].includes(newRole)) {
                                 updateRole(
                                   { id: user.id, role: newRole as any },
                                   {
@@ -225,10 +222,14 @@ function AdminUsersContent() {
                                 );
                               }
                             }}
+                            className="text-xs sm:text-sm px-2 py-1 border border-gray-300 rounded-md text-purple-600 hover:text-purple-900 focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                             title="Modifier le rôle"
                           >
-                            <ShieldCheckIcon className="h-5 w-5" />
-                          </button>
+                            <option value="CLIENT">CLIENT</option>
+                            <option value="COIFFEUSE">COIFFEUSE</option>
+                            <option value="VENDEUSE">VENDEUSE</option>
+                            <option value="ADMIN">ADMIN</option>
+                          </select>
                           <button
                             className={user.isActive !== false ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}
                             onClick={() => handleToggleStatus(user.id, user.isActive !== false)}

@@ -76,28 +76,28 @@ async function main() {
   await prisma.category.update({
     where: { id: categoryVisage.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+      image: 'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
     },
   });
 
   await prisma.category.update({
     where: { id: categoryCheveux.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=90&fit=crop&auto=format',
     },
   });
 
   await prisma.category.update({
     where: { id: categoryCorps.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+      image: 'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
     },
   });
 
   await prisma.category.update({
     where: { id: categoryMaquillage.id },
     data: {
-      image: 'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+      image: 'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
     },
   });
 
@@ -157,22 +157,22 @@ async function main() {
   // Créer des services pour la coiffeuse avec images
   if (coiffeuse.profile) {
     // Images de services de coiffure - Femmes noires avec coiffures afro, tresses, locks
-    // URLs différentes pour chaque type de coiffure
+    // URLs différentes pour chaque type de coiffure - Images de femmes noires avec coiffures afro
     const serviceImages = {
       tresses: [
-        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=1200&q=90&fit=crop&auto=format',
       ],
       perruque: [
+        'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=90&fit=crop&auto=format',
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       locks: [
-        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
       ],
     };
 
@@ -358,33 +358,33 @@ async function main() {
 
   // Créer des produits pour la vendeuse avec images
   if (vendeuse.profile) {
-    // Images de produits cosmétiques depuis Unsplash - Haute qualité et pertinentes
+    // Images de produits cosmétiques - Cohérentes avec UrbanBeauty et beauté féminine africaine
     // URLs différentes pour chaque type de produit
     const productImages = {
       masque: [
-        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=90&fit=crop&auto=format',
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=1200&q=90&fit=crop&auto=format',
       ],
       serum: [
-        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=90&fit=crop&auto=format',
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',
       ],
       shampooing: [
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
       ],
       huile: [
-        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=90&fit=crop&auto=format',
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',
       ],
       creme: [
-        'https://images.unsplash.com/photo-1594736797933-d0c2b3c0b1a1?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1200&q=90&fit=crop&auto=format',
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=90&fit=crop&auto=format',
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=1200&q=90&fit=crop&auto=format',
       ],
       maquillage: [
         'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=90&fit=crop&auto=format',

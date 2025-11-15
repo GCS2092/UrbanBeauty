@@ -92,7 +92,7 @@ export default function ProductDetailPage() {
             <h1 className="text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
                   <p className="text-3xl font-bold text-pink-600 mb-6">{formatCurrency(product.price, currency)}</p>
             
-            <p className="text-gray-600 mb-6">{product.description}</p>
+            <p className="text-sm text-gray-600 mb-6 line-clamp-4">{product.description}</p>
 
             <div className="mb-6">
               <p className="text-sm text-gray-500 mb-2">Stock disponible : <span className="text-gray-900 font-medium">{product.stock}</span></p>

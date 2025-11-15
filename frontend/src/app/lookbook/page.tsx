@@ -45,8 +45,8 @@ export default function LookbookPage() {
               href={`/lookbook/${look.id}`}
               className="group relative aspect-[4/3] overflow-hidden rounded-lg bg-gradient-to-br from-pink-100 to-purple-100 hover:shadow-lg transition-shadow"
             >
-              <div className="flex h-full w-full items-center justify-center">
-                <span className="text-6xl">✨</span>
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-pink-200 via-rose-200 to-purple-200">
+                <span className="text-6xl">💇‍♀️</span>
               </div>
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">

@@ -369,3 +369,22 @@ model Message {
   @@index([conversationId])
   @@index([senderId])
 }
+
+model HairStyleRequest {
+  id              String   @id @default(uuid())
+  lookbookItemId  String?
+  lookbookItemName String?
+  clientName      String
+  clientPhone     String
+  clientEmail     String?
+  hairStyleType   String
+  numberOfBraids  Int?
+  braidType       String?
+  numberOfPackages Int?
+  preferredTime   DateTime?
+  preferredDate   DateTime?
+  additionalDetails String?
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
