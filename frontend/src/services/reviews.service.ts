@@ -61,7 +61,12 @@ export const reviewsService = {
     serviceId?: string;
     providerId?: string;
   }): Promise<Review[]> => {
-    const response = await api.get<Review[]>('/api/reviews', { params });
+    const queryParams: any = {};
+    if (params?.productId) queryParams.productId = params.productId;
+    if (params?.serviceId) queryParams.serviceId = params.serviceId;
+    if (params?.providerId) queryParams.providerId = params.providerId;
+    
+    const response = await api.get<Review[]>('/api/reviews', { params: queryParams });
     return response.data;
   },
 
