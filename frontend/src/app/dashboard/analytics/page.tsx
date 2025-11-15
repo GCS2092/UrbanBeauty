@@ -9,6 +9,10 @@ import { useProducts } from '@/hooks/useProducts';
 import { useServices } from '@/hooks/useServices';
 import { useBookings } from '@/hooks/useBookings';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
+import SalesChart from '@/components/charts/SalesChart';
+import RevenueChart from '@/components/charts/RevenueChart';
+import BookingsChart from '@/components/charts/BookingsChart';
+import TopProductsChart from '@/components/charts/TopProductsChart';
 
 function AnalyticsContent() {
   const { user } = useAuth();
@@ -98,6 +102,96 @@ function AnalyticsContent() {
   
   const isProviderStats = (s: typeof stats): s is ProviderStatsType => {
     return s !== null && s !== undefined && 'totalServices' in s;
+  };
+
+  // Préparer les données pour les graphiques (VENDEUSE)
+  const getSalesChartData = () => {
+    if (!isSeller || !isSellerStats(stats)) return [];
+    
+    // Grouper les commandes par date (7 derniers jours)
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return date.toISOString().split('T')[0];
+    });
+
+    return last7Days.map(date => {
+      const dayOrders = myOrders.filter(o => {
+        const orderDate = new Date(o.createdAt).toISOString().split('T')[0];
+        return orderDate === date;
+      });
+
+      const sales = dayOrders.length;
+      const revenue = dayOrders
+        .filter(o => o.status === 'DELIVERED' || o.status === 'SHIPPED' || o.status === 'PAID')
+        .reduce((sum, o) => {
+          const sellerItems = o.items.filter(item => item.product?.sellerId === user?.id);
+          return sum + sellerItems.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0);
+        }, 0);
+
+      return {
+        date: new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+        sales,
+        revenue,
+      };
+    });
+  };
+
+  // Préparer les données pour les graphiques (COIFFEUSE)
+  const getBookingsChartData = () => {
+    if (!isProvider || !isProviderStats(stats)) return [];
+    
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return date.toISOString().split('T')[0];
+    });
+
+    return last7Days.map(date => {
+      const dayBookings = myBookings.filter(b => {
+        const bookingDate = new Date(b.createdAt).toISOString().split('T')[0];
+        return bookingDate === date;
+      });
+
+      const bookings = dayBookings.length;
+      const revenue = dayBookings
+        .filter(b => b.status === 'CONFIRMED' || b.status === 'COMPLETED')
+        .reduce((sum, b) => sum + (b.service?.price || 0), 0);
+
+      return {
+        date: new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+        bookings,
+        revenue,
+      };
+    });
+  };
+
+  // Top produits (VENDEUSE)
+  const getTopProductsData = () => {
+    if (!isSeller) return [];
+    
+    const productSales: Record<string, { name: string; sales: number; revenue: number }> = {};
+    
+    myOrders.forEach(order => {
+      order.items.forEach(item => {
+        if (item.product?.sellerId === user?.id) {
+          const productId = item.product.id;
+          if (!productSales[productId]) {
+            productSales[productId] = {
+              name: item.product.name || 'Produit inconnu',
+              sales: 0,
+              revenue: 0,
+            };
+          }
+          productSales[productId].sales += item.quantity;
+          productSales[productId].revenue += item.price * item.quantity;
+        }
+      });
+    });
+
+    return Object.values(productSales)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
   };
 
   return (
@@ -228,15 +322,41 @@ function AnalyticsContent() {
           )}
         </div>
 
-        {/* Graphiques (à implémenter) */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            {isSeller ? 'Évolution des ventes' : 'Évolution des réservations'}
-          </h2>
-          <div className="h-64 flex items-center justify-center text-gray-500">
-            <p>Graphiques à implémenter avec une bibliothèque de graphiques (Chart.js, Recharts, etc.)</p>
-          </div>
-        </div>
+        {/* Graphiques */}
+        {isSeller && (
+          <>
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Évolution des ventes (7 derniers jours)</h2>
+              <SalesChart data={getSalesChartData()} type="line" />
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Revenus par période</h2>
+              <RevenueChart data={getSalesChartData().map(d => ({ period: d.date, revenue: d.revenue }))} />
+            </div>
+
+            {getTopProductsData().length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Top 5 produits</h2>
+                <TopProductsChart data={getTopProductsData()} />
+              </div>
+            )}
+          </>
+        )}
+
+        {isProvider && (
+          <>
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Évolution des réservations (7 derniers jours)</h2>
+              <BookingsChart data={getBookingsChartData()} />
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Revenus par période</h2>
+              <RevenueChart data={getBookingsChartData().map(d => ({ period: d.date, revenue: d.revenue }))} />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

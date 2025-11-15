@@ -16,6 +16,7 @@ import {
   BellIcon,
 } from '@heroicons/react/24/outline';
 import NotificationsPanel from '@/components/dashboard/NotificationsPanel';
+import OrdersChart from '@/components/charts/OrdersChart';
 
 function DashboardContent() {
   const { user } = useAuth();
@@ -241,6 +242,33 @@ function DashboardContent() {
             </Link>
           )}
         </div>
+
+        {/* Graphique pour les clients */}
+        {user?.role === 'CLIENT' && orders.length > 0 && (
+          <div className="mt-8 bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Évolution de mes commandes</h2>
+            <OrdersChart data={(() => {
+              const last7Days = Array.from({ length: 7 }, (_, i) => {
+                const date = new Date();
+                date.setDate(date.getDate() - (6 - i));
+                return date.toISOString().split('T')[0];
+              });
+
+              return last7Days.map(date => {
+                const dayOrders = orders.filter(o => {
+                  const orderDate = new Date(o.createdAt).toISOString().split('T')[0];
+                  return orderDate === date;
+                });
+
+                return {
+                  period: new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+                  orders: dayOrders.length,
+                  amount: dayOrders.reduce((sum, o) => sum + (o.total || 0), 0),
+                };
+              });
+            })()} />
+          </div>
+        )}
       </div>
     </div>
   );
