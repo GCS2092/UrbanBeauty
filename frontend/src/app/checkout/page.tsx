@@ -11,15 +11,21 @@ import { useNotifications } from '@/components/admin/NotificationProvider';
 import { useCreateOrder } from '@/hooks/useOrders';
 import { couponsService } from '@/services/coupons.service';
 import { formatCurrency, getSelectedCurrency, convertCurrency } from '@/utils/currency';
-import ProtectedRoute from '@/components/shared/ProtectedRoute';
 
 function CheckoutContent() {
   const router = useRouter();
   const { items, getTotal, clearCart } = useCartStore();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { mutate: createOrder, isPending: isSubmitting } = useCreateOrder();
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
+
+  // Rediriger les admins (ils ne peuvent pas commander)
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'ADMIN') {
+      router.push('/dashboard/admin');
+    }
+  }, [isAuthenticated, user?.role, router]);
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -357,10 +363,7 @@ function CheckoutContent() {
 }
 
 export default function CheckoutPage() {
-  return (
-    <ProtectedRoute requiredRole={['CLIENT', 'VENDEUSE', 'COIFFEUSE']}>
-      <CheckoutContent />
-    </ProtectedRoute>
-  );
+  // Permettre l'accès aux invités (non authentifiés) et aux utilisateurs authentifiés
+  return <CheckoutContent />;
 }
 
