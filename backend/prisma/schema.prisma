@@ -55,32 +55,33 @@ enum PaymentStatus {
 // MODELS
 // ------------------------
 model User {
-    id        String   @id @default(uuid())
-    email     String   @unique
-    password  String
-    role      Role     @default(CLIENT)
-    isActive  Boolean  @default(true) // Pour bloquer/débloquer les utilisateurs
-    mustChangePassword Boolean @default(false) // Pour forcer le changement de mot de passe à la première connexion
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  password           String
+  role               Role     @default(CLIENT)
+  isActive           Boolean  @default(true) // Pour bloquer/débloquer les utilisateurs
+  mustChangePassword Boolean  @default(false) // Pour forcer le changement de mot de passe à la première connexion
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  profile          Profile?
+  profile           Profile?
   notificationToken NotificationToken?
-  orders           Order[]
-  products         Product[] @relation("UserProducts") // Pour les vendeuses
-  bookings         Booking[] // Pour les clients
-  reviews          Review[] // Avis laissés
-  payments         Payment[] // Paiements effectués
-  conversations1   Conversation[] @relation("Conversations1") // Conversations où l'utilisateur est participant1
-  conversations2   Conversation[] @relation("Conversations2") // Conversations où l'utilisateur est participant2
-  messages         Message[] // Messages envoyés
-  notifications    Notification[] // Notifications reçues
+  orders            Order[]
+  products          Product[]          @relation("UserProducts") // Pour les vendeuses
+  bookings          Booking[] // Pour les clients
+  reviews           Review[] // Avis laissés
+  reviewHelpful     ReviewHelpful[] // Avis marqués comme utiles
+  payments          Payment[] // Paiements effectués
+  conversations1    Conversation[]     @relation("Conversations1") // Conversations où l'utilisateur est participant1
+  conversations2    Conversation[]     @relation("Conversations2") // Conversations où l'utilisateur est participant2
+  messages          Message[] // Messages envoyés
+  notifications     Notification[] // Notifications reçues
 }
 
 model Profile {
-  id                String    @id @default(uuid())
-  userId            String    @unique
-  user              User      @relation(fields: [userId], references: [id])
+  id                String             @id @default(uuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id])
   firstName         String
   lastName          String
   phone             String?
@@ -96,13 +97,14 @@ model Profile {
   instagram         String? // Instagram
   facebook          String? // Facebook
   tiktok            String? // TikTok
-  isProvider        Boolean   @default(false)
-  totalBookings     Int       @default(0) // Total réservations
-  completedBookings Int       @default(0) // Réservations complétées
+  isProvider        Boolean            @default(false)
+  totalBookings     Int                @default(0) // Total réservations
+  completedBookings Int                @default(0) // Réservations complétées
   cancellationRate  Float? // Taux d'annulation
   services          Service[]
   portfolio         Image[]
   rating            Float?
+  hairStyleRequests HairStyleRequest[] // Demandes de coiffure acceptées
 }
 
 model Product {
@@ -129,7 +131,9 @@ model Product {
   isFeatured         Boolean     @default(false)
   views              Int         @default(0)
   salesCount         Int         @default(0)
+  rating             Float? // Note moyenne calculée (alias pour averageRating)
   averageRating      Float? // Note moyenne calculée
+  reviewCount        Int         @default(0) // Nombre d'avis
   orders             OrderItem[]
   reviews            Review[]
   sellerId           String
@@ -151,7 +155,9 @@ model Service {
   advanceBookingDays Int? // Jours à l'avance pour réserver
   views              Int       @default(0)
   bookingsCount      Int       @default(0)
+  rating             Float? // Note moyenne calculée (alias pour averageRating)
   averageRating      Float? // Note moyenne calculée
+  reviewCount        Int       @default(0) // Nombre d'avis
   isFeatured         Boolean   @default(false)
   providerId         String
   provider           Profile   @relation(fields: [providerId], references: [id])
@@ -277,19 +283,35 @@ model Payment {
 }
 
 model Review {
-  id                 String   @id @default(uuid())
+  id                 String          @id @default(uuid())
   rating             Int // 1-5
   comment            String?
-  isVerifiedPurchase Boolean  @default(false) // Achat vérifié
-  isPublished        Boolean  @default(true) // Avis publié
-  helpfulCount       Int      @default(0) // Nombre de "utile"
+  isVerifiedPurchase Boolean         @default(false) // Achat vérifié
+  isPublished        Boolean         @default(true) // Avis publié
+  helpfulCount       Int             @default(0) // Nombre de "utile"
+  providerReply      String? // Réponse du prestataire
+  providerReplyAt    DateTime? // Date de la réponse
   userId             String
-  user               User     @relation(fields: [userId], references: [id])
+  user               User            @relation(fields: [userId], references: [id])
   productId          String?
-  product            Product? @relation(fields: [productId], references: [id])
+  product            Product?        @relation(fields: [productId], references: [id])
   serviceId          String?
-  service            Service? @relation(fields: [serviceId], references: [id])
-  createdAt          DateTime @default(now())
+  service            Service?        @relation(fields: [serviceId], references: [id])
+  helpful            ReviewHelpful[] // Utilisateurs qui ont trouvé l'avis utile
+  createdAt          DateTime        @default(now())
+}
+
+model ReviewHelpful {
+  id        String   @id @default(uuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([reviewId, userId])
+  @@index([reviewId])
+  @@index([userId])
 }
 
 model Coupon {
@@ -327,8 +349,8 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   body      String
-  type      String?  // 'ORDER', 'MESSAGE', 'BOOKING', 'ORDER_UPDATE', etc.
-  data      String?  // JSON string pour les données supplémentaires
+  type      String? // 'ORDER', 'MESSAGE', 'BOOKING', 'ORDER_UPDATE', etc.
+  data      String? // JSON string pour les données supplémentaires
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -338,18 +360,18 @@ model Notification {
 }
 
 model Conversation {
-  id        String    @id @default(uuid())
+  id             String    @id @default(uuid())
   participant1Id String
-  participant1   User   @relation("Conversations1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant1   User      @relation("Conversations1", fields: [participant1Id], references: [id], onDelete: Cascade)
   participant2Id String
-  participant2   User   @relation("Conversations2", fields: [participant2Id], references: [id], onDelete: Cascade)
-  lastMessageAt DateTime?
-  lastMessage   String?
-  unreadCount1  Int     @default(0) // Messages non lus pour participant1
-  unreadCount2  Int     @default(0) // Messages non lus pour participant2
-  messages      Message[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  participant2   User      @relation("Conversations2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  lastMessageAt  DateTime?
+  lastMessage    String?
+  unreadCount1   Int       @default(0) // Messages non lus pour participant1
+  unreadCount2   Int       @default(0) // Messages non lus pour participant2
+  messages       Message[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@unique([participant1Id, participant2Id])
   @@index([participant1Id])
@@ -371,20 +393,26 @@ model Message {
 }
 
 model HairStyleRequest {
-  id              String   @id @default(uuid())
-  lookbookItemId  String?
-  lookbookItemName String?
-  clientName      String
-  clientPhone     String
-  clientEmail     String?
-  hairStyleType   String
-  numberOfBraids  Int?
-  braidType       String?
-  numberOfPackages Int?
-  preferredTime   DateTime?
-  preferredDate   DateTime?
+  id                String    @id @default(uuid())
+  lookbookItemId    String?
+  lookbookItemName  String?
+  clientName        String
+  clientPhone       String
+  clientEmail       String?
+  hairStyleType     String
+  numberOfBraids    Int?
+  braidType         String?
+  numberOfPackages  Int?
+  preferredTime     DateTime?
+  preferredDate     DateTime?
   additionalDetails String?
-  status          String   @default("PENDING")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  status            String    @default("PENDING")
+  userId            String? // Client qui a fait la demande
+  providerId        String? // Prestataire qui a accepté la demande
+  provider          Profile?  @relation(fields: [providerId], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([providerId])
+  @@index([status])
 }

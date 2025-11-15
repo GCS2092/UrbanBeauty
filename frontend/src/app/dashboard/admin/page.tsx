@@ -6,13 +6,34 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   UserGroupIcon,
   ShieldCheckIcon,
+  ChartBarIcon,
+  ShoppingBagIcon,
+  ScissorsIcon,
+  TagIcon,
+  BellIcon,
+  ChatBubbleLeftRightIcon,
+  CalendarIcon,
 } from '@heroicons/react/24/outline';
+import { useUsers } from '@/hooks/useUsers';
+import { useOrders } from '@/hooks/useOrders';
+import { useProducts } from '@/hooks/useProducts';
+import { useServices } from '@/hooks/useServices';
+import { useBookings } from '@/hooks/useBookings';
 
 function AdminDashboardContent() {
   const { user } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: orders = [] } = useOrders();
+  const { data: products = [] } = useProducts();
+  const { data: services = [] } = useServices();
+  const { data: bookings = [] } = useBookings();
 
   const stats = [
-    { name: 'Utilisateurs', value: '5', icon: UserGroupIcon, href: '/dashboard/admin/users', color: 'bg-blue-500' },
+    { name: 'Utilisateurs', value: users.length.toString(), icon: UserGroupIcon, href: '/dashboard/admin/users', color: 'bg-blue-500' },
+    { name: 'Commandes', value: orders.length.toString(), icon: ShoppingBagIcon, href: '/dashboard/admin/orders', color: 'bg-green-500' },
+    { name: 'Produits', value: products.length.toString(), icon: ShoppingBagIcon, href: '/dashboard/admin/products', color: 'bg-purple-500' },
+    { name: 'Services', value: services.length.toString(), icon: ScissorsIcon, href: '/dashboard/admin/services', color: 'bg-pink-500' },
+    { name: 'Réservations', value: bookings.length.toString(), icon: CalendarIcon, href: '/dashboard/admin/bookings', color: 'bg-yellow-500' },
   ];
 
   return (
@@ -51,37 +72,61 @@ function AdminDashboardContent() {
           })}
         </div>
 
-        {/* Section principale - Gestion Utilisateurs */}
-        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+        {/* Sections principales */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Gestion Utilisateurs */}
           <Link
             href="/dashboard/admin/users"
-            className="block hover:shadow-md transition-shadow"
+            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
           >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center mb-4">
-              <UserGroupIcon className="h-8 w-8 sm:h-12 sm:w-12 text-blue-600 mr-0 sm:mr-4 mb-2 sm:mb-0" />
+            <div className="flex items-center gap-4 mb-4">
+              <UserGroupIcon className="h-12 w-12 text-blue-600" />
               <div>
-                <h3 className="text-xl sm:text-2xl font-semibold text-gray-900">Gestion des Utilisateurs</h3>
-                <p className="text-sm sm:text-base text-gray-600 mt-1">
-                  Gérez tous les utilisateurs de la plateforme : modifier les rôles, créer, supprimer ou bloquer des comptes.
-                </p>
+                <h3 className="text-xl font-semibold text-gray-900">Gestion des Utilisateurs</h3>
+                <p className="text-sm text-gray-600">Créer, modifier, bloquer des comptes</p>
               </div>
             </div>
-            <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-              <div className="flex flex-wrap gap-2 sm:gap-4">
-                <div className="flex items-center text-sm text-gray-600">
-                  <ShieldCheckIcon className="h-5 w-5 mr-2 text-blue-600" />
-                  Modifier les rôles
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <UserGroupIcon className="h-5 w-5 mr-2 text-green-600" />
-                  Créer des utilisateurs
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <span className="mr-2">🚫</span>
-                  Bloquer/Débloquer
-                </div>
+          </Link>
+
+          {/* Analytics */}
+          <Link
+            href="/dashboard/admin/analytics"
+            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <ChartBarIcon className="h-12 w-12 text-purple-600" />
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Statistiques & Analytics</h3>
+                <p className="text-sm text-gray-600">Vue d'ensemble de la plateforme</p>
               </div>
-              <span className="text-blue-600 font-semibold text-lg">Gérer →</span>
+            </div>
+          </Link>
+
+          {/* Gestion des Avis */}
+          <Link
+            href="/dashboard/admin/reviews"
+            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <ChatBubbleLeftRightIcon className="h-12 w-12 text-pink-600" />
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Modération des Avis</h3>
+                <p className="text-sm text-gray-600">Gérer et modérer les avis</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Gestion des Notifications */}
+          <Link
+            href="/dashboard/admin/notifications"
+            className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <BellIcon className="h-12 w-12 text-yellow-600" />
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Notifications</h3>
+                <p className="text-sm text-gray-600">Envoyer des notifications</p>
+              </div>
             </div>
           </Link>
         </div>

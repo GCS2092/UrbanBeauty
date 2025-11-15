@@ -241,6 +241,30 @@ function DashboardContent() {
               <p className="text-gray-600">Consultez vos performances</p>
             </Link>
           )}
+
+          {/* Demandes de coiffure (COIFFEUSE) */}
+          {user?.role === 'COIFFEUSE' && (
+            <Link
+              href="/dashboard/hair-style-requests"
+              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+            >
+              <ScissorsIcon className="h-8 w-8 text-pink-600 mb-3" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Demandes de coiffure</h2>
+              <p className="text-gray-600">Gérez les demandes du lookbook</p>
+            </Link>
+          )}
+
+          {/* Avis (COIFFEUSE) */}
+          {user?.role === 'COIFFEUSE' && (
+            <Link
+              href="/dashboard/reviews"
+              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+            >
+              <ChatBubbleLeftRightIcon className="h-8 w-8 text-pink-600 mb-3" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Avis sur mes services</h2>
+              <p className="text-gray-600">Voir et répondre aux avis</p>
+            </Link>
+          )}
         </div>
 
         {/* Graphique pour les clients */}
