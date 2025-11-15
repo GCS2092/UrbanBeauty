@@ -94,6 +94,7 @@ export class AuthService {
 
     return {
       access_token,
+      mustChangePassword: user.mustChangePassword,
       user: {
         id: user.id,
         email: user.email,
@@ -120,6 +121,25 @@ export class AuthService {
     if (!user) {
       return null;
     }
+
+    return user;
+  }
+
+  async changePassword(userId: string, newPassword: string) {
+    // Hasher le nouveau mot de passe
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Mettre à jour le mot de passe et désactiver mustChangePassword
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        mustChangePassword: false,
+      },
+      include: {
+        profile: true,
+      },
+    });
 
     return user;
   }

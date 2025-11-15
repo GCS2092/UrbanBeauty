@@ -67,8 +67,12 @@ export class UsersService {
       throw new ConflictException('Cet email est déjà utilisé');
     }
 
+    // Si aucun mot de passe n'est fourni, utiliser "password" par défaut
+    const passwordToUse = createUserDto.password || 'password';
+    const mustChangePassword = !createUserDto.password; // Si pas de mot de passe fourni, l'utilisateur devra le changer
+
     // Hasher le mot de passe
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const hashedPassword = await bcrypt.hash(passwordToUse, 10);
 
     // Créer l'utilisateur
     const user = await this.prisma.user.create({
@@ -77,6 +81,7 @@ export class UsersService {
         password: hashedPassword,
         role: createUserDto.role,
         isActive: true,
+        mustChangePassword: mustChangePassword,
       },
       include: {
         profile: true,

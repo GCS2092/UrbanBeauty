@@ -16,6 +16,7 @@ export interface LoginDto {
 
 export interface AuthResponse {
   access_token: string;
+  mustChangePassword?: boolean;
   user: {
     id: string;
     email: string;
@@ -81,6 +82,13 @@ export const authService = {
 
   getMe: async (): Promise<UserMeResponse> => {
     const response = await api.get<UserMeResponse>('/api/auth/me');
+    return response.data;
+  },
+
+  changePassword: async (newPassword: string): Promise<UserMeResponse> => {
+    const response = await api.put<UserMeResponse>('/api/auth/change-password', {
+      newPassword,
+    });
     return response.data;
   },
 

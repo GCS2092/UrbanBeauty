@@ -1,5 +1,6 @@
 export class AuthResponseDto {
   access_token: string;
+  mustChangePassword?: boolean;
   user: {
     id: string;
     email: string;

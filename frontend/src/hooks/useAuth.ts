@@ -65,12 +65,18 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: (data: LoginDto) => authService.login(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       setIsAuthenticated(true);
       // Déclencher un événement personnalisé
       window.dispatchEvent(new Event('auth-change'));
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
-      router.push('/dashboard');
+      
+      // Si l'utilisateur doit changer son mot de passe, rediriger vers la page de changement
+      if (response.mustChangePassword) {
+        router.push('/auth/change-password');
+      } else {
+        router.push('/dashboard');
+      }
     },
     onError: (error) => {
       // Les erreurs sont gérées dans le composant qui appelle login()
