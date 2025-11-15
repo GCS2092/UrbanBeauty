@@ -209,7 +209,9 @@ function ServiceDetailContent() {
                               router.push('/auth/register?redirect=' + encodeURIComponent(`/services/${service.id}`));
                             } else {
                               // Créer ou ouvrir la conversation
-                              router.push(`/dashboard/chat?userId=${service.provider.id}`);
+                              if (service.provider?.id) {
+                                router.push(`/dashboard/chat?userId=${service.provider.id}`);
+                              }
                             }
                           }}
                           className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center"
