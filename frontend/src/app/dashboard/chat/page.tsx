@@ -28,17 +28,30 @@ function ChatContent() {
   // Si un userId est fourni dans l'URL, créer ou ouvrir la conversation
   useEffect(() => {
     if (targetUserId && user?.id && targetUserId !== user.id) {
-      createConversation(
-        { participant2Id: targetUserId },
-        {
-          onSuccess: (conversation) => {
-            setSelectedConversationId(conversation.id);
-            router.replace('/dashboard/chat');
-          },
-        }
+      // Vérifier si une conversation existe déjà
+      const existingConversation = conversations.find(
+        (c) => c.otherParticipant.id === targetUserId
       );
+      
+      if (existingConversation) {
+        setSelectedConversationId(existingConversation.id);
+        router.replace('/dashboard/chat');
+      } else {
+        createConversation(
+          { participant2Id: targetUserId },
+          {
+            onSuccess: (conversation) => {
+              setSelectedConversationId(conversation.id);
+              router.replace('/dashboard/chat');
+            },
+            onError: (error: any) => {
+              console.error('Erreur lors de la création de la conversation:', error);
+            },
+          }
+        );
+      }
     }
-  }, [targetUserId, user?.id, createConversation, router]);
+  }, [targetUserId, user?.id, createConversation, router, conversations]);
 
   // Auto-scroll vers le bas quand de nouveaux messages arrivent
   useEffect(() => {
@@ -78,9 +91,9 @@ function ChatContent() {
         <h1 className="text-4xl font-bold text-gray-900 mb-8">Messages</h1>
 
         <div className="bg-white rounded-lg shadow-sm overflow-hidden" style={{ height: 'calc(100vh - 250px)' }}>
-          <div className="flex h-full">
+          <div className="flex flex-col md:flex-row h-full">
             {/* Liste des conversations */}
-            <div className="w-1/3 border-r border-gray-200 overflow-y-auto">
+            <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-gray-200 overflow-y-auto flex-shrink-0">
               <div className="p-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Conversations</h2>
               </div>
@@ -124,7 +137,7 @@ function ChatContent() {
             </div>
 
             {/* Zone de chat */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
               {selectedConversationId ? (
                 <>
                   {/* En-tête de la conversation */}
@@ -146,7 +159,7 @@ function ChatContent() {
                           className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                         >
                           <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                            className={`max-w-[80%] sm:max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                               isOwn
                                 ? 'bg-pink-600 text-white'
                                 : 'bg-gray-200 text-gray-900'
@@ -168,22 +181,22 @@ function ChatContent() {
                   </div>
 
                   {/* Formulaire d'envoi */}
-                  <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
+                  <form onSubmit={handleSendMessage} className="p-2 sm:p-4 border-t border-gray-200">
                     <div className="flex gap-2">
                       <input
                         type="text"
                         value={messageContent}
                         onChange={(e) => setMessageContent(e.target.value)}
                         placeholder="Tapez votre message..."
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
+                        className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
                       />
                       <button
                         type="submit"
                         disabled={!messageContent.trim()}
-                        className="px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-4 sm:px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2"
                       >
-                        <PaperAirplaneIcon className="h-5 w-5" />
-                        Envoyer
+                        <PaperAirplaneIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="hidden sm:inline">Envoyer</span>
                       </button>
                     </div>
                   </form>

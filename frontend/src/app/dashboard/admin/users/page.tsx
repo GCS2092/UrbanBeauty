@@ -92,9 +92,9 @@ function AdminUsersContent() {
           Retour à l'administration
         </Link>
 
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
@@ -131,26 +131,26 @@ function AdminUsersContent() {
 
         {/* Tableau des utilisateurs */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Utilisateur
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Rôle
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                     Téléphone
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Statut
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -165,15 +165,17 @@ function AdminUsersContent() {
                 ) : (
                   users.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">
                           {user.profile?.firstName} {user.profile?.lastName}
                         </div>
+                        <div className="text-xs text-gray-500 sm:hidden mt-1">{user.email}</div>
+                        <div className="text-xs text-gray-500 md:hidden mt-1">{user.profile?.phone || 'N/A'}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                         <span className="text-sm text-gray-900">{user.email}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
                           user.role === 'COIFFEUSE' ? 'bg-pink-100 text-pink-800' :
@@ -183,18 +185,18 @@ function AdminUsersContent() {
                           {user.role}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                         <span className="text-sm text-gray-900">{user.profile?.phone || 'N/A'}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           user.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
                           {user.isActive !== false ? 'Actif' : 'Bloqué'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-2">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-1 sm:space-x-2">
                           <Link
                             href={`/dashboard/admin/users/${user.id}/edit`}
                             className="text-blue-600 hover:text-blue-900"
