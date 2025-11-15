@@ -24,8 +24,17 @@ export default function LookbookPage() {
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
             Retour à l'accueil
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900">Lookbook</h1>
-          <p className="mt-2 text-gray-600">Inspirez-vous de nos créations</p>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-rose-500 to-orange-500 rounded-lg shadow-lg">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Lookbook</h1>
+              <p className="mt-2 text-gray-600">Inspirez-vous de nos créations</p>
+            </div>
+          </div>
         </div>
 
         {/* Grille de looks */}

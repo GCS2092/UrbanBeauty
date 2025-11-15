@@ -63,8 +63,17 @@ export default function ServicesPage() {
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
             Retour à l'accueil
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900">Nos Services</h1>
-          <p className="mt-2 text-gray-600">Réservez votre prochain rendez-vous beauté</p>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-lg">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Nos Services</h1>
+              <p className="mt-2 text-gray-600">Réservez votre prochain rendez-vous beauté</p>
+            </div>
+          </div>
         </div>
 
         {/* Filtres */}
