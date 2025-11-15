@@ -21,7 +21,8 @@ function ReviewsContent() {
     queryKey: ['provider-reviews', user?.profile?.id],
     queryFn: async () => {
       if (!user?.profile?.id) return [];
-      const reviews = await reviewsService.findAll({ providerId: user.profile.id });
+      // Utiliser providerId dans la requête
+      const reviews = await reviewsService.findAll(undefined, undefined, user.profile.id);
       return reviews;
     },
     enabled: !!user?.profile?.id,
