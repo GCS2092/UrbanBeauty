@@ -19,12 +19,29 @@ function OrderSuccessContent() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    // Fonction pour sauvegarder le code de suivi dans localStorage
+    const saveTrackingCode = (code: string) => {
+      if (typeof window === 'undefined' || !code) return;
+      
+      const savedCodes = localStorage.getItem('recent_tracking_codes');
+      let codes: string[] = savedCodes ? JSON.parse(savedCodes) : [];
+      
+      // Ajouter le code s'il n'existe pas déjà
+      if (!codes.includes(code)) {
+        codes.unshift(code); // Ajouter au début
+        // Garder seulement les 10 dernières commandes
+        codes = codes.slice(0, 10);
+        localStorage.setItem('recent_tracking_codes', JSON.stringify(codes));
+      }
+    };
+
     // Si le trackingCode est déjà dans l'URL, l'utiliser directement
     if (trackingCodeFromUrl && orderNumber) {
       setOrder({
         orderNumber,
         trackingCode: trackingCodeFromUrl,
       });
+      saveTrackingCode(trackingCodeFromUrl);
       return;
     }
 
@@ -36,10 +53,12 @@ function OrderSuccessContent() {
           const orders = response.data;
           const foundOrder = Array.isArray(orders) ? orders.find((o: any) => o.orderNumber === orderNumber) : orders;
           if (foundOrder) {
+            const trackingCode = foundOrder.trackingCode || foundOrder.orderNumber;
             setOrder({
               orderNumber: foundOrder.orderNumber,
-              trackingCode: foundOrder.trackingCode || foundOrder.orderNumber,
+              trackingCode,
             });
+            saveTrackingCode(trackingCode);
           }
         })
         .catch(() => {
