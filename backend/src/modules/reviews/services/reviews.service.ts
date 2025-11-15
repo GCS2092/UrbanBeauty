@@ -165,7 +165,7 @@ export class ReviewsService {
     if (providerId) {
       // Pour un prestataire, récupérer les avis de ses services
       where.service = {
-        providerId,
+        providerId: providerId,
       };
     }
 
