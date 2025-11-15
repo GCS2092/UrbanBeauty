@@ -27,8 +27,8 @@ function AdminUsersContent() {
   const notifications = useNotifications();
 
   const handleCreate = () => {
-    if (!createForm.email || !createForm.password) {
-      notifications.error('Champs requis', 'Email et mot de passe sont obligatoires');
+    if (!createForm.email) {
+      notifications.error('Champ requis', 'L\'email est obligatoire');
       return;
     }
 
@@ -285,14 +285,19 @@ function AdminUsersContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mot de passe <span className="text-gray-500 text-xs">(optionnel - "password" par défaut)</span>
+                </label>
                 <input
                   type="password"
                   value={createForm.password}
                   onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                  required
+                  placeholder="Laissez vide pour utiliser 'password' par défaut"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Si laissé vide, l'utilisateur devra changer son mot de passe à la première connexion
+                </p>
               </div>
 
               <div>
