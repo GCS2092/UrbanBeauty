@@ -37,6 +37,12 @@ export class OrdersController {
     return this.ordersService.findAll(user.userId);
   }
 
+  @Get('track/:trackingCode')
+  async findByTrackingCode(@Param('trackingCode') trackingCode: string) {
+    // Endpoint public pour rechercher une commande par code de suivi
+    return this.ordersService.findByTrackingCode(trackingCode);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: string, @CurrentUser() user: any) {

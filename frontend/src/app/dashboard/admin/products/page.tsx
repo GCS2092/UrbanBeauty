@@ -2,18 +2,13 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
-import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { useProducts, useDeleteProduct } from '@/hooks/useProducts';
-import { useNotifications } from '@/components/admin/NotificationProvider';
+import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { useProducts } from '@/hooks/useProducts';
 import Image from 'next/image';
 
 function AdminProductsContent() {
-  const router = useRouter();
   const { data: products = [], isLoading, error, refetch } = useProducts();
-  const { mutate: deleteProduct } = useDeleteProduct();
-  const notifications = useNotifications();
 
   // Rafraîchir automatiquement toutes les 30 secondes pour voir les mises à jour de stock
   useEffect(() => {
@@ -90,9 +85,6 @@ function AdminProductsContent() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Statut
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -145,33 +137,6 @@ function AdminProductsContent() {
                       }`}>
                         {product.isActive ? 'Actif' : 'Inactif'}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        <Link
-                          href={`/dashboard/admin/products/${product.id}/edit`}
-                          className="text-pink-600 hover:text-pink-900"
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </Link>
-                        <button
-                          className="text-red-600 hover:text-red-900"
-                          onClick={() => {
-                            if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
-                              deleteProduct(product.id, {
-                                onSuccess: () => {
-                                  notifications.success('Produit supprimé', 'Le produit a été supprimé avec succès');
-                                },
-                                onError: (error: any) => {
-                                  notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la suppression');
-                                },
-                              });
-                            }
-                          }}
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}

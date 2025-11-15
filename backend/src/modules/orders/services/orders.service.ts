@@ -12,6 +12,16 @@ function generateOrderNumber(): string {
   return `CMD-${timestamp}-${random}`;
 }
 
+// Fonction utilitaire pour générer un code de suivi court et facile à retenir
+function generateTrackingCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclut les caractères ambigus
+  let code = 'UB-';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -182,6 +192,7 @@ export class OrdersService {
     const order = await this.prisma.order.create({
       data: {
         orderNumber: generateOrderNumber(),
+        trackingCode: generateTrackingCode(),
         userId: userId || null,
         customerEmail: createOrderDto.customerEmail,
         customerName: createOrderDto.customerName,

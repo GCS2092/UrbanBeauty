@@ -8,7 +8,8 @@ import {
   MagnifyingGlassIcon,
   Bars3Icon,
   XMarkIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartStore } from '@/store/cart.store';
@@ -86,6 +87,18 @@ export default function Header() {
               <CurrencySelector />
             </div>
             
+            {/* Mes commandes - Accessible à tous */}
+            <Link
+              href={isAuthenticated ? "/dashboard/orders" : "/orders/track"}
+              className="hidden sm:flex items-center gap-1 p-2 text-gray-600 hover:text-pink-600 transition-colors"
+              title={isAuthenticated ? "Mes commandes" : "Suivre ma commande"}
+            >
+              <ClipboardDocumentListIcon className="h-5 w-5" />
+              <span className="text-sm font-medium hidden lg:inline">
+                {isAuthenticated ? "Mes commandes" : "Suivre commande"}
+              </span>
+            </Link>
+
             {/* Search */}
             <button className="hidden sm:block p-2 text-gray-600 hover:text-pink-600 transition-colors">
               <MagnifyingGlassIcon className="h-5 w-5" />
@@ -226,6 +239,13 @@ export default function Header() {
                 >
                   Prestataires
                 </Link>
+                <Link 
+                  href="/orders/track" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Suivre ma commande
+                </Link>
               </>
             )}
             {isAuthenticated ? (
@@ -236,6 +256,13 @@ export default function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Tableau de bord
+                </Link>
+                <Link 
+                  href="/dashboard/orders" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Mes commandes
                 </Link>
                 <button
                   onClick={() => {

@@ -99,7 +99,15 @@ function CheckoutContent() {
       onSuccess: (newOrder) => {
         notifications.success('Commande passée', `Votre commande #${newOrder.orderNumber} a été enregistrée !`);
         clearCart();
-        router.push(`/order-success?orderNumber=${newOrder.orderNumber}`);
+        
+        // Rediriger vers la page de succès avec le numéro de commande et le code de suivi
+        const params = new URLSearchParams({
+          orderNumber: newOrder.orderNumber,
+        });
+        if (newOrder.trackingCode) {
+          params.append('trackingCode', newOrder.trackingCode);
+        }
+        router.push(`/order-success?${params.toString()}`);
       },
       onError: (error: any) => {
         notifications.error('Erreur de commande', error?.response?.data?.message || 'Une erreur est survenue lors de la commande.');

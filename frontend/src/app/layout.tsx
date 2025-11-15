@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import { Providers } from "./providers";
 import NotificationProvider from "@/components/admin/NotificationProvider";
 import FCMProvider from "@/components/notifications/FCMProvider";
+import OnboardingModal from "@/components/onboarding/OnboardingModal";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({
         <Providers>
           <NotificationProvider>
             <FCMProvider>
+              <OnboardingModal />
               <Header />
               <main>{children}</main>
               <Footer />

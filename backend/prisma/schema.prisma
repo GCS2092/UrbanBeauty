@@ -203,6 +203,7 @@ model Category {
 model Order {
   id                    String      @id @default(uuid())
   orderNumber           String      @unique // Numéro de commande unique
+  trackingCode          String      @unique // Code de suivi court pour les invités (ex: UB-ABC123)
   userId                String? // Peut être null pour les commandes guest
   user                  User?       @relation(fields: [userId], references: [id])
   customerEmail         String // Email du client (pour notifications)
