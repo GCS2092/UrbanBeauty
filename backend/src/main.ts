@@ -1,11 +1,31 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { execSync } from 'child_process';
 
 const logger = new Logger('Bootstrap');
 
+async function runMigrations() {
+  try {
+    logger.log('🔄 Running database migrations...');
+    execSync('npx prisma migrate deploy', {
+      stdio: 'inherit',
+      env: process.env,
+    });
+    logger.log('✅ Database migrations applied successfully');
+  } catch (error) {
+    logger.warn('⚠️ Failed to run migrations (this is OK if migrations are already applied)');
+    logger.debug('Migration error:', error);
+  }
+}
+
 async function bootstrap() {
   try {
+    // Run migrations before starting the app
+    if (process.env.NODE_ENV === 'production') {
+      await runMigrations();
+    }
+    
     const app = await NestFactory.create(AppModule, {
       logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
