@@ -107,11 +107,21 @@ export default function LookbookDetailPage() {
                 onClick={() => setShowForm(true)}
                 className="w-full sm:w-auto bg-gradient-to-r from-pink-600 to-rose-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-pink-700 hover:to-rose-700 transition-all shadow-lg shadow-pink-500/50"
               >
-                Demander cette coiffure
+                Je veux cette coiffure
               </button>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Formulaire de demande</h2>
+              <div className="mt-6">
+                <form onSubmit={handleSubmit} className="space-y-6 bg-gray-50 p-6 rounded-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold text-gray-900">Formulaire de demande</h2>
+                    <button
+                      type="button"
+                      onClick={() => setShowForm(false)}
+                      className="text-gray-500 hover:text-gray-700 text-sm"
+                    >
+                      ✕ Fermer
+                    </button>
+                  </div>
 
                 {/* Informations personnelles */}
                 <div className="border-b border-gray-200 pb-6">
@@ -252,22 +262,23 @@ export default function LookbookDetailPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-gradient-to-r from-pink-600 to-rose-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-pink-700 hover:to-rose-700 transition-all"
-                  >
-                    Envoyer la demande
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                </div>
-              </form>
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-pink-600 to-rose-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-pink-700 hover:to-rose-700 transition-all"
+                    >
+                      Envoyer la demande
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowForm(false)}
+                      className="px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </form>
+              </div>
             )}
           </div>
         </div>

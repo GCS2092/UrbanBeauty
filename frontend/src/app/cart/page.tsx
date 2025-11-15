@@ -134,7 +134,7 @@ function CartPageContent() {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center border border-gray-300 rounded-lg">
                       <button
-                        onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                        onClick={() => updateQuantity(item.productId, Math.max(1, item.quantity - 1))}
                         className="p-2 hover:bg-gray-100 transition-colors"
                         disabled={item.quantity <= 1}
                       >
@@ -144,7 +144,7 @@ function CartPageContent() {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                         className="p-2 hover:bg-gray-100 transition-colors"
                         disabled={item.quantity >= item.stock}
                       >
@@ -152,8 +152,9 @@ function CartPageContent() {
                       </button>
                     </div>
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => removeItem(item.productId)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Supprimer du panier"
                     >
                       <TrashIcon className="h-5 w-5" />
                     </button>
