@@ -20,12 +20,20 @@ if (typeof window !== 'undefined') {
     app = getApps()[0];
   }
 
-  // Vérifier si le navigateur supporte les notifications
+  // Initialiser messaging de manière synchrone si possible
+  // Sinon, l'initialiser de manière asynchrone
   if ('serviceWorker' in navigator) {
     isSupported().then((supported) => {
-      if (supported) {
-        messaging = getMessaging(app);
+      if (supported && !messaging) {
+        try {
+          messaging = getMessaging(app);
+          console.log('Firebase Messaging initialized');
+        } catch (error) {
+          console.error('Error initializing Firebase Messaging:', error);
+        }
       }
+    }).catch((error) => {
+      console.error('Firebase Messaging not supported:', error);
     });
   }
 }
@@ -61,51 +69,58 @@ export async function requestNotificationPermission(): Promise<string | null> {
     return null;
   }
 
-  // Enregistrer le service worker d'abord
-  await registerServiceWorker();
-
-  if (!messaging) {
+  try {
+    // Vérifier si Firebase Messaging est supporté
     const supported = await isSupported();
     if (!supported) {
       console.log('Firebase Messaging is not supported in this browser');
       return null;
     }
-    messaging = getMessaging(app);
-  }
 
-  try {
+    // Initialiser messaging si nécessaire
+    if (!messaging) {
+      messaging = getMessaging(app);
+    }
+
+    // Enregistrer le service worker d'abord
+    const registration = await registerServiceWorker();
+    if (!registration) {
+      console.error('Service Worker registration failed');
+      return null;
+    }
+
+    // Demander la permission
     const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-      if (!vapidKey) {
-        console.error('VAPID key is not configured');
-        return null;
-      }
+    if (permission !== 'granted') {
+      console.log('Notification permission denied:', permission);
+      return null;
+    }
 
-      // Attendre que le service worker soit prêt
-      if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.ready;
-        console.log('Service Worker ready:', registration);
-      }
+    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+    if (!vapidKey) {
+      console.error('VAPID key is not configured. Check NEXT_PUBLIC_FIREBASE_VAPID_KEY');
+      return null;
+    }
 
-      const token = await getToken(messaging, {
-        vapidKey,
-        serviceWorkerRegistration: await navigator.serviceWorker.ready,
-      });
-      
-      if (token) {
-        console.log('FCM Token obtained:', token);
-        return token;
-      } else {
-        console.log('No registration token available');
-        return null;
-      }
+    // Attendre que le service worker soit prêt
+    const readyRegistration = await navigator.serviceWorker.ready;
+    console.log('Service Worker ready:', readyRegistration);
+
+    // Obtenir le token FCM
+    const token = await getToken(messaging, {
+      vapidKey,
+      serviceWorkerRegistration: readyRegistration,
+    });
+    
+    if (token) {
+      console.log('FCM Token obtained:', token);
+      return token;
     } else {
-      console.log('Notification permission denied');
+      console.log('No registration token available. Request permission was granted but token is empty.');
       return null;
     }
   } catch (error) {
-    console.error('Error getting token:', error);
+    console.error('Error getting FCM token:', error);
     return null;
   }
 }

@@ -13,9 +13,19 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     // Enregistrer le service worker au démarrage de l'application
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      registerServiceWorker().catch((error) => {
-        console.error('Failed to register service worker:', error);
-      });
+      registerServiceWorker()
+        .then((registration) => {
+          if (registration) {
+            console.log('Service Worker registered successfully:', registration);
+          } else {
+            console.warn('Service Worker registration returned null');
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to register service worker:', error);
+        });
+    } else {
+      console.warn('Service Worker not supported in this browser');
     }
   }, []);
 
