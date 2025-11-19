@@ -18,7 +18,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "test:blob": "ts-node test-blob.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.8",
@@ -30,6 +31,7 @@
     "@nestjs/platform-express": "^11.1.8",
     "@prisma/client": "^6.18.0",
     "@types/multer": "^2.0.0",
+    "@vercel/blob": "^2.0.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
@@ -57,6 +59,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
     "@types/uuid": "^10.0.0",
+    "dotenv": "^17.2.3",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.2.2",

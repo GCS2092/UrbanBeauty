@@ -54,12 +54,13 @@ export class UploadController {
       throw new BadRequestException('Aucun fichier fourni');
     }
 
-    // Upload vers Cloudinary
-    const result = await this.uploadService.uploadToCloudinary(file.path);
+    // Upload vers le provider configuré (Vercel Blob ou Cloudinary)
+    const result = await this.uploadService.uploadFile(file.path, file.originalname);
 
     return {
-      url: result.secure_url,
-      publicId: result.public_id,
+      url: result.url,
+      publicId: result.publicId || result.pathname,
+      provider: result.provider,
     };
   }
 }

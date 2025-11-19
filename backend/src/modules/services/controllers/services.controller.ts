@@ -35,7 +35,8 @@ export class ServicesController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('COIFFEUSE')
   create(@Body() createServiceDto: CreateServiceDto, @CurrentUser() user: any) {
     return this.servicesService.create(createServiceDto, user.userId);
   }
