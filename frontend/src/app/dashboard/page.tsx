@@ -422,77 +422,69 @@ function DashboardContent() {
           </>
         )}
 
-        {/* Menu commun */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <h2 className="text-lg font-bold text-gray-900 px-4 py-3 border-b border-gray-100">Menu</h2>
-          <div className="divide-y divide-gray-100">
+        {/* Menu commun - Grille 2x2 */}
+        <div className="mb-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-3">Menu</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Profil */}
             <Link
               href="/dashboard/profile"
-              className="flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+              className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-[0.98] transition-all touch-manipulation"
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-100 rounded-xl">
-                  <UserIcon className="h-5 w-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Mon Profil</p>
-                  <p className="text-xs text-gray-500">Modifier mes informations</p>
-                </div>
+              <div className="p-2.5 bg-gray-100 rounded-xl">
+                <UserIcon className="h-5 w-5 text-gray-600" />
               </div>
-              <ArrowRightIcon className="h-5 w-5 text-gray-400" />
+              <div className="min-w-0">
+                <p className="font-semibold text-gray-900 text-sm">Profil</p>
+                <p className="text-[10px] text-gray-500 truncate">Mes infos</p>
+              </div>
             </Link>
 
+            {/* Messages */}
             {user?.role !== 'ADMIN' && (
               <Link
                 href="/dashboard/chat"
-                className="flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-[0.98] transition-all touch-manipulation"
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-xl">
-                    <ChatBubbleLeftRightIcon className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Messages</p>
-                    <p className="text-xs text-gray-500">Discuter avec les utilisateurs</p>
-                  </div>
+                <div className="p-2.5 bg-blue-100 rounded-xl">
+                  <ChatBubbleLeftRightIcon className="h-5 w-5 text-blue-600" />
                 </div>
-                <ArrowRightIcon className="h-5 w-5 text-gray-400" />
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm">Messages</p>
+                  <p className="text-[10px] text-gray-500 truncate">Discussions</p>
+                </div>
               </Link>
             )}
 
+            {/* Stats */}
             {(user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE') && (
               <Link
                 href="/dashboard/analytics"
-                className="flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-[0.98] transition-all touch-manipulation"
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-xl">
-                    <ChartBarIcon className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Statistiques</p>
-                    <p className="text-xs text-gray-500">Voir mes performances</p>
-                  </div>
+                <div className="p-2.5 bg-green-100 rounded-xl">
+                  <ChartBarIcon className="h-5 w-5 text-green-600" />
                 </div>
-                <ArrowRightIcon className="h-5 w-5 text-gray-400" />
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm">Stats</p>
+                  <p className="text-[10px] text-gray-500 truncate">Performances</p>
+                </div>
               </Link>
             )}
 
+            {/* Avis */}
             {user?.role === 'COIFFEUSE' && (
               <Link
                 href="/dashboard/reviews"
-                className="flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-[0.98] transition-all touch-manipulation"
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-yellow-100 rounded-xl">
-                    <StarIcon className="h-5 w-5 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Mes Avis</p>
-                    <p className="text-xs text-gray-500">Voir et répondre aux avis</p>
-                  </div>
+                <div className="p-2.5 bg-yellow-100 rounded-xl">
+                  <StarIcon className="h-5 w-5 text-yellow-600" />
                 </div>
-                <ArrowRightIcon className="h-5 w-5 text-gray-400" />
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm">Avis</p>
+                  <p className="text-[10px] text-gray-500 truncate">Mes évaluations</p>
+                </div>
               </Link>
             )}
           </div>
