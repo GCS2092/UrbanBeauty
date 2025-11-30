@@ -2,7 +2,7 @@
 
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
-import { ChartBarIcon, CurrencyDollarIcon, CalendarDaysIcon, CubeIcon, ShoppingBagIcon, ScissorsIcon, TrendingUpIcon, TrendingDownIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, CurrencyDollarIcon, CalendarDaysIcon, CubeIcon, ShoppingBagIcon, ScissorsIcon } from '@heroicons/react/24/outline';
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon, StarIcon } from '@heroicons/react/24/solid';
 import { useOrders } from '@/hooks/useOrders';
 import { useProducts } from '@/hooks/useProducts';
