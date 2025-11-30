@@ -49,9 +49,10 @@ function DashboardContent() {
   });
   const confirmedBookings = bookings.filter(b => b.status === 'CONFIRMED').length;
   
-  // Calcul note moyenne (simulé - à remplacer par vraies données)
-  const averageRating = services.length > 0 
-    ? services.reduce((acc, s) => acc + (s.rating || 0), 0) / services.filter(s => s.rating).length || 0
+  // Calcul note moyenne des services
+  const servicesWithRating = services.filter(s => s.averageRating && s.averageRating > 0);
+  const averageRating = servicesWithRating.length > 0 
+    ? servicesWithRating.reduce((acc, s) => acc + (s.averageRating || 0), 0) / servicesWithRating.length
     : 0;
 
   // Revenus du mois (COIFFEUSE)
