@@ -4,7 +4,30 @@ import { join } from 'path';
 import * as dotenv from 'dotenv';
 
 // Charger les variables d'environnement
-dotenv.config({ path: join(__dirname, '.env') });
+// Essayer plusieurs chemins possibles
+const envPaths = [
+  join(__dirname, '.env'),
+  join(process.cwd(), '.env'),
+  '.env'
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+  try {
+    const result = dotenv.config({ path: envPath });
+    if (!result.error) {
+      console.log(`📁 Fichier .env chargé depuis: ${envPath}`);
+      envLoaded = true;
+      break;
+    }
+  } catch (e) {
+    // Continuer avec le prochain chemin
+  }
+}
+
+if (!envLoaded) {
+  console.warn('⚠️  Aucun fichier .env trouvé, utilisation des variables d\'environnement système');
+}
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -14,9 +37,28 @@ async function testVercelBlob() {
   // Vérifier le token
   if (!BLOB_TOKEN) {
     console.error('❌ ERREUR: BLOB_READ_WRITE_TOKEN n\'est pas défini');
+    
+    // Afficher les variables d'environnement qui contiennent "BLOB" ou "VERCEL"
+    console.log('\n🔍 Variables d\'environnement trouvées contenant "BLOB" ou "VERCEL":');
+    const blobVars = Object.keys(process.env).filter(key => 
+      key.toUpperCase().includes('BLOB') || key.toUpperCase().includes('VERCEL')
+    );
+    
+    if (blobVars.length > 0) {
+      blobVars.forEach(key => {
+        const value = process.env[key];
+        console.log(`   ${key} = ${value ? value.substring(0, 20) + '...' : '(vide)'}`);
+      });
+      console.log('\n💡 Vérifiez que le nom de la variable est exactement: BLOB_READ_WRITE_TOKEN');
+    } else {
+      console.log('   Aucune variable trouvée');
+    }
+    
     console.log('\n💡 Solution:');
-    console.log('   1. Ajoutez BLOB_READ_WRITE_TOKEN dans votre fichier .env');
-    console.log('   2. Ou définissez la variable d\'environnement');
+    console.log('   1. Vérifiez que la variable s\'appelle exactement: BLOB_READ_WRITE_TOKEN');
+    console.log('   2. Vérifiez qu\'il n\'y a pas d\'espaces avant/après le =');
+    console.log('   3. Vérifiez que la ligne n\'est pas commentée (#)');
+    console.log('   4. Format attendu: BLOB_READ_WRITE_TOKEN=vercel_blob_xxxxx');
     process.exit(1);
   }
 

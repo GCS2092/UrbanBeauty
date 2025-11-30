@@ -1,18 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
-import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { useServices, useDeleteService } from '@/hooks/useServices';
-import { useNotifications } from '@/components/admin/NotificationProvider';
+import { ArrowLeftIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { useServices } from '@/hooks/useServices';
 import Image from 'next/image';
 
 function AdminServicesContent() {
-  const router = useRouter();
   const { data: services = [], isLoading, error } = useServices();
-  const { mutate: deleteService } = useDeleteService();
-  const notifications = useNotifications();
 
   if (isLoading) {
     return (
@@ -45,13 +40,6 @@ function AdminServicesContent() {
           >
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
             Retour à l'administration
-          </Link>
-          <Link
-            href="/dashboard/admin/services/new"
-            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Nouveau service
           </Link>
         </div>
 
@@ -138,23 +126,6 @@ function AdminServicesContent() {
                         >
                           <PencilIcon className="h-5 w-5" />
                         </Link>
-                        <button
-                          className="text-red-600 hover:text-red-900"
-                          onClick={() => {
-                            if (confirm('Êtes-vous sûr de vouloir supprimer ce service ?')) {
-                              deleteService(service.id, {
-                                onSuccess: () => {
-                                  notifications.success('Service supprimé', 'Le service a été supprimé avec succès');
-                                },
-                                onError: (error: any) => {
-                                  notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la suppression');
-                                },
-                              });
-                            }
-                          }}
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -168,13 +139,7 @@ function AdminServicesContent() {
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <span className="text-6xl mb-4 block">💇‍♀️</span>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Aucun service</h2>
-            <p className="text-gray-600 mb-6">Commencez par ajouter votre premier service</p>
-            <Link
-              href="/dashboard/admin/services/new"
-              className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-            >
-              + Ajouter un service
-            </Link>
+            <p className="text-gray-600">Les services sont créés par les coiffeuses</p>
           </div>
         )}
       </div>
