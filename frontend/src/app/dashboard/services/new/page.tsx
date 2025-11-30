@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PhotoIcon, ClockIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import { useCreateService } from '@/hooks/useServices';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import ImageUploader from '@/components/admin/ImageUploader';
@@ -54,135 +54,194 @@ function NewServiceForm() {
     );
   };
 
+  // Catégories prédéfinies pour faciliter la saisie
+  const categories = [
+    'Tresses',
+    'Tissage',
+    'Crochet',
+    'Locks',
+    'Coupe',
+    'Coloration',
+    'Lissage',
+    'Soin capillaire',
+    'Coiffure mariage',
+    'Autre'
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
-        <Link
-          href="/dashboard/services"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-pink-600 mb-8"
-        >
-          <ArrowLeftIcon className="h-4 w-4 mr-2" />
-          Retour aux services
-        </Link>
-
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Nouveau Service</h1>
-
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Nom du service *
-            </label>
-            <input
-              type="text"
-              id="name"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              id="description"
-              rows={4}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white pb-8">
+      {/* Header fixe */}
+      <div className="bg-white sticky top-0 z-40 border-b border-gray-100">
+        <div className="px-4 py-4">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/services"
+              className="p-2 -ml-2 rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors touch-manipulation"
+            >
+              <ArrowLeftIcon className="h-5 w-5 text-gray-600" />
+            </Link>
             <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-                Prix (FCFA) *
-              </label>
+              <h1 className="text-lg font-bold text-gray-900">Nouveau Service</h1>
+              <p className="text-xs text-gray-500">Créez votre prestation</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
+        {/* Nom du service */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-2">
+            Nom du service <span className="text-pink-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="name"
+            required
+            placeholder="Ex: Tresses africaines"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-pink-500 text-gray-900 placeholder-gray-400"
+          />
+        </div>
+
+        {/* Prix et Durée */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <label htmlFor="price" className="block text-sm font-semibold text-gray-900 mb-2">
+              Prix <span className="text-pink-500">*</span>
+            </label>
+            <div className="relative">
               <input
                 type="number"
                 id="price"
                 required
                 min="0"
-                step="0.01"
+                step="100"
+                placeholder="5000"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-pink-500 text-gray-900 placeholder-gray-400 pr-16"
               />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-400">
+                FCFA
+              </span>
             </div>
+          </div>
 
-            <div>
-              <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-2">
-                Durée (minutes) *
-              </label>
+          <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <label htmlFor="duration" className="block text-sm font-semibold text-gray-900 mb-2">
+              Durée <span className="text-pink-500">*</span>
+            </label>
+            <div className="relative">
               <input
                 type="number"
                 id="duration"
                 required
-                min="1"
+                min="15"
+                step="15"
+                placeholder="60"
                 value={formData.duration}
                 onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-pink-500 text-gray-900 placeholder-gray-400 pr-12"
               />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-400">
+                min
+              </span>
             </div>
           </div>
+        </div>
 
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-              Catégorie
-            </label>
-            <input
-              type="text"
-              id="category"
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              placeholder="Ex: Tresses, Pose, Coiffure..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
-            />
+        {/* Catégorie */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <label className="block text-sm font-semibold text-gray-900 mb-3">
+            Catégorie
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setFormData({ ...formData, category: cat })}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all touch-manipulation ${
+                  formData.category === cat
+                    ? 'bg-pink-500 text-white shadow-lg shadow-pink-200'
+                    : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="available"
-              checked={formData.available}
-              onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
-              className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
-            />
-            <label htmlFor="available" className="ml-2 block text-sm text-gray-700">
-              Service disponible
-            </label>
-          </div>
+        {/* Description */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <label htmlFor="description" className="block text-sm font-semibold text-gray-900 mb-2">
+            Description
+          </label>
+          <textarea
+            id="description"
+            rows={3}
+            placeholder="Décrivez votre service en quelques mots..."
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-pink-500 text-gray-900 placeholder-gray-400 resize-none"
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Images du service
-            </label>
-            <ImageUploader
-              images={images}
-              onChange={setImages}
-              maxImages={5}
-            />
-          </div>
-
-          <div className="flex gap-4 pt-4">
-            <Link
-              href="/dashboard/services"
-              className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-center"
-            >
-              Annuler
-            </Link>
+        {/* Disponibilité */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Service disponible</p>
+              <p className="text-xs text-gray-500 mt-0.5">Les clients peuvent réserver</p>
+            </div>
             <button
-              type="submit"
-              disabled={isPending}
-              className="flex-1 bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              onClick={() => setFormData({ ...formData, available: !formData.available })}
+              className={`w-14 h-8 rounded-full transition-colors duration-200 ${
+                formData.available ? 'bg-pink-500' : 'bg-gray-200'
+              }`}
             >
-              {isPending ? 'Création...' : 'Créer le service'}
+              <div
+                className={`w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-200 ${
+                  formData.available ? 'translate-x-7' : 'translate-x-1'
+                }`}
+              />
             </button>
           </div>
-        </form>
-      </div>
+        </div>
+
+        {/* Images */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <label className="block text-sm font-semibold text-gray-900 mb-3">
+            Photos du service
+          </label>
+          <ImageUploader
+            images={images}
+            onChange={setImages}
+            maxImages={5}
+          />
+        </div>
+
+        {/* Boutons */}
+        <div className="flex gap-3 pt-4">
+          <Link
+            href="/dashboard/services"
+            className="flex-1 px-6 py-4 bg-gray-100 rounded-2xl text-gray-700 font-semibold text-center active:bg-gray-200 transition-colors touch-manipulation"
+          >
+            Annuler
+          </Link>
+          <button
+            type="submit"
+            disabled={isPending || !formData.name || !formData.price || !formData.duration}
+            className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-4 rounded-2xl font-semibold shadow-lg shadow-pink-200 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+          >
+            {isPending ? 'Création...' : 'Créer le service'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -194,4 +253,3 @@ export default function NewServicePage() {
     </ProtectedRoute>
   );
 }
-

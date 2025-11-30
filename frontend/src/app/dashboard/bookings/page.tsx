@@ -1,45 +1,82 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeftIcon, EyeIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, CalendarIcon, ClockIcon, MapPinIcon, UserIcon, PhoneIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, XCircleIcon, ClockIcon as ClockIconSolid } from '@heroicons/react/24/solid';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { useBookings } from '@/hooks/useBookings';
 import { useAuth } from '@/hooks/useAuth';
-import { format } from 'date-fns';
+import { format, isToday, isTomorrow, isThisWeek, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
+import { useState } from 'react';
 
 function BookingsPageContent() {
   const { user } = useAuth();
   const isProvider = user?.role === 'COIFFEUSE';
   const { data: bookings = [], isLoading, error } = useBookings(isProvider);
   const currency = getSelectedCurrency();
+  const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed'>('all');
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      CONFIRMED: 'bg-green-100 text-green-800',
-      CANCELLED: 'bg-red-100 text-red-800',
-      COMPLETED: 'bg-gray-100 text-gray-800',
+  const getStatusConfig = (status: string) => {
+    const configs: Record<string, { color: string; bg: string; icon: React.ComponentType<any>; label: string }> = {
+      PENDING: { 
+        color: 'text-orange-600', 
+        bg: 'bg-orange-100', 
+        icon: ClockIconSolid, 
+        label: 'En attente' 
+      },
+      CONFIRMED: { 
+        color: 'text-green-600', 
+        bg: 'bg-green-100', 
+        icon: CheckCircleIcon, 
+        label: 'Confirmée' 
+      },
+      CANCELLED: { 
+        color: 'text-red-600', 
+        bg: 'bg-red-100', 
+        icon: XCircleIcon, 
+        label: 'Annulée' 
+      },
+      COMPLETED: { 
+        color: 'text-blue-600', 
+        bg: 'bg-blue-100', 
+        icon: CheckCircleIcon, 
+        label: 'Terminée' 
+      },
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return configs[status] || configs.PENDING;
   };
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      PENDING: 'En attente',
-      CONFIRMED: 'Confirmée',
-      CANCELLED: 'Annulée',
-      COMPLETED: 'Terminée',
-    };
-    return labels[status] || status;
+  const getDateLabel = (date: Date) => {
+    if (isToday(date)) return "Aujourd'hui";
+    if (isTomorrow(date)) return 'Demain';
+    return format(date, 'EEEE d MMMM', { locale: fr });
   };
+
+  // Filtrage des réservations
+  const filteredBookings = bookings.filter(b => {
+    if (filter === 'all') return true;
+    if (filter === 'pending') return b.status === 'PENDING';
+    if (filter === 'confirmed') return b.status === 'CONFIRMED';
+    if (filter === 'completed') return b.status === 'COMPLETED';
+    return true;
+  });
+
+  // Tri par date (plus récent en premier)
+  const sortedBookings = [...filteredBookings].sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  // Compter les réservations par statut
+  const pendingCount = bookings.filter(b => b.status === 'PENDING').length;
+  const confirmedCount = bookings.filter(b => b.status === 'CONFIRMED').length;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -47,101 +84,164 @@ function BookingsPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <Link 
-          href="/dashboard" 
-          className="inline-flex items-center text-sm text-gray-600 hover:text-pink-600 mb-6"
-        >
-          <ArrowLeftIcon className="h-4 w-4 mr-2" />
-          Retour au tableau de bord
-        </Link>
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white pb-4">
+      {/* Header */}
+      <div className="bg-white sticky top-0 z-40 border-b border-gray-100">
+        <div className="px-4 py-4">
+          <h1 className="text-xl font-bold text-gray-900">
+            {isProvider ? 'Mes Réservations' : 'Mes Rendez-vous'}
+          </h1>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {bookings.length} réservation{bookings.length > 1 ? 's' : ''}
+            {pendingCount > 0 && (
+              <span className="text-orange-600 ml-2">• {pendingCount} en attente</span>
+            )}
+          </p>
+        </div>
 
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">
-          {isProvider ? 'Mes Réservations Reçues' : 'Mes Réservations'}
-        </h1>
+        {/* Filtres */}
+        <div className="px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
+          {[
+            { key: 'all', label: 'Toutes', count: bookings.length },
+            { key: 'pending', label: 'En attente', count: pendingCount },
+            { key: 'confirmed', label: 'Confirmées', count: confirmedCount },
+            { key: 'completed', label: 'Terminées', count: bookings.filter(b => b.status === 'COMPLETED').length },
+          ].map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key as typeof filter)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all touch-manipulation ${
+                filter === f.key
+                  ? 'bg-purple-500 text-white shadow-lg shadow-purple-200'
+                  : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+              }`}
+            >
+              {f.label}
+              {f.count > 0 && (
+                <span className={`ml-1.5 ${filter === f.key ? 'text-white/80' : 'text-gray-400'}`}>
+                  ({f.count})
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        {bookings.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <span className="text-6xl mb-4 block">📅</span>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Aucune réservation</h2>
-            <p className="text-gray-600 mb-6">
-              {isProvider 
-                ? 'Vous n\'avez pas encore reçu de réservation'
-                : 'Vous n\'avez pas encore de réservation'}
+      <div className="px-4 py-4">
+        {sortedBookings.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CalendarIcon className="h-10 w-10 text-purple-500" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Aucune réservation</h2>
+            <p className="text-sm text-gray-500 mb-6">
+              {filter !== 'all' 
+                ? `Aucune réservation ${filter === 'pending' ? 'en attente' : filter === 'confirmed' ? 'confirmée' : 'terminée'}`
+                : isProvider 
+                  ? "Vous n'avez pas encore reçu de réservation"
+                  : "Vous n'avez pas encore de rendez-vous"
+              }
             </p>
             {!isProvider && (
               <Link
                 href="/services"
-                className="inline-block bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-purple-200 active:scale-[0.98] transition-all touch-manipulation"
               >
                 Réserver un service
               </Link>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            {bookings.map((booking) => (
-              <div key={booking.id} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      {booking.service?.name || 'Service'}
-                    </h3>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <CalendarIcon className="h-4 w-4" />
-                        <span>
-                          {format(new Date(booking.date), 'dd MMMM yyyy', { locale: fr })}
-                        </span>
+          <div className="space-y-3">
+            {sortedBookings.map((booking) => {
+              const statusConfig = getStatusConfig(booking.status);
+              const StatusIcon = statusConfig.icon;
+              const bookingDate = new Date(booking.date);
+              const isOld = isPast(bookingDate) && booking.status !== 'COMPLETED';
+
+              return (
+                <Link 
+                  key={booking.id} 
+                  href={`/dashboard/bookings/${booking.id}`}
+                  className={`block bg-white rounded-2xl shadow-sm overflow-hidden active:scale-[0.99] transition-transform ${
+                    isOld && booking.status === 'PENDING' ? 'opacity-60' : ''
+                  }`}
+                >
+                  <div className="p-4">
+                    {/* Header avec statut */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 text-sm line-clamp-1">
+                          {booking.service?.name || 'Service'}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}>
+                            <StatusIcon className="h-3 w-3" />
+                            {statusConfig.label}
+                          </span>
+                          {isToday(bookingDate) && booking.status === 'CONFIRMED' && (
+                            <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full animate-pulse">
+                              AUJOURD'HUI
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <ClockIcon className="h-4 w-4" />
+                      <div className="text-right ml-3">
+                        <p className="font-bold text-purple-600 text-sm">
+                          {booking.service ? formatCurrency(booking.service.price, currency) : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Infos */}
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <span className="font-medium">{getDateLabel(bookingDate)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <ClockIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                         <span>
                           {format(new Date(booking.startTime), 'HH:mm')} - {format(new Date(booking.endTime), 'HH:mm')}
                         </span>
                       </div>
+                      
                       {isProvider && booking.user && (
-                        <p>
-                          Client : {booking.user.profile?.firstName} {booking.user.profile?.lastName}
-                        </p>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <UserIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <span>{booking.user.profile?.firstName} {booking.user.profile?.lastName}</span>
+                        </div>
                       )}
+                      
                       {!isProvider && booking.service?.provider && (
-                        <p>
-                          Prestataire : {booking.service.provider.firstName} {booking.service.provider.lastName}
-                        </p>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <UserIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <span>{booking.service.provider.firstName} {booking.service.provider.lastName}</span>
+                        </div>
+                      )}
+
+                      {booking.location && (
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <MapPinIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <span className="line-clamp-1">{booking.location}</span>
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <div className="text-right ml-4">
-                    <p className="font-semibold text-gray-900 text-lg mb-2">
-                      {booking.service ? formatCurrency(booking.service.price, currency) : 'N/A'}
-                    </p>
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                      {getStatusLabel(booking.status)}
-                    </span>
-                  </div>
-                </div>
-                
-                {booking.location && (
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Lieu :</span> {booking.location}
-                    </p>
-                  </div>
-                )}
 
-                <div className="mt-4 pt-4 border-t">
-                  <Link
-                    href={`/dashboard/bookings/${booking.id}`}
-                    className="inline-flex items-center text-sm text-pink-600 hover:text-pink-700 font-medium"
-                  >
-                    <EyeIcon className="h-4 w-4 mr-2" />
-                    Voir les détails
-                  </Link>
-                </div>
-              </div>
-            ))}
+                    {/* Footer */}
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                      <span className="text-xs text-gray-400">
+                        Réservé le {format(new Date(booking.createdAt), 'dd/MM/yyyy', { locale: fr })}
+                      </span>
+                      <span className="text-xs text-purple-600 font-medium flex items-center gap-1">
+                        Voir détails
+                        <EyeIcon className="h-3.5 w-3.5" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
@@ -156,4 +256,3 @@ export default function BookingsPage() {
     </ProtectedRoute>
   );
 }
-
