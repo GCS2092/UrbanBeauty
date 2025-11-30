@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { couponsService } from '@/services/coupons.service';
 import { ordersService } from '@/services/orders.service';
-import { formatCurrency, getSelectedCurrency, setSelectedCurrency, Currency } from '@/utils/currency';
+import { formatCurrency, getCurrencyForRole, Currency } from '@/utils/currency';
 import CurrencySelector from '@/components/shared/CurrencySelector';
 
 function CartPageContent() {
@@ -24,7 +24,8 @@ function CartPageContent() {
     return null;
   }
   const notifications = useNotifications();
-  const currency = getSelectedCurrency();
+  // Clients voient dans leur devise choisie
+  const currency = getCurrencyForRole(user?.role);
   
   const [checkoutMode, setCheckoutMode] = useState<'choice' | 'register' | 'guest' | 'checkout'>('choice');
   const [couponCode, setCouponCode] = useState('');

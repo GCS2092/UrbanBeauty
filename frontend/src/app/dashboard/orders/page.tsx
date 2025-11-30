@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOrders } from '@/hooks/useOrders';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { formatCurrency } from '@/utils/currency';
 
 function OrdersPageContent() {
   const { user } = useAuth();
@@ -101,7 +102,7 @@ function OrdersPageContent() {
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-gray-900 text-lg mb-2">{order.total.toFixed(2)} €</p>
+                    <p className="font-semibold text-gray-900 text-lg mb-2">{formatCurrency(order.total, 'XOF')}</p>
                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                       {getStatusLabel(order.status)}
                     </span>
@@ -117,7 +118,7 @@ function OrdersPageContent() {
                             {item.product?.name || 'Produit'} x{item.quantity}
                           </span>
                           <span className="text-gray-900 font-medium">
-                            {(item.price * item.quantity).toFixed(2)} €
+                            {formatCurrency(item.price * item.quantity, 'XOF')}
                           </span>
                         </div>
                       ))}

@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
+import { formatCurrency, formatCurrencyDual, getSelectedCurrency, getCurrencyForRole } from '@/utils/currency';
 import Image from 'next/image';
 
 function OrderDetailContent() {
@@ -20,12 +20,28 @@ function OrderDetailContent() {
   const { mutate: updateOrder, isPending: isUpdating } = useUpdateOrder();
   const { user } = useAuth();
   const notifications = useNotifications();
-  const currency = getSelectedCurrency();
+  
+  // Pour les vendeurs/coiffeuses/admins : toujours XOF
+  // Pour les clients : leur devise choisie
+  const currency = getCurrencyForRole(user?.role);
+  const isSellerOrAdmin = user?.role === 'ADMIN' || user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE';
+  
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState<string>('');
   const [trackingNumber, setTrackingNumber] = useState<string>('');
 
   const canUpdateStatus = user?.role === 'ADMIN' || user?.role === 'VENDEUSE';
+  
+  // Fonction d'affichage des prix selon le rôle
+  // Vendeurs voient : "15 000 FCFA (≈ 22,87 €)" si client a payé en EUR
+  // Clients voient dans leur devise choisie
+  const displayPrice = (amountInXOF: number) => {
+    if (isSellerOrAdmin) {
+      // Pour les vendeurs : toujours CFA, avec équivalent EUR si pertinent
+      return formatCurrencyDual(amountInXOF, 'EUR');
+    }
+    return formatCurrency(amountInXOF, currency);
+  };
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -180,8 +196,8 @@ function OrderDetailContent() {
                   <p className="text-sm text-gray-600">Quantité : {item.quantity}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-gray-900">{formatCurrency(item.price * item.quantity, currency)}</p>
-                  <p className="text-sm text-gray-600">{formatCurrency(item.price, currency)} l'unité</p>
+                  <p className="font-semibold text-gray-900">{displayPrice(item.price * item.quantity)}</p>
+                  <p className="text-sm text-gray-600">{formatCurrency(item.price, 'XOF')} l'unité</p>
                 </div>
               </div>
             ))}
@@ -194,7 +210,7 @@ function OrderDetailContent() {
           <div className="space-y-2">
             <div className="flex justify-between text-gray-600">
               <span>Sous-total</span>
-              <span>{formatCurrency(order.subtotal, currency)}</span>
+              <span>{displayPrice(order.subtotal)}</span>
             </div>
             {order.discount > 0 && (
               <div className="flex justify-between text-green-600">
@@ -202,17 +218,17 @@ function OrderDetailContent() {
                 {order.coupon && (
                   <span className="text-xs text-gray-500">({order.coupon.code})</span>
                 )}
-                <span>-{formatCurrency(order.discount, currency)}</span>
+                <span>-{displayPrice(order.discount)}</span>
               </div>
             )}
             <div className="flex justify-between text-gray-600">
               <span>Livraison</span>
-              <span>{order.shippingCost === 0 ? 'Gratuite' : formatCurrency(order.shippingCost, currency)}</span>
+              <span>{order.shippingCost === 0 ? 'Gratuite' : displayPrice(order.shippingCost)}</span>
             </div>
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between text-lg font-semibold text-gray-900">
                 <span>Total</span>
-                <span>{formatCurrency(order.total, currency)}</span>
+                <span>{displayPrice(order.total)}</span>
               </div>
             </div>
           </div>

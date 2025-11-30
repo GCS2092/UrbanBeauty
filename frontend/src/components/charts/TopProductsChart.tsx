@@ -24,7 +24,7 @@ export default function TopProductsChart({ data }: TopProductsChartProps) {
         <Tooltip />
         <Legend />
         <Bar dataKey="sales" fill="#ec4899" name="Ventes" />
-        <Bar dataKey="revenue" fill="#10b981" name="Revenus (€)" />
+        <Bar dataKey="revenue" fill="#10b981" name="Revenus (FCFA)" />
       </BarChart>
     </ResponsiveContainer>
   );

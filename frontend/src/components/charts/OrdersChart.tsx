@@ -24,7 +24,7 @@ export default function OrdersChart({ data }: OrdersChartProps) {
         <Tooltip />
         <Legend />
         <Bar dataKey="orders" fill="#ec4899" name="Commandes" />
-        <Bar dataKey="amount" fill="#10b981" name="Montant (€)" />
+        <Bar dataKey="amount" fill="#10b981" name="Montant (FCFA)" />
       </BarChart>
     </ResponsiveContainer>
   );

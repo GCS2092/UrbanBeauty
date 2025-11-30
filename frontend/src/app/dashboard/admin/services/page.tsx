@@ -5,6 +5,7 @@ import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { useServices } from '@/hooks/useServices';
 import Image from 'next/image';
+import { formatCurrency } from '@/utils/currency';
 
 function AdminServicesContent() {
   const { data: services = [], isLoading, error } = useServices();
@@ -104,7 +105,7 @@ function AdminServicesContent() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{service.price.toFixed(2)} €</div>
+                      <div className="text-sm font-medium text-gray-900">{formatCurrency(service.price, 'XOF')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-gray-900">{service.duration} min</span>

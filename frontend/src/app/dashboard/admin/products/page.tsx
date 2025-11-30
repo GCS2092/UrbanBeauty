@@ -6,6 +6,7 @@ import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useProducts } from '@/hooks/useProducts';
 import Image from 'next/image';
+import { formatCurrency } from '@/utils/currency';
 
 function AdminProductsContent() {
   const { data: products = [], isLoading, error, refetch } = useProducts();
@@ -115,7 +116,7 @@ function AdminProductsContent() {
                       <span className="text-sm text-gray-900">{product.category?.name || 'N/A'}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{product.price.toFixed(2)} €</div>
+                      <div className="text-sm font-medium text-gray-900">{formatCurrency(product.price, 'XOF')}</div>
                       {product.isOnSale && (
                         <div className="text-xs text-red-600">
                           -{product.discountPercentage}%

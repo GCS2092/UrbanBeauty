@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { ClockIcon, StarIcon } from '@heroicons/react/24/solid';
+import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
 
 interface ServiceCardProps {
   id: string;
@@ -23,6 +24,7 @@ export default function ServiceCard({
   provider,
   rating = 4.5 
 }: ServiceCardProps) {
+  const currency = getSelectedCurrency();
   return (
     <Link href={`/services/${id}`} className="group">
       <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
@@ -60,7 +62,7 @@ export default function ServiceCard({
         {provider && (
           <p className="mt-1 text-xs text-gray-500">par {provider}</p>
         )}
-        <p className="mt-2 text-sm font-semibold text-gray-900">{price.toFixed(2)} €</p>
+        <p className="mt-2 text-sm font-semibold text-gray-900">{formatCurrency(price, currency)}</p>
       </div>
     </Link>
   );

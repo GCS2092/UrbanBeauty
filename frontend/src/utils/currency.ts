@@ -1,6 +1,12 @@
-// Taux de change EUR vers XOF (Franc CFA)
-// 1 EUR = 655.957 XOF (taux approximatif, à mettre à jour régulièrement)
-const EUR_TO_XOF_RATE = 655.957;
+// ============================================
+// SYSTÈME DE DEVISE - BASE EN FRANC CFA (XOF)
+// ============================================
+// Les prix sont stockés en Franc CFA dans la base de données
+// La conversion vers EUR se fait uniquement côté client pour l'affichage
+
+// Taux de change XOF vers EUR
+// 1 EUR = 655.957 XOF (taux fixe zone CFA)
+const XOF_TO_EUR_RATE = 1 / 655.957; // ≈ 0.00152449
 
 export type Currency = 'EUR' | 'XOF';
 
@@ -8,43 +14,52 @@ export interface CurrencyConfig {
   symbol: string;
   code: string;
   name: string;
-  rate: number;
+  rateFromXOF: number; // Taux de conversion depuis XOF
 }
 
 export const currencies: Record<Currency, CurrencyConfig> = {
-  EUR: {
-    symbol: '€',
-    code: 'EUR',
-    name: 'Euro',
-    rate: 1,
-  },
   XOF: {
     symbol: 'FCFA',
     code: 'XOF',
     name: 'Franc CFA',
-    rate: EUR_TO_XOF_RATE,
+    rateFromXOF: 1, // Base
+  },
+  EUR: {
+    symbol: '€',
+    code: 'EUR',
+    name: 'Euro',
+    rateFromXOF: XOF_TO_EUR_RATE,
   },
 };
 
 /**
- * Convertit un montant d'une devise à une autre
+ * Convertit un montant depuis XOF (base) vers une autre devise
+ * @param amountInXOF - Montant en Franc CFA (devise de base)
+ * @param to - Devise cible
  */
-export function convertCurrency(amount: number, from: Currency, to: Currency): number {
-  if (from === to) return amount;
-  
-  // Convertir vers EUR d'abord si nécessaire
-  const amountInEUR = from === 'EUR' ? amount : amount / currencies[from].rate;
-  
-  // Convertir vers la devise cible
-  return to === 'EUR' ? amountInEUR : amountInEUR * currencies[to].rate;
+export function convertFromXOF(amountInXOF: number, to: Currency): number {
+  if (to === 'XOF') return amountInXOF;
+  return amountInXOF * currencies[to].rateFromXOF;
+}
+
+/**
+ * Convertit un montant d'une devise vers XOF (base)
+ * @param amount - Montant dans la devise source
+ * @param from - Devise source
+ */
+export function convertToXOF(amount: number, from: Currency): number {
+  if (from === 'XOF') return amount;
+  return amount / currencies[from].rateFromXOF;
 }
 
 /**
  * Formate un montant avec la devise
+ * @param amountInXOF - Montant en Franc CFA (base)
+ * @param currency - Devise d'affichage souhaitée
  */
-export function formatCurrency(amount: number, currency: Currency = 'EUR'): string {
+export function formatCurrency(amountInXOF: number, currency: Currency = 'XOF'): string {
   const config = currencies[currency];
-  const convertedAmount = currency === 'EUR' ? amount : convertCurrency(amount, 'EUR', currency);
+  const convertedAmount = convertFromXOF(amountInXOF, currency);
   
   if (currency === 'XOF') {
     // Pour le franc CFA, arrondir à l'entier et formater avec des espaces
@@ -57,14 +72,34 @@ export function formatCurrency(amount: number, currency: Currency = 'EUR'): stri
 }
 
 /**
- * Formate un montant avec transcription en lettres (pour XOF)
+ * Formate un montant avec double affichage (pour les vendeurs/coiffeuses)
+ * Affiche le montant en XOF avec l'équivalent dans la devise du client
+ * @param amountInXOF - Montant en Franc CFA (base)
+ * @param clientCurrency - Devise choisie par le client (optionnel)
  */
-export function formatCurrencyWithText(amount: number, currency: Currency = 'EUR'): string {
-  const formatted = formatCurrency(amount, currency);
+export function formatCurrencyDual(amountInXOF: number, clientCurrency?: Currency): string {
+  const xofFormatted = formatCurrency(amountInXOF, 'XOF');
+  
+  // Si pas de devise client ou si c'est déjà XOF, retourner juste XOF
+  if (!clientCurrency || clientCurrency === 'XOF') {
+    return xofFormatted;
+  }
+  
+  // Afficher les deux : XOF principal + devise client entre parenthèses
+  const clientFormatted = formatCurrency(amountInXOF, clientCurrency);
+  return `${xofFormatted} (≈ ${clientFormatted})`;
+}
+
+/**
+ * Formate un montant avec transcription en lettres (pour XOF)
+ * @param amountInXOF - Montant en Franc CFA (base)
+ * @param currency - Devise d'affichage souhaitée
+ */
+export function formatCurrencyWithText(amountInXOF: number, currency: Currency = 'XOF'): string {
+  const formatted = formatCurrency(amountInXOF, currency);
   
   if (currency === 'XOF') {
-    const convertedAmount = convertCurrency(amount, 'EUR', 'XOF');
-    const rounded = Math.round(convertedAmount);
+    const rounded = Math.round(amountInXOF);
     const text = numberToWords(rounded);
     return `${formatted} (${text})`;
   }
@@ -131,16 +166,41 @@ function numberToWords(num: number): string {
 }
 
 /**
- * Hook pour gérer la devise sélectionnée (stockée dans localStorage)
+ * Récupère la devise sélectionnée par l'utilisateur (stockée dans localStorage)
+ * Par défaut : XOF (Franc CFA)
  */
 export function getSelectedCurrency(): Currency {
-  if (typeof window === 'undefined') return 'EUR';
+  if (typeof window === 'undefined') return 'XOF';
   const stored = localStorage.getItem('currency');
-  return (stored === 'XOF' || stored === 'EUR') ? stored : 'EUR';
+  return (stored === 'XOF' || stored === 'EUR') ? stored : 'XOF';
 }
 
+/**
+ * Définit la devise préférée de l'utilisateur
+ */
 export function setSelectedCurrency(currency: Currency): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem('currency', currency);
+}
+
+/**
+ * Vérifie si l'utilisateur peut changer de devise (uniquement les clients)
+ * Les vendeurs, coiffeuses et admins voient toujours en XOF
+ */
+export function canChangeCurrency(userRole?: string): boolean {
+  if (!userRole) return true; // Non connecté = peut changer
+  return userRole === 'CLIENT';
+}
+
+/**
+ * Retourne la devise à utiliser selon le rôle
+ * - CLIENT ou non connecté : devise choisie par l'utilisateur
+ * - VENDEUR/COIFFEUSE/ADMIN : toujours XOF
+ */
+export function getCurrencyForRole(userRole?: string): Currency {
+  if (!userRole || userRole === 'CLIENT') {
+    return getSelectedCurrency();
+  }
+  return 'XOF'; // Vendeurs, coiffeuses et admins voient toujours en CFA
 }
 

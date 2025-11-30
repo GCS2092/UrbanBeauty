@@ -4,13 +4,13 @@ import Link from 'next/link';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useOrders } from '@/hooks/useOrders';
-import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
+import { formatCurrency } from '@/utils/currency';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 function AdminOrdersContent() {
   const { data: orders = [], isLoading } = useOrders(true);
-  const currency = getSelectedCurrency();
+  // Admin voit toujours en Franc CFA
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -72,7 +72,7 @@ function AdminOrdersContent() {
                         <div className="text-sm text-gray-900">{order.customerName || order.customerEmail}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{formatCurrency(order.total, currency)}</span>
+                        <span className="text-sm font-medium text-gray-900">{formatCurrency(order.total, 'XOF')}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${

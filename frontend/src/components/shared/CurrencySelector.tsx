@@ -1,15 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Currency, getSelectedCurrency, setSelectedCurrency, currencies } from '@/utils/currency';
+import { Currency, getSelectedCurrency, setSelectedCurrency, currencies, canChangeCurrency } from '@/utils/currency';
+import { useAuth } from '@/hooks/useAuth';
 
-export default function CurrencySelector() {
-  const [currency, setCurrency] = useState<Currency>('EUR');
+interface CurrencySelectorProps {
+  forceShow?: boolean; // Pour forcer l'affichage même pour les vendeurs (si besoin)
+}
+
+export default function CurrencySelector({ forceShow = false }: CurrencySelectorProps) {
+  const [currency, setCurrency] = useState<Currency>('XOF');
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useAuth();
+
+  // Vérifier si l'utilisateur peut changer de devise
+  const canChange = forceShow || canChangeCurrency(user?.role);
 
   useEffect(() => {
     setCurrency(getSelectedCurrency());
   }, []);
+
+  // Ne pas afficher le sélecteur pour les vendeurs/coiffeuses/admins
+  if (!canChange) {
+    return null;
+  }
 
   const handleChange = (newCurrency: Currency) => {
     setCurrency(newCurrency);
@@ -24,6 +38,7 @@ export default function CurrencySelector() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        title="Changer la devise d'affichage"
       >
         <span>{currencies[currency].symbol}</span>
         <span className="text-xs">{currencies[currency].code}</span>
@@ -45,15 +60,7 @@ export default function CurrencySelector() {
           />
           <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-20 border border-gray-200">
             <div className="py-1">
-              <button
-                onClick={() => handleChange('EUR')}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${
-                  currency === 'EUR' ? 'bg-pink-50 text-pink-600' : 'text-gray-700'
-                }`}
-              >
-                <span>Euro (€)</span>
-                {currency === 'EUR' && <span className="text-pink-600">✓</span>}
-              </button>
+              {/* Franc CFA en premier (devise principale) */}
               <button
                 onClick={() => handleChange('XOF')}
                 className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${
@@ -62,6 +69,15 @@ export default function CurrencySelector() {
               >
                 <span>Franc CFA (FCFA)</span>
                 {currency === 'XOF' && <span className="text-pink-600">✓</span>}
+              </button>
+              <button
+                onClick={() => handleChange('EUR')}
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${
+                  currency === 'EUR' ? 'bg-pink-50 text-pink-600' : 'text-gray-700'
+                }`}
+              >
+                <span>Euro (€)</span>
+                {currency === 'EUR' && <span className="text-pink-600">✓</span>}
               </button>
             </div>
           </div>

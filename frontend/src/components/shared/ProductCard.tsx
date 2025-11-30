@@ -6,7 +6,7 @@ import { ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart.store';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
-import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
+import { formatCurrency, getCurrencyForRole } from '@/utils/currency';
 
 interface ProductCardProps {
   id: string;
@@ -23,7 +23,8 @@ export default function ProductCard({ id, name, price, image, category, stock = 
   const addItem = useCartStore((state) => state.addItem);
   const { user } = useAuth();
   const notifications = useNotifications();
-  const currency = getSelectedCurrency();
+  // Clients voient dans leur devise choisie, vendeurs/admin voient en XOF
+  const currency = getCurrencyForRole(user?.role);
   
   // Masquer le bouton pour les admins et pour les vendeuses si c'est leur propre produit
   const canAddToCart = user?.role !== 'ADMIN' && !(user?.role === 'VENDEUSE' && sellerId === user?.id);

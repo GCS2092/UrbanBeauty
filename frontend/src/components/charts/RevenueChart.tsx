@@ -29,7 +29,7 @@ export default function RevenueChart({ data }: RevenueChartProps) {
         <YAxis />
         <Tooltip />
         <Legend />
-        <Area type="monotone" dataKey="revenue" stroke="#10b981" fillOpacity={1} fill="url(#colorRevenue)" name="Revenus (€)" />
+        <Area type="monotone" dataKey="revenue" stroke="#10b981" fillOpacity={1} fill="url(#colorRevenue)" name="Revenus (FCFA)" />
       </AreaChart>
     </ResponsiveContainer>
   );

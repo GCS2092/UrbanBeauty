@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { useCreateOrder } from '@/hooks/useOrders';
 import { couponsService } from '@/services/coupons.service';
-import { formatCurrency, getSelectedCurrency, convertCurrency } from '@/utils/currency';
+import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
 
 function CheckoutContent() {
   const router = useRouter();

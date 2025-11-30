@@ -125,7 +125,7 @@ function NewProductForm() {
 
             <div>
               <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-                Prix (€) *
+                Prix (FCFA) *
               </label>
               <input
                 type="number"

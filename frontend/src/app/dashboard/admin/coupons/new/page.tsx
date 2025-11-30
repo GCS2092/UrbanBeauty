@@ -136,7 +136,7 @@ function NewCouponForm() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
               >
                 <option value="PERCENTAGE">Pourcentage (%)</option>
-                <option value="FIXED">Montant fixe (€)</option>
+                <option value="FIXED">Montant fixe (FCFA)</option>
               </select>
             </div>
 
@@ -161,7 +161,7 @@ function NewCouponForm() {
           {formData.discountType === 'PERCENTAGE' && (
             <div>
               <label htmlFor="maxDiscount" className="block text-sm font-medium text-gray-700 mb-2">
-                Réduction maximale (€)
+                Réduction maximale (FCFA)
               </label>
               <input
                 type="number"
@@ -179,7 +179,7 @@ function NewCouponForm() {
 
           <div>
             <label htmlFor="minPurchase" className="block text-sm font-medium text-gray-700 mb-2">
-              Achat minimum (€)
+              Achat minimum (FCFA)
             </label>
             <input
               type="number"

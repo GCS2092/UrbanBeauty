@@ -28,7 +28,7 @@ export default function SalesChart({ data, type = 'line' }: SalesChartProps) {
         <Tooltip />
         <Legend />
         <DataComponent type="monotone" dataKey="sales" stroke="#ec4899" fill="#ec4899" name="Ventes" />
-        <DataComponent type="monotone" dataKey="revenue" stroke="#10b981" fill="#10b981" name="Revenus (€)" />
+        <DataComponent type="monotone" dataKey="revenue" stroke="#10b981" fill="#10b981" name="Revenus (FCFA)" />
       </ChartComponent>
     </ResponsiveContainer>
   );

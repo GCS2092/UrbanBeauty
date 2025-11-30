@@ -24,7 +24,7 @@ export default function BookingsChart({ data }: BookingsChartProps) {
         <Tooltip />
         <Legend />
         <Line type="monotone" dataKey="bookings" stroke="#8b5cf6" strokeWidth={2} name="Réservations" />
-        <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Revenus (€)" />
+        <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Revenus (FCFA)" />
       </LineChart>
     </ResponsiveContainer>
   );
