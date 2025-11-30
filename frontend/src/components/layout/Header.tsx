@@ -183,8 +183,8 @@ export default function Header() {
               </Link>
             )}
 
-            {/* Cart - Masquer pour les admins */}
-            {user?.role !== 'ADMIN' && (
+            {/* Cart - Visible uniquement pour les clients et non-connectés */}
+            {(!isAuthenticated || user?.role === 'CLIENT') && (
               <Link href="/cart" className="relative p-2 text-gray-600 hover:text-pink-600 transition-colors">
                 <ShoppingBagIcon className="h-5 w-5" />
                 <CartBadge />
