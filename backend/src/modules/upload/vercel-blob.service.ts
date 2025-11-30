@@ -93,7 +93,7 @@ export class VercelBlobService {
   }
 
   private getContentType(fileName: string): string {
-    const ext = fileName.toLowerCase().split('.').pop();
+    const ext = fileName.toLowerCase().split('.').pop() || '';
     const contentTypes: Record<string, string> = {
       jpg: 'image/jpeg',
       jpeg: 'image/jpeg',
