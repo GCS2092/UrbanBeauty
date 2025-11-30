@@ -14,6 +14,7 @@ import { OrdersService } from '../services/orders.service';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../../shared/decorators/current-user.decorator';
@@ -68,10 +69,11 @@ export class OrdersController {
   }
 
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    // Pas de guard pour permettre les commandes guest
-    // userId sera null pour les commandes guest
-    return this.ordersService.create(createOrderDto);
+  @UseGuards(OptionalJwtAuthGuard)
+  create(@Body() createOrderDto: CreateOrderDto, @CurrentUser() user: any) {
+    // Passer le userId si l'utilisateur est connecté
+    // Sinon userId sera null pour les commandes guest
+    return this.ordersService.create(createOrderDto, user?.userId);
   }
 
   @Patch(':id')
