@@ -5,9 +5,9 @@ import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrders } from '@/hooks/useOrders';
 import { useBookings } from '@/hooks/useBookings';
-import { useServices } from '@/hooks/useServices';
+import { useProviderAnalytics, useSellerAnalytics } from '@/hooks/useAnalytics';
 import { formatCurrency } from '@/utils/currency';
-import { format, isToday, isThisWeek } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
   ShoppingBagIcon, 
@@ -23,6 +23,8 @@ import {
   PlusIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
 } from '@heroicons/react/24/outline';
 import NotificationsPanel from '@/components/dashboard/NotificationsPanel';
 
@@ -30,37 +32,22 @@ function DashboardContent() {
   const { user } = useAuth();
   const { data: orders = [] } = useOrders(false, user?.role === 'VENDEUSE');
   const isProvider = user?.role === 'COIFFEUSE';
+  const isSeller = user?.role === 'VENDEUSE';
   const { data: bookings = [] } = useBookings(isProvider);
-  const { data: services = [] } = useServices();
+  
+  // Analytics backend
+  const { data: providerAnalytics, isLoading: loadingProviderAnalytics } = useProviderAnalytics();
+  const { data: sellerAnalytics, isLoading: loadingSellerAnalytics } = useSellerAnalytics();
 
-  // Stats générales
+  // Stats générales (pour les clients et fallback)
   const pendingOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'PROCESSING').length;
-  const pendingBookings = bookings.filter(b => b.status === 'PENDING').length;
   const completedOrders = orders.filter(o => o.status === 'DELIVERED' || o.status === 'SHIPPED').length;
 
-  // Stats COIFFEUSE améliorées
+  // Prochains rendez-vous aujourd'hui (pour coiffeuse)
   const todayBookings = bookings.filter(b => {
     const bookingDate = new Date(b.date);
     return isToday(bookingDate);
   });
-  const weekBookings = bookings.filter(b => {
-    const bookingDate = new Date(b.date);
-    return isThisWeek(bookingDate, { weekStartsOn: 1 });
-  });
-  const confirmedBookings = bookings.filter(b => b.status === 'CONFIRMED').length;
-  
-  // Calcul note moyenne des services
-  const servicesWithRating = services.filter(s => s.averageRating && s.averageRating > 0);
-  const averageRating = servicesWithRating.length > 0 
-    ? servicesWithRating.reduce((acc, s) => acc + (s.averageRating || 0), 0) / servicesWithRating.length
-    : 0;
-
-  // Revenus du mois (COIFFEUSE)
-  const monthRevenue = bookings
-    .filter(b => b.status === 'COMPLETED' || b.status === 'CONFIRMED')
-    .reduce((acc, b) => acc + (b.service?.price || 0), 0);
-
-  // Prochains rendez-vous aujourd'hui (triés par heure)
   const upcomingTodayBookings = todayBookings
     .filter(b => b.status !== 'CANCELLED')
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
@@ -104,10 +91,10 @@ function DashboardContent() {
           </Link>
         )}
 
-        {/* ============ SECTION COIFFEUSE AMÉLIORÉE ============ */}
+        {/* ============ SECTION COIFFEUSE AVEC ANALYTICS BACKEND ============ */}
         {user?.role === 'COIFFEUSE' && (
           <>
-            {/* Stats améliorées - Grille 2x2 */}
+            {/* Stats améliorées depuis le backend */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               {/* Aujourd'hui */}
               <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-4 shadow-md text-white">
@@ -116,20 +103,32 @@ function DashboardContent() {
                     <CalendarIcon className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{todayBookings.length}</p>
+                    <p className="text-2xl font-bold">
+                      {loadingProviderAnalytics ? '...' : providerAnalytics?.bookings.todayCount || 0}
+                    </p>
                     <p className="text-xs text-white/80">Aujourd'hui</p>
                   </div>
                 </div>
               </div>
 
               {/* En attente - avec alerte si > 0 */}
-              <div className={`rounded-2xl p-4 shadow-sm border ${pendingBookings > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
+              <div className={`rounded-2xl p-4 shadow-sm border ${
+                (providerAnalytics?.bookings.pending || 0) > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'
+              }`}>
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${pendingBookings > 0 ? 'bg-yellow-100' : 'bg-gray-100'}`}>
-                    <ExclamationCircleIcon className={`h-5 w-5 ${pendingBookings > 0 ? 'text-yellow-600' : 'text-gray-400'}`} />
+                  <div className={`p-2 rounded-xl ${
+                    (providerAnalytics?.bookings.pending || 0) > 0 ? 'bg-yellow-100' : 'bg-gray-100'
+                  }`}>
+                    <ExclamationCircleIcon className={`h-5 w-5 ${
+                      (providerAnalytics?.bookings.pending || 0) > 0 ? 'text-yellow-600' : 'text-gray-400'
+                    }`} />
                   </div>
                   <div>
-                    <p className={`text-2xl font-bold ${pendingBookings > 0 ? 'text-yellow-600' : 'text-gray-400'}`}>{pendingBookings}</p>
+                    <p className={`text-2xl font-bold ${
+                      (providerAnalytics?.bookings.pending || 0) > 0 ? 'text-yellow-600' : 'text-gray-400'
+                    }`}>
+                      {loadingProviderAnalytics ? '...' : providerAnalytics?.bookings.pending || 0}
+                    </p>
                     <p className="text-xs text-gray-500">À confirmer</p>
                   </div>
                 </div>
@@ -142,7 +141,9 @@ function DashboardContent() {
                     <CalendarIcon className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">{weekBookings.length}</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {loadingProviderAnalytics ? '...' : providerAnalytics?.bookings.weekCount || 0}
+                    </p>
                     <p className="text-xs text-gray-500">Cette semaine</p>
                   </div>
                 </div>
@@ -156,7 +157,11 @@ function DashboardContent() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {averageRating > 0 ? averageRating.toFixed(1) : '-'}
+                      {loadingProviderAnalytics ? '...' : 
+                        providerAnalytics?.services.averageRating 
+                          ? providerAnalytics.services.averageRating.toFixed(1) 
+                          : '-'
+                      }
                     </p>
                     <p className="text-xs text-gray-500">Note moyenne</p>
                   </div>
@@ -164,12 +169,27 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* Revenus du mois */}
+            {/* Revenus du mois - Depuis le backend */}
             <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 mb-6 shadow-md text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-white/80">Revenus ce mois</p>
-                  <p className="text-2xl font-bold">{formatCurrency(monthRevenue, 'XOF')}</p>
+                  <p className="text-2xl font-bold">
+                    {loadingProviderAnalytics ? '...' : formatCurrency(providerAnalytics?.revenue.thisMonth || 0, 'XOF')}
+                  </p>
+                  {/* Indicateur de croissance */}
+                  {providerAnalytics && providerAnalytics.revenue.growth !== 0 && (
+                    <div className="flex items-center gap-1 mt-1">
+                      {providerAnalytics.revenue.growth > 0 ? (
+                        <ArrowTrendingUpIcon className="h-4 w-4 text-green-200" />
+                      ) : (
+                        <ArrowTrendingDownIcon className="h-4 w-4 text-red-200" />
+                      )}
+                      <span className={`text-xs ${providerAnalytics.revenue.growth > 0 ? 'text-green-200' : 'text-red-200'}`}>
+                        {providerAnalytics.revenue.growth > 0 ? '+' : ''}{providerAnalytics.revenue.growth}% vs mois dernier
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <Link 
                   href="/dashboard/analytics"
@@ -258,9 +278,9 @@ function DashboardContent() {
                   href="/dashboard/bookings"
                   className="relative flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl text-white shadow-md active:scale-[0.98] transition-transform touch-manipulation"
                 >
-                  {pendingBookings > 0 && (
+                  {(providerAnalytics?.bookings.pending || 0) > 0 && (
                     <span className="absolute -top-1 -right-1 h-6 w-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
-                      {pendingBookings}
+                      {providerAnalytics?.bookings.pending}
                     </span>
                   )}
                   <CalendarIcon className="h-8 w-8 mb-2" />
@@ -345,7 +365,7 @@ function DashboardContent() {
           </>
         )}
 
-        {/* ============ SECTION VENDEUSE ============ */}
+        {/* ============ SECTION VENDEUSE AVEC ANALYTICS BACKEND ============ */}
         {user?.role === 'VENDEUSE' && (
           <>
             <div className="grid grid-cols-2 gap-3 mb-6">
@@ -355,18 +375,30 @@ function DashboardContent() {
                     <ShoppingBagIcon className="h-5 w-5 text-pink-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {loadingSellerAnalytics ? '...' : sellerAnalytics?.orders.total || 0}
+                    </p>
                     <p className="text-xs text-gray-500">Commandes</p>
                   </div>
                 </div>
               </div>
-              <div className={`rounded-2xl p-4 shadow-sm border ${pendingOrders > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
+              <div className={`rounded-2xl p-4 shadow-sm border ${
+                (sellerAnalytics?.orders.pending || 0) > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'
+              }`}>
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${pendingOrders > 0 ? 'bg-yellow-100' : 'bg-gray-100'}`}>
-                    <ExclamationCircleIcon className={`h-5 w-5 ${pendingOrders > 0 ? 'text-yellow-600' : 'text-gray-400'}`} />
+                  <div className={`p-2 rounded-xl ${
+                    (sellerAnalytics?.orders.pending || 0) > 0 ? 'bg-yellow-100' : 'bg-gray-100'
+                  }`}>
+                    <ExclamationCircleIcon className={`h-5 w-5 ${
+                      (sellerAnalytics?.orders.pending || 0) > 0 ? 'text-yellow-600' : 'text-gray-400'
+                    }`} />
                   </div>
                   <div>
-                    <p className={`text-2xl font-bold ${pendingOrders > 0 ? 'text-yellow-600' : 'text-gray-400'}`}>{pendingOrders}</p>
+                    <p className={`text-2xl font-bold ${
+                      (sellerAnalytics?.orders.pending || 0) > 0 ? 'text-yellow-600' : 'text-gray-400'
+                    }`}>
+                      {loadingSellerAnalytics ? '...' : sellerAnalytics?.orders.pending || 0}
+                    </p>
                     <p className="text-xs text-gray-500">En attente</p>
                   </div>
                 </div>
@@ -377,7 +409,9 @@ function DashboardContent() {
                     <CheckCircleIcon className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-green-600">{completedOrders}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {loadingSellerAnalytics ? '...' : sellerAnalytics?.orders.delivered || 0}
+                    </p>
                     <p className="text-xs text-gray-500">Livrées</p>
                   </div>
                 </div>
@@ -388,10 +422,42 @@ function DashboardContent() {
                     <CubeIcon className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-blue-600">{orders.reduce((acc, o) => acc + (o.items?.length || 0), 0)}</p>
-                    <p className="text-xs text-gray-500">Articles</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {loadingSellerAnalytics ? '...' : sellerAnalytics?.products.total || 0}
+                    </p>
+                    <p className="text-xs text-gray-500">Produits</p>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Revenus du mois - Vendeuse */}
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 mb-6 shadow-md text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white/80">Revenus ce mois</p>
+                  <p className="text-2xl font-bold">
+                    {loadingSellerAnalytics ? '...' : formatCurrency(sellerAnalytics?.revenue.thisMonth || 0, 'XOF')}
+                  </p>
+                  {sellerAnalytics && sellerAnalytics.revenue.growth !== 0 && (
+                    <div className="flex items-center gap-1 mt-1">
+                      {sellerAnalytics.revenue.growth > 0 ? (
+                        <ArrowTrendingUpIcon className="h-4 w-4 text-green-200" />
+                      ) : (
+                        <ArrowTrendingDownIcon className="h-4 w-4 text-red-200" />
+                      )}
+                      <span className={`text-xs ${sellerAnalytics.revenue.growth > 0 ? 'text-green-200' : 'text-red-200'}`}>
+                        {sellerAnalytics.revenue.growth > 0 ? '+' : ''}{sellerAnalytics.revenue.growth}% vs mois dernier
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <Link 
+                  href="/dashboard/analytics"
+                  className="px-3 py-1.5 bg-white/20 rounded-lg text-sm font-medium hover:bg-white/30 transition-colors"
+                >
+                  Voir détails
+                </Link>
               </div>
             </div>
 
@@ -402,9 +468,9 @@ function DashboardContent() {
                   href="/dashboard/orders"
                   className="relative flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl text-white shadow-md active:scale-[0.98] transition-transform touch-manipulation"
                 >
-                  {pendingOrders > 0 && (
+                  {(sellerAnalytics?.orders.pending || 0) > 0 && (
                     <span className="absolute -top-1 -right-1 h-6 w-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
-                      {pendingOrders}
+                      {sellerAnalytics?.orders.pending}
                     </span>
                   )}
                   <ShoppingBagIcon className="h-8 w-8 mb-2" />
