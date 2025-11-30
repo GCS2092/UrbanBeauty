@@ -41,15 +41,18 @@ function CheckoutContent() {
   const [discount, setDiscount] = useState(0);
 
   useEffect(() => {
-    if (user?.profile) {
-      setFormData({
-        customerName: `${user.profile.firstName} ${user.profile.lastName}`,
-        customerEmail: user.email || '',
-        customerPhone: user.profile.phone || '',
-        shippingAddress: user.profile.address || '',
-        billingAddress: user.profile.address || '',
-        notes: '',
-      });
+    // Pré-remplir le formulaire avec les données utilisateur si disponibles
+    if (user) {
+      setFormData(prev => ({
+        customerName: user.profile?.firstName && user.profile?.lastName 
+          ? `${user.profile.firstName} ${user.profile.lastName}` 
+          : prev.customerName,
+        customerEmail: user.email || prev.customerEmail,
+        customerPhone: user.profile?.phone || prev.customerPhone,
+        shippingAddress: user.profile?.address || prev.shippingAddress,
+        billingAddress: user.profile?.address || prev.billingAddress,
+        notes: prev.notes,
+      }));
     }
   }, [user]);
 
@@ -81,6 +84,20 @@ function CheckoutContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation des champs requis
+    if (!formData.customerName.trim()) {
+      notifications.error('Champ requis', 'Veuillez entrer votre nom');
+      return;
+    }
+    if (!formData.customerEmail.trim()) {
+      notifications.error('Champ requis', 'Veuillez entrer votre email');
+      return;
+    }
+    if (!formData.shippingAddress.trim()) {
+      notifications.error('Champ requis', 'Veuillez entrer votre adresse de livraison');
+      return;
+    }
 
     const orderItems = items.map(item => ({
       productId: item.productId,
