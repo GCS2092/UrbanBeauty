@@ -23,6 +23,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
   const [uploading, setUploading] = useState(false);
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
   const [urlMode, setUrlMode] = useState<Record<number, boolean>>({});
+  const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,9 +31,10 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Vérifier le type de fichier
-    if (!file.type.match(/^image\/(jpg|jpeg|png|gif|webp)$/)) {
-      alert('Seules les images sont autorisées (JPG, PNG, GIF, WEBP)');
+    // Vérifier le type de fichier (accepte tous les types d'images courants)
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
+    if (!file.type.startsWith('image/') && !validTypes.includes(file.type.toLowerCase())) {
+      alert('Seules les images sont autorisées (JPG, PNG, GIF, WEBP, HEIC)');
       return;
     }
 
@@ -78,7 +80,8 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
       if (fileInputRef.current) fileInputRef.current.value = '';
       if (replaceInputRef.current) replaceInputRef.current.value = '';
     } catch (error: any) {
-      alert(error?.response?.data?.message || 'Erreur lors de l\'upload de l\'image');
+      console.error('Erreur upload:', error);
+      alert(error?.response?.data?.message || 'Erreur lors de l\'upload de l\'image. Vérifiez votre connexion.');
     } finally {
       setUploading(false);
     }
@@ -97,16 +100,20 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
     setUrlMode({ ...urlMode, [index]: false });
   };
 
-  const handleRemove = (index: number) => {
-    if (confirm('Voulez-vous vraiment supprimer cette image ?')) {
-      const newImages = images.filter((_, i) => i !== index).map(img => ({ url: img.url, type: img.type || 'URL' as const }));
-      onChange(newImages);
-    }
+  // Supprimer avec confirmation inline (sans confirm() qui bloque sur mobile)
+  const handleRemoveClick = (index: number) => {
+    setDeleteConfirmIndex(index);
+  };
+
+  const handleRemoveConfirm = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index).map(img => ({ url: img.url, type: img.type || 'URL' as const }));
+    onChange(newImages);
+    setDeleteConfirmIndex(null);
   };
 
   // Définir comme image principale (déplacer en première position)
   const handleSetPrimary = (index: number) => {
-    if (index === 0) return; // Déjà en première position
+    if (index === 0) return;
     
     const newImages = [...images.map(img => ({ url: img.url, type: img.type || 'URL' as const }))];
     const [movedImage] = newImages.splice(index, 1);
@@ -135,7 +142,10 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
   // Remplacer une image
   const handleReplace = (index: number) => {
     setReplacingIndex(index);
-    replaceInputRef.current?.click();
+    // Timeout pour s'assurer que le state est mis à jour avant le click
+    setTimeout(() => {
+      replaceInputRef.current?.click();
+    }, 100);
   };
 
   return (
@@ -145,6 +155,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
         ref={replaceInputRef}
         type="file"
         accept="image/*"
+        capture="environment"
         onChange={(e) => handleFileUpload(e, replacingIndex ?? undefined)}
         className="hidden"
         disabled={uploading}
@@ -155,100 +166,124 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
         <div className="space-y-3">
           {images.map((image, index) => (
             <div 
-              key={index} 
-              className={`flex items-center gap-4 p-3 rounded-lg border-2 ${
+              key={`${image.url}-${index}`}
+              className={`relative rounded-lg border-2 overflow-hidden ${
                 index === 0 ? 'border-pink-500 bg-pink-50' : 'border-gray-200 bg-white'
               }`}
             >
-              {/* Aperçu de l'image */}
-              <div className="relative w-20 h-20 flex-shrink-0">
-                <img
-                  src={image.url}
-                  alt={`Image ${index + 1}`}
-                  className="w-full h-full object-cover rounded-lg"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="14" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EErreur%3C/text%3E%3C/svg%3E';
-                  }}
-                />
-                {index === 0 && (
-                  <div className="absolute -top-2 -left-2 bg-pink-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <StarIconSolid className="h-3 w-3" />
-                    Principal
+              {/* Modal de confirmation de suppression */}
+              {deleteConfirmIndex === index && (
+                <div className="absolute inset-0 bg-black/70 z-10 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-lg p-4 max-w-xs w-full text-center">
+                    <p className="text-sm font-medium text-gray-900 mb-3">Supprimer cette image ?</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmIndex(null)}
+                        className="flex-1 px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg active:bg-gray-200"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveConfirm(index)}
+                        className="flex-1 px-3 py-2 text-sm text-white bg-red-600 rounded-lg active:bg-red-700"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* Infos */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  Image {index + 1}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {image.type === 'UPLOADED' ? '📤 Uploadée' : '🔗 URL externe'}
-                </p>
-                <p className="text-xs text-gray-400 truncate mt-1" title={image.url}>
-                  {image.url.length > 40 ? image.url.substring(0, 40) + '...' : image.url}
-                </p>
-              </div>
+              <div className="flex items-center gap-3 p-3">
+                {/* Aperçu de l'image */}
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                  <img
+                    src={image.url}
+                    alt={`Image ${index + 1}`}
+                    className="w-full h-full object-cover rounded-lg"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="14" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EErreur%3C/text%3E%3C/svg%3E';
+                    }}
+                  />
+                  {index === 0 && (
+                    <div className="absolute -top-1 -left-1 bg-pink-500 text-white text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <StarIconSolid className="h-2.5 w-2.5" />
+                      <span className="hidden sm:inline">Principal</span>
+                    </div>
+                  )}
+                </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-1 flex-shrink-0">
-                {/* Définir comme principal */}
-                {index !== 0 && (
+                {/* Infos */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">
+                    Image {index + 1} {index === 0 && <span className="sm:hidden text-pink-600">(Principal)</span>}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {image.type === 'UPLOADED' ? '📤 Uploadée' : '🔗 URL'}
+                  </p>
+                </div>
+
+                {/* Actions - Boutons plus grands pour mobile */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Définir comme principal */}
+                  {index !== 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleSetPrimary(index)}
+                      className="p-2.5 sm:p-2 text-gray-500 hover:text-pink-600 active:text-pink-700 hover:bg-pink-100 active:bg-pink-200 rounded-lg transition-colors touch-manipulation"
+                      title="Définir comme image principale"
+                    >
+                      <StarIcon className="h-5 w-5" />
+                    </button>
+                  )}
+
+                  {/* Déplacer vers le haut */}
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleMoveUp(index)}
+                      className="p-2.5 sm:p-2 text-gray-500 hover:text-blue-600 active:text-blue-700 hover:bg-blue-100 active:bg-blue-200 rounded-lg transition-colors touch-manipulation"
+                      title="Déplacer vers le haut"
+                    >
+                      <ArrowUpIcon className="h-5 w-5" />
+                    </button>
+                  )}
+
+                  {/* Déplacer vers le bas */}
+                  {index < images.length - 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleMoveDown(index)}
+                      className="p-2.5 sm:p-2 text-gray-500 hover:text-blue-600 active:text-blue-700 hover:bg-blue-100 active:bg-blue-200 rounded-lg transition-colors touch-manipulation"
+                      title="Déplacer vers le bas"
+                    >
+                      <ArrowDownIcon className="h-5 w-5" />
+                    </button>
+                  )}
+
+                  {/* Remplacer */}
                   <button
                     type="button"
-                    onClick={() => handleSetPrimary(index)}
-                    className="p-2 text-gray-500 hover:text-pink-600 hover:bg-pink-100 rounded-lg transition-colors"
-                    title="Définir comme image principale"
+                    onClick={() => handleReplace(index)}
+                    disabled={uploading}
+                    className="p-2.5 sm:p-2 text-gray-500 hover:text-orange-600 active:text-orange-700 hover:bg-orange-100 active:bg-orange-200 rounded-lg transition-colors disabled:opacity-50 touch-manipulation"
+                    title="Remplacer l'image"
                   >
-                    <StarIcon className="h-5 w-5" />
+                    <ArrowPathIcon className="h-5 w-5" />
                   </button>
-                )}
 
-                {/* Déplacer vers le haut */}
-                {index > 0 && (
+                  {/* Supprimer */}
                   <button
                     type="button"
-                    onClick={() => handleMoveUp(index)}
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                    title="Déplacer vers le haut"
+                    onClick={() => handleRemoveClick(index)}
+                    className="p-2.5 sm:p-2 text-gray-500 hover:text-red-600 active:text-red-700 hover:bg-red-100 active:bg-red-200 rounded-lg transition-colors touch-manipulation"
+                    title="Supprimer l'image"
                   >
-                    <ArrowUpIcon className="h-5 w-5" />
+                    <XMarkIcon className="h-5 w-5" />
                   </button>
-                )}
-
-                {/* Déplacer vers le bas */}
-                {index < images.length - 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleMoveDown(index)}
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                    title="Déplacer vers le bas"
-                  >
-                    <ArrowDownIcon className="h-5 w-5" />
-                  </button>
-                )}
-
-                {/* Remplacer */}
-                <button
-                  type="button"
-                  onClick={() => handleReplace(index)}
-                  disabled={uploading}
-                  className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-100 rounded-lg transition-colors disabled:opacity-50"
-                  title="Remplacer l'image"
-                >
-                  <ArrowPathIcon className="h-5 w-5" />
-                </button>
-
-                {/* Supprimer */}
-                <button
-                  type="button"
-                  onClick={() => handleRemove(index)}
-                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                  title="Supprimer l'image"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
+                </div>
               </div>
             </div>
           ))}
@@ -257,20 +292,21 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
 
       {/* Boutons d'ajout */}
       {images.length < maxImages && (
-        <div className="grid grid-cols-2 gap-4">
-          {/* Upload fichier */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Upload fichier - Plus grand sur mobile */}
           <label className={`
-            flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed 
-            cursor-pointer transition-colors
+            flex flex-col items-center justify-center p-6 sm:p-4 rounded-lg border-2 border-dashed 
+            cursor-pointer transition-colors touch-manipulation
             ${uploading 
               ? 'border-gray-300 bg-gray-50 cursor-wait' 
-              : 'border-gray-300 hover:border-pink-500 hover:bg-pink-50'
+              : 'border-gray-300 hover:border-pink-500 active:border-pink-600 hover:bg-pink-50 active:bg-pink-100'
             }
           `}>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              capture="environment"
               onChange={(e) => handleFileUpload(e)}
               className="hidden"
               disabled={uploading}
@@ -282,8 +318,8 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
               </div>
             ) : (
               <>
-                <PhotoIcon className="h-10 w-10 text-gray-400 mb-3" />
-                <p className="text-sm font-medium text-gray-700">Uploader une image</p>
+                <PhotoIcon className="h-12 w-12 sm:h-10 sm:w-10 text-gray-400 mb-3" />
+                <p className="text-sm font-medium text-gray-700">📷 Prendre une photo ou choisir</p>
                 <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF, WEBP (max 5MB)</p>
               </>
             )}
@@ -294,10 +330,10 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
             <button
               type="button"
               onClick={() => setUrlMode({ ...urlMode, [images.length]: true })}
-              className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-gray-300 hover:border-pink-500 hover:bg-pink-50 transition-colors"
+              className="flex flex-col items-center justify-center p-6 sm:p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-pink-500 active:border-pink-600 hover:bg-pink-50 active:bg-pink-100 transition-colors touch-manipulation"
             >
-              <LinkIcon className="h-10 w-10 text-gray-400 mb-3" />
-              <p className="text-sm font-medium text-gray-700">Ajouter une URL</p>
+              <LinkIcon className="h-12 w-12 sm:h-10 sm:w-10 text-gray-400 mb-3" />
+              <p className="text-sm font-medium text-gray-700">🔗 Ajouter une URL</p>
               <p className="text-xs text-gray-500 mt-1">Lien vers une image existante</p>
             </button>
           ) : (
@@ -306,7 +342,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
               <input
                 type="url"
                 placeholder="https://exemple.com/image.jpg"
-                className="flex-1 text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full text-sm px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -324,7 +360,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
                 <button
                   type="button"
                   onClick={() => setUrlMode({ ...urlMode, [images.length]: false })}
-                  className="flex-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="flex-1 px-3 py-3 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg active:bg-gray-100 transition-colors touch-manipulation"
                 >
                   Annuler
                 </button>
@@ -336,7 +372,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
                       handleUrlAdd(images.length, input.value);
                     }
                   }}
-                  className="flex-1 px-3 py-2 text-sm text-white bg-pink-600 rounded-lg hover:bg-pink-700 transition-colors"
+                  className="flex-1 px-3 py-3 text-sm text-white bg-pink-600 rounded-lg active:bg-pink-700 transition-colors touch-manipulation"
                 >
                   Ajouter
                 </button>
@@ -347,14 +383,12 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
       )}
 
       {/* Info */}
-      <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
-        <p className="font-medium text-gray-700 mb-2">💡 Conseils</p>
-        <ul className="space-y-1 text-xs">
-          <li>• <strong>Image principale</strong> : La première image sera affichée en couverture</li>
-          <li>• <strong>⭐ Étoile</strong> : Cliquez pour définir comme image principale</li>
-          <li>• <strong>↑↓ Flèches</strong> : Réorganisez l'ordre des images</li>
-          <li>• <strong>🔄 Remplacer</strong> : Changez une image sans perdre sa position</li>
-          <li>• Maximum {maxImages} images • {images.length}/{maxImages} utilisées</li>
+      <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+        <p className="font-medium text-gray-700 mb-1">💡 Conseils</p>
+        <ul className="space-y-0.5 text-xs">
+          <li>• La <strong>première image</strong> sera affichée en couverture</li>
+          <li>• <strong>⭐</strong> = Définir comme principale • <strong>↑↓</strong> = Réorganiser • <strong>🔄</strong> = Remplacer</li>
+          <li>• {images.length}/{maxImages} images utilisées</li>
         </ul>
       </div>
     </div>
