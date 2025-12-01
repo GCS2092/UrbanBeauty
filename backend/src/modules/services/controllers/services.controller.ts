@@ -12,6 +12,7 @@ import { ServicesService } from '../services/services.service';
 import { CreateServiceDto } from '../dto/create-service.dto';
 import { UpdateServiceDto } from '../dto/update-service.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../../shared/decorators/current-user.decorator';
@@ -21,6 +22,7 @@ export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   findAll(@CurrentUser() user?: any) {
     // Si l'utilisateur est connecté et est une coiffeuse, retourner seulement ses services
     if (user?.role === 'COIFFEUSE' && user?.userId) {
@@ -30,6 +32,7 @@ export class ServicesController {
   }
 
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   findOne(@Param('id') id: string, @CurrentUser() user?: any) {
     return this.servicesService.findOne(id, user?.userId);
   }
