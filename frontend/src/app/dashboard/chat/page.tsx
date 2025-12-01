@@ -57,7 +57,8 @@ function ChatContent() {
 
   // Si un userId est fourni dans l'URL, créer ou ouvrir la conversation
   useEffect(() => {
-    if (targetUserId && user?.id && targetUserId !== user.id) {
+    // Attendre que les conversations soient chargées
+    if (!isLoading && targetUserId && user?.id && targetUserId !== user.id) {
       const existingConversation = conversations.find(
         (c) => c.otherParticipant.id === targetUserId
       );
@@ -67,6 +68,7 @@ function ChatContent() {
         setShowMobileChat(true);
         router.replace('/dashboard/chat');
       } else {
+        // Créer la conversation si elle n'existe pas
         createConversation(
           { participant2Id: targetUserId },
           {
@@ -75,11 +77,14 @@ function ChatContent() {
               setShowMobileChat(true);
               router.replace('/dashboard/chat');
             },
+            onError: (error) => {
+              console.error('Erreur création conversation:', error);
+            },
           }
         );
       }
     }
-  }, [targetUserId, user?.id, createConversation, router, conversations]);
+  }, [targetUserId, user?.id, createConversation, router, conversations, isLoading]);
 
   // Auto-scroll
   useEffect(() => {

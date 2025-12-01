@@ -86,8 +86,14 @@ function ServiceDetailContent() {
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Vérifier que les informations client sont fournies (connecté ou non)
-    if (!bookingData.clientName?.trim() || !bookingData.clientEmail?.trim() || !bookingData.clientPhone?.trim()) {
+    // Utiliser les données du profil si connecté et que les champs sont vides
+    const finalClientName = bookingData.clientName?.trim() || 
+      (user?.profile ? `${user.profile.firstName} ${user.profile.lastName}` : '');
+    const finalClientEmail = bookingData.clientEmail?.trim() || user?.email || '';
+    const finalClientPhone = bookingData.clientPhone?.trim() || user?.profile?.phone || '';
+    
+    // Vérifier que les informations client sont fournies
+    if (!finalClientName || !finalClientEmail || !finalClientPhone) {
       notifications.error('Informations requises', 'Veuillez remplir votre nom, email et téléphone');
       return;
     }
@@ -113,11 +119,11 @@ function ServiceDetailContent() {
         serviceId: service.id,
         date: bookingData.date,
         startTime: startTime.toISOString(),
-        location: bookingData.location,
-        clientName: !isAuthenticated ? bookingData.clientName : undefined,
-        clientPhone: bookingData.clientPhone,
-        clientEmail: bookingData.clientEmail,
-        notes: bookingData.notes,
+        location: bookingData.location?.trim() || undefined,
+        clientName: !isAuthenticated ? finalClientName : undefined,
+        clientPhone: finalClientPhone || undefined,
+        clientEmail: finalClientEmail || undefined,
+        notes: bookingData.notes?.trim() || undefined,
       },
       {
         onSuccess: (booking) => {

@@ -177,8 +177,33 @@ export class BookingsService {
       throw new BadRequestException('Ce service n\'est pas disponible pour le moment');
     }
 
+    // Récupérer les informations client
+    let finalClientName = createBookingDto.clientName;
+    let finalClientEmail = createBookingDto.clientEmail;
+    let finalClientPhone = createBookingDto.clientPhone;
+
+    // Si l'utilisateur est connecté, récupérer les infos depuis son profil si non fournies
+    if (userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { profile: true },
+      });
+
+      if (user) {
+        if (!finalClientName && user.profile) {
+          finalClientName = `${user.profile.firstName} ${user.profile.lastName}`;
+        }
+        if (!finalClientEmail) {
+          finalClientEmail = user.email;
+        }
+        if (!finalClientPhone && user.profile?.phone) {
+          finalClientPhone = user.profile.phone;
+        }
+      }
+    }
+
     // Pour les réservations guest, vérifier que les informations client sont fournies
-    if (!userId && (!createBookingDto.clientName || !createBookingDto.clientEmail || !createBookingDto.clientPhone)) {
+    if (!userId && (!finalClientName || !finalClientEmail || !finalClientPhone)) {
       throw new BadRequestException('Les informations client (nom, email, téléphone) sont requises pour les réservations sans compte');
     }
 
@@ -226,9 +251,9 @@ export class BookingsService {
         startTime,
         endTime,
         location: createBookingDto.location,
-        clientName: createBookingDto.clientName,
-        clientPhone: createBookingDto.clientPhone,
-        clientEmail: createBookingDto.clientEmail,
+        clientName: finalClientName,
+        clientPhone: finalClientPhone,
+        clientEmail: finalClientEmail,
         notes: createBookingDto.notes,
       },
       include: {
