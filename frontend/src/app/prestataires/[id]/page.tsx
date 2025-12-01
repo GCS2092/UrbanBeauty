@@ -293,56 +293,42 @@ function ProviderProfileContent() {
         {provider.services.length > 0 && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Services proposés</h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {provider.services.map((service) => (
                 <Link
                   key={service.id}
                   href={`/services/${service.id}`}
-                  className="flex flex-col sm:flex-row bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow group"
+                  className="group flex flex-col bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all"
                 >
-                  {/* Image à gauche */}
-                  <div className="w-full sm:w-32 md:w-40 lg:w-48 h-48 sm:h-auto sm:flex-shrink-0">
+                  {/* Image */}
+                  <div className="relative aspect-square overflow-hidden bg-gray-100">
                     {service.images?.[0]?.url ? (
-                      <div className="relative w-full h-full">
-                        <Image
-                          src={service.images[0].url}
-                          alt={service.name}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 100vw, 160px"
-                        />
-                      </div>
+                      <Image
+                        src={service.images[0].url}
+                        alt={service.name}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                         <span className="text-4xl">💇‍♀️</span>
                       </div>
                     )}
+                    {/* Badge durée */}
+                    <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                      {service.duration} min
+                    </div>
                   </div>
 
-                  {/* Détails et boutons au centre */}
-                  <div className="flex-1 flex flex-col p-4 sm:p-6">
-                    <div className="flex-1">
-                      <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 group-hover:text-pink-600 transition-colors">
-                        {service.name}
-                      </h3>
-                      {service.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{service.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 mb-3">
-                        <p className="text-lg sm:text-xl font-bold text-pink-600">
-                          {formatCurrency(service.price, currency)}
-                        </p>
-                        <span className="text-xs sm:text-sm text-gray-500">•</span>
-                        <p className="text-sm text-gray-500">{service.duration} min</p>
-                      </div>
-                    </div>
-                    
-                    {/* Bouton au centre */}
-                    <div className="mt-auto">
-                      <span className="inline-block text-sm font-medium text-pink-600 group-hover:text-pink-700 transition-colors">
-                        Voir les détails →
-                      </span>
-                    </div>
+                  {/* Détails */}
+                  <div className="p-3 flex flex-col flex-grow">
+                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-pink-600 transition-colors line-clamp-2 mb-2">
+                      {service.name}
+                    </h3>
+                    <p className="text-base font-bold text-pink-600 mt-auto">
+                      {formatCurrency(service.price, currency)}
+                    </p>
                   </div>
                 </Link>
               ))}
