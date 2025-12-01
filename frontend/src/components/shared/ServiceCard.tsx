@@ -27,47 +27,49 @@ export default function ServiceCard({
 }: ServiceCardProps) {
   const currency = getSelectedCurrency();
   return (
-    <Link href={`/services/${id}`} className="group">
-      <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
+    <Link href={`/services/${id}`} className="group flex flex-col h-full bg-white rounded-lg shadow-sm hover:shadow-md transition-all overflow-hidden">
+      {/* Image - format carré comme ProductCard */}
+      <div className="relative aspect-square overflow-hidden bg-gray-100 flex-shrink-0">
         {image ? (
           <Image
             src={image}
             alt={name}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-110"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-100 to-pink-100">
-            <span className="text-4xl">💇‍♀️</span>
+            <span className="text-4xl sm:text-5xl">💇‍♀️</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
         {/* Bouton Favoris */}
         <div className="absolute top-2 right-2 z-10">
           <FavoriteButton serviceId={id} size="sm" />
         </div>
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="flex items-center justify-between text-white">
-            <div className="flex items-center space-x-1">
-              <StarIcon className="h-4 w-4 fill-yellow-400" />
-              <span className="text-sm font-medium">{rating}</span>
-            </div>
-            <div className="flex items-center space-x-1 text-sm">
-              <ClockIcon className="h-4 w-4" />
-              <span>{duration}min</span>
-            </div>
-          </div>
+        {/* Badge durée */}
+        <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-black/60 rounded-full text-white text-[10px] sm:text-xs">
+          <ClockIcon className="h-3 w-3" />
+          <span>{duration}min</span>
         </div>
+        {/* Badge note */}
+        {rating > 0 && (
+          <div className="absolute bottom-2 right-2 flex items-center gap-0.5 px-1.5 py-0.5 bg-yellow-400 rounded-full text-[10px] sm:text-xs font-medium text-gray-900">
+            <StarIcon className="h-3 w-3" />
+            <span>{rating.toFixed(1)}</span>
+          </div>
+        )}
       </div>
-      <div className="mt-4">
-        <h3 className="text-sm font-medium text-gray-900 group-hover:text-pink-600 transition-colors">
+      {/* Contenu */}
+      <div className="p-2 sm:p-3 flex flex-col flex-grow">
+        <h3 className="text-xs sm:text-sm font-semibold text-gray-900 group-hover:text-purple-600 transition-colors line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
           {name}
         </h3>
         {provider && (
-          <p className="mt-1 text-xs text-gray-500">par {provider}</p>
+          <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 line-clamp-1">par {provider}</p>
         )}
-        <p className="mt-2 text-sm font-semibold text-gray-900">{formatCurrency(price, currency)}</p>
+        <p className="mt-1 sm:mt-2 text-sm sm:text-base font-bold text-purple-600">{formatCurrency(price, currency)}</p>
       </div>
     </Link>
   );

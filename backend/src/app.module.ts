@@ -20,6 +20,7 @@ import { HairStyleRequestsModule } from './modules/hair-style-requests/hair-styl
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
+import { QuickRepliesModule } from './modules/quick-replies/quick-replies.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { FavoritesModule } from './modules/favorites/favorites.module';
     ReviewsModule,
     AnalyticsModule,
     FavoritesModule,
+    QuickRepliesModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

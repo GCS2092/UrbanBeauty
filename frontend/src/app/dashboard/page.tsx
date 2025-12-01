@@ -26,6 +26,7 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   HeartIcon,
+  BoltIcon,
 } from '@heroicons/react/24/outline';
 import NotificationsPanel from '@/components/dashboard/NotificationsPanel';
 import { useFavoritesCount } from '@/hooks/useFavorites';
@@ -300,19 +301,19 @@ function DashboardContent() {
                 </Link>
                 
                 <Link
-                  href="/dashboard/hair-style-requests"
+                  href="/dashboard/chat"
                   className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl text-white shadow-md active:scale-[0.98] transition-transform touch-manipulation"
                 >
-                  <ScissorsIcon className="h-8 w-8 mb-2" />
-                  <span className="text-sm font-semibold text-center">Demandes</span>
+                  <ChatBubbleLeftRightIcon className="h-8 w-8 mb-2" />
+                  <span className="text-sm font-semibold text-center">Messages</span>
                 </Link>
                 
                 <Link
-                  href="/dashboard/services/new"
+                  href="/dashboard/quick-replies"
                   className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl text-white shadow-md active:scale-[0.98] transition-transform touch-manipulation"
                 >
-                  <PlusIcon className="h-8 w-8 mb-2" />
-                  <span className="text-sm font-semibold">Nouveau Service</span>
+                  <BoltIcon className="h-8 w-8 mb-2" />
+                  <span className="text-sm font-semibold text-center">Réponses rapides</span>
                 </Link>
               </div>
             </div>

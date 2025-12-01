@@ -12,11 +12,14 @@ import {
   UserCircleIcon,
   CheckIcon,
   CheckCircleIcon,
+  BoltIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon as CheckIconSolid } from '@heroicons/react/24/solid';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { useConversations, useMessages, useCreateConversation, useSendMessage } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuickReplies } from '@/hooks/useQuickReplies';
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -33,8 +36,13 @@ function ChatContent() {
   const [messageContent, setMessageContent] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Quick replies pour les prestataires
+  const canUseQuickReplies = user?.role === 'COIFFEUSE' || user?.role === 'VENDEUSE' || user?.role === 'ADMIN';
+  const { data: quickReplies = [] } = useQuickReplies();
 
   const { data: messages = [] } = useMessages(selectedConversationId || '');
 
@@ -101,6 +109,29 @@ function ChatContent() {
         },
       }
     );
+  };
+
+  // Gérer les raccourcis de réponses rapides
+  const handleMessageChange = (value: string) => {
+    setMessageContent(value);
+    
+    // Vérifier si c'est un raccourci
+    if (canUseQuickReplies && value.startsWith('/')) {
+      const matchingReply = quickReplies.find(
+        (r) => r.shortcut && r.shortcut.toLowerCase() === value.toLowerCase()
+      );
+      if (matchingReply) {
+        setMessageContent(matchingReply.content);
+        setShowQuickReplies(false);
+      }
+    }
+  };
+
+  // Insérer une réponse rapide
+  const handleQuickReplySelect = (content: string) => {
+    setMessageContent(content);
+    setShowQuickReplies(false);
+    inputRef.current?.focus();
   };
 
   const handleSelectConversation = (convId: string) => {
@@ -334,14 +365,75 @@ function ChatContent() {
               </div>
 
               {/* Input */}
+              {/* Quick Replies Panel */}
+              {showQuickReplies && canUseQuickReplies && (
+                <div className="bg-white border-t border-gray-200 p-3 max-h-48 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-500">Réponses rapides</span>
+                    <button 
+                      onClick={() => setShowQuickReplies(false)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {quickReplies.length === 0 ? (
+                    <div className="text-center py-3">
+                      <p className="text-xs text-gray-500">Aucune réponse rapide</p>
+                      <Link 
+                        href="/dashboard/quick-replies" 
+                        className="text-xs text-purple-600 hover:underline"
+                      >
+                        Créer des réponses
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {quickReplies.map((reply) => (
+                        <button
+                          key={reply.id}
+                          onClick={() => handleQuickReplySelect(reply.content)}
+                          className="w-full text-left px-3 py-2 rounded-lg hover:bg-purple-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900">{reply.title}</span>
+                            {reply.shortcut && (
+                              <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded font-mono">
+                                {reply.shortcut}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate mt-0.5">{reply.content}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <form onSubmit={handleSendMessage} className="bg-white/95 backdrop-blur p-3 border-t border-gray-200">
                 <div className="flex items-center gap-2">
+                  {/* Quick Replies Button */}
+                  {canUseQuickReplies && (
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickReplies(!showQuickReplies)}
+                      className={`p-2.5 rounded-full transition-colors ${
+                        showQuickReplies 
+                          ? 'bg-purple-100 text-purple-600' 
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}
+                      title="Réponses rapides"
+                    >
+                      <BoltIcon className="h-5 w-5" />
+                    </button>
+                  )}
                   <input
                     ref={inputRef}
                     type="text"
                     value={messageContent}
-                    onChange={(e) => setMessageContent(e.target.value)}
-                    placeholder="Tapez un message..."
+                    onChange={(e) => handleMessageChange(e.target.value)}
+                    placeholder={canUseQuickReplies ? "Tapez un message ou /raccourci..." : "Tapez un message..."}
                     className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                   <button

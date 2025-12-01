@@ -77,6 +77,7 @@ model User {
   messages          Message[] // Messages envoyés
   notifications     Notification[] // Notifications reçues
   favorites         Favorite[] // Produits et services favoris
+  quickReplies      QuickReply[] // Réponses rapides pour le chat
 }
 
 model Profile {
@@ -437,4 +438,19 @@ model Favorite {
   @@index([userId])
   @@index([productId])
   @@index([serviceId])
+}
+
+// Réponses rapides pour le chat (coiffeuses/vendeuses)
+model QuickReply {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   // Ex: "Salutations", "Prix", "Disponibilités"
+  content   String   // Le message complet
+  shortcut  String?  // Ex: "/hello", "/prix"
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
