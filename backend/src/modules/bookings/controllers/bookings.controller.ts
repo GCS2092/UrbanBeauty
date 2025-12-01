@@ -14,6 +14,7 @@ import { BookingsService } from '../services/bookings.service';
 import { CreateBookingDto } from '../dto/create-booking.dto';
 import { UpdateBookingDto } from '../dto/update-booking.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../../shared/decorators/current-user.decorator';
@@ -49,6 +50,7 @@ export class BookingsController {
   }
 
   @Post()
+  @UseGuards(OptionalJwtAuthGuard)
   create(@Body() createBookingDto: CreateBookingDto, @CurrentUser() user?: any) {
     // Permettre les réservations sans authentification (guest bookings)
     const userId = user?.userId;

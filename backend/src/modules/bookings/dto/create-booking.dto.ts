@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsDateString, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsDateString, IsOptional, ValidateIf } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateBookingDto {
   @IsString()
@@ -15,22 +16,27 @@ export class CreateBookingDto {
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => value?.trim() || undefined)
   location?: string;
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => value?.trim() || undefined)
   clientName?: string; // Nom complet du client (pour réservations guest)
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => value?.trim() || undefined)
   clientPhone?: string;
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => value?.trim() || undefined)
   clientEmail?: string;
 
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => value?.trim() || undefined)
   notes?: string;
 }
 
