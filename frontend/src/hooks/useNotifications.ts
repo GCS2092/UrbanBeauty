@@ -7,7 +7,7 @@ export function useNotifications() {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationsService.getAll(),
-    refetchInterval: 5000, // Rafraîchir toutes les 5 secondes
+    refetchInterval: 5000,
   });
 }
 
@@ -35,6 +35,39 @@ export function useMarkAllAsRead() {
 
   return useMutation({
     mutationFn: () => notificationsService.markAllAsRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+export function useDeleteNotification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => notificationsService.deleteOne(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+export function useDeleteAllNotifications() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => notificationsService.deleteAll(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+export function useDeleteReadNotifications() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => notificationsService.deleteRead(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },

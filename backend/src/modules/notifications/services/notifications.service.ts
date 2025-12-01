@@ -150,5 +150,48 @@ export class NotificationsService {
       data: { isRead: true },
     });
   }
+
+  async deleteNotification(notificationId: string, userId: string) {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id: notificationId },
+    });
+
+    if (!notification) {
+      throw new NotFoundException('Notification introuvable');
+    }
+
+    if (notification.userId !== userId) {
+      throw new NotFoundException('Notification introuvable');
+    }
+
+    return this.prisma.notification.delete({
+      where: { id: notificationId },
+    });
+  }
+
+  async deleteAllNotifications(userId: string) {
+    const result = await this.prisma.notification.deleteMany({
+      where: { userId },
+    });
+
+    return {
+      message: `${result.count} notification(s) supprimée(s)`,
+      count: result.count,
+    };
+  }
+
+  async deleteReadNotifications(userId: string) {
+    const result = await this.prisma.notification.deleteMany({
+      where: {
+        userId,
+        isRead: true,
+      },
+    });
+
+    return {
+      message: `${result.count} notification(s) lue(s) supprimée(s)`,
+      count: result.count,
+    };
+  }
 }
 

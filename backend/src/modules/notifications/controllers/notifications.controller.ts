@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   Patch,
+  Delete,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -85,6 +86,27 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   async markAllAsRead(@CurrentUser() user: any) {
     return this.notificationsService.markAllAsRead(user.userId);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async deleteNotification(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.notificationsService.deleteNotification(id, user.userId);
+  }
+
+  @Delete()
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async deleteAllNotifications(@CurrentUser() user: any) {
+    return this.notificationsService.deleteAllNotifications(user.userId);
+  }
+
+  @Delete('read/clear')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async deleteReadNotifications(@CurrentUser() user: any) {
+    return this.notificationsService.deleteReadNotifications(user.userId);
   }
 }
 
