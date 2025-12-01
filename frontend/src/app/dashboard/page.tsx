@@ -41,9 +41,13 @@ function DashboardContent() {
   const { data: favoritesCount } = useFavoritesCount();
   const { data: bookings = [] } = useBookings(isProvider);
   
-  // Analytics backend
-  const { data: providerAnalytics, isLoading: loadingProviderAnalytics } = useProviderAnalytics();
-  const { data: sellerAnalytics, isLoading: loadingSellerAnalytics } = useSellerAnalytics();
+  // Analytics backend (seulement pour les rôles appropriés)
+  const { data: providerAnalytics, isLoading: loadingProviderAnalytics } = useProviderAnalytics({
+    enabled: isProvider || user?.role === 'ADMIN',
+  });
+  const { data: sellerAnalytics, isLoading: loadingSellerAnalytics } = useSellerAnalytics({
+    enabled: isSeller || user?.role === 'ADMIN',
+  });
 
   // Stats générales (pour les clients et fallback)
   const pendingOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'PROCESSING').length;

@@ -102,7 +102,7 @@ export interface SellerAnalytics {
 /**
  * Hook pour récupérer les analytiques d'une coiffeuse
  */
-export function useProviderAnalytics() {
+export function useProviderAnalytics(options?: { enabled?: boolean }) {
   return useQuery<ProviderAnalytics>({
     queryKey: ['analytics', 'provider'],
     queryFn: async () => {
@@ -111,13 +111,14 @@ export function useProviderAnalytics() {
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: true,
+    enabled: options?.enabled !== false, // Par défaut enabled, sauf si explicitement false
   });
 }
 
 /**
  * Hook pour récupérer les analytiques d'une vendeuse
  */
-export function useSellerAnalytics() {
+export function useSellerAnalytics(options?: { enabled?: boolean }) {
   return useQuery<SellerAnalytics>({
     queryKey: ['analytics', 'seller'],
     queryFn: async () => {
@@ -126,6 +127,7 @@ export function useSellerAnalytics() {
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: true,
+    enabled: options?.enabled !== false, // Par défaut enabled, sauf si explicitement false
   });
 }
 

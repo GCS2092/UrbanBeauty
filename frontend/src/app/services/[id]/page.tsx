@@ -114,17 +114,32 @@ function ServiceDetailContent() {
     const startTime = new Date(`${bookingData.date}T${hours}:${minutes}:00`);
     const endTime = new Date(startTime.getTime() + service.duration * 60000);
 
+    // Préparer les données à envoyer
+    const bookingPayload: any = {
+      serviceId: service.id,
+      date: bookingData.date,
+      startTime: startTime.toISOString(),
+    };
+
+    // Ajouter les champs optionnels seulement s'ils ont une valeur
+    if (bookingData.location?.trim()) {
+      bookingPayload.location = bookingData.location.trim();
+    }
+    if (!isAuthenticated && finalClientName) {
+      bookingPayload.clientName = finalClientName;
+    }
+    if (finalClientPhone) {
+      bookingPayload.clientPhone = finalClientPhone;
+    }
+    if (finalClientEmail) {
+      bookingPayload.clientEmail = finalClientEmail;
+    }
+    if (bookingData.notes?.trim()) {
+      bookingPayload.notes = bookingData.notes.trim();
+    }
+
     createBooking(
-      {
-        serviceId: service.id,
-        date: bookingData.date,
-        startTime: startTime.toISOString(),
-        location: bookingData.location?.trim() || undefined,
-        clientName: !isAuthenticated ? finalClientName : undefined,
-        clientPhone: finalClientPhone || undefined,
-        clientEmail: finalClientEmail || undefined,
-        notes: bookingData.notes?.trim() || undefined,
-      },
+      bookingPayload,
       {
         onSuccess: (booking) => {
           notifications.success('Réservation créée', `Votre réservation #${booking.bookingNumber} a été créée avec succès !`);

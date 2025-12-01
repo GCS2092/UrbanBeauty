@@ -202,9 +202,13 @@ export class BookingsService {
       }
     }
 
-    // Pour les réservations guest, vérifier que les informations client sont fournies
-    if (!userId && (!finalClientName || !finalClientEmail || !finalClientPhone)) {
-      throw new BadRequestException('Les informations client (nom, email, téléphone) sont requises pour les réservations sans compte');
+    // Vérifier que toutes les informations client sont disponibles
+    if (!finalClientName || !finalClientEmail || !finalClientPhone) {
+      if (!userId) {
+        throw new BadRequestException('Les informations client (nom, email, téléphone) sont requises pour les réservations sans compte');
+      } else {
+        throw new BadRequestException('Votre profil doit contenir un numéro de téléphone pour effectuer une réservation. Veuillez compléter votre profil.');
+      }
     }
 
     const bookingDate = new Date(createBookingDto.date);
