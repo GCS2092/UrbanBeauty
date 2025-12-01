@@ -16,6 +16,7 @@ import { Roles } from '../../../shared/decorators/roles.decorator';
 import { UpdateUserRoleDto } from '../dto/update-user-role.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
+import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -46,6 +47,11 @@ export class UsersController {
   @Patch(':id/status')
   updateStatus(@Param('id') id: string, @Body() updateStatusDto: UpdateUserStatusDto) {
     return this.usersService.updateStatus(id, updateStatusDto.isActive, updateStatusDto.blockReason);
+  }
+
+  @Patch(':id/profile')
+  updateProfile(@Param('id') id: string, @Body() updateProfileDto: UpdateUserProfileDto) {
+    return this.usersService.updateProfile(id, updateProfileDto);
   }
 
   @Delete(':id')

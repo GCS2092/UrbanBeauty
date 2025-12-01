@@ -136,5 +136,30 @@ export class UsersService {
       },
     });
   }
+
+  async updateProfile(id: string, profileData: { firstName?: string; lastName?: string; phone?: string }) {
+    const user = await this.findOne(id);
+
+    // Si le profil existe, le mettre à jour
+    if (user.profile) {
+      await this.prisma.profile.update({
+        where: { userId: id },
+        data: profileData,
+      });
+    } else {
+      // Sinon, créer le profil
+      await this.prisma.profile.create({
+        data: {
+          userId: id,
+          firstName: profileData.firstName || 'Utilisateur',
+          lastName: profileData.lastName || '',
+          phone: profileData.phone,
+        },
+      });
+    }
+
+    // Retourner l'utilisateur avec le profil mis à jour
+    return this.findOne(id);
+  }
 }
 
