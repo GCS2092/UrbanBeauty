@@ -98,7 +98,7 @@ export async function requestNotificationPermission(): Promise<string | null> {
     }
 
     // Initialiser messaging si nécessaire
-    if (!messaging) {
+    if (!messaging && app) {
       messaging = getMessaging(app);
     }
 
@@ -147,7 +147,7 @@ export async function requestNotificationPermission(): Promise<string | null> {
 
 // Fonction pour écouter les messages en foreground
 export function onMessageListener(callback: (payload: any) => void) {
-  if (!messaging) {
+  if (!messaging || !app) {
     console.warn('Messaging not initialized');
     return () => {};
   }
