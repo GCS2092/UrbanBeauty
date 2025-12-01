@@ -2,28 +2,25 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { 
   ArrowLeftIcon, 
   SparklesIcon,
   HeartIcon,
-  ShareIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '@/hooks/useAuth';
 
-// Données d'exemple - en production, ces données viendraient de l'API
 const looks = [
-  { id: '1', name: 'Box Braids Goddess', image: undefined, likes: 234, category: 'Tresses', emoji: '🎀' },
-  { id: '2', name: 'Perruque Wavy', image: undefined, likes: 189, category: 'Perruques', emoji: '👩‍🦱' },
-  { id: '3', name: 'Locks Élégants', image: undefined, likes: 156, category: 'Locks', emoji: '🔥' },
-  { id: '4', name: 'Coiffure Mariage', image: undefined, likes: 312, category: 'Événements', emoji: '💍' },
-  { id: '5', name: 'Cornrows Design', image: undefined, likes: 98, category: 'Tresses', emoji: '✨' },
-  { id: '6', name: 'Afro Naturel', image: undefined, likes: 267, category: 'Natural', emoji: '🌸' },
-  { id: '7', name: 'Fulani Braids', image: undefined, likes: 145, category: 'Tresses', emoji: '💫' },
-  { id: '8', name: 'Twist Out', image: undefined, likes: 201, category: 'Natural', emoji: '🌀' },
-  { id: '9', name: 'Silk Press', image: undefined, likes: 178, category: 'Lissage', emoji: '💎' },
+  { id: '1', name: 'Box Braids Goddess', category: 'Tresses', likes: 234 },
+  { id: '2', name: 'Perruque Wavy', category: 'Perruques', likes: 189 },
+  { id: '3', name: 'Locks Élégants', category: 'Locks', likes: 156 },
+  { id: '4', name: 'Coiffure Mariage', category: 'Événements', likes: 312 },
+  { id: '5', name: 'Cornrows Design', category: 'Tresses', likes: 98 },
+  { id: '6', name: 'Afro Naturel', category: 'Natural', likes: 267 },
+  { id: '7', name: 'Fulani Braids', category: 'Tresses', likes: 145 },
+  { id: '8', name: 'Twist Out', category: 'Natural', likes: 201 },
+  { id: '9', name: 'Silk Press', category: 'Lissage', likes: 178 },
 ];
 
 const categories = ['Tous', 'Tresses', 'Perruques', 'Locks', 'Natural', 'Événements', 'Lissage'];
@@ -45,53 +42,41 @@ export default function LookbookPage() {
     e.stopPropagation();
     setLikedLooks(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
       return newSet;
     });
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-orange-50 to-white ${!isAuthenticated ? 'pb-20 md:pb-0' : ''}`}>
+    <div className={`min-h-screen bg-white ${!isAuthenticated ? 'pb-16 md:pb-0' : ''}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          <Link 
-            href="/" 
-            className="inline-flex items-center text-sm text-white/80 hover:text-white mb-4"
-          >
-            <ArrowLeftIcon className="h-4 w-4 mr-2" />
-            Retour
-          </Link>
-          
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-white/20 rounded-xl backdrop-blur">
-              <SparklesIcon className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-bold">Lookbook ✨</h1>
-              <p className="text-white/80 mt-1">Inspirez-vous de nos créations</p>
-            </div>
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center h-14">
+            <Link href="/" className="text-gray-600 hover:text-gray-900">
+              <ArrowLeftIcon className="h-5 w-5" />
+            </Link>
+            <h1 className="ml-4 text-lg font-semibold text-gray-900">Lookbook</h1>
           </div>
 
           {/* Search */}
-          <div className="relative max-w-lg">
-            <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Rechercher un style..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50"
-            />
+          <div className="pb-3">
+            <div className="relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Rechercher un style..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 rounded-lg border-0 text-sm focus:ring-2 focus:ring-gray-900"
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
         {/* Categories */}
         <div className="mb-6 overflow-x-auto -mx-4 px-4">
           <div className="flex gap-2 w-max">
@@ -99,10 +84,10 @@ export default function LookbookPage() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                   selectedCategory === cat
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg'
-                    : 'bg-white text-gray-700 shadow-sm hover:shadow-md'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 {cat}
@@ -111,28 +96,19 @@ export default function LookbookPage() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="mb-6 flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            {filteredLooks.length} style{filteredLooks.length > 1 ? 's' : ''} trouvé{filteredLooks.length > 1 ? 's' : ''}
-          </p>
-          <p className="text-xs text-gray-400">
-            Tapez sur ❤️ pour sauvegarder
-          </p>
-        </div>
+        {/* Count */}
+        <p className="text-sm text-gray-500 mb-4">{filteredLooks.length} style(s)</p>
 
-        {/* Masonry Grid */}
+        {/* Grid */}
         {filteredLooks.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-            <span className="text-6xl mb-4 block">🔍</span>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Aucun look trouvé</h2>
-            <p className="text-gray-500">Essayez une autre catégorie</p>
+          <div className="text-center py-16">
+            <SparklesIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">Aucun look trouvé</p>
           </div>
         ) : (
           <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
             {filteredLooks.map((look, index) => {
-              // Vary heights for masonry effect
-              const heights = ['aspect-[3/4]', 'aspect-square', 'aspect-[4/5]', 'aspect-[3/4]'];
+              const heights = ['aspect-[3/4]', 'aspect-square', 'aspect-[4/5]'];
               const height = heights[index % heights.length];
               const isLiked = likedLooks.has(look.id);
 
@@ -140,59 +116,40 @@ export default function LookbookPage() {
                 <Link
                   key={look.id}
                   href={`/lookbook/${look.id}`}
-                  className={`group block break-inside-avoid ${height} relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-100 via-rose-100 to-purple-100 shadow-sm hover:shadow-xl transition-all duration-300`}
+                  className={`group block break-inside-avoid ${height} relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-100 to-gray-200`}
                 >
-                  {/* Placeholder with gradient and emoji */}
+                  {/* Placeholder */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-6xl sm:text-7xl opacity-80 group-hover:scale-110 transition-transform duration-300">
-                      {look.emoji}
-                    </span>
+                    <SparklesIcon className="h-12 w-12 text-gray-300 group-hover:scale-110 transition-transform" />
                   </div>
 
-                  {/* Category badge */}
-                  <div className="absolute top-3 left-3 px-2 py-1 bg-white/80 backdrop-blur rounded-full text-xs font-medium text-gray-700">
+                  {/* Category */}
+                  <div className="absolute top-3 left-3 px-2 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-medium text-gray-700">
                     {look.category}
                   </div>
 
-                  {/* Like button */}
+                  {/* Like */}
                   <button
                     onClick={(e) => toggleLike(look.id, e)}
                     className={`absolute top-3 right-3 p-2 rounded-full transition-all ${
-                      isLiked 
-                        ? 'bg-red-500 text-white scale-110' 
-                        : 'bg-white/80 backdrop-blur text-gray-700 hover:bg-white'
+                      isLiked ? 'bg-red-500 text-white' : 'bg-white/90 backdrop-blur text-gray-700 hover:bg-white'
                     }`}
                   >
                     {isLiked ? (
-                      <HeartIconSolid className="h-5 w-5" />
+                      <HeartIconSolid className="h-4 w-4" />
                     ) : (
-                      <HeartIcon className="h-5 w-5" />
+                      <HeartIcon className="h-4 w-4" />
                     )}
                   </button>
 
                   {/* Bottom overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-4">
-                    <h3 className="text-white font-bold text-lg mb-1 line-clamp-1">{look.name}</h3>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-white/80 text-sm">
-                        <HeartIconSolid className="h-4 w-4 text-red-400" />
-                        <span>{isLiked ? look.likes + 1 : look.likes}</span>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          // Share logic
-                        }}
-                        className="p-1.5 bg-white/20 rounded-full text-white hover:bg-white/30 transition-colors"
-                      >
-                        <ShareIcon className="h-4 w-4" />
-                      </button>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                    <h3 className="text-white font-medium text-sm mb-1">{look.name}</h3>
+                    <div className="flex items-center gap-1 text-white/80 text-xs">
+                      <HeartIconSolid className="h-3 w-3" />
+                      <span>{isLiked ? look.likes + 1 : look.likes}</span>
                     </div>
                   </div>
-
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                 </Link>
               );
             })}
@@ -200,44 +157,39 @@ export default function LookbookPage() {
         )}
 
         {/* CTA */}
-        <div className="mt-12 bg-gradient-to-r from-orange-100 to-amber-100 rounded-2xl p-8 text-center">
-          <span className="text-4xl mb-4 block">💇‍♀️</span>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Vous avez trouvé votre style ?</h3>
-          <p className="text-gray-600 mb-4">Réservez maintenant avec l'une de nos coiffeuses</p>
+        <div className="mt-12 text-center py-8 border-t border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Vous avez trouvé votre style ?</h3>
+          <p className="text-sm text-gray-500 mb-4">Réservez avec une de nos coiffeuses</p>
           <Link
             href="/services"
-            className="inline-block px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity shadow-lg"
+            className="inline-block px-8 py-3 bg-black text-white font-medium rounded-full hover:bg-gray-800 transition-colors"
           >
             Réserver un service
           </Link>
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Nav */}
       {!isAuthenticated && (
         <>
-          <div className="h-20 md:hidden" />
-          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-            <div className="flex items-center justify-around h-16 px-2">
+          <div className="h-14 md:hidden" />
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden safe-area-bottom">
+            <div className="flex items-center justify-around h-14">
               {[
-                { href: '/', label: 'Accueil', emoji: '🏠' },
-                { href: '/products', label: 'Produits', emoji: '🛍️' },
-                { href: '/services', label: 'Services', emoji: '💇‍♀️' },
-                { href: '/lookbook', label: 'Lookbook', emoji: '✨', active: true },
-                { href: '/prestataires', label: 'Coiffeuses', emoji: '👩‍🦰' },
+                { href: '/', label: 'Accueil' },
+                { href: '/products', label: 'Produits' },
+                { href: '/services', label: 'Services' },
+                { href: '/lookbook', label: 'Lookbook', active: true },
+                { href: '/prestataires', label: 'Coiffeuses' },
               ].map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex flex-col items-center justify-center flex-1 py-2 relative ${
-                    item.active ? 'text-orange-600' : 'text-gray-500'
+                  className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-medium ${
+                    item.active ? 'text-black' : 'text-gray-400'
                   }`}
                 >
-                  {item.active && (
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-orange-600 rounded-full" />
-                  )}
-                  <span className={`text-xl ${item.active ? 'scale-110' : ''}`}>{item.emoji}</span>
-                  <span className="text-[10px] mt-1 font-medium">{item.label}</span>
+                  {item.label}
                 </Link>
               ))}
             </div>
