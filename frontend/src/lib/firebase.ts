@@ -102,6 +102,12 @@ export async function requestNotificationPermission(): Promise<string | null> {
       messaging = getMessaging(app);
     }
 
+    // Vérifier que messaging est initialisé
+    if (!messaging) {
+      console.error('Firebase Messaging is not initialized');
+      return null;
+    }
+
     // Enregistrer le service worker d'abord
     const registration = await registerServiceWorker();
     if (!registration) {
