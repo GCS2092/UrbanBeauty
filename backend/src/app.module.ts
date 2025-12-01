@@ -22,6 +22,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { QuickRepliesModule } from './modules/quick-replies/quick-replies.module';
 import { ShippingAddressesModule } from './modules/shipping-addresses/shipping-addresses.module';
+import { RemindersModule } from './modules/reminders/reminders.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ShippingAddressesModule } from './modules/shipping-addresses/shipping-a
     FavoritesModule,
     QuickRepliesModule,
     ShippingAddressesModule,
+    RemindersModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
