@@ -154,8 +154,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
       <input
         ref={replaceInputRef}
         type="file"
-        accept="image/*"
-        capture="environment"
+        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,image/heif"
         onChange={(e) => handleFileUpload(e, replacingIndex ?? undefined)}
         className="hidden"
         disabled={uploading}
@@ -221,7 +220,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
                     Image {index + 1} {index === 0 && <span className="sm:hidden text-pink-600">(Principal)</span>}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {image.type === 'UPLOADED' ? '📤 Uploadée' : '🔗 URL'}
+                    {image.type === 'UPLOADED' ? 'Uploadée' : 'URL externe'}
                   </p>
                 </div>
 
@@ -305,8 +304,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
-              capture="environment"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,image/heif"
               onChange={(e) => handleFileUpload(e)}
               className="hidden"
               disabled={uploading}
@@ -319,7 +317,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
             ) : (
               <>
                 <PhotoIcon className="h-12 w-12 sm:h-10 sm:w-10 text-gray-400 mb-3" />
-                <p className="text-sm font-medium text-gray-700">📷 Prendre une photo ou choisir</p>
+                <p className="text-sm font-medium text-gray-700">Choisir une image</p>
                 <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF, WEBP (max 5MB)</p>
               </>
             )}
@@ -333,7 +331,7 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
               className="flex flex-col items-center justify-center p-6 sm:p-4 rounded-lg border-2 border-dashed border-gray-300 hover:border-pink-500 active:border-pink-600 hover:bg-pink-50 active:bg-pink-100 transition-colors touch-manipulation"
             >
               <LinkIcon className="h-12 w-12 sm:h-10 sm:w-10 text-gray-400 mb-3" />
-              <p className="text-sm font-medium text-gray-700">🔗 Ajouter une URL</p>
+              <p className="text-sm font-medium text-gray-700">Ajouter une URL</p>
               <p className="text-xs text-gray-500 mt-1">Lien vers une image existante</p>
             </button>
           ) : (
@@ -384,11 +382,11 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
 
       {/* Info */}
       <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
-        <p className="font-medium text-gray-700 mb-1">💡 Conseils</p>
+        <p className="font-medium text-gray-700 mb-1">Conseils</p>
         <ul className="space-y-0.5 text-xs">
-          <li>• La <strong>première image</strong> sera affichée en couverture</li>
-          <li>• <strong>⭐</strong> = Définir comme principale • <strong>↑↓</strong> = Réorganiser • <strong>🔄</strong> = Remplacer</li>
-          <li>• {images.length}/{maxImages} images utilisées</li>
+          <li>• La première image sera affichée en couverture</li>
+          <li>• Utilisez les flèches pour réorganiser</li>
+          <li>• {images.length}/{maxImages} images</li>
         </ul>
       </div>
     </div>
