@@ -25,14 +25,18 @@ import {
   ExclamationCircleIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
+  HeartIcon,
 } from '@heroicons/react/24/outline';
 import NotificationsPanel from '@/components/dashboard/NotificationsPanel';
+import { useFavoritesCount } from '@/hooks/useFavorites';
 
 function DashboardContent() {
   const { user } = useAuth();
   const { data: orders = [] } = useOrders(false, user?.role === 'VENDEUSE');
   const isProvider = user?.role === 'COIFFEUSE';
   const isSeller = user?.role === 'VENDEUSE';
+  const isClient = user?.role === 'CLIENT';
+  const { data: favoritesCount } = useFavoritesCount();
   const { data: bookings = [] } = useBookings(isProvider);
   
   // Analytics backend
@@ -355,29 +359,34 @@ function DashboardContent() {
         {/* ============ SECTION CLIENT ============ */}
         {user?.role === 'CLIENT' && (
           <>
-            <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="grid grid-cols-3 gap-3 mb-6">
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-pink-100 rounded-xl">
+                <div className="flex flex-col items-center text-center">
+                  <div className="p-2 bg-pink-100 rounded-xl mb-2">
                     <ShoppingBagIcon className="h-5 w-5 text-pink-600" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
-                    <p className="text-xs text-gray-500">Commandes</p>
-                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
+                  <p className="text-[10px] text-gray-500">Commandes</p>
                 </div>
               </div>
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 rounded-xl">
+                <div className="flex flex-col items-center text-center">
+                  <div className="p-2 bg-purple-100 rounded-xl mb-2">
                     <CalendarIcon className="h-5 w-5 text-purple-600" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{bookings.length}</p>
-                    <p className="text-xs text-gray-500">Réservations</p>
-                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{bookings.length}</p>
+                  <p className="text-[10px] text-gray-500">RDV</p>
                 </div>
               </div>
+              <Link href="/dashboard/favorites" className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:border-red-200 transition-colors">
+                <div className="flex flex-col items-center text-center">
+                  <div className="p-2 bg-red-100 rounded-xl mb-2">
+                    <HeartIcon className="h-5 w-5 text-red-500" />
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{favoritesCount?.total || 0}</p>
+                  <p className="text-[10px] text-gray-500">Favoris</p>
+                </div>
+              </Link>
             </div>
 
             <div className="mb-6">
@@ -396,6 +405,20 @@ function DashboardContent() {
                 >
                   <CalendarIcon className="h-8 w-8 mb-2" />
                   <span className="text-sm font-semibold">Réservations</span>
+                </Link>
+                <Link
+                  href="/dashboard/favorites"
+                  className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl text-white shadow-md active:scale-[0.98] transition-transform touch-manipulation"
+                >
+                  <HeartIcon className="h-8 w-8 mb-2" />
+                  <span className="text-sm font-semibold">Mes Favoris</span>
+                </Link>
+                <Link
+                  href="/products"
+                  className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl text-white shadow-md active:scale-[0.98] transition-transform touch-manipulation"
+                >
+                  <CubeIcon className="h-8 w-8 mb-2" />
+                  <span className="text-sm font-semibold">Explorer</span>
                 </Link>
               </div>
             </div>

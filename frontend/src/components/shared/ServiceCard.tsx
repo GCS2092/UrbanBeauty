@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ClockIcon, StarIcon } from '@heroicons/react/24/solid';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
+import FavoriteButton from './FavoriteButton';
 
 interface ServiceCardProps {
   id: string;
@@ -42,6 +43,10 @@ export default function ServiceCard({
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
+        {/* Bouton Favoris */}
+        <div className="absolute top-2 right-2 z-10">
+          <FavoriteButton serviceId={id} size="sm" />
+        </div>
         <div className="absolute bottom-4 left-4 right-4">
           <div className="flex items-center justify-between text-white">
             <div className="flex items-center space-x-1">

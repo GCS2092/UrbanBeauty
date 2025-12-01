@@ -19,6 +19,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { HairStyleRequestsModule } from './modules/hair-style-requests/hair-style-requests.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { FavoritesModule } from './modules/favorites/favorites.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     HairStyleRequestsModule,
     ReviewsModule,
     AnalyticsModule,
+    FavoritesModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

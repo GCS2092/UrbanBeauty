@@ -7,6 +7,7 @@ import { useCartStore } from '@/store/cart.store';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { formatCurrency, getCurrencyForRole } from '@/utils/currency';
+import FavoriteButton from './FavoriteButton';
 
 interface ProductCardProps {
   id: string;
@@ -66,6 +67,10 @@ export default function ProductCard({ id, name, price, image, category, stock = 
           </div>
         )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+        {/* Bouton Favoris */}
+        <div className="absolute top-2 right-2 z-10">
+          <FavoriteButton productId={id} size="sm" />
+        </div>
       </div>
       <div className="p-2 sm:p-3 flex flex-col flex-grow">
         {category && (

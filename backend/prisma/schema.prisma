@@ -76,6 +76,7 @@ model User {
   conversations2    Conversation[]     @relation("Conversations2") // Conversations où l'utilisateur est participant2
   messages          Message[] // Messages envoyés
   notifications     Notification[] // Notifications reçues
+  favorites         Favorite[] // Produits et services favoris
 }
 
 model Profile {
@@ -136,6 +137,7 @@ model Product {
   reviewCount        Int         @default(0) // Nombre d'avis
   orders             OrderItem[]
   reviews            Review[]
+  favorites          Favorite[]
   sellerId           String
   seller             User        @relation("UserProducts", fields: [sellerId], references: [id])
   createdAt          DateTime    @default(now())
@@ -164,6 +166,7 @@ model Service {
   bookings           Booking[]
   reviews            Review[]
   images             Image[]
+  favorites          Favorite[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
@@ -416,4 +419,22 @@ model HairStyleRequest {
 
   @@index([providerId])
   @@index([status])
+}
+
+// Favoris utilisateur (produits et services)
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@unique([userId, serviceId])
+  @@index([userId])
+  @@index([productId])
+  @@index([serviceId])
 }
