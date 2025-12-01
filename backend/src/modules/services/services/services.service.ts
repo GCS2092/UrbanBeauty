@@ -40,6 +40,7 @@ export class ServicesService {
       ...service,
       provider: service.provider ? {
         id: service.provider.id,
+        userId: service.provider.userId, // ID utilisateur pour le chat
         firstName: service.provider.firstName || '',
         lastName: service.provider.lastName || '',
         rating: service.provider.rating || null,
@@ -79,6 +80,7 @@ export class ServicesService {
       ...service,
       provider: service.provider ? {
         id: service.provider.id,
+        userId: service.provider.userId, // ID utilisateur pour le chat
         firstName: service.provider.firstName || '',
         lastName: service.provider.lastName || '',
         rating: service.provider.rating || null,
@@ -111,6 +113,7 @@ export class ServicesService {
       ...service,
       provider: service.provider ? {
         id: service.provider.id,
+        userId: service.provider.userId, // ID utilisateur pour le chat
         firstName: service.provider.firstName || '',
         lastName: service.provider.lastName || '',
         rating: service.provider.rating || null,

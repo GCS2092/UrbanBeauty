@@ -221,9 +221,9 @@ function ServiceDetailContent() {
                               );
                               router.push('/auth/register?redirect=' + encodeURIComponent(`/services/${service.id}`));
                             } else {
-                              // Créer ou ouvrir la conversation
-                              if (service.provider?.id) {
-                                router.push(`/dashboard/chat?userId=${service.provider.id}`);
+                              // Créer ou ouvrir la conversation avec l'ID utilisateur (pas l'ID profil)
+                              if (service.provider?.userId) {
+                                router.push(`/dashboard/chat?userId=${service.provider.userId}`);
                               }
                             }
                           }}
@@ -342,6 +342,9 @@ function ServiceDetailContent() {
                       onChange={(e) => setBookingData({ ...bookingData, clientPhone: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
                     />
+                    {isAuthenticated && bookingData.clientPhone && (
+                      <p className="text-xs text-green-600 mt-1">✓ Pré-rempli</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -355,6 +358,9 @@ function ServiceDetailContent() {
                       onChange={(e) => setBookingData({ ...bookingData, clientEmail: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
                     />
+                    {isAuthenticated && bookingData.clientEmail && (
+                      <p className="text-xs text-green-600 mt-1">✓ Pré-rempli</p>
+                    )}
                   </div>
                 </div>
 

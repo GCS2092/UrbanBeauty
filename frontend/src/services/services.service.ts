@@ -18,6 +18,7 @@ export interface Service {
   providerId: string;
   provider?: {
     id: string;
+    userId: string; // ID utilisateur pour le chat
     firstName: string;
     lastName: string;
     rating?: number;
