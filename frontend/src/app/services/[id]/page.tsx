@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, CalendarIcon, ClockIcon, MapPinIcon, UserIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
@@ -30,11 +30,25 @@ function ServiceDetailContent() {
     date: '',
     startTime: '',
     location: '',
-    clientName: user?.profile ? `${user.profile.firstName} ${user.profile.lastName}` : '',
-    clientPhone: user?.profile?.phone || '',
-    clientEmail: user?.email || '',
+    clientName: '',
+    clientPhone: '',
+    clientEmail: '',
     notes: '',
   });
+
+  // Pré-remplir les infos client quand le profil utilisateur est chargé
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      setBookingData(prev => ({
+        ...prev,
+        clientName: user.profile 
+          ? `${user.profile.firstName} ${user.profile.lastName}` 
+          : prev.clientName,
+        clientPhone: user.profile?.phone || prev.clientPhone,
+        clientEmail: user.email || prev.clientEmail,
+      }));
+    }
+  }, [user, isAuthenticated]);
 
   // Récupérer les créneaux disponibles pour la date sélectionnée
   const { data: availability, isLoading: isLoadingAvailability } = useQuery({
@@ -72,12 +86,10 @@ function ServiceDetailContent() {
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Pour les réservations guest, vérifier que les informations client sont fournies
-    if (!isAuthenticated) {
-      if (!bookingData.clientName || !bookingData.clientEmail || !bookingData.clientPhone) {
-        notifications.error('Informations requises', 'Veuillez remplir votre nom, email et téléphone pour réserver sans compte');
-        return;
-      }
+    // Vérifier que les informations client sont fournies (connecté ou non)
+    if (!bookingData.clientName?.trim() || !bookingData.clientEmail?.trim() || !bookingData.clientPhone?.trim()) {
+      notifications.error('Informations requises', 'Veuillez remplir votre nom, email et téléphone');
+      return;
     }
 
     if (!bookingData.date || !bookingData.startTime) {
@@ -225,21 +237,23 @@ function ServiceDetailContent() {
                     <form onSubmit={handleBookingSubmit} className="bg-gray-50 rounded-lg p-6 space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Formulaire de réservation</h3>
                 
-                {!isAuthenticated && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nom complet *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={bookingData.clientName}
-                      onChange={(e) => setBookingData({ ...bookingData, clientName: e.target.value })}
-                      placeholder="Votre nom complet"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
-                    />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <UserIcon className="h-4 w-4 inline mr-1" />
+                    Nom complet *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={bookingData.clientName}
+                    onChange={(e) => setBookingData({ ...bookingData, clientName: e.target.value })}
+                    placeholder="Votre nom complet"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
+                  />
+                  {isAuthenticated && bookingData.clientName && (
+                    <p className="text-xs text-green-600 mt-1">✓ Pré-rempli depuis votre profil</p>
+                  )}
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
