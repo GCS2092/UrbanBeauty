@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ServiceCard from '@/components/shared/ServiceCard';
 import { ArrowLeftIcon, SparklesIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useServices } from '@/hooks/useServices';
+import { useAuth } from '@/hooks/useAuth';
 
 // Icônes pour les catégories
 const categoryIcons: Record<string, string> = {
@@ -22,6 +23,7 @@ const categoryIcons: Record<string, string> = {
 
 export default function ServicesPage() {
   const { data: services = [], isLoading, error } = useServices();
+  const { isAuthenticated } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -86,7 +88,7 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+    <div className={`min-h-screen bg-gradient-to-b from-purple-50 to-white ${!isAuthenticated ? 'pb-20 md:pb-0' : ''}`}>
       {/* Hero Header */}
       <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -263,6 +265,38 @@ export default function ServicesPage() {
           </div>
         )}
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      {!isAuthenticated && (
+        <>
+          <div className="h-20 md:hidden" />
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+            <div className="flex items-center justify-around h-16 px-2">
+              {[
+                { href: '/', label: 'Accueil', emoji: '🏠' },
+                { href: '/products', label: 'Produits', emoji: '🛍️' },
+                { href: '/services', label: 'Services', emoji: '💇‍♀️', active: true },
+                { href: '/lookbook', label: 'Lookbook', emoji: '✨' },
+                { href: '/prestataires', label: 'Coiffeuses', emoji: '👩‍🦰' },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex flex-col items-center justify-center flex-1 py-2 relative ${
+                    item.active ? 'text-purple-600' : 'text-gray-500'
+                  }`}
+                >
+                  {item.active && (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-purple-600 rounded-full" />
+                  )}
+                  <span className={`text-xl ${item.active ? 'scale-110' : ''}`}>{item.emoji}</span>
+                  <span className="text-[10px] mt-1 font-medium">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </nav>
+        </>
+      )}
     </div>
   );
 }

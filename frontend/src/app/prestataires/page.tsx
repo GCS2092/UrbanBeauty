@@ -3,10 +3,17 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeftIcon, StarIcon, FunnelIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import { 
+  ArrowLeftIcon, 
+  MagnifyingGlassIcon, 
+  MapPinIcon,
+  UserGroupIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid, CheckBadgeIcon } from '@heroicons/react/24/solid';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Provider {
   id: string;
@@ -34,8 +41,10 @@ interface Provider {
 }
 
 export default function PrestatairesPage() {
+  const { isAuthenticated } = useAuth();
   const [sortBy, setSortBy] = useState<'rating' | 'bookings' | 'name'>('rating');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
 
   const { data: providers = [], isLoading, error } = useQuery<Provider[]>({
     queryKey: ['providers'],
@@ -45,9 +54,23 @@ export default function PrestatairesPage() {
     },
   });
 
+  // Extraire les villes uniques
+  const cities = useMemo(() => {
+    const citySet = new Set<string>();
+    providers.forEach(p => {
+      if (p.city) citySet.add(p.city);
+    });
+    return Array.from(citySet);
+  }, [providers]);
+
   // Filtrer et trier les prestataires
   const filteredAndSortedProviders = useMemo(() => {
     let filtered = providers;
+
+    // Filtre par ville
+    if (selectedCity) {
+      filtered = filtered.filter(p => p.city === selectedCity);
+    }
 
     // Filtre par recherche
     if (searchQuery.trim()) {
@@ -75,183 +98,225 @@ export default function PrestatairesPage() {
     });
 
     return sorted;
-  }, [providers, sortBy, searchQuery]);
+  }, [providers, sortBy, searchQuery, selectedCity]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement des prestataires...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">Erreur lors du chargement des prestataires</p>
-          <Link href="/" className="text-pink-600 hover:text-pink-700 mt-4 inline-block">
-            Retour à l'accueil
-          </Link>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
+    <div className={`min-h-screen bg-gradient-to-b from-teal-50 to-white ${!isAuthenticated ? 'pb-20 md:pb-0' : ''}`}>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500 text-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           <Link 
             href="/" 
-            className="inline-flex items-center text-sm text-gray-600 hover:text-pink-600 mb-4"
+            className="inline-flex items-center text-sm text-white/80 hover:text-white mb-4"
           >
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
-            Retour à l'accueil
+            Retour
           </Link>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Nos Prestataires</h1>
-          <p className="mt-2 text-gray-600">Découvrez nos professionnels de la beauté</p>
-        </div>
+          
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-3 bg-white/20 rounded-xl backdrop-blur">
+              <UserGroupIcon className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold">Nos Coiffeuses 👩‍🦰</h1>
+              <p className="text-white/80 mt-1">Professionnelles de la beauté à votre service</p>
+            </div>
+          </div>
 
-        {/* Filtres et recherche */}
-        <div className="mb-6 space-y-4 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-4">
-          {/* Recherche */}
-          <div className="flex-1 max-w-md">
+          {/* Search */}
+          <div className="relative max-w-lg">
+            <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Rechercher un prestataire, une spécialité, une ville..."
+              placeholder="Rechercher une coiffeuse, spécialité..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent text-sm sm:text-base"
+              className="w-full pl-12 pr-4 py-3 bg-white rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50"
             />
           </div>
+        </div>
+      </div>
 
-          {/* Tri */}
-          <div className="flex items-center gap-2 sm:gap-4">
-            <FunnelIcon className="h-5 w-5 text-gray-500 flex-shrink-0" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'rating' | 'bookings' | 'name')}
-              className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent text-sm sm:text-base bg-white"
-            >
-              <option value="rating">Trier par note</option>
-              <option value="bookings">Trier par réservations</option>
-              <option value="name">Trier par nom</option>
-            </select>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        {/* Filters */}
+        <div className="mb-6 flex flex-wrap gap-3 items-center">
+          {/* Sort */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Trier :</span>
+            <div className="flex gap-1">
+              {[
+                { value: 'rating', label: '⭐ Note' },
+                { value: 'bookings', label: '📅 RDV' },
+                { value: 'name', label: '🔤 Nom' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setSortBy(opt.value as typeof sortBy)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    sortBy === opt.value
+                      ? 'bg-teal-100 text-teal-700'
+                      : 'bg-white text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* City filter */}
+          {cities.length > 0 && (
+            <div className="flex items-center gap-2">
+              <MapPinIcon className="h-4 w-4 text-gray-400" />
+              <select
+                value={selectedCity || ''}
+                onChange={(e) => setSelectedCity(e.target.value || null)}
+                className="px-3 py-1.5 bg-white border-0 rounded-lg text-sm focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">Toutes les villes</option>
+                {cities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
-        {/* Résultats */}
-        <p className="text-sm text-gray-600 mb-4 sm:mb-6">
-          {filteredAndSortedProviders.length} prestataire{filteredAndSortedProviders.length > 1 ? 's' : ''} trouvé{filteredAndSortedProviders.length > 1 ? 's' : ''}
-        </p>
-
-        {/* Grille de prestataires - Responsive */}
-        {filteredAndSortedProviders.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 sm:p-12 text-center">
-            <span className="text-6xl mb-4 block">🔍</span>
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">Aucun prestataire trouvé</h2>
-            <p className="text-gray-600 mb-4">
-              {searchQuery ? 'Essayez avec d\'autres mots-clés' : 'Aucun prestataire disponible pour le moment'}
-            </p>
+        {/* Active filters */}
+        {(selectedCity || searchQuery) && (
+          <div className="mb-4 flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-gray-500">Filtres :</span>
+            {selectedCity && (
+              <button
+                onClick={() => setSelectedCity(null)}
+                className="inline-flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm font-medium"
+              >
+                📍 {selectedCity}
+                <XMarkIcon className="h-3.5 w-3.5" />
+              </button>
+            )}
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="text-pink-600 hover:text-pink-700 font-medium"
+                className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium"
               >
-                Réinitialiser la recherche
+                🔍 "{searchQuery}"
+                <XMarkIcon className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
+        )}
+
+        {/* Results */}
+        <p className="text-sm text-gray-600 mb-4">
+          {filteredAndSortedProviders.length} coiffeuse{filteredAndSortedProviders.length > 1 ? 's' : ''} trouvée{filteredAndSortedProviders.length > 1 ? 's' : ''}
+        </p>
+
+        {/* Grid */}
+        {filteredAndSortedProviders.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+            <span className="text-6xl mb-4 block">🔍</span>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Aucune coiffeuse trouvée</h2>
+            <p className="text-gray-500 mb-4">Essayez avec d'autres critères</p>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCity(null);
+              }}
+              className="px-6 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-medium rounded-xl"
+            >
+              Voir toutes les coiffeuses
+            </button>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredAndSortedProviders.map((provider) => {
               const fullName = `${provider.firstName} ${provider.lastName}`;
               const rating = provider.rating || 0;
-              const completionRate = provider.totalBookings > 0
-                ? Math.round((provider.completedBookings / provider.totalBookings) * 100)
-                : 0;
+              const isTopRated = rating >= 4.5 && provider.totalBookings >= 10;
 
               return (
                 <Link
                   key={provider.id}
                   href={`/prestataires/${provider.id}`}
-                  className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
+                  className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
                 >
                   {/* Avatar */}
-                  <div className="relative h-48 sm:h-56 w-full bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center overflow-hidden">
+                  <div className="relative h-48 bg-gradient-to-br from-teal-100 to-cyan-100">
                     {provider.avatar ? (
                       <Image
                         src={provider.avatar}
                         alt={fullName}
                         fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />
                     ) : (
-                      <span className="text-6xl sm:text-7xl">💇‍♀️</span>
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-7xl">👩‍🦰</span>
+                      </div>
                     )}
+                    
+                    {/* Top rated badge */}
+                    {isTopRated && (
+                      <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-yellow-400 text-yellow-900 rounded-full text-xs font-bold">
+                        <CheckBadgeIcon className="h-3.5 w-3.5" />
+                        Top
+                      </div>
+                    )}
+
+                    {/* Rating overlay */}
+                    <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2 py-1 bg-black/60 backdrop-blur rounded-full">
+                      <StarIconSolid className="h-4 w-4 text-yellow-400" />
+                      <span className="text-white text-sm font-bold">{rating.toFixed(1)}</span>
+                    </div>
                   </div>
 
-                  {/* Informations */}
-                  <div className="p-4 sm:p-5 flex-1 flex flex-col">
-                    <h3 className="font-semibold text-gray-900 text-lg sm:text-xl mb-1 line-clamp-1">
+                  {/* Info */}
+                  <div className="p-4">
+                    <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-teal-600 transition-colors">
                       {fullName}
                     </h3>
                     
                     {provider.city && (
-                      <p className="text-xs sm:text-sm text-gray-500 mb-2 flex items-center">
-                        <span className="mr-1">📍</span>
-                        {provider.city}{provider.country && `, ${provider.country}`}
+                      <p className="text-sm text-gray-500 mb-2 flex items-center gap-1">
+                        <MapPinIcon className="h-4 w-4" />
+                        {provider.city}
                       </p>
                     )}
 
-                    {/* Spécialités */}
+                    {/* Specialties */}
                     {provider.specialties && provider.specialties.length > 0 && (
-                      <div className="mb-3 flex flex-wrap gap-1">
-                        {provider.specialties.slice(0, 2).map((specialty, idx) => (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {provider.specialties.slice(0, 3).map((specialty, idx) => (
                           <span
                             key={idx}
-                            className="inline-block px-2 py-1 text-xs bg-pink-50 text-pink-700 rounded-full"
+                            className="px-2 py-0.5 text-xs bg-teal-50 text-teal-700 rounded-full"
                           >
                             {specialty}
                           </span>
                         ))}
-                        {provider.specialties.length > 2 && (
-                          <span className="text-xs text-gray-500">+{provider.specialties.length - 2}</span>
-                        )}
                       </div>
                     )}
 
-                    {/* Note et statistiques */}
-                    <div className="mt-auto space-y-2">
-                      <div className="flex items-center gap-1">
-                        <StarIconSolid className="h-4 w-4 text-yellow-400" />
-                        <span className="text-sm font-medium text-gray-900">
-                          {rating.toFixed(1)}
-                        </span>
-                        {provider.totalBookings > 0 && (
-                          <span className="text-xs text-gray-500 ml-1">
-                            ({provider.totalBookings} réservation{provider.totalBookings > 1 ? 's' : ''})
-                          </span>
-                        )}
-                      </div>
-
+                    {/* Stats */}
+                    <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
+                      <span>{provider.totalBookings} RDV</span>
                       {provider.experience && (
-                        <p className="text-xs text-gray-600">
-                          {provider.experience} an{provider.experience > 1 ? 's' : ''} d'expérience
-                        </p>
+                        <span>{provider.experience} an{provider.experience > 1 ? 's' : ''} d'exp.</span>
                       )}
-
-                      {provider.servicesCount > 0 && (
-                        <p className="text-xs text-gray-600">
-                          {provider.servicesCount} service{provider.servicesCount > 1 ? 's' : ''} disponible{provider.servicesCount > 1 ? 's' : ''}
-                        </p>
-                      )}
+                      <span>{provider.servicesCount} service{provider.servicesCount > 1 ? 's' : ''}</span>
                     </div>
                   </div>
                 </Link>
@@ -260,6 +325,38 @@ export default function PrestatairesPage() {
           </div>
         )}
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      {!isAuthenticated && (
+        <>
+          <div className="h-20 md:hidden" />
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+            <div className="flex items-center justify-around h-16 px-2">
+              {[
+                { href: '/', label: 'Accueil', emoji: '🏠' },
+                { href: '/products', label: 'Produits', emoji: '🛍️' },
+                { href: '/services', label: 'Services', emoji: '💇‍♀️' },
+                { href: '/lookbook', label: 'Lookbook', emoji: '✨' },
+                { href: '/prestataires', label: 'Coiffeuses', emoji: '👩‍🦰', active: true },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex flex-col items-center justify-center flex-1 py-2 relative ${
+                    item.active ? 'text-teal-600' : 'text-gray-500'
+                  }`}
+                >
+                  {item.active && (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-teal-600 rounded-full" />
+                  )}
+                  <span className={`text-xl ${item.active ? 'scale-110' : ''}`}>{item.emoji}</span>
+                  <span className="text-[10px] mt-1 font-medium">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </nav>
+        </>
+      )}
     </div>
   );
 }
