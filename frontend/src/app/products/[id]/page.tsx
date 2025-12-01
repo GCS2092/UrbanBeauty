@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
@@ -10,6 +10,7 @@ import { useCartStore } from '@/store/cart.store';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
+import ReviewSection from '@/components/shared/ReviewSection';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -153,6 +154,9 @@ export default function ProductDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Section Avis */}
+        <ReviewSection productId={productId} itemName={product.name} />
       </div>
     </div>
   );

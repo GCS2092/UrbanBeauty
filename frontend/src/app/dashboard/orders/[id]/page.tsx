@@ -1,13 +1,15 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { ArrowLeftIcon, TruckIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, TruckIcon, CheckCircleIcon, XCircleIcon, StarIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { useOrder, useUpdateOrder } from '@/hooks/useOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
+import { useCreateReview } from '@/hooks/useReviews';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { formatCurrency, formatCurrencyDual, getSelectedCurrency, getCurrencyForRole } from '@/utils/currency';
@@ -15,9 +17,11 @@ import Image from 'next/image';
 
 function OrderDetailContent() {
   const params = useParams();
+  const router = useRouter();
   const orderId = typeof params?.id === 'string' ? params.id : '';
   const { data: order, isLoading, error } = useOrder(orderId);
   const { mutate: updateOrder, isPending: isUpdating } = useUpdateOrder();
+  const { mutate: createReview, isPending: isReviewing } = useCreateReview();
   const { user } = useAuth();
   const notifications = useNotifications();
   
@@ -25,10 +29,36 @@ function OrderDetailContent() {
   // Pour les clients : leur devise choisie
   const currency = getCurrencyForRole(user?.role);
   const isSellerOrAdmin = user?.role === 'ADMIN' || user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE';
+  const isClient = user?.role === 'CLIENT';
   
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState<string>('');
   const [trackingNumber, setTrackingNumber] = useState<string>('');
+  
+  // Review state
+  const [reviewingProductId, setReviewingProductId] = useState<string | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewHover, setReviewHover] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+
+  const handleSubmitReview = () => {
+    if (reviewRating === 0 || !reviewingProductId) return;
+    
+    createReview(
+      { rating: reviewRating, comment: reviewComment || undefined, productId: reviewingProductId },
+      {
+        onSuccess: () => {
+          notifications.success('Merci !', 'Votre avis a été publié');
+          setReviewingProductId(null);
+          setReviewRating(0);
+          setReviewComment('');
+        },
+        onError: (err: any) => {
+          notifications.error('Erreur', err?.response?.data?.message || 'Erreur lors de la publication');
+        },
+      }
+    );
+  };
 
   const canUpdateStatus = user?.role === 'ADMIN' || user?.role === 'VENDEUSE';
   
@@ -176,29 +206,93 @@ function OrderDetailContent() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Articles</h2>
           <div className="space-y-4">
             {order.items.map((item) => (
-              <div key={item.id} className="flex items-center gap-4 pb-4 border-b border-gray-200 last:border-0 last:pb-0">
-                {item.product?.images?.[0]?.url ? (
-                  <div className="relative h-16 w-16 rounded-lg overflow-hidden flex-shrink-0">
-                    <Image
-                      src={item.product.images[0].url}
-                      alt={item.product.name || 'Produit'}
-                      fill
-                      className="object-cover"
-                    />
+              <div key={item.id} className="pb-4 border-b border-gray-200 last:border-0 last:pb-0">
+                <div className="flex items-center gap-4">
+                  {item.product?.images?.[0]?.url ? (
+                    <div className="relative h-16 w-16 rounded-lg overflow-hidden flex-shrink-0">
+                      <Image
+                        src={item.product.images[0].url}
+                        alt={item.product.name || 'Produit'}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-16 w-16 bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-2xl">✨</span>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">{item.product?.name || 'Produit'}</h3>
+                    <p className="text-sm text-gray-600">Quantité : {item.quantity}</p>
                   </div>
-                ) : (
-                  <div className="h-16 w-16 bg-gradient-to-br from-pink-100 to-rose-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-2xl">✨</span>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">{displayPrice(item.price * item.quantity)}</p>
+                    <p className="text-sm text-gray-600">{formatCurrency(item.price, 'XOF')} l'unité</p>
+                  </div>
+                </div>
+                
+                {/* Bouton Laisser un avis - Seulement pour commandes livrées et clients */}
+                {order.status === 'DELIVERED' && isClient && item.productId && (
+                  <div className="mt-3">
+                    {reviewingProductId === item.productId ? (
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex gap-1 mb-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setReviewRating(star)}
+                              onMouseEnter={() => setReviewHover(star)}
+                              onMouseLeave={() => setReviewHover(0)}
+                              className="transition-transform hover:scale-110"
+                            >
+                              {star <= (reviewHover || reviewRating) ? (
+                                <StarIconSolid className="h-6 w-6 text-yellow-400" />
+                              ) : (
+                                <StarIcon className="h-6 w-6 text-gray-300" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          placeholder="Votre commentaire (optionnel)"
+                          rows={2}
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 resize-none"
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => {
+                              setReviewingProductId(null);
+                              setReviewRating(0);
+                              setReviewComment('');
+                            }}
+                            className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            onClick={handleSubmitReview}
+                            disabled={reviewRating === 0 || isReviewing}
+                            className="px-3 py-1.5 text-sm bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+                          >
+                            {isReviewing ? '...' : 'Publier'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setReviewingProductId(item.productId!)}
+                        className="inline-flex items-center gap-1.5 text-sm text-pink-600 hover:text-pink-700 font-medium"
+                      >
+                        <StarIcon className="h-4 w-4" />
+                        Laisser un avis
+                      </button>
+                    )}
                   </div>
                 )}
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{item.product?.name || 'Produit'}</h3>
-                  <p className="text-sm text-gray-600">Quantité : {item.quantity}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900">{displayPrice(item.price * item.quantity)}</p>
-                  <p className="text-sm text-gray-600">{formatCurrency(item.price, 'XOF')} l'unité</p>
-                </div>
               </div>
             ))}
           </div>

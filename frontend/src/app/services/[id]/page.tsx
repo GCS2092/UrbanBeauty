@@ -13,6 +13,7 @@ import { useNotifications } from '@/components/admin/NotificationProvider';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
 import { useQuery } from '@tanstack/react-query';
 import { bookingsService } from '@/services/bookings.service';
+import ReviewSection from '@/components/shared/ReviewSection';
 
 function ServiceDetailContent() {
   const params = useParams();
@@ -378,6 +379,9 @@ function ServiceDetailContent() {
               )}
           </div>
         </div>
+
+        {/* Section Avis */}
+        <ReviewSection serviceId={serviceId} itemName={service.name} />
       </div>
     </div>
   );

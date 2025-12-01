@@ -2,10 +2,12 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeftIcon, CheckCircleIcon, XCircleIcon, ClockIcon, CalendarIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, CheckCircleIcon, XCircleIcon, ClockIcon, CalendarIcon, MapPinIcon, StarIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { useBooking, useUpdateBooking } from '@/hooks/useBookings';
 import { useAuth } from '@/hooks/useAuth';
+import { useCreateReview } from '@/hooks/useReviews';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
@@ -18,12 +20,39 @@ function BookingDetailContent() {
   const { data: booking, isLoading, error } = useBooking(bookingId);
   const { user } = useAuth();
   const { mutate: updateBooking } = useUpdateBooking();
+  const { mutate: createReview, isPending: isReviewing } = useCreateReview();
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Review state
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewHover, setReviewHover] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
 
   const isProvider = user?.role === 'COIFFEUSE';
+  const isClient = user?.role === 'CLIENT';
   const canEdit = isProvider || user?.role === 'ADMIN';
+
+  const handleSubmitReview = () => {
+    if (reviewRating === 0 || !booking?.serviceId) return;
+    
+    createReview(
+      { rating: reviewRating, comment: reviewComment || undefined, serviceId: booking.serviceId },
+      {
+        onSuccess: () => {
+          notifications.success('Merci !', 'Votre avis a été publié');
+          setShowReviewForm(false);
+          setReviewRating(0);
+          setReviewComment('');
+        },
+        onError: (err: any) => {
+          notifications.error('Erreur', err?.response?.data?.message || 'Erreur lors de la publication');
+        },
+      }
+    );
+  };
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -277,7 +306,7 @@ function BookingDetailContent() {
 
         {/* Informations de paiement */}
         {booking.payment && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Paiement</h2>
             <div className="space-y-2 text-sm">
               <p className="text-gray-600">
@@ -288,6 +317,89 @@ function BookingDetailContent() {
                 {formatCurrency(booking.payment.amount, currency)}
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Section Avis - Pour les clients après réservation terminée */}
+        {booking.status === 'COMPLETED' && isClient && booking.serviceId && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Donner votre avis</h2>
+            
+            {!showReviewForm ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  Comment s'est passé votre rendez-vous avec {booking.service?.provider?.firstName || 'le prestataire'} ?
+                </p>
+                <button
+                  onClick={() => setShowReviewForm(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-full font-medium hover:bg-gray-800 transition-colors"
+                >
+                  <StarIcon className="h-5 w-5" />
+                  Laisser un avis
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Stars */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Note *</label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        onMouseEnter={() => setReviewHover(star)}
+                        onMouseLeave={() => setReviewHover(0)}
+                        className="p-1 transition-transform hover:scale-110"
+                      >
+                        {star <= (reviewHover || reviewRating) ? (
+                          <StarIconSolid className="h-8 w-8 text-yellow-400" />
+                        ) : (
+                          <StarIcon className="h-8 w-8 text-gray-300" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Comment */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Commentaire (optionnel)
+                  </label>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    rows={3}
+                    placeholder="Partagez votre expérience..."
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 resize-none"
+                  />
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReviewForm(false);
+                      setReviewRating(0);
+                      setReviewComment('');
+                    }}
+                    className="px-4 py-2.5 border border-gray-200 rounded-full text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleSubmitReview}
+                    disabled={reviewRating === 0 || isReviewing}
+                    className="px-6 py-2.5 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  >
+                    {isReviewing ? 'Publication...' : 'Publier mon avis'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
