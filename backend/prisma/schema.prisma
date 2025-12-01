@@ -60,6 +60,7 @@ model User {
   password           String
   role               Role     @default(CLIENT)
   isActive           Boolean  @default(true) // Pour bloquer/débloquer les utilisateurs
+  blockReason        String? // Message expliquant le motif du blocage
   mustChangePassword Boolean  @default(false) // Pour forcer le changement de mot de passe à la première connexion
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -147,30 +148,30 @@ model Product {
 }
 
 model Service {
-  id                 String    @id @default(uuid())
+  id                 String     @id @default(uuid())
   name               String
-  slug               String    @unique
+  slug               String     @unique
   description        String?
   price              Float
   duration           Int // en minutes
   category           String? // Catégorie de service (ex: "Tresses", "Locks", "Pose perruque")
-  available          Boolean   @default(true)
+  available          Boolean    @default(true)
   maxBookingsPerDay  Int? // Nombre max de réservations/jour
   advanceBookingDays Int? // Jours à l'avance pour réserver
-  views              Int       @default(0)
-  bookingsCount      Int       @default(0)
+  views              Int        @default(0)
+  bookingsCount      Int        @default(0)
   rating             Float? // Note moyenne calculée (alias pour averageRating)
   averageRating      Float? // Note moyenne calculée
-  reviewCount        Int       @default(0) // Nombre d'avis
-  isFeatured         Boolean   @default(false)
+  reviewCount        Int        @default(0) // Nombre d'avis
+  isFeatured         Boolean    @default(false)
   providerId         String
-  provider           Profile   @relation(fields: [providerId], references: [id])
+  provider           Profile    @relation(fields: [providerId], references: [id])
   bookings           Booking[]
   reviews            Review[]
   images             Image[]
   favorites          Favorite[]
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 }
 
 model Image {
@@ -447,9 +448,9 @@ model QuickReply {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String   // Ex: "Salutations", "Prix", "Disponibilités"
-  content   String   // Le message complet
-  shortcut  String?  // Ex: "/hello", "/prix"
+  title     String // Ex: "Salutations", "Prix", "Disponibilités"
+  content   String // Le message complet
+  shortcut  String? // Ex: "/hello", "/prix"
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -459,19 +460,19 @@ model QuickReply {
 
 // Adresses de livraison sauvegardées (clients)
 model ShippingAddress {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  label       String   // Ex: "Maison", "Bureau", "Chez maman"
-  fullName    String   // Nom complet du destinataire
-  phone       String?  // Téléphone
-  address     String   // Adresse complète
-  city        String   // Ville
-  postalCode  String?  // Code postal
-  country     String   @default("Cameroun")
-  isDefault   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String // Ex: "Maison", "Bureau", "Chez maman"
+  fullName   String // Nom complet du destinataire
+  phone      String? // Téléphone
+  address    String // Adresse complète
+  city       String // Ville
+  postalCode String? // Code postal
+  country    String   @default("Cameroun")
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([userId])
 }

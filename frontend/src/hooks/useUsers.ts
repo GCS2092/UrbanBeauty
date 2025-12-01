@@ -45,8 +45,8 @@ export function useUpdateUserStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      usersService.updateStatus(id, isActive),
+    mutationFn: ({ id, isActive, blockReason }: { id: string; isActive: boolean; blockReason?: string }) =>
+      usersService.updateStatus(id, isActive, blockReason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },

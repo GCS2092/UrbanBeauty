@@ -122,12 +122,15 @@ export class UsersService {
     });
   }
 
-  async updateStatus(id: string, isActive: boolean) {
+  async updateStatus(id: string, isActive: boolean, blockReason?: string) {
     const user = await this.findOne(id);
 
     return this.prisma.user.update({
       where: { id },
-      data: { isActive },
+      data: { 
+        isActive,
+        blockReason: isActive ? null : (blockReason || null), // Effacer le message si débloqué
+      },
       include: {
         profile: true,
       },

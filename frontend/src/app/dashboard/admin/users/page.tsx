@@ -10,6 +10,9 @@ import { useNotifications } from '@/components/admin/NotificationProvider';
 function AdminUsersContent() {
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [userToBlock, setUserToBlock] = useState<{ id: string; name: string } | null>(null);
+  const [blockReason, setBlockReason] = useState('');
   const [createForm, setCreateForm] = useState({
     email: '',
     password: '',
@@ -51,18 +54,42 @@ function AdminUsersContent() {
     });
   };
 
-  const handleToggleStatus = (userId: string, currentStatus: boolean) => {
+  const handleToggleStatus = (userId: string, currentStatus: boolean, userName: string) => {
+    // Si on veut bloquer, ouvrir le modal pour saisir le message
+    if (currentStatus) {
+      setUserToBlock({ id: userId, name: userName });
+      setBlockReason('');
+      setShowBlockModal(true);
+    } else {
+      // Si on veut débloquer, procéder directement
+      updateStatus(
+        { id: userId, isActive: true },
+        {
+          onSuccess: () => {
+            notifications.success('Utilisateur débloqué', 'L\'utilisateur a été débloqué avec succès');
+          },
+          onError: (error: any) => {
+            notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la modification');
+          },
+        }
+      );
+    }
+  };
+
+  const handleConfirmBlock = () => {
+    if (!userToBlock) return;
+    
     updateStatus(
-      { id: userId, isActive: !currentStatus },
+      { id: userToBlock.id, isActive: false, blockReason: blockReason.trim() || undefined },
       {
         onSuccess: () => {
-          notifications.success(
-            currentStatus ? 'Utilisateur bloqué' : 'Utilisateur débloqué',
-            `L'utilisateur a été ${currentStatus ? 'bloqué' : 'débloqué'} avec succès`
-          );
+          notifications.success('Utilisateur bloqué', 'L\'utilisateur a été bloqué avec succès');
+          setShowBlockModal(false);
+          setUserToBlock(null);
+          setBlockReason('');
         },
         onError: (error: any) => {
-          notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la modification');
+          notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors du blocage');
         },
       }
     );
@@ -82,23 +109,23 @@ function AdminUsersContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <Link
           href="/dashboard/admin"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-pink-600 mb-8"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-pink-600 mb-4 sm:mb-6"
         >
           <ArrowLeftIcon className="h-4 w-4 mr-2" />
           Retour à l'administration
         </Link>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+              className="px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white"
             >
               <option value="">Tous les rôles</option>
               <option value="CLIENT">Clients</option>
@@ -108,10 +135,11 @@ function AdminUsersContent() {
             </select>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors active:scale-[0.98] text-sm sm:text-base"
             >
-              <PlusIcon className="h-5 w-5" />
-              Créer un utilisateur
+              <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Créer un utilisateur</span>
+              <span className="sm:hidden">Créer</span>
             </button>
           </div>
         </div>
@@ -130,7 +158,7 @@ function AdminUsersContent() {
         )}
 
         {/* Tableau des utilisateurs */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -189,11 +217,18 @@ function AdminUsersContent() {
                         <span className="text-sm text-gray-900">{user.profile?.phone || 'N/A'}</span>
                       </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          user.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {user.isActive !== false ? 'Actif' : 'Bloqué'}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            user.isActive !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {user.isActive !== false ? 'Actif' : 'Bloqué'}
+                          </span>
+                          {user.blockReason && (
+                            <span className="text-xs text-gray-500 max-w-[200px] truncate" title={user.blockReason}>
+                              {user.blockReason}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-1 sm:space-x-2">
@@ -232,7 +267,7 @@ function AdminUsersContent() {
                           </select>
                           <button
                             className={user.isActive !== false ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}
-                            onClick={() => handleToggleStatus(user.id, user.isActive !== false)}
+                            onClick={() => handleToggleStatus(user.id, user.isActive !== false, `${user.profile?.firstName} ${user.profile?.lastName}` || user.email)}
                             title={user.isActive !== false ? 'Bloquer' : 'Débloquer'}
                           >
                             {user.isActive !== false ? (
@@ -261,8 +296,8 @@ function AdminUsersContent() {
 
       {/* Modal de création */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-gray-900">Créer un utilisateur</h2>
               <button
@@ -359,6 +394,65 @@ function AdminUsersContent() {
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCreating ? 'Création...' : 'Créer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de blocage */}
+      {showBlockModal && userToBlock && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Bloquer l'utilisateur</h2>
+              <button
+                onClick={() => {
+                  setShowBlockModal(false);
+                  setUserToBlock(null);
+                  setBlockReason('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Vous êtes sur le point de bloquer <span className="font-semibold">{userToBlock.name}</span>.
+              </p>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Motif du blocage <span className="text-gray-500">(optionnel mais recommandé)</span>
+              </label>
+              <textarea
+                value={blockReason}
+                onChange={(e) => setBlockReason(e.target.value)}
+                placeholder="Ex: Comportement inapproprié, violation des règles, etc."
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Ce message sera visible par l'utilisateur lorsqu'il tentera de se connecter.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowBlockModal(false);
+                  setUserToBlock(null);
+                  setBlockReason('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmBlock}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+              >
+                Bloquer
               </button>
             </div>
           </div>

@@ -10,21 +10,36 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let app: FirebaseApp;
+let app: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
 
 if (typeof window !== 'undefined') {
-  if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
+  // Vérifier que toutes les variables d'environnement sont définies
+  const hasAllConfig = firebaseConfig.apiKey && 
+                       firebaseConfig.authDomain && 
+                       firebaseConfig.projectId && 
+                       firebaseConfig.appId;
+
+  if (hasAllConfig) {
+    if (!getApps().length) {
+      try {
+        app = initializeApp(firebaseConfig);
+      } catch (error) {
+        console.error('Error initializing Firebase:', error);
+        app = null;
+      }
+    } else {
+      app = getApps()[0];
+    }
   } else {
-    app = getApps()[0];
+    console.warn('Firebase configuration is incomplete. Some features may not work.');
   }
 
   // Initialiser messaging de manière synchrone si possible
   // Sinon, l'initialiser de manière asynchrone
-  if ('serviceWorker' in navigator) {
+  if (app && 'serviceWorker' in navigator) {
     isSupported().then((supported) => {
-      if (supported && !messaging) {
+      if (supported && !messaging && app) {
         try {
           messaging = getMessaging(app);
           console.log('Firebase Messaging initialized');
@@ -39,6 +54,11 @@ if (typeof window !== 'undefined') {
 }
 
 export { app, messaging };
+
+// Export une fonction pour vérifier si Firebase est configuré
+export function isFirebaseConfigured(): boolean {
+  return !!app && !!firebaseConfig.appId;
+}
 
 // Fonction pour enregistrer le service worker
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {

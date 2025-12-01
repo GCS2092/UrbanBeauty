@@ -45,7 +45,7 @@ export class UsersController {
 
   @Patch(':id/status')
   updateStatus(@Param('id') id: string, @Body() updateStatusDto: UpdateUserStatusDto) {
-    return this.usersService.updateStatus(id, updateStatusDto.isActive);
+    return this.usersService.updateStatus(id, updateStatusDto.isActive, updateStatusDto.blockReason);
   }
 
   @Delete(':id')

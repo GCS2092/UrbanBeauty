@@ -32,23 +32,21 @@ function AdminServicesContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <Link
-            href="/dashboard/admin"
-            className="inline-flex items-center text-sm text-gray-600 hover:text-pink-600"
-          >
-            <ArrowLeftIcon className="h-4 w-4 mr-2" />
-            Retour à l'administration
-          </Link>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <Link
+          href="/dashboard/admin"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-pink-600 mb-4 sm:mb-6"
+        >
+          <ArrowLeftIcon className="h-4 w-4 mr-2" />
+          Retour à l'administration
+        </Link>
 
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Gestion des Services</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-6 sm:mb-8">Gestion des Services</h1>
 
         {/* Tableau des services */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>

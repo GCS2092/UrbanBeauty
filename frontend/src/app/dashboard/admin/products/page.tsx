@@ -41,9 +41,9 @@ function AdminProductsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <Link
             href="/dashboard/admin"
             className="inline-flex items-center text-sm text-gray-600 hover:text-pink-600"
@@ -53,18 +53,19 @@ function AdminProductsContent() {
           </Link>
           <Link
             href="/dashboard/admin/products/new"
-            className="inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 transition-colors"
+            className="inline-flex items-center px-3 sm:px-4 py-2 bg-pink-600 text-white rounded-lg font-medium hover:bg-pink-700 transition-colors active:scale-[0.98] text-sm sm:text-base"
           >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Nouveau produit
+            <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+            <span className="hidden sm:inline">Nouveau produit</span>
+            <span className="sm:hidden">Nouveau</span>
           </Link>
         </div>
 
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Gestion des Produits</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-6 sm:mb-8">Gestion des Produits</h1>
 
         {/* Tableau des produits */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>

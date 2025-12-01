@@ -5,6 +5,7 @@ export interface User {
   email: string;
   role: 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN';
   isActive?: boolean;
+  blockReason?: string; // Message expliquant le motif du blocage
   profile?: {
     id: string;
     firstName: string;
@@ -31,6 +32,7 @@ export interface CreateUserDto {
 
 export interface UpdateUserStatusDto {
   isActive: boolean;
+  blockReason?: string; // Message expliquant le motif du blocage
 }
 
 export const usersService = {
@@ -55,8 +57,8 @@ export const usersService = {
     return response.data;
   },
 
-  updateStatus: async (id: string, isActive: boolean): Promise<User> => {
-    const response = await api.patch<User>(`/api/users/${id}/status`, { isActive });
+  updateStatus: async (id: string, isActive: boolean, blockReason?: string): Promise<User> => {
+    const response = await api.patch<User>(`/api/users/${id}/status`, { isActive, blockReason });
     return response.data;
   },
 
