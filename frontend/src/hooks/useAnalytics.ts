@@ -33,6 +33,12 @@ export interface ProviderAnalytics {
       bookingsCount: number;
       revenue: number;
     } | null;
+    topServices: Array<{
+      id: string;
+      name: string;
+      bookingsCount: number;
+      revenue: number;
+    }>;
   };
   chartData: {
     last7Days: Array<{
@@ -77,6 +83,12 @@ export interface SellerAnalytics {
       salesCount: number;
       revenue: number;
     } | null;
+    topProducts: Array<{
+      id: string;
+      name: string;
+      salesCount: number;
+      revenue: number;
+    }>;
   };
   chartData: {
     last7Days: Array<{

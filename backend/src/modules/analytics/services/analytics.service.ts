@@ -93,6 +93,12 @@ export interface ProviderAnalytics {
       bookingsCount: number;
       revenue: number;
     } | null;
+    topServices: Array<{
+      id: string;
+      name: string;
+      bookingsCount: number;
+      revenue: number;
+    }>;
   };
   chartData: {
     last7Days: Array<{
@@ -136,6 +142,12 @@ export interface SellerAnalytics {
       salesCount: number;
       revenue: number;
     } | null;
+    topProducts: Array<{
+      id: string;
+      name: string;
+      salesCount: number;
+      revenue: number;
+    }>;
   };
   chartData: {
     last7Days: Array<{
@@ -266,7 +278,7 @@ export class AnalyticsService {
         : 0;
     const totalReviews = services.reduce((sum, s) => sum + (s._count?.reviews || 0), 0);
 
-    // Top service
+    // Top services (top 5)
     const servicesWithRevenue = services.map((s) => {
       const serviceBookings = allBookings.filter(
         (b) => b.serviceId === s.id && b.status === 'COMPLETED'
@@ -279,10 +291,9 @@ export class AnalyticsService {
         revenue,
       };
     });
-    const topService =
-      servicesWithRevenue.length > 0
-        ? servicesWithRevenue.sort((a, b) => b.revenue - a.revenue)[0]
-        : null;
+    const sortedServices = servicesWithRevenue.sort((a, b) => b.bookingsCount - a.bookingsCount);
+    const topService = sortedServices.length > 0 ? sortedServices[0] : null;
+    const topServices = sortedServices.slice(0, 5);
 
     // === DONNÉES GRAPHIQUE (7 derniers jours) ===
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -328,6 +339,7 @@ export class AnalyticsService {
         averageRating,
         totalReviews,
         topService,
+        topServices,
       },
       chartData: {
         last7Days,
@@ -473,7 +485,7 @@ export class AnalyticsService {
         : 0;
     const totalReviews = products.reduce((sum, p) => sum + (p._count?.reviews || 0), 0);
 
-    // Top produit
+    // Top produits (top 5)
     const productsWithRevenue = products.map((p) => {
       const productItems = orderItems.filter(
         (item) => item.productId === p.id && completedStatuses.includes(item.order.status)
@@ -487,10 +499,9 @@ export class AnalyticsService {
         revenue,
       };
     });
-    const topProduct =
-      productsWithRevenue.length > 0
-        ? productsWithRevenue.sort((a, b) => b.revenue - a.revenue)[0]
-        : null;
+    const sortedProducts = productsWithRevenue.sort((a, b) => b.salesCount - a.salesCount);
+    const topProduct = sortedProducts.length > 0 ? sortedProducts[0] : null;
+    const topProducts = sortedProducts.slice(0, 5);
 
     // === DONNÉES GRAPHIQUE (7 derniers jours) ===
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -540,6 +551,7 @@ export class AnalyticsService {
         averageRating,
         totalReviews,
         topProduct,
+        topProducts,
       },
       chartData: {
         last7Days,
@@ -574,6 +586,7 @@ export class AnalyticsService {
         averageRating: 0,
         totalReviews: 0,
         topService: null,
+        topServices: [],
       },
       chartData: {
         last7Days: [],

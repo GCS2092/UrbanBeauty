@@ -312,6 +312,43 @@ function DashboardContent() {
                 </Link>
               </div>
             </div>
+
+            {/* Top Services - Services les plus demandés */}
+            {providerAnalytics?.services.topServices && providerAnalytics.services.topServices.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                    <ChartBarIcon className="h-5 w-5 text-pink-600" />
+                    Services populaires
+                  </h2>
+                  <Link href="/dashboard/analytics" className="text-xs text-pink-600 font-medium">
+                    Voir plus →
+                  </Link>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {providerAnalytics.services.topServices.slice(0, 3).map((service, index) => (
+                    <div key={service.id} className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                          index === 0 ? 'bg-yellow-100 text-yellow-700' :
+                          index === 1 ? 'bg-gray-100 text-gray-600' :
+                          'bg-orange-100 text-orange-600'
+                        }`}>
+                          {index + 1}
+                        </span>
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{service.name}</p>
+                          <p className="text-xs text-gray-500">{service.bookingsCount} réservation(s)</p>
+                        </div>
+                      </div>
+                      <p className="text-sm font-semibold text-green-600">
+                        {formatCurrency(service.revenue, 'XOF')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -485,6 +522,72 @@ function DashboardContent() {
                 </Link>
               </div>
             </div>
+
+            {/* Alerte Stock Bas */}
+            {sellerAnalytics && (sellerAnalytics.products.lowStock > 0 || sellerAnalytics.products.outOfStock > 0) && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-100 rounded-xl">
+                    <ExclamationCircleIcon className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-red-900">Alerte stock</p>
+                    <p className="text-sm text-red-600">
+                      {sellerAnalytics.products.outOfStock > 0 && (
+                        <span>{sellerAnalytics.products.outOfStock} rupture(s)</span>
+                      )}
+                      {sellerAnalytics.products.outOfStock > 0 && sellerAnalytics.products.lowStock > 0 && ' • '}
+                      {sellerAnalytics.products.lowStock > 0 && (
+                        <span>{sellerAnalytics.products.lowStock} stock bas</span>
+                      )}
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/products"
+                    className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg"
+                  >
+                    Gérer
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Top Produits - Produits les plus vendus */}
+            {sellerAnalytics?.products.topProducts && sellerAnalytics.products.topProducts.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                    <ChartBarIcon className="h-5 w-5 text-blue-600" />
+                    Produits populaires
+                  </h2>
+                  <Link href="/dashboard/analytics" className="text-xs text-blue-600 font-medium">
+                    Voir plus →
+                  </Link>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {sellerAnalytics.products.topProducts.slice(0, 3).map((product, index) => (
+                    <div key={product.id} className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                          index === 0 ? 'bg-yellow-100 text-yellow-700' :
+                          index === 1 ? 'bg-gray-100 text-gray-600' :
+                          'bg-orange-100 text-orange-600'
+                        }`}>
+                          {index + 1}
+                        </span>
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{product.name}</p>
+                          <p className="text-xs text-gray-500">{product.salesCount} vendu(s)</p>
+                        </div>
+                      </div>
+                      <p className="text-sm font-semibold text-green-600">
+                        {formatCurrency(product.revenue, 'XOF')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
 
