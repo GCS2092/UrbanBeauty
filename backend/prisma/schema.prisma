@@ -78,6 +78,7 @@ model User {
   notifications     Notification[] // Notifications reçues
   favorites         Favorite[] // Produits et services favoris
   quickReplies      QuickReply[] // Réponses rapides pour le chat
+  shippingAddresses ShippingAddress[] // Adresses de livraison sauvegardées
 }
 
 model Profile {
@@ -452,6 +453,25 @@ model QuickReply {
   order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Adresses de livraison sauvegardées (clients)
+model ShippingAddress {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label       String   // Ex: "Maison", "Bureau", "Chez maman"
+  fullName    String   // Nom complet du destinataire
+  phone       String?  // Téléphone
+  address     String   // Adresse complète
+  city        String   // Ville
+  postalCode  String?  // Code postal
+  country     String   @default("Cameroun")
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([userId])
 }

@@ -27,6 +27,7 @@ import {
   ArrowTrendingDownIcon,
   HeartIcon,
   BoltIcon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
 import NotificationsPanel from '@/components/dashboard/NotificationsPanel';
 import { useFavoritesCount } from '@/hooks/useFavorites';
@@ -415,11 +416,11 @@ function DashboardContent() {
                   <span className="text-sm font-semibold">Mes Favoris</span>
                 </Link>
                 <Link
-                  href="/products"
-                  className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl text-white shadow-md active:scale-[0.98] transition-transform touch-manipulation"
+                  href="/dashboard/addresses"
+                  className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl text-white shadow-md active:scale-[0.98] transition-transform touch-manipulation"
                 >
-                  <CubeIcon className="h-8 w-8 mb-2" />
-                  <span className="text-sm font-semibold">Explorer</span>
+                  <MapPinIcon className="h-8 w-8 mb-2" />
+                  <span className="text-sm font-semibold">Mes Adresses</span>
                 </Link>
               </div>
             </div>

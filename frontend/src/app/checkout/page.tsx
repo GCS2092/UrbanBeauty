@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeftIcon, TagIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, TagIcon, CreditCardIcon, MapPinIcon, PlusIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart.store';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { useCreateOrder } from '@/hooks/useOrders';
+import { useShippingAddresses } from '@/hooks/useShippingAddresses';
 import { couponsService } from '@/services/coupons.service';
 import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
 
@@ -19,6 +20,11 @@ function CheckoutContent() {
   const { mutate: createOrder, isPending: isSubmitting } = useCreateOrder();
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
+
+  // Adresses sauvegardées (clients connectés uniquement)
+  const { data: savedAddresses = [] } = useShippingAddresses();
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showAddressSelector, setShowAddressSelector] = useState(false);
 
   // Rediriger les admins (ils ne peuvent pas commander)
   useEffect(() => {
@@ -55,6 +61,31 @@ function CheckoutContent() {
       }));
     }
   }, [user]);
+
+  // Sélectionner automatiquement l'adresse par défaut
+  useEffect(() => {
+    if (savedAddresses.length > 0 && !selectedAddressId) {
+      const defaultAddr = savedAddresses.find(a => a.isDefault);
+      if (defaultAddr) {
+        applyAddress(defaultAddr.id);
+      }
+    }
+  }, [savedAddresses]);
+
+  // Appliquer une adresse sauvegardée
+  const applyAddress = (addressId: string) => {
+    const addr = savedAddresses.find(a => a.id === addressId);
+    if (addr) {
+      setSelectedAddressId(addressId);
+      setFormData(prev => ({
+        ...prev,
+        customerName: addr.fullName,
+        customerPhone: addr.phone || prev.customerPhone,
+        shippingAddress: `${addr.address}, ${addr.city}${addr.postalCode ? `, ${addr.postalCode}` : ''}, ${addr.country}`,
+      }));
+      setShowAddressSelector(false);
+    }
+  };
 
   const subtotal = getTotal();
   const shipping = subtotal > 50 ? 0 : 5.99;
@@ -165,6 +196,78 @@ function CheckoutContent() {
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Informations de livraison</h2>
                 
+                {/* Sélecteur d'adresse sauvegardée */}
+                {isAuthenticated && savedAddresses.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                        <MapPinIcon className="h-4 w-4 text-pink-600" />
+                        Adresses enregistrées
+                      </span>
+                      <Link 
+                        href="/dashboard/addresses" 
+                        className="text-xs text-pink-600 hover:underline flex items-center gap-1"
+                      >
+                        <PlusIcon className="h-3 w-3" />
+                        Gérer
+                      </Link>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {savedAddresses.slice(0, 4).map((addr) => (
+                        <button
+                          key={addr.id}
+                          type="button"
+                          onClick={() => applyAddress(addr.id)}
+                          className={`text-left p-3 rounded-xl border-2 transition-colors ${
+                            selectedAddressId === addr.id
+                              ? 'border-pink-500 bg-pink-50'
+                              : 'border-gray-200 hover:border-pink-300'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-medium text-gray-900 text-sm flex items-center gap-1">
+                                {addr.label}
+                                {addr.isDefault && (
+                                  <span className="text-[10px] px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded">
+                                    Défaut
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-0.5">{addr.fullName}</p>
+                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{addr.address}</p>
+                            </div>
+                            {selectedAddressId === addr.id && (
+                              <CheckCircleIcon className="h-5 w-5 text-pink-600 flex-shrink-0" />
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {savedAddresses.length > 4 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAddressSelector(true)}
+                        className="w-full mt-2 text-xs text-pink-600 hover:underline"
+                      >
+                        Voir les {savedAddresses.length - 4} autres adresses
+                      </button>
+                    )}
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <p className="text-xs text-gray-500">ou remplissez manuellement ci-dessous</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lien pour ajouter une adresse si connecté mais pas d'adresses */}
+                {isAuthenticated && savedAddresses.length === 0 && (
+                  <div className="mb-4 p-3 bg-pink-50 rounded-xl">
+                    <p className="text-sm text-pink-800">
+                      💡 <Link href="/dashboard/addresses" className="font-medium underline">Enregistrez vos adresses</Link> pour commander plus rapidement
+                    </p>
+                  </div>
+                )}
+                
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -174,7 +277,10 @@ function CheckoutContent() {
                       type="text"
                       required
                       value={formData.customerName}
-                      onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, customerName: e.target.value });
+                        setSelectedAddressId(null); // Désélectionner si modification manuelle
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
                     />
                   </div>
@@ -214,7 +320,10 @@ function CheckoutContent() {
                       required
                       rows={3}
                       value={formData.shippingAddress}
-                      onChange={(e) => setFormData({ ...formData, shippingAddress: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, shippingAddress: e.target.value });
+                        setSelectedAddressId(null); // Désélectionner si modification manuelle
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-600 focus:border-transparent"
                       placeholder="Rue, numéro, code postal, ville"
                     />
