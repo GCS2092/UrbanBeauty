@@ -335,7 +335,7 @@ function ProviderProfileContent() {
         {provider.portfolio.length > 0 && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Portfolio</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {provider.portfolio.map((image) => (
                 <div
                   key={image.id}
@@ -345,8 +345,8 @@ function ProviderProfileContent() {
                     src={image.url}
                     alt={image.alt || image.title || 'Portfolio'}
                     fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 640px) 50vw, 50vw"
                   />
                 </div>
               ))}
