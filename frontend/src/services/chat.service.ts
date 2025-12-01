@@ -5,6 +5,7 @@ export interface Conversation {
   otherParticipant: {
     id: string;
     email: string;
+    role?: string;
     profile?: {
       firstName: string;
       lastName: string;

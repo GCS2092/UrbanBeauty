@@ -37,9 +37,18 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" aria-label="Top">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
+          {/* Logo - Redirige selon le rôle */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link 
+              href={
+                isAuthenticated 
+                  ? user?.role === 'ADMIN' 
+                    ? '/dashboard/admin'
+                    : '/dashboard'
+                  : '/'
+              } 
+              className="flex items-center space-x-2"
+            >
               <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
                 UrbanBeauty
               </span>
