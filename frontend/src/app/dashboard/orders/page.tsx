@@ -8,13 +8,13 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
   TrashIcon,
-  ArchiveBoxIcon,
   CheckCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
 import { useAuth } from '@/hooks/useAuth';
-import { useOrders, useUpdateOrder } from '@/hooks/useOrders';
+import { useOrders, useUpdateOrder, useClearSellerHistory } from '@/hooks/useOrders';
+import { useNotifications } from '@/components/admin/NotificationProvider';
 import { format, isToday, isThisWeek, isThisMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { formatCurrency } from '@/utils/currency';
@@ -24,9 +24,11 @@ type PeriodFilter = 'ALL' | 'TODAY' | 'WEEK' | 'MONTH';
 
 function OrdersPageContent() {
   const { user } = useAuth();
-  const isSeller = user?.role === 'VENDEUSE';
+  const isSeller = user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE';
   const { data: orders = [], isLoading } = useOrders(false, isSeller);
   const { mutate: updateOrder } = useUpdateOrder();
+  const { mutate: clearHistory, isPending: isClearing } = useClearSellerHistory();
+  const notifications = useNotifications();
 
   // Filtres
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
@@ -35,7 +37,20 @@ function OrdersPageContent() {
   const [showFilters, setShowFilters] = useState(false);
   
   // Modal confirmation
-  const [confirmAction, setConfirmAction] = useState<{ type: 'archive' | 'cancel'; orderId: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'archive' | 'cancel' | 'clear'; orderId: string } | null>(null);
+
+  const handleClearHistory = () => {
+    clearHistory(undefined, {
+      onSuccess: (data) => {
+        notifications.success('Historique vidé', data.message);
+        setConfirmAction(null);
+      },
+      onError: (error: any) => {
+        notifications.error('Erreur', error?.response?.data?.message || 'Erreur lors de la suppression');
+        setConfirmAction(null);
+      },
+    });
+  };
 
   // Filtrage des commandes
   const filteredOrders = useMemo(() => {
@@ -132,12 +147,23 @@ function OrdersPageContent() {
                 <p className="text-xs text-gray-500">{filteredOrders.length} commande(s)</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`p-2 rounded-xl transition-colors ${showFilters ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-600'}`}
-            >
-              <FunnelIcon className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {isSeller && stats.completed + stats.cancelled > 0 && (
+                <button
+                  onClick={() => setConfirmAction({ type: 'clear', orderId: '' })}
+                  className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                  title="Vider l'historique"
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </button>
+              )}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`p-2 rounded-xl transition-colors ${showFilters ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-600'}`}
+              >
+                <FunnelIcon className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {/* Search */}
@@ -337,12 +363,19 @@ function OrdersPageContent() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
             <h3 className="text-lg font-bold text-gray-900 mb-2">
-              {confirmAction.type === 'cancel' ? 'Annuler la commande ?' : 'Archiver la commande ?'}
+              {confirmAction.type === 'clear' 
+                ? 'Vider l\'historique ?' 
+                : confirmAction.type === 'cancel' 
+                  ? 'Annuler la commande ?' 
+                  : 'Archiver la commande ?'
+              }
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              {confirmAction.type === 'cancel' 
-                ? 'Cette action ne peut pas être annulée. Le client sera notifié.'
-                : 'La commande sera déplacée vers les archives.'
+              {confirmAction.type === 'clear'
+                ? 'Toutes les commandes livrées et annulées seront supprimées. Cette action est irréversible.'
+                : confirmAction.type === 'cancel' 
+                  ? 'Cette action ne peut pas être annulée. Le client sera notifié.'
+                  : 'La commande sera déplacée vers les archives.'
               }
             </p>
             <div className="flex gap-3">
@@ -353,10 +386,17 @@ function OrdersPageContent() {
                 Non, garder
               </button>
               <button
-                onClick={() => handleUpdateStatus(confirmAction.orderId, 'CANCELLED')}
-                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-medium"
+                onClick={() => {
+                  if (confirmAction.type === 'clear') {
+                    handleClearHistory();
+                  } else {
+                    handleUpdateStatus(confirmAction.orderId, 'CANCELLED');
+                  }
+                }}
+                disabled={isClearing}
+                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-medium disabled:opacity-50"
               >
-                Oui, annuler
+                {isClearing ? '...' : confirmAction.type === 'clear' ? 'Oui, vider' : 'Oui, annuler'}
               </button>
             </div>
           </div>

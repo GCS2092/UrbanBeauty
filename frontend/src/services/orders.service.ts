@@ -101,5 +101,10 @@ export const ordersService = {
     const response = await api.patch<Order>(`/api/orders/${id}`, data);
     return response.data;
   },
+
+  clearSellerHistory: async (): Promise<{ message: string; count: number }> => {
+    const response = await api.delete<{ message: string; count: number }>('/api/orders/seller/clear-history');
+    return response.data;
+  },
 };
 

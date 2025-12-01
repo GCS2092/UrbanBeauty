@@ -43,3 +43,14 @@ export function useUpdateOrder() {
   });
 }
 
+export function useClearSellerHistory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => ordersService.clearSellerHistory(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+}
+

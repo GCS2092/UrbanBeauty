@@ -410,5 +410,34 @@ export class OrdersService {
       where: { id },
     });
   }
+
+  async clearSellerHistory(userId: string) {
+    // Récupérer les commandes terminées/annulées du vendeur
+    const ordersToDelete = await this.prisma.order.findMany({
+      where: {
+        status: { in: ['DELIVERED', 'CANCELLED'] },
+        items: {
+          some: {
+            product: {
+              sellerId: userId,
+            },
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    // Supprimer les commandes (cascade vers les items)
+    const deletedCount = await this.prisma.order.deleteMany({
+      where: {
+        id: { in: ordersToDelete.map(o => o.id) },
+      },
+    });
+
+    return {
+      message: `${deletedCount.count} commande(s) supprimée(s) de l'historique`,
+      count: deletedCount.count,
+    };
+  }
 }
 
