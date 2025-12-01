@@ -346,5 +346,50 @@ export class BookingsService {
       where: { id },
     });
   }
+
+  async clearProviderHistory(profileId: string) {
+    // Récupérer les services du prestataire
+    const services = await this.prisma.service.findMany({
+      where: { providerId: profileId },
+      select: { id: true },
+    });
+
+    const serviceIds = services.map(s => s.id);
+
+    // Supprimer les réservations terminées ou annulées
+    const result = await this.prisma.booking.deleteMany({
+      where: {
+        serviceId: { in: serviceIds },
+        status: { in: ['COMPLETED', 'CANCELLED'] },
+      },
+    });
+
+    return {
+      message: `${result.count} réservation(s) supprimée(s) de l'historique`,
+      count: result.count,
+    };
+  }
+
+  async removeProviderBooking(id: string, profileId: string) {
+    const booking = await this.findOne(id);
+
+    // Vérifier que la réservation appartient à un service du prestataire
+    const service = await this.prisma.service.findUnique({
+      where: { id: booking.serviceId },
+    });
+
+    if (!service || service.providerId !== profileId) {
+      throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer cette réservation');
+    }
+
+    // Seules les réservations terminées ou annulées peuvent être supprimées
+    if (!['COMPLETED', 'CANCELLED'].includes(booking.status)) {
+      throw new BadRequestException('Seules les réservations terminées ou annulées peuvent être supprimées');
+    }
+
+    return this.prisma.booking.delete({
+      where: { id },
+    });
+  }
 }
 

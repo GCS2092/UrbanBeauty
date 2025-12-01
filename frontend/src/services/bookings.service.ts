@@ -97,5 +97,15 @@ export const bookingsService = {
     const response = await api.get(`/api/bookings/availability/${serviceId}?date=${date}`);
     return response.data;
   },
+
+  // Pour les prestataires (COIFFEUSE)
+  clearProviderHistory: async (): Promise<{ message: string; count: number }> => {
+    const response = await api.delete<{ message: string; count: number }>('/api/bookings/provider/clear-history');
+    return response.data;
+  },
+
+  deleteProviderBooking: async (id: string): Promise<void> => {
+    await api.delete(`/api/bookings/provider/${id}`);
+  },
 };
 

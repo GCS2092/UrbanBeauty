@@ -70,5 +70,19 @@ export class BookingsController {
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.bookingsService.remove(id, user.userId);
   }
+
+  @Delete('provider/clear-history')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('COIFFEUSE')
+  clearProviderHistory(@CurrentUser() user: any) {
+    return this.bookingsService.clearProviderHistory(user.profileId);
+  }
+
+  @Delete('provider/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('COIFFEUSE')
+  removeProviderBooking(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.bookingsService.removeProviderBooking(id, user.profileId);
+  }
 }
 

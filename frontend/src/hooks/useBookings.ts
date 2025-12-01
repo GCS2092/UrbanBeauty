@@ -52,3 +52,25 @@ export function useDeleteBooking() {
   });
 }
 
+export function useClearProviderHistory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => bookingsService.clearProviderHistory(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    },
+  });
+}
+
+export function useDeleteProviderBooking() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => bookingsService.deleteProviderBooking(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    },
+  });
+}
+
