@@ -279,9 +279,16 @@ function OrdersPageContent() {
                       {format(new Date(order.createdAt), 'dd MMM yyyy • HH:mm', { locale: fr })}
                     </p>
                     {isSeller && (
-                      <p className="text-xs text-gray-600 mt-1">
-                        👤 {order.customerName || order.user?.profile?.firstName || 'Client'}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-gray-600">
+                          👤 {order.customerName || order.user?.profile?.firstName || 'Client'}
+                        </p>
+                        {order.sellerNotes && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded-full" title="Notes internes">
+                            📝
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="text-right">

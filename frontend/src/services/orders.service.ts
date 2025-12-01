@@ -28,6 +28,7 @@ export interface Order {
   trackingNumber?: string;
   estimatedDeliveryDate?: string;
   notes?: string;
+  sellerNotes?: string; // Notes internes du vendeur
   cancellationReason?: string;
   couponId?: string;
   coupon?: {
@@ -104,6 +105,11 @@ export const ordersService = {
 
   clearSellerHistory: async (): Promise<{ message: string; count: number }> => {
     const response = await api.delete<{ message: string; count: number }>('/api/orders/seller/clear-history');
+    return response.data;
+  },
+
+  updateSellerNotes: async (id: string, sellerNotes: string): Promise<Order> => {
+    const response = await api.patch<Order>(`/api/orders/${id}/seller-notes`, { sellerNotes });
     return response.data;
   },
 };

@@ -108,5 +108,16 @@ export class OrdersController {
     // Permet aux vendeurs de vider leur historique de commandes terminées/annulées
     return this.ordersService.clearSellerHistory(user.userId);
   }
+
+  @Patch(':id/seller-notes')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('VENDEUSE', 'ADMIN')
+  async updateSellerNotes(
+    @Param('id') id: string,
+    @Body() body: { sellerNotes: string },
+    @CurrentUser() user: any,
+  ) {
+    return this.ordersService.updateSellerNotes(id, user.userId, body.sellerNotes);
+  }
 }
 

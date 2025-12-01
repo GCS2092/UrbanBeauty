@@ -3,10 +3,10 @@
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { ArrowLeftIcon, TruckIcon, CheckCircleIcon, XCircleIcon, StarIcon, PhoneIcon, EnvelopeIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, TruckIcon, CheckCircleIcon, XCircleIcon, StarIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, PencilIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import ProtectedRoute from '@/components/shared/ProtectedRoute';
-import { useOrder, useUpdateOrder } from '@/hooks/useOrders';
+import { useOrder, useUpdateOrder, useUpdateSellerNotes } from '@/hooks/useOrders';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/components/admin/NotificationProvider';
 import { useCreateReview } from '@/hooks/useReviews';
@@ -22,16 +22,22 @@ function OrderDetailContent() {
   const { data: order, isLoading, error } = useOrder(orderId);
   const { mutate: updateOrder, isPending: isUpdating } = useUpdateOrder();
   const { mutate: createReview, isPending: isReviewing } = useCreateReview();
+  const { mutate: updateSellerNotes, isPending: isUpdatingNotes } = useUpdateSellerNotes();
   const { user } = useAuth();
   const notifications = useNotifications();
   
   const currency = getCurrencyForRole(user?.role);
   const isSellerOrAdmin = user?.role === 'ADMIN' || user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE';
+  const isSeller = user?.role === 'VENDEUSE' || user?.role === 'ADMIN';
   const isClient = user?.role === 'CLIENT';
   
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState<string>('');
   const [trackingNumber, setTrackingNumber] = useState<string>('');
+  
+  // Seller notes state
+  const [showNotesEditor, setShowNotesEditor] = useState(false);
+  const [sellerNotesInput, setSellerNotesInput] = useState('');
   
   // Review state
   const [reviewingProductId, setReviewingProductId] = useState<string | null>(null);
@@ -316,11 +322,78 @@ function OrderDetailContent() {
           </div>
         </div>
 
-        {/* Notes */}
+        {/* Notes client */}
         {order.notes && (
           <div className="bg-white rounded-xl p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">Notes</h2>
+            <h2 className="text-sm font-semibold text-gray-900 mb-2">Notes client</h2>
             <p className="text-sm text-gray-600">{order.notes}</p>
+          </div>
+        )}
+
+        {/* Notes vendeur (internes) - Visible uniquement par le vendeur/admin */}
+        {isSeller && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold text-amber-900 flex items-center gap-2">
+                <DocumentTextIcon className="h-4 w-4" />
+                Notes internes
+              </h2>
+              <button
+                onClick={() => {
+                  setSellerNotesInput(order.sellerNotes || '');
+                  setShowNotesEditor(!showNotesEditor);
+                }}
+                className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
+              >
+                <PencilIcon className="h-4 w-4" />
+              </button>
+            </div>
+            
+            {showNotesEditor ? (
+              <div className="space-y-3">
+                <textarea
+                  value={sellerNotesInput}
+                  onChange={(e) => setSellerNotesInput(e.target.value)}
+                  placeholder="Ajoutez vos notes internes ici... (ex: client régulier, préférences, remarques)"
+                  rows={3}
+                  className="w-full px-3 py-2 text-sm border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none bg-white"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={() => setShowNotesEditor(false)}
+                    className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateSellerNotes(
+                        { id: order.id, sellerNotes: sellerNotesInput },
+                        {
+                          onSuccess: () => {
+                            notifications.success('Enregistré', 'Notes mises à jour');
+                            setShowNotesEditor(false);
+                          },
+                          onError: (err: any) => {
+                            notifications.error('Erreur', err?.response?.data?.message || 'Erreur');
+                          },
+                        }
+                      );
+                    }}
+                    disabled={isUpdatingNotes}
+                    className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    {isUpdatingNotes ? '...' : 'Enregistrer'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-amber-800">
+                {order.sellerNotes || (
+                  <span className="text-amber-500 italic">Aucune note. Cliquez sur ✏️ pour ajouter.</span>
+                )}
+              </p>
+            )}
           </div>
         )}
       </div>

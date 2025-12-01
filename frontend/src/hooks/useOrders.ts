@@ -54,3 +54,16 @@ export function useClearSellerHistory() {
   });
 }
 
+export function useUpdateSellerNotes() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, sellerNotes }: { id: string; sellerNotes: string }) =>
+      ordersService.updateSellerNotes(id, sellerNotes),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders', variables.id] });
+    },
+  });
+}
+

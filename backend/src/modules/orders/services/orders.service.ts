@@ -439,5 +439,53 @@ export class OrdersService {
       count: deletedCount.count,
     };
   }
+
+  async updateSellerNotes(orderId: string, sellerId: string, sellerNotes: string) {
+    // Vérifier que la commande existe et contient des produits du vendeur
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Commande introuvable');
+    }
+
+    // Vérifier que le vendeur a des produits dans cette commande
+    const sellerHasProducts = order.items.some(
+      (item) => item.product.sellerId === sellerId
+    );
+
+    if (!sellerHasProducts) {
+      throw new BadRequestException('Vous n\'avez pas accès à cette commande');
+    }
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { sellerNotes },
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                images: true,
+              },
+            },
+          },
+        },
+        user: {
+          include: {
+            profile: true,
+          },
+        },
+      },
+    });
+  }
 }
 

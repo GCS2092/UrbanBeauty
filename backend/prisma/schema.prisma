@@ -219,7 +219,8 @@ model Order {
   shippingCost          Float       @default(0) // Coût de livraison
   trackingNumber        String? // Numéro de suivi
   estimatedDeliveryDate DateTime? // Date de livraison estimée
-  notes                 String? // Notes de la commande
+  notes                 String? // Notes de la commande (client)
+  sellerNotes           String? // Notes internes du vendeur
   cancellationReason    String? // Raison d'annulation
   couponId              String? // Coupon appliqué
   coupon                Coupon?     @relation(fields: [couponId], references: [id])
