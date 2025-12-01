@@ -356,7 +356,7 @@ function QuickRepliesContent() {
 
 export default function QuickRepliesPage() {
   return (
-    <ProtectedRoute requiredRole={['COIFFEUSE', 'VENDEUSE', 'ADMIN']}>
+    <ProtectedRoute requiredRole={['COIFFEUSE', 'MANICURISTE', 'VENDEUSE', 'ADMIN']}>
       <QuickRepliesContent />
     </ProtectedRoute>
   );

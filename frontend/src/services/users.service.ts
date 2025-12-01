@@ -3,7 +3,7 @@ import api from '@/lib/api';
 export interface User {
   id: string;
   email: string;
-  role: 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN';
+  role: 'CLIENT' | 'COIFFEUSE' | 'MANICURISTE' | 'VENDEUSE' | 'ADMIN';
   isActive?: boolean;
   blockReason?: string; // Message expliquant le motif du blocage
   profile?: {
@@ -18,13 +18,13 @@ export interface User {
 }
 
 export interface UpdateUserRoleDto {
-  role: 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN';
+  role: 'CLIENT' | 'COIFFEUSE' | 'MANICURISTE' | 'VENDEUSE' | 'ADMIN';
 }
 
 export interface CreateUserDto {
   email: string;
   password: string;
-  role: 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN';
+  role: 'CLIENT' | 'COIFFEUSE' | 'MANICURISTE' | 'VENDEUSE' | 'ADMIN';
   firstName?: string;
   lastName?: string;
   phone?: string;

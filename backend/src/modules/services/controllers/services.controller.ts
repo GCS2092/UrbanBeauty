@@ -24,8 +24,8 @@ export class ServicesController {
   @Get()
   @UseGuards(OptionalJwtAuthGuard)
   findAll(@CurrentUser() user?: any) {
-    // Si l'utilisateur est connecté et est une coiffeuse, retourner seulement ses services
-    if (user?.role === 'COIFFEUSE' && user?.userId) {
+    // Si l'utilisateur est connecté et est une coiffeuse ou manicuriste, retourner seulement ses services
+    if ((user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE') && user?.userId) {
       return this.servicesService.findByProvider(user.userId);
     }
     return this.servicesService.findAll();
@@ -39,7 +39,7 @@ export class ServicesController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('COIFFEUSE')
+  @Roles('COIFFEUSE', 'MANICURISTE')
   create(@Body() createServiceDto: CreateServiceDto, @CurrentUser() user: any) {
     return this.servicesService.create(createServiceDto, user.userId);
   }

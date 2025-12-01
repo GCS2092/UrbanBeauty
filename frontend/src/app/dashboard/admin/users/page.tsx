@@ -16,7 +16,7 @@ function AdminUsersContent() {
   const [createForm, setCreateForm] = useState({
     email: '',
     password: '',
-    role: 'CLIENT' as 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN',
+    role: 'CLIENT' as 'CLIENT' | 'COIFFEUSE' | 'MANICURISTE' | 'VENDEUSE' | 'ADMIN',
     firstName: '',
     lastName: '',
     phone: '',
@@ -130,6 +130,7 @@ function AdminUsersContent() {
               <option value="">Tous les rôles</option>
               <option value="CLIENT">Clients</option>
               <option value="COIFFEUSE">Coiffeuses</option>
+              <option value="MANICURISTE">Manicuristes</option>
               <option value="VENDEUSE">Vendeuses</option>
               <option value="ADMIN">Admins</option>
             </select>
@@ -243,7 +244,7 @@ function AdminUsersContent() {
                             value={user.role}
                             onChange={(e) => {
                               const newRole = e.target.value;
-                              if (['CLIENT', 'COIFFEUSE', 'VENDEUSE', 'ADMIN'].includes(newRole)) {
+                              if (['CLIENT', 'COIFFEUSE', 'MANICURISTE', 'VENDEUSE', 'ADMIN'].includes(newRole)) {
                                 updateRole(
                                   { id: user.id, role: newRole as any },
                                   {
@@ -262,6 +263,7 @@ function AdminUsersContent() {
                           >
                             <option value="CLIENT">CLIENT</option>
                             <option value="COIFFEUSE">COIFFEUSE</option>
+                            <option value="MANICURISTE">MANICURISTE</option>
                             <option value="VENDEUSE">VENDEUSE</option>
                             <option value="ADMIN">ADMIN</option>
                           </select>
@@ -345,6 +347,7 @@ function AdminUsersContent() {
                 >
                   <option value="CLIENT">Client</option>
                   <option value="COIFFEUSE">Coiffeuse</option>
+                  <option value="MANICURISTE">Manicuriste</option>
                   <option value="VENDEUSE">Vendeuse</option>
                   <option value="ADMIN">Admin</option>
                 </select>

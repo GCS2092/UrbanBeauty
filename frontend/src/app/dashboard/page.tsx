@@ -35,7 +35,7 @@ import { useFavoritesCount } from '@/hooks/useFavorites';
 function DashboardContent() {
   const { user } = useAuth();
   const { data: orders = [] } = useOrders(false, user?.role === 'VENDEUSE');
-  const isProvider = user?.role === 'COIFFEUSE';
+  const isProvider = user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE';
   const isSeller = user?.role === 'VENDEUSE';
   const isClient = user?.role === 'CLIENT';
   const { data: favoritesCount } = useFavoritesCount();
@@ -76,6 +76,7 @@ function DashboardContent() {
             <p className="text-sm text-gray-500 mt-1">
               {user?.role === 'CLIENT' && 'Bienvenue sur votre espace'}
               {user?.role === 'COIFFEUSE' && '💇‍♀️ Espace Coiffeuse'}
+              {user?.role === 'MANICURISTE' && '💅 Espace Manicuriste'}
               {user?.role === 'VENDEUSE' && '🛍️ Espace Vendeuse'}
               {user?.role === 'ADMIN' && '👑 Administration'}
             </p>
@@ -101,8 +102,8 @@ function DashboardContent() {
           </Link>
         )}
 
-        {/* ============ SECTION COIFFEUSE AVEC ANALYTICS BACKEND ============ */}
-        {user?.role === 'COIFFEUSE' && (
+        {/* ============ SECTION COIFFEUSE/MANICURISTE AVEC ANALYTICS BACKEND ============ */}
+        {(user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE') && (
           <>
             {/* Stats améliorées depuis le backend */}
             <div className="grid grid-cols-2 gap-3 mb-6">
@@ -655,7 +656,7 @@ function DashboardContent() {
             )}
 
             {/* Stats */}
-            {(user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE') && (
+            {(user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE') && (
               <Link
                 href="/dashboard/analytics"
                 className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-[0.98] transition-all touch-manipulation"
@@ -671,7 +672,7 @@ function DashboardContent() {
             )}
 
             {/* Avis */}
-            {user?.role === 'COIFFEUSE' && (
+            {(user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE') && (
               <Link
                 href="/dashboard/reviews"
                 className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-[0.98] transition-all touch-manipulation"

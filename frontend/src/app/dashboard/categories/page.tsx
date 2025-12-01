@@ -292,7 +292,7 @@ function CategoriesContent() {
 
 export default function CategoriesPage() {
   return (
-    <ProtectedRoute requiredRole={['COIFFEUSE', 'ADMIN']}>
+    <ProtectedRoute requiredRole={['COIFFEUSE', 'MANICURISTE', 'ADMIN']}>
       <CategoriesContent />
     </ProtectedRoute>
   );

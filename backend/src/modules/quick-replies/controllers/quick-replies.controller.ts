@@ -35,7 +35,7 @@ class ReorderDto {
 
 @Controller('quick-replies')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('COIFFEUSE', 'VENDEUSE', 'ADMIN')
+@Roles('COIFFEUSE', 'MANICURISTE', 'VENDEUSE', 'ADMIN')
 export class QuickRepliesController {
   constructor(private readonly quickRepliesService: QuickRepliesService) {}
 

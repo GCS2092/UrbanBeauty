@@ -293,7 +293,7 @@ function HairStyleRequestsContent() {
 
 export default function HairStyleRequestsPage() {
   return (
-    <ProtectedRoute requiredRole="COIFFEUSE">
+    <ProtectedRoute requiredRole={['COIFFEUSE', 'MANICURISTE']}>
       <HairStyleRequestsContent />
     </ProtectedRoute>
   );

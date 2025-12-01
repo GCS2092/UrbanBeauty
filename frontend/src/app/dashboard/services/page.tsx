@@ -202,7 +202,7 @@ function ServicesPageContent() {
 
 export default function ServicesPage() {
   return (
-    <ProtectedRoute requiredRole="COIFFEUSE">
+    <ProtectedRoute requiredRole={['COIFFEUSE', 'MANICURISTE']}>
       <ServicesPageContent />
     </ProtectedRoute>
   );

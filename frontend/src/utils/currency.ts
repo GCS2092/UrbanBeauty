@@ -195,7 +195,7 @@ export function canChangeCurrency(userRole?: string): boolean {
 /**
  * Retourne la devise à utiliser selon le rôle
  * - CLIENT ou non connecté : devise choisie par l'utilisateur
- * - VENDEUR/COIFFEUSE/ADMIN : toujours XOF
+ * - VENDEUR/COIFFEUSE/MANICURISTE/ADMIN : toujours XOF
  */
 export function getCurrencyForRole(userRole?: string): Currency {
   if (!userRole || userRole === 'CLIENT') {

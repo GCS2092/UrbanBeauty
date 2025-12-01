@@ -18,7 +18,7 @@ import { ensureUploadsDirectory } from './ensure-uploads-dir';
 
 @Controller('upload')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'VENDEUSE', 'COIFFEUSE')
+@Roles('ADMIN', 'VENDEUSE', 'COIFFEUSE', 'MANICURISTE')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {
     // S'assurer que le dossier uploads existe au démarrage

@@ -14,8 +14,8 @@ export class AnalyticsController {
    */
   @Get('provider')
   async getProviderAnalytics(@CurrentUser() user: any) {
-    if (user.role !== 'COIFFEUSE' && user.role !== 'ADMIN') {
-      throw new ForbiddenException('Accès réservé aux coiffeuses');
+    if (user.role !== 'COIFFEUSE' && user.role !== 'MANICURISTE' && user.role !== 'ADMIN') {
+      throw new ForbiddenException('Accès réservé aux prestataires de services');
     }
 
     return this.analyticsService.getProviderAnalytics(user.userId);
@@ -40,7 +40,7 @@ export class AnalyticsController {
    */
   @Get('me')
   async getMyAnalytics(@CurrentUser() user: any) {
-    if (user.role === 'COIFFEUSE') {
+    if (user.role === 'COIFFEUSE' || user.role === 'MANICURISTE') {
       return this.analyticsService.getProviderAnalytics(user.userId);
     }
 

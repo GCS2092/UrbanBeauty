@@ -329,7 +329,7 @@ function AnalyticsContent() {
 
 export default function AnalyticsPage() {
   return (
-    <ProtectedRoute requiredRole={['VENDEUSE', 'COIFFEUSE']}>
+    <ProtectedRoute requiredRole={['VENDEUSE', 'COIFFEUSE', 'MANICURISTE']}>
       <AnalyticsContent />
     </ProtectedRoute>
   );

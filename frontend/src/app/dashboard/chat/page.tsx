@@ -41,7 +41,7 @@ function ChatContent() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Quick replies pour les prestataires
-  const canUseQuickReplies = user?.role === 'COIFFEUSE' || user?.role === 'VENDEUSE' || user?.role === 'ADMIN';
+  const canUseQuickReplies = user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE' || user?.role === 'VENDEUSE' || user?.role === 'ADMIN';
   const { data: quickReplies = [] } = useQuickReplies();
 
   const { data: messages = [] } = useMessages(selectedConversationId || '');
@@ -165,6 +165,7 @@ function ChatContent() {
   const getRoleLabel = (role?: string) => {
     if (role === 'VENDEUSE') return '🛍️ Vendeuse';
     if (role === 'COIFFEUSE') return '💇‍♀️ Coiffeuse';
+    if (role === 'MANICURISTE') return '💅 Manicuriste';
     if (role === 'CLIENT') return '👤 Client';
     return '';
   };

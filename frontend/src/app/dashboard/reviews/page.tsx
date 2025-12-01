@@ -207,7 +207,7 @@ function ReviewsContent() {
 
 export default function ReviewsPage() {
   return (
-    <ProtectedRoute requiredRole="COIFFEUSE">
+    <ProtectedRoute requiredRole={['COIFFEUSE', 'MANICURISTE']}>
       <ReviewsContent />
     </ProtectedRoute>
   );

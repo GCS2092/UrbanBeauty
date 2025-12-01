@@ -74,7 +74,7 @@ export class ReviewsController {
 
   @Post(':id/reply')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('COIFFEUSE')
+  @Roles('COIFFEUSE', 'MANICURISTE')
   @HttpCode(HttpStatus.OK)
   async replyToReview(
     @Param('id') id: string,

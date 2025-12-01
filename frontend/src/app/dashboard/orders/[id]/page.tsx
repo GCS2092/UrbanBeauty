@@ -27,7 +27,7 @@ function OrderDetailContent() {
   const notifications = useNotifications();
   
   const currency = getCurrencyForRole(user?.role);
-  const isSellerOrAdmin = user?.role === 'ADMIN' || user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE';
+  const isSellerOrAdmin = user?.role === 'ADMIN' || user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE';
   const isSeller = user?.role === 'VENDEUSE' || user?.role === 'ADMIN';
   const isClient = user?.role === 'CLIENT';
   

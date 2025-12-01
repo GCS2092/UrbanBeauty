@@ -327,7 +327,7 @@ function EditServicePageContent() {
 
 export default function EditServicePage() {
   return (
-    <ProtectedRoute requiredRole="COIFFEUSE">
+    <ProtectedRoute requiredRole={['COIFFEUSE', 'MANICURISTE']}>
       <EditServicePageContent />
     </ProtectedRoute>
   );

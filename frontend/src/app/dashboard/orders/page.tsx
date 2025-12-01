@@ -24,7 +24,7 @@ type PeriodFilter = 'ALL' | 'TODAY' | 'WEEK' | 'MONTH';
 
 function OrdersPageContent() {
   const { user } = useAuth();
-  const isSeller = user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE';
+  const isSeller = user?.role === 'VENDEUSE' || user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE';
   const { data: orders = [], isLoading } = useOrders(false, isSeller);
   const { mutate: updateOrder } = useUpdateOrder();
   const { mutate: clearHistory, isPending: isClearing } = useClearSellerHistory();

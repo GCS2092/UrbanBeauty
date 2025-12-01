@@ -54,7 +54,7 @@ export default function BottomNav() {
 
   // Navigation items based on role
   const getNavItems = (): NavItem[] => {
-    if (user.role === 'COIFFEUSE') {
+    if (user.role === 'COIFFEUSE' || user.role === 'MANICURISTE') {
       return [
         {
           href: '/dashboard',

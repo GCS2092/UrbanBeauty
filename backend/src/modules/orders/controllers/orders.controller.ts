@@ -103,7 +103,7 @@ export class OrdersController {
 
   @Delete('seller/clear-history')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('VENDEUSE', 'COIFFEUSE')
+  @Roles('VENDEUSE', 'COIFFEUSE', 'MANICURISTE')
   async clearSellerHistory(@CurrentUser() user: any) {
     // Permet aux vendeurs de vider leur historique de commandes terminées/annulées
     return this.ordersService.clearSellerHistory(user.userId);

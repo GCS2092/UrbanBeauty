@@ -21,7 +21,7 @@ function EditUserForm({ userId }: { userId: string }) {
     firstName: '',
     lastName: '',
     phone: '',
-    role: 'CLIENT' as 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN',
+    role: 'CLIENT' as 'CLIENT' | 'COIFFEUSE' | 'MANICURISTE' | 'VENDEUSE' | 'ADMIN',
   });
 
   useEffect(() => {
@@ -140,6 +140,7 @@ function EditUserForm({ userId }: { userId: string }) {
               >
                 <option value="CLIENT">Client</option>
                 <option value="COIFFEUSE">Coiffeuse</option>
+                <option value="MANICURISTE">Manicuriste</option>
                 <option value="VENDEUSE">Vendeuse</option>
                 <option value="ADMIN">Admin</option>
               </select>

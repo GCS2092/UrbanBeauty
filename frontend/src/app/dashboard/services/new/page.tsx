@@ -248,7 +248,7 @@ function NewServiceForm() {
 
 export default function NewServicePage() {
   return (
-    <ProtectedRoute requiredRole="COIFFEUSE">
+    <ProtectedRoute requiredRole={['COIFFEUSE', 'MANICURISTE']}>
       <NewServiceForm />
     </ProtectedRoute>
   );

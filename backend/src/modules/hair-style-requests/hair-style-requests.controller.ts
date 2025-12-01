@@ -26,11 +26,11 @@ export class HairStyleRequestsController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('COIFFEUSE', 'ADMIN')
+  @Roles('COIFFEUSE', 'MANICURISTE', 'ADMIN')
   async findAll(@Query('providerId') providerId?: string, @CurrentUser() user?: any) {
     // Si c'est un prestataire, récupérer son profileId
     let providerIdToUse = providerId;
-    if (user?.role === 'COIFFEUSE') {
+    if (user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE') {
       const profile = await this.prisma.profile.findUnique({
         where: { userId: user.userId },
       });
@@ -54,7 +54,7 @@ export class HairStyleRequestsController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('COIFFEUSE', 'ADMIN')
+  @Roles('COIFFEUSE', 'MANICURISTE', 'ADMIN')
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateHairStyleRequestDto,
