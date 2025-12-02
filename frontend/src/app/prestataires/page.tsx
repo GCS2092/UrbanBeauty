@@ -108,7 +108,7 @@ export default function PrestatairesPage() {
             <Link href="/" className="text-gray-600 hover:text-gray-900">
               <ArrowLeftIcon className="h-5 w-5" />
             </Link>
-            <h1 className="ml-4 text-lg font-semibold text-gray-900">Coiffeuses</h1>
+            <h1 className="ml-4 text-lg font-semibold text-gray-900">Prestataires</h1>
           </div>
 
           {/* Search */}
@@ -194,13 +194,13 @@ export default function PrestatairesPage() {
         )}
 
         {/* Count */}
-        <p className="text-sm text-gray-500 mb-4">{filteredProviders.length} coiffeuse(s)</p>
+        <p className="text-sm text-gray-500 mb-4">{filteredProviders.length} prestataire(s)</p>
 
         {/* Grid */}
         {filteredProviders.length === 0 ? (
           <div className="text-center py-16">
             <UserGroupIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Aucune coiffeuse trouvée</p>
+            <p className="text-gray-500">Aucun prestataire trouvé</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -292,7 +292,7 @@ export default function PrestatairesPage() {
                 { href: '/', label: 'Accueil' },
                 { href: '/products', label: 'Produits' },
                 { href: '/services', label: 'Services' },
-                { href: '/prestataires', label: 'Coiffeuses', active: true },
+                { href: '/prestataires', label: 'Prestataires', active: true },
                 { href: '/orders/track', label: 'Commande' },
               ].map((item) => (
                 <Link
