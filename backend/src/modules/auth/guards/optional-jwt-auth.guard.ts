@@ -9,13 +9,20 @@ import { AuthGuard } from '@nestjs/passport';
 export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
   canActivate(context: ExecutionContext) {
     // Appeler le parent pour extraire l'utilisateur
-    return super.canActivate(context);
+    // Si pas de token, ne pas bloquer
+    return super.canActivate(context).catch(() => {
+      // Si erreur (pas de token), continuer quand même
+      return true;
+    });
   }
 
   handleRequest(err: any, user: any, info: any) {
-    // Ne pas lever d'erreur si pas d'utilisateur
-    // Retourner null ou l'utilisateur
-    return user || null;
+    // Ne pas lever d'erreur si pas d'utilisateur ou token invalide
+    // Retourner l'utilisateur si présent, sinon null
+    if (err || !user) {
+      return null;
+    }
+    return user;
   }
 }
 

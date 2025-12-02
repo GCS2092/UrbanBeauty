@@ -35,7 +35,7 @@ export class CategoriesController {
     
     if (providerId) {
       targetProviderId = providerId;
-    } else if (user && (user.role === 'COIFFEUSE' || user.role === 'MANICURISTE')) {
+    } else if (user && user.userId && (user.role === 'COIFFEUSE' || user.role === 'MANICURISTE')) {
       // Récupérer le profileId de l'utilisateur
       const profile = await this.prisma.profile.findUnique({
         where: { userId: user.userId },
@@ -45,6 +45,8 @@ export class CategoriesController {
         targetProviderId = profile.id;
       }
     }
+    // Si pas de providerId et pas de user prestataire, retourner toutes les catégories (admin/public)
+    // Mais pour les prestataires, on filtre toujours par leur providerId
     
     return this.categoriesService.findAll(targetProviderId);
   }
