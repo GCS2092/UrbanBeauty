@@ -26,6 +26,7 @@ async function addManicuristeRole() {
     console.log('MANICURISTE n\'existe pas. Ajout en cours...');
     
     // Ajouter MANICURISTE en recréant l'enum
+    // Il faut d'abord supprimer la valeur par défaut, puis la remettre après
     const addQuery = `
       DO $$ 
       BEGIN
@@ -34,10 +35,24 @@ async function addManicuristeRole() {
           WHERE enumlabel = 'MANICURISTE' 
           AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'Role')
         ) THEN
+          -- Étape 1: Supprimer la valeur par défaut temporairement
+          ALTER TABLE "User" ALTER COLUMN "role" DROP DEFAULT;
+          
+          -- Étape 2: Créer le nouveau type enum
           CREATE TYPE "Role_new" AS ENUM ('CLIENT', 'COIFFEUSE', 'MANICURISTE', 'VENDEUSE', 'ADMIN');
+          
+          -- Étape 3: Modifier la colonne pour utiliser le nouveau type
           ALTER TABLE "User" ALTER COLUMN "role" TYPE "Role_new" USING ("role"::text::"Role_new");
+          
+          -- Étape 4: Remettre la valeur par défaut
+          ALTER TABLE "User" ALTER COLUMN "role" SET DEFAULT 'CLIENT'::"Role_new";
+          
+          -- Étape 5: Supprimer l'ancien enum
           DROP TYPE "Role";
+          
+          -- Étape 6: Renommer le nouveau enum
           ALTER TYPE "Role_new" RENAME TO "Role";
+          
           RAISE NOTICE 'MANICURISTE ajouté avec succès';
         END IF;
       END $$;
@@ -67,4 +82,3 @@ addManicuristeRole()
     console.error('Erreur fatale:', error);
     process.exit(1);
   });
-
