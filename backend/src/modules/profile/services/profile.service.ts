@@ -46,11 +46,13 @@ export class ProfileService {
   }
 
   async findAllProviders() {
-    // Récupérer tous les utilisateurs avec le rôle COIFFEUSE et leurs profils
+    // Récupérer tous les utilisateurs avec le rôle COIFFEUSE ou MANICURISTE et leurs profils
     const providers = await this.prisma.profile.findMany({
       where: {
         user: {
-          role: 'COIFFEUSE',
+          role: {
+            in: ['COIFFEUSE', 'MANICURISTE'],
+          },
         },
         isProvider: true,
       },
