@@ -53,6 +53,7 @@ export class ProfileService {
           role: {
             in: ['COIFFEUSE', 'MANICURISTE'],
           },
+          isActive: true, // Seulement les utilisateurs actifs
         },
         isProvider: true,
       },
