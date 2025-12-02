@@ -25,48 +25,65 @@ function generateBookingNumber(): string {
 async function main() {
   console.log('🌱 Début du seed...');
 
-  // Créer des catégories
-  const categoryVisage = await prisma.category.upsert({
-    where: { name: 'Soin Visage' },
-    update: {},
-    create: {
+  // Créer des catégories globales (providerId = null pour les catégories admin/globales)
+  // Utiliser findFirst + create/update au lieu de upsert car la contrainte unique est (name, providerId)
+  const categoryVisage = await prisma.category.findFirst({
+    where: { 
+      name: 'Soin Visage',
+      providerId: null, // Catégories globales
+    },
+  }) || await prisma.category.create({
+    data: {
       name: 'Soin Visage',
       slug: generateSlug('Soin Visage'),
       description: 'Produits de soin pour le visage',
       isActive: true,
+      providerId: null, // Catégorie globale
     },
   });
 
-  const categoryCheveux = await prisma.category.upsert({
-    where: { name: 'Soin Cheveux' },
-    update: {},
-    create: {
+  const categoryCheveux = await prisma.category.findFirst({
+    where: { 
+      name: 'Soin Cheveux',
+      providerId: null,
+    },
+  }) || await prisma.category.create({
+    data: {
       name: 'Soin Cheveux',
       slug: generateSlug('Soin Cheveux'),
       description: 'Produits de soin pour les cheveux',
       isActive: true,
+      providerId: null,
     },
   });
 
-  const categoryCorps = await prisma.category.upsert({
-    where: { name: 'Soin Corps' },
-    update: {},
-    create: {
+  const categoryCorps = await prisma.category.findFirst({
+    where: { 
+      name: 'Soin Corps',
+      providerId: null,
+    },
+  }) || await prisma.category.create({
+    data: {
       name: 'Soin Corps',
       slug: generateSlug('Soin Corps'),
       description: 'Produits de soin pour le corps',
       isActive: true,
+      providerId: null,
     },
   });
 
-  const categoryMaquillage = await prisma.category.upsert({
-    where: { name: 'Maquillage' },
-    update: {},
-    create: {
+  const categoryMaquillage = await prisma.category.findFirst({
+    where: { 
+      name: 'Maquillage',
+      providerId: null,
+    },
+  }) || await prisma.category.create({
+    data: {
       name: 'Maquillage',
       slug: generateSlug('Maquillage'),
       description: 'Produits de maquillage',
       isActive: true,
+      providerId: null,
     },
   });
 
