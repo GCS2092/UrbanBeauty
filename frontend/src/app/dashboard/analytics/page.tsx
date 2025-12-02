@@ -15,11 +15,15 @@ function AnalyticsContent() {
   const { user } = useAuth();
   
   const isSeller = user?.role === 'VENDEUSE';
-  const isProvider = user?.role === 'COIFFEUSE';
+  const isProvider = user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE';
   
-  // Utiliser les hooks backend
-  const { data: providerAnalytics, isLoading: loadingProvider } = useProviderAnalytics();
-  const { data: sellerAnalytics, isLoading: loadingSeller } = useSellerAnalytics();
+  // Utiliser les hooks backend avec enabled conditionnel
+  const { data: providerAnalytics, isLoading: loadingProvider } = useProviderAnalytics({
+    enabled: isProvider || user?.role === 'ADMIN',
+  });
+  const { data: sellerAnalytics, isLoading: loadingSeller } = useSellerAnalytics({
+    enabled: isSeller || user?.role === 'ADMIN',
+  });
 
   const isLoading = (isProvider && loadingProvider) || (isSeller && loadingSeller);
 
