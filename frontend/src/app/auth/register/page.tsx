@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { 
@@ -12,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
   const { register, isRegistering, registerError } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -22,12 +24,34 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
 
+  // Détecter la page de redirection depuis l'URL ou le referrer
+  const getRedirectTo = () => {
+    // Priorité 1: paramètre redirectTo dans l'URL
+    const redirectParam = searchParams.get('redirectTo');
+    if (redirectParam) {
+      return redirectParam;
+    }
+    
+    // Priorité 2: vérifier le referrer (page d'où vient l'utilisateur)
+    if (typeof window !== 'undefined') {
+      const referrer = document.referrer;
+      if (referrer && (referrer.includes('/checkout') || referrer.includes('/cart'))) {
+        return '/checkout';
+      }
+    }
+    
+    // Par défaut: dashboard
+    return '/dashboard';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     try {
+      const redirectTo = getRedirectTo();
       register(formData, {
+        redirectTo, // Passer la destination de redirection
         onError: (err: any) => {
           setError(err?.response?.data?.message || 'Une erreur est survenue lors de l\'inscription');
         },

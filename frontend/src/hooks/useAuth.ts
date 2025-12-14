@@ -59,7 +59,7 @@ export function useAuth() {
       // Déclencher un événement personnalisé
       window.dispatchEvent(new Event('auth-change'));
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
-      router.push('/dashboard');
+      // La redirection sera gérée dans la fonction register() ci-dessous
     },
   });
 
@@ -105,7 +105,24 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated,
-    register: (data: RegisterDto, options?: any) => registerMutation.mutate(data, options),
+    register: (data: RegisterDto, options?: any) => {
+      // Permettre de passer redirectTo dans les options
+      const redirectTo = options?.redirectTo || '/dashboard';
+      
+      registerMutation.mutate(data, {
+        ...options,
+        onSuccess: (response) => {
+          setIsAuthenticated(true);
+          window.dispatchEvent(new Event('auth-change'));
+          queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+          router.push(redirectTo);
+          // Appeler le callback onSuccess personnalisé si fourni
+          if (options?.onSuccess) {
+            options.onSuccess(response);
+          }
+        },
+      });
+    },
     login: (data: LoginDto, options?: any) => loginMutation.mutate(data, options),
     logout,
     isRegistering: registerMutation.isPending,

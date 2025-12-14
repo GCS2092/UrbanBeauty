@@ -34,7 +34,16 @@ api.interceptors.response.use(
       // Token expiré ou invalide
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
-        window.location.href = '/auth/login';
+        
+        // Ne pas rediriger automatiquement sur les pages publiques (checkout, produits, etc.)
+        const publicPaths = ['/checkout', '/cart', '/products', '/services', '/'];
+        const currentPath = window.location.pathname;
+        const isPublicPath = publicPaths.some(path => currentPath.startsWith(path));
+        
+        // Ne rediriger que si on n'est pas sur une page publique
+        if (!isPublicPath) {
+          window.location.href = '/auth/login';
+        }
       }
     }
     return Promise.reject(error);

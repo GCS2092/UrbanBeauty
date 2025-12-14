@@ -6,11 +6,16 @@ import {
   CreateShippingAddressDto,
   UpdateShippingAddressDto,
 } from '@/services/shipping-addresses.service';
+import { useAuth } from '@/hooks/useAuth';
 
 export function useShippingAddresses() {
+  const { isAuthenticated } = useAuth();
+  
   return useQuery({
     queryKey: ['shipping-addresses'],
     queryFn: () => shippingAddressesService.getAll(),
+    enabled: isAuthenticated, // Ne faire la requête que si l'utilisateur est authentifié
+    retry: false, // Ne pas réessayer en cas d'erreur
   });
 }
 
