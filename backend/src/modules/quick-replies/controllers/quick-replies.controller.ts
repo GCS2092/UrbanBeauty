@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { IsString, IsOptional, IsNotEmpty, IsArray } from 'class-validator';
 import { QuickRepliesService } from '../services/quick-replies.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -17,19 +18,39 @@ import { Roles } from '../../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../../shared/decorators/current-user.decorator';
 
 class CreateQuickReplyDto {
+  @IsString()
+  @IsNotEmpty()
   title: string;
+
+  @IsString()
+  @IsNotEmpty()
   content: string;
+
+  @IsString()
+  @IsOptional()
   shortcut?: string;
 }
 
 class UpdateQuickReplyDto {
+  @IsString()
+  @IsOptional()
   title?: string;
+
+  @IsString()
+  @IsOptional()
   content?: string;
+
+  @IsString()
+  @IsOptional()
   shortcut?: string;
+
+  @IsOptional()
   order?: number;
 }
 
 class ReorderDto {
+  @IsArray()
+  @IsString({ each: true })
   orderedIds: string[];
 }
 

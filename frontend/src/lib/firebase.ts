@@ -60,14 +60,15 @@ export function isFirebaseConfigured(): boolean {
   return !!app && !!firebaseConfig.appId;
 }
 
-// Fonction pour enregistrer le service worker
+// Fonction pour enregistrer le service worker (unifié avec mode hors ligne)
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     return null;
   }
 
   try {
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+    // Utiliser le service worker unifié (sw.js) qui inclut Firebase + mode hors ligne
+    const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
     });
     console.log('Service Worker registered:', registration);

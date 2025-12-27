@@ -26,10 +26,11 @@ api.interceptors.request.use(
   }
 );
 
-// Intercepteur pour gérer les erreurs
+// Intercepteur pour gérer les erreurs et le mode hors ligne
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    // Gérer les erreurs 401 (non autorisé)
     if (error.response?.status === 401) {
       // Token expiré ou invalide
       if (typeof window !== 'undefined') {
@@ -46,6 +47,36 @@ api.interceptors.response.use(
         }
       }
     }
+    
+    // Gérer le mode hors ligne pour les requêtes POST/PUT/PATCH/DELETE
+    if (!navigator.onLine && error.config) {
+      const method = error.config.method?.toUpperCase();
+      if (method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        // Ajouter à la queue hors ligne
+        if (typeof window !== 'undefined') {
+          const { offlineManager } = await import('./offline');
+          await offlineManager.addToQueue({
+            type: method as 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+            url: error.config.url || '',
+            data: error.config.data ? JSON.parse(error.config.data) : {},
+          });
+          
+          // Retourner une réponse spéciale pour indiquer que la requête est en queue
+          return Promise.resolve({
+            data: { 
+              message: 'Requête mise en file d\'attente. Elle sera synchronisée automatiquement.',
+              queued: true,
+              offline: true 
+            },
+            status: 202,
+            statusText: 'Accepted',
+            headers: {},
+            config: error.config,
+          });
+        }
+      }
+    }
+    
     return Promise.reject(error);
   }
 );
