@@ -13,6 +13,7 @@ import {
   BellIcon,
   ChatBubbleLeftRightIcon,
   CalendarIcon,
+  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
 import { useUsers } from '@/hooks/useUsers';
 import { useOrders } from '@/hooks/useOrders';
@@ -135,6 +136,22 @@ function AdminDashboardContent() {
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Notifications</h3>
                 <p className="text-xs sm:text-sm text-gray-600 mt-1">Envoyer des notifications</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Paramètres de Maintenance */}
+          <Link
+            href="/dashboard/admin/maintenance"
+            className="bg-white rounded-xl shadow-sm p-5 sm:p-6 hover:shadow-lg transition-all duration-200 active:scale-[0.98] group"
+          >
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 sm:p-4 rounded-xl group-hover:scale-110 transition-transform">
+                <WrenchScrewdriverIcon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Maintenance</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">Bloquer des fonctionnalités</p>
               </div>
             </div>
           </Link>

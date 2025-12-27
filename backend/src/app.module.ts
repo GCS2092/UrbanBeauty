@@ -23,6 +23,7 @@ import { FavoritesModule } from './modules/favorites/favorites.module';
 import { QuickRepliesModule } from './modules/quick-replies/quick-replies.module';
 import { ShippingAddressesModule } from './modules/shipping-addresses/shipping-addresses.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { RemindersModule } from './modules/reminders/reminders.module';
     QuickRepliesModule,
     ShippingAddressesModule,
     RemindersModule,
+    MaintenanceModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

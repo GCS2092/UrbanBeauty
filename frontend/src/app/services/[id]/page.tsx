@@ -14,6 +14,8 @@ import { formatCurrency, getSelectedCurrency } from '@/utils/currency';
 import { useQuery } from '@tanstack/react-query';
 import { bookingsService } from '@/services/bookings.service';
 import ReviewSection from '@/components/shared/ReviewSection';
+import { useCheckBooking } from '@/hooks/useMaintenance';
+import MaintenanceBanner from '@/components/maintenance/MaintenanceBanner';
 
 function ServiceDetailContent() {
   const params = useParams();
@@ -24,6 +26,7 @@ function ServiceDetailContent() {
   const { mutate: createBooking, isPending } = useCreateBooking();
   const notifications = useNotifications();
   const currency = getSelectedCurrency();
+  const { data: bookingStatus } = useCheckBooking();
 
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [bookingData, setBookingData] = useState({
@@ -255,8 +258,22 @@ function ServiceDetailContent() {
                       )}
                     </div>
                   ) : (
-                    <form onSubmit={handleBookingSubmit} className="bg-gray-50 rounded-lg p-6 space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Formulaire de réservation</h3>
+                    <div>
+                      {bookingStatus?.disabled && (
+                        <MaintenanceBanner
+                          message={bookingStatus.message || 'La prise de rendez-vous est temporairement désactivée'}
+                          variant="error"
+                        />
+                      )}
+                      {bookingStatus?.disabled ? (
+                        <div className="bg-gray-50 rounded-lg p-6">
+                          <p className="text-gray-600 text-center">
+                            Le formulaire de réservation est temporairement indisponible.
+                          </p>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleBookingSubmit} className="bg-gray-50 rounded-lg p-6 space-y-4">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Formulaire de réservation</h3>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -414,7 +431,9 @@ function ServiceDetailContent() {
                     {isPending ? 'Réservation...' : 'Confirmer la réservation'}
                   </button>
                 </div>
-                    </form>
+                        </form>
+                      )}
+                    </div>
                   )}
                 </>
               )}

@@ -204,11 +204,11 @@ model Category {
   order       Int? // Ordre d'affichage
   parentId    String? // Catégorie parente (pour sous-catégories)
   providerId  String? // ID du prestataire (null = catégorie globale/admin)
-  provider    Profile?  @relation(fields: [providerId], references: [id])
+  provider    Profile?   @relation(fields: [providerId], references: [id])
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
   products    Product[]
-  
+
   @@unique([name, providerId]) // Un nom unique par prestataire (ou global si providerId est null)
   @@index([providerId])
 }
@@ -482,4 +482,24 @@ model ShippingAddress {
   updatedAt  DateTime @updatedAt
 
   @@index([userId])
+}
+
+// Paramètres de maintenance et feature flags
+model MaintenanceSettings {
+  id                     String   @id @default(uuid())
+  // Fonctionnalités à bloquer
+  isBookingDisabled      Boolean  @default(false) // Bloquer la prise de rendez-vous
+  bookingMessage         String? // Message personnalisé pour les réservations
+  isChatDisabled         Boolean  @default(false) // Bloquer le chat avec les prestataires
+  chatMessage            String? // Message personnalisé pour le chat
+  isPrestatairesDisabled Boolean  @default(false) // Bloquer la section prestataires
+  prestatairesMessage    String? // Message personnalisé pour la section prestataires
+  isAuthDisabled         Boolean  @default(false) // Bloquer connexion/inscription
+  authMessage            String? // Message personnalisé pour l'authentification
+  // Métadonnées
+  updatedBy              String? // ID de l'admin qui a fait la modification
+  updatedAt              DateTime @default(now()) @updatedAt
+  createdAt              DateTime @default(now())
+
+  @@unique([id]) // Une seule ligne de paramètres
 }

@@ -9,6 +9,7 @@ import {
   UseGuards,
   Query,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { BookingsService } from '../services/bookings.service';
 import { CreateBookingDto } from '../dto/create-booking.dto';
@@ -18,10 +19,14 @@ import { OptionalJwtAuthGuard } from '../../auth/guards/optional-jwt-auth.guard'
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../../shared/decorators/roles.decorator';
 import { CurrentUser } from '../../../shared/decorators/current-user.decorator';
+import { MaintenanceService } from '../../maintenance/services/maintenance.service';
 
 @Controller('bookings')
 export class BookingsController {
-  constructor(private readonly bookingsService: BookingsService) {}
+  constructor(
+    private readonly bookingsService: BookingsService,
+    private readonly maintenanceService: MaintenanceService,
+  ) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)
@@ -51,7 +56,15 @@ export class BookingsController {
 
   @Post()
   @UseGuards(OptionalJwtAuthGuard)
-  create(@Body() createBookingDto: CreateBookingDto, @CurrentUser() user?: any) {
+  async create(@Body() createBookingDto: CreateBookingDto, @CurrentUser() user?: any) {
+    // Vérifier si les réservations sont désactivées
+    const bookingStatus = await this.maintenanceService.isBookingDisabled();
+    if (bookingStatus.disabled) {
+      throw new ServiceUnavailableException(
+        bookingStatus.message || 'La prise de rendez-vous est temporairement désactivée',
+      );
+    }
+    
     // Permettre les réservations sans authentification (guest bookings)
     const userId = user?.userId;
     return this.bookingsService.create(createBookingDto, userId);
