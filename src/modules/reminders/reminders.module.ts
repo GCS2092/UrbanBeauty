@@ -1,0 +1,16 @@
+import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
+import { RemindersService } from './services/reminders.service';
+import { PrismaService } from '../../prisma.service';
+import { NotificationsModule } from '../notifications/notifications.module';
+
+@Module({
+  imports: [
+    ScheduleModule.forRoot(),
+    NotificationsModule,
+  ],
+  providers: [RemindersService, PrismaService],
+  exports: [RemindersService],
+})
+export class RemindersModule {}
+
