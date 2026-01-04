@@ -1,0 +1,6 @@
+Rôle	Email	Mot de passe
+ADMIN ⭐	slovengama@gmail.com	password123
+ADMIN	admin@test.com	password123
+CLIENT	client@test.com	password123
+COIFFEUSE	coiffeuse@test.com	password123
+VENDEUSE	vendeuse@test.com	password123

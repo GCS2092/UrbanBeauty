@@ -1,0 +1,105 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { IsString, IsOptional, IsNotEmpty, IsArray } from 'class-validator';
+import { QuickRepliesService } from '../services/quick-replies.service';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../../shared/decorators/roles.decorator';
+import { CurrentUser } from '../../../shared/decorators/current-user.decorator';
+
+class CreateQuickReplyDto {
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsString()
+  @IsNotEmpty()
+  content: string;
+
+  @IsString()
+  @IsOptional()
+  shortcut?: string;
+}
+
+class UpdateQuickReplyDto {
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @IsString()
+  @IsOptional()
+  content?: string;
+
+  @IsString()
+  @IsOptional()
+  shortcut?: string;
+
+  @IsOptional()
+  order?: number;
+}
+
+class ReorderDto {
+  @IsArray()
+  @IsString({ each: true })
+  orderedIds: string[];
+}
+
+@Controller('quick-replies')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('COIFFEUSE', 'MANICURISTE', 'VENDEUSE', 'ADMIN')
+export class QuickRepliesController {
+  constructor(private readonly quickRepliesService: QuickRepliesService) {}
+
+  @Get()
+  findAll(@CurrentUser() user: any) {
+    return this.quickRepliesService.findAll(user.userId);
+  }
+
+  @Get(':id')
+  findOne(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.quickRepliesService.findOne(user.userId, id);
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  create(@CurrentUser() user: any, @Body() dto: CreateQuickReplyDto) {
+    return this.quickRepliesService.create(user.userId, dto);
+  }
+
+  @Post('defaults')
+  @HttpCode(HttpStatus.CREATED)
+  createDefaults(@CurrentUser() user: any) {
+    return this.quickRepliesService.createDefaults(user.userId);
+  }
+
+  @Patch('reorder')
+  reorder(@CurrentUser() user: any, @Body() dto: ReorderDto) {
+    return this.quickRepliesService.reorder(user.userId, dto.orderedIds);
+  }
+
+  @Patch(':id')
+  update(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateQuickReplyDto,
+  ) {
+    return this.quickRepliesService.update(user.userId, id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  remove(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.quickRepliesService.remove(user.userId, id);
+  }
+}
+
