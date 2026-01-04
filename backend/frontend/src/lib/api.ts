@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://urbanbeauty.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || undefined;
 
 // Créer une instance axios
 export const api = axios.create({
