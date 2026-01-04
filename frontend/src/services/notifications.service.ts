@@ -1,0 +1,46 @@
+import api from '@/lib/api';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  body: string;
+  type?: string;
+  data?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export const notificationsService = {
+  getAll: async (): Promise<Notification[]> => {
+    const response = await api.get<Notification[]>('/api/notifications');
+    return response.data;
+  },
+
+  getUnreadCount: async (): Promise<number> => {
+    const response = await api.get<{ count: number }>('/api/notifications/unread-count');
+    return response.data.count;
+  },
+
+  markAsRead: async (id: string): Promise<void> => {
+    await api.patch(`/api/notifications/${id}/read`);
+  },
+
+  markAllAsRead: async (): Promise<void> => {
+    await api.patch('/api/notifications/mark-all-read');
+  },
+
+  deleteOne: async (id: string): Promise<void> => {
+    await api.delete(`/api/notifications/${id}`);
+  },
+
+  deleteAll: async (): Promise<{ message: string; count: number }> => {
+    const response = await api.delete<{ message: string; count: number }>('/api/notifications');
+    return response.data;
+  },
+
+  deleteRead: async (): Promise<{ message: string; count: number }> => {
+    const response = await api.delete<{ message: string; count: number }>('/api/notifications/read/clear');
+    return response.data;
+  },
+};

@@ -1,19 +1,50 @@
+<<<<<<< HEAD
 # compiled output
 /dist
 /node_modules
 /build
+=======
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+.nyc_output
+
+# Production builds
+dist/
+build/
+.next/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+>>>>>>> ce1af0a55e00aed7309910251c94e5caf36f46ce
 
 # Logs
 logs
 *.log
 npm-debug.log*
+<<<<<<< HEAD
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+=======
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+>>>>>>> ce1af0a55e00aed7309910251c94e5caf36f46ce
 lerna-debug.log*
 
 # OS
 .DS_Store
+<<<<<<< HEAD
 
 # Tests
 /coverage
@@ -61,3 +92,45 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 .vercel
 .env*.local
+=======
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+
+# Prisma
+prisma/migrations/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Cloudinary
+cloudinary.json
+
+>>>>>>> ce1af0a55e00aed7309910251c94e5caf36f46ce
