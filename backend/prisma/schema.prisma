@@ -1,25 +1,163 @@
-// ------------------------
-// Générateur Prisma Client
-// ------------------------
 generator client {
   provider = "prisma-client-js"
 }
 
-// ------------------------
-// Source de données
-// ------------------------
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// ------------------------
-// ENUMS
-// ------------------------
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  role      Role      @default(CLIENT)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
+  orders    Order[]
+  payments  Payment[]
+  products  Product[] @relation("UserProducts")
+  profile   Profile?
+  reviews   Review[]
+}
+
+model Profile {
+  id         String    @id @default(uuid())
+  userId     String    @unique
+  firstName  String
+  lastName   String
+  phone      String?
+  address    String?
+  avatar     String?
+  isProvider Boolean   @default(false)
+  rating     Float?
+  portfolio  Image[]
+  user       User      @relation(fields: [userId], references: [id])
+  services   Service[]
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  categoryId  String
+  stock       Int
+  sellerId    String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  images      Image[]
+  orders      OrderItem[]
+  category    Category    @relation(fields: [categoryId], references: [id])
+  seller      User        @relation("UserProducts", fields: [sellerId], references: [id])
+  reviews     Review[]
+}
+
+model Service {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  duration    Int
+  available   Boolean   @default(true)
+  providerId  String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    Booking[]
+  images      Image[]
+  reviews     Review[]
+  provider    Profile   @relation(fields: [providerId], references: [id])
+}
+
+model Image {
+  id          String    @id @default(uuid())
+  url         String
+  type        ImageType
+  productId   String?
+  serviceId   String?
+  portfolioId String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  portfolio   Profile?  @relation(fields: [portfolioId], references: [id])
+  product     Product?  @relation(fields: [productId], references: [id])
+  service     Service?  @relation(fields: [serviceId], references: [id])
+}
+
+model Category {
+  id       String    @id @default(uuid())
+  name     String
+  products Product[]
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  userId    String
+  total     Float
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+  payment   Payment?
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Booking {
+  id        String        @id @default(uuid())
+  userId    String
+  serviceId String
+  date      DateTime
+  status    BookingStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  service   Service       @relation(fields: [serviceId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
+  payment   Payment?
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  provider      String
+  transactionId String?
+  userId        String
+  bookingId     String?       @unique
+  orderId       String?       @unique
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  booking       Booking?      @relation(fields: [bookingId], references: [id])
+  order         Order?        @relation(fields: [orderId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  userId    String
+  productId String?
+  serviceId String?
+  createdAt DateTime @default(now())
+  product   Product? @relation(fields: [productId], references: [id])
+  service   Service? @relation(fields: [serviceId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
 enum Role {
   CLIENT
   COIFFEUSE
-  MANICURISTE
   VENDEUSE
   ADMIN
 }
@@ -50,456 +188,4 @@ enum PaymentStatus {
   COMPLETED
   FAILED
   REFUNDED
-}
-
-// ------------------------
-// MODELS
-// ------------------------
-model User {
-  id                 String   @id @default(uuid())
-  email              String   @unique
-  password           String
-  role               Role     @default(CLIENT)
-  isActive           Boolean  @default(true) // Pour bloquer/débloquer les utilisateurs
-  blockReason        String? // Message expliquant le motif du blocage
-  mustChangePassword Boolean  @default(false) // Pour forcer le changement de mot de passe à la première connexion
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  profile           Profile?
-  notificationToken NotificationToken?
-  orders            Order[]
-  products          Product[]          @relation("UserProducts") // Pour les vendeuses
-  bookings          Booking[] // Pour les clients
-  reviews           Review[] // Avis laissés
-  reviewHelpful     ReviewHelpful[] // Avis marqués comme utiles
-  payments          Payment[] // Paiements effectués
-  conversations1    Conversation[]     @relation("Conversations1") // Conversations où l'utilisateur est participant1
-  conversations2    Conversation[]     @relation("Conversations2") // Conversations où l'utilisateur est participant2
-  messages          Message[] // Messages envoyés
-  notifications     Notification[] // Notifications reçues
-  favorites         Favorite[] // Produits et services favoris
-  quickReplies      QuickReply[] // Réponses rapides pour le chat
-  shippingAddresses ShippingAddress[] // Adresses de livraison sauvegardées
-}
-
-model Profile {
-  id                String             @id @default(uuid())
-  userId            String             @unique
-  user              User               @relation(fields: [userId], references: [id])
-  firstName         String
-  lastName          String
-  phone             String?
-  address           String?
-  city              String? // Ville
-  postalCode        String? // Code postal
-  country           String? // Pays
-  avatar            String?
-  bio               String? // Biographie
-  specialties       String[] // Spécialités (array)
-  experience        Int? // Années d'expérience
-  website           String? // Site web
-  instagram         String? // Instagram
-  facebook          String? // Facebook
-  tiktok            String? // TikTok
-  isProvider        Boolean            @default(false)
-  totalBookings     Int                @default(0) // Total réservations
-  completedBookings Int                @default(0) // Réservations complétées
-  cancellationRate  Float? // Taux d'annulation
-  services          Service[]
-  portfolio         Image[]
-  rating            Float?
-  hairStyleRequests HairStyleRequest[] // Demandes de coiffure acceptées
-  categories        Category[] // Catégories créées par ce prestataire
-}
-
-model Product {
-  id                 String      @id @default(uuid())
-  name               String
-  slug               String      @unique
-  description        String
-  price              Float
-  originalPrice      Float? // Prix original (avant promotion)
-  discountPrice      Float? // Prix en promotion
-  isOnSale           Boolean     @default(false)
-  discountPercentage Int? // Pourcentage de réduction
-  brand              String? // Marque du produit
-  volume             String? // Volume/contenance (ex: "50ml", "250g")
-  ingredients        String? // Liste des ingrédients
-  skinType           String? // Type de peau (ex: "Tous types", "Peau sensible")
-  sku                String?     @unique // Stock Keeping Unit
-  categoryId         String
-  category           Category    @relation(fields: [categoryId], references: [id])
-  images             Image[]
-  stock              Int
-  lowStockThreshold  Int? // Seuil d'alerte stock bas
-  isActive           Boolean     @default(true)
-  isFeatured         Boolean     @default(false)
-  views              Int         @default(0)
-  salesCount         Int         @default(0)
-  rating             Float? // Note moyenne calculée (alias pour averageRating)
-  averageRating      Float? // Note moyenne calculée
-  reviewCount        Int         @default(0) // Nombre d'avis
-  orders             OrderItem[]
-  reviews            Review[]
-  favorites          Favorite[]
-  sellerId           String
-  seller             User        @relation("UserProducts", fields: [sellerId], references: [id])
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
-}
-
-model Service {
-  id                 String     @id @default(uuid())
-  name               String
-  slug               String     @unique
-  description        String?
-  price              Float
-  duration           Int // en minutes
-  category           String? // Catégorie de service (ex: "Tresses", "Locks", "Pose perruque")
-  available          Boolean    @default(true)
-  maxBookingsPerDay  Int? // Nombre max de réservations/jour
-  advanceBookingDays Int? // Jours à l'avance pour réserver
-  views              Int        @default(0)
-  bookingsCount      Int        @default(0)
-  rating             Float? // Note moyenne calculée (alias pour averageRating)
-  averageRating      Float? // Note moyenne calculée
-  reviewCount        Int        @default(0) // Nombre d'avis
-  isFeatured         Boolean    @default(false)
-  providerId         String
-  provider           Profile    @relation(fields: [providerId], references: [id])
-  bookings           Booking[]
-  reviews            Review[]
-  images             Image[]
-  favorites          Favorite[]
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
-}
-
-model Image {
-  id          String    @id @default(uuid())
-  url         String
-  type        ImageType
-  alt         String? // Texte alternatif
-  title       String? // Titre de l'image
-  order       Int? // Ordre d'affichage
-  isPrimary   Boolean   @default(false) // Image principale
-  productId   String?
-  product     Product?  @relation(fields: [productId], references: [id])
-  serviceId   String?
-  service     Service?  @relation(fields: [serviceId], references: [id])
-  portfolioId String?
-  portfolio   Profile?  @relation(fields: [portfolioId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Category {
-  id          String     @id @default(uuid())
-  name        String
-  slug        String
-  description String?
-  image       String? // Image de la catégorie
-  isActive    Boolean    @default(true)
-  order       Int? // Ordre d'affichage
-  parentId    String? // Catégorie parente (pour sous-catégories)
-  providerId  String? // ID du prestataire (null = catégorie globale/admin)
-  provider    Profile?   @relation(fields: [providerId], references: [id])
-  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryHierarchy")
-  products    Product[]
-
-  @@unique([name, providerId]) // Un nom unique par prestataire (ou global si providerId est null)
-  @@index([providerId])
-}
-
-model Order {
-  id                    String      @id @default(uuid())
-  orderNumber           String      @unique // Numéro de commande unique
-  trackingCode          String      @unique // Code de suivi court pour les invités (ex: UB-ABC123)
-  userId                String? // Peut être null pour les commandes guest
-  user                  User?       @relation(fields: [userId], references: [id])
-  customerEmail         String // Email du client (pour notifications)
-  customerName          String // Nom complet du client
-  customerPhone         String? // Téléphone du client
-  shippingAddress       String // Adresse de livraison
-  billingAddress        String? // Adresse de facturation
-  shippingMethod        String? // Méthode de livraison
-  shippingCost          Float       @default(0) // Coût de livraison
-  trackingNumber        String? // Numéro de suivi
-  estimatedDeliveryDate DateTime? // Date de livraison estimée
-  notes                 String? // Notes de la commande (client)
-  sellerNotes           String? // Notes internes du vendeur
-  cancellationReason    String? // Raison d'annulation
-  couponId              String? // Coupon appliqué
-  coupon                Coupon?     @relation(fields: [couponId], references: [id])
-  subtotal              Float // Sous-total avant réduction
-  discount              Float       @default(0) // Montant de la réduction
-  total                 Float // Total final
-  status                OrderStatus @default(PENDING)
-  items                 OrderItem[]
-  payment               Payment?
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
-}
-
-model OrderItem {
-  id        String  @id @default(uuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id])
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
-  price     Float
-}
-
-model Booking {
-  id                 String        @id @default(uuid())
-  bookingNumber      String        @unique // Numéro de réservation unique
-  userId             String? // Peut être null pour les réservations guest
-  user               User?         @relation(fields: [userId], references: [id])
-  serviceId          String
-  service            Service       @relation(fields: [serviceId], references: [id])
-  date               DateTime // Date du rendez-vous
-  startTime          DateTime // Heure de début
-  endTime            DateTime // Heure de fin (calculée)
-  location           String? // Lieu du rendez-vous
-  clientName         String? // Nom complet du client (pour réservations guest)
-  clientPhone        String? // Téléphone du client
-  clientEmail        String? // Email du client
-  status             BookingStatus @default(PENDING)
-  notes              String?
-  reminderSent       Boolean       @default(false) // Rappel envoyé
-  cancellationReason String? // Raison d'annulation
-  rescheduleCount    Int           @default(0) // Nombre de reports
-  payment            Payment?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-}
-
-model Payment {
-  id            String        @id @default(uuid())
-  amount        Float
-  currency      String        @default("EUR") // Devise
-  status        PaymentStatus @default(PENDING)
-  provider      String // ex: 'stripe', 'mobile_money'
-  paymentMethod String? // Méthode (carte, mobile money, etc.)
-  transactionId String? // ID externe du paiement
-  refundAmount  Float? // Montant remboursé
-  refundReason  String? // Raison du remboursement
-  userId        String
-  user          User          @relation(fields: [userId], references: [id])
-  bookingId     String?       @unique
-  booking       Booking?      @relation(fields: [bookingId], references: [id])
-  orderId       String?       @unique
-  order         Order?        @relation(fields: [orderId], references: [id])
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-}
-
-model Review {
-  id                 String          @id @default(uuid())
-  rating             Int // 1-5
-  comment            String?
-  isVerifiedPurchase Boolean         @default(false) // Achat vérifié
-  isPublished        Boolean         @default(true) // Avis publié
-  helpfulCount       Int             @default(0) // Nombre de "utile"
-  providerReply      String? // Réponse du prestataire
-  providerReplyAt    DateTime? // Date de la réponse
-  userId             String
-  user               User            @relation(fields: [userId], references: [id])
-  productId          String?
-  product            Product?        @relation(fields: [productId], references: [id])
-  serviceId          String?
-  service            Service?        @relation(fields: [serviceId], references: [id])
-  helpful            ReviewHelpful[] // Utilisateurs qui ont trouvé l'avis utile
-  createdAt          DateTime        @default(now())
-}
-
-model ReviewHelpful {
-  id        String   @id @default(uuid())
-  reviewId  String
-  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([reviewId, userId])
-  @@index([reviewId])
-  @@index([userId])
-}
-
-model Coupon {
-  id            String   @id @default(uuid())
-  code          String   @unique // Code du coupon (ex: "WELCOME10")
-  description   String? // Description du coupon
-  discountType  String // "PERCENTAGE" ou "FIXED"
-  discountValue Float // Valeur de la réduction (pourcentage ou montant fixe)
-  minPurchase   Float? // Montant minimum d'achat requis
-  maxDiscount   Float? // Réduction maximale (pour les pourcentages)
-  validFrom     DateTime // Date de début de validité
-  validUntil    DateTime // Date de fin de validité
-  usageLimit    Int? // Nombre maximum d'utilisations totales
-  usageCount    Int      @default(0) // Nombre d'utilisations actuelles
-  userLimit     Int? // Nombre maximum d'utilisations par utilisateur
-  isActive      Boolean  @default(true) // Coupon actif/inactif
-  applicableTo  String? // "ALL", "PRODUCTS", "SERVICES", ou IDs spécifiques
-  orders        Order[] // Commandes utilisant ce coupon
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model NotificationToken {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token     String   @unique // FCM token
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  body      String
-  type      String? // 'ORDER', 'MESSAGE', 'BOOKING', 'ORDER_UPDATE', etc.
-  data      String? // JSON string pour les données supplémentaires
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([isRead])
-  @@index([createdAt])
-}
-
-model Conversation {
-  id             String    @id @default(uuid())
-  participant1Id String
-  participant1   User      @relation("Conversations1", fields: [participant1Id], references: [id], onDelete: Cascade)
-  participant2Id String
-  participant2   User      @relation("Conversations2", fields: [participant2Id], references: [id], onDelete: Cascade)
-  lastMessageAt  DateTime?
-  lastMessage    String?
-  unreadCount1   Int       @default(0) // Messages non lus pour participant1
-  unreadCount2   Int       @default(0) // Messages non lus pour participant2
-  messages       Message[]
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  @@unique([participant1Id, participant2Id])
-  @@index([participant1Id])
-  @@index([participant2Id])
-}
-
-model Message {
-  id             String       @id @default(uuid())
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderId       String
-  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  content        String
-  isRead         Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-
-  @@index([conversationId])
-  @@index([senderId])
-}
-
-model HairStyleRequest {
-  id                String    @id @default(uuid())
-  lookbookItemId    String?
-  lookbookItemName  String?
-  clientName        String
-  clientPhone       String
-  clientEmail       String?
-  hairStyleType     String
-  numberOfBraids    Int?
-  braidType         String?
-  numberOfPackages  Int?
-  preferredTime     DateTime?
-  preferredDate     DateTime?
-  additionalDetails String?
-  status            String    @default("PENDING")
-  userId            String? // Client qui a fait la demande
-  providerId        String? // Prestataire qui a accepté la demande
-  provider          Profile?  @relation(fields: [providerId], references: [id])
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  @@index([providerId])
-  @@index([status])
-}
-
-// Favoris utilisateur (produits et services)
-model Favorite {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId String?
-  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
-  serviceId String?
-  service   Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([userId, productId])
-  @@unique([userId, serviceId])
-  @@index([userId])
-  @@index([productId])
-  @@index([serviceId])
-}
-
-// Réponses rapides pour le chat (coiffeuses/vendeuses)
-model QuickReply {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String // Ex: "Salutations", "Prix", "Disponibilités"
-  content   String // Le message complet
-  shortcut  String? // Ex: "/hello", "/prix"
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-}
-
-// Adresses de livraison sauvegardées (clients)
-model ShippingAddress {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  label      String // Ex: "Maison", "Bureau", "Chez maman"
-  fullName   String // Nom complet du destinataire
-  phone      String? // Téléphone
-  address    String // Adresse complète
-  city       String // Ville
-  postalCode String? // Code postal
-  country    String   @default("Cameroun")
-  isDefault  Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([userId])
-}
-
-// Paramètres de maintenance et feature flags
-model MaintenanceSettings {
-  id                     String   @id @default(uuid())
-  // Fonctionnalités à bloquer
-  isBookingDisabled      Boolean  @default(false) // Bloquer la prise de rendez-vous
-  bookingMessage         String? // Message personnalisé pour les réservations
-  isChatDisabled         Boolean  @default(false) // Bloquer le chat avec les prestataires
-  chatMessage            String? // Message personnalisé pour le chat
-  isPrestatairesDisabled Boolean  @default(false) // Bloquer la section prestataires
-  prestatairesMessage    String? // Message personnalisé pour la section prestataires
-  isAuthDisabled         Boolean  @default(false) // Bloquer connexion/inscription
-  authMessage            String? // Message personnalisé pour l'authentification
-  // Métadonnées
-  updatedBy              String? // ID de l'admin qui a fait la modification
-  updatedAt              DateTime @default(now()) @updatedAt
-  createdAt              DateTime @default(now())
-
-  @@unique([id]) // Une seule ligne de paramètres
 }
