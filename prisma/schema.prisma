@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  role      Role      @default(CLIENT)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
+  orders    Order[]
+  payments  Payment[]
+  products  Product[] @relation("UserProducts")
+  profile   Profile?
+  reviews   Review[]
+}
+
+model Profile {
+  id         String    @id @default(uuid())
+  userId     String    @unique
+  firstName  String
+  lastName   String
+  phone      String?
+  address    String?
+  avatar     String?
+  isProvider Boolean   @default(false)
+  rating     Float?
+  portfolio  Image[]
+  user       User      @relation(fields: [userId], references: [id])
+  services   Service[]
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  categoryId  String
+  stock       Int
+  sellerId    String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  images      Image[]
+  orders      OrderItem[]
+  category    Category    @relation(fields: [categoryId], references: [id])
+  seller      User        @relation("UserProducts", fields: [sellerId], references: [id])
+  reviews     Review[]
+}
+
+model Service {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  duration    Int
+  available   Boolean   @default(true)
+  providerId  String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    Booking[]
+  images      Image[]
+  reviews     Review[]
+  provider    Profile   @relation(fields: [providerId], references: [id])
+}
+
+model Image {
+  id          String    @id @default(uuid())
+  url         String
+  type        ImageType
+  productId   String?
+  serviceId   String?
+  portfolioId String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  portfolio   Profile?  @relation(fields: [portfolioId], references: [id])
+  product     Product?  @relation(fields: [productId], references: [id])
+  service     Service?  @relation(fields: [serviceId], references: [id])
+}
+
+model Category {
+  id       String    @id @default(uuid())
+  name     String
+  products Product[]
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  userId    String
+  total     Float
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+  payment   Payment?
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Booking {
+  id        String        @id @default(uuid())
+  userId    String
+  serviceId String
+  date      DateTime
+  status    BookingStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  service   Service       @relation(fields: [serviceId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
+  payment   Payment?
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  provider      String
+  transactionId String?
+  userId        String
+  bookingId     String?       @unique
+  orderId       String?       @unique
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  booking       Booking?      @relation(fields: [bookingId], references: [id])
+  order         Order?        @relation(fields: [orderId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  userId    String
+  productId String?
+  serviceId String?
+  createdAt DateTime @default(now())
+  product   Product? @relation(fields: [productId], references: [id])
+  service   Service? @relation(fields: [serviceId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  CLIENT
+  COIFFEUSE
+  VENDEUSE
+  ADMIN
+}
+
+enum ImageType {
+  UPLOADED
+  URL
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
