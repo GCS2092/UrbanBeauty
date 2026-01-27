@@ -8,18 +8,19 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  password  String
-  role      Role      @default(CLIENT)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  bookings  Booking[]
-  orders    Order[]
-  payments  Payment[]
-  products  Product[] @relation("UserProducts")
-  profile   Profile?
-  reviews   Review[]
+  id          String    @id @default(uuid())
+  email       String    @unique
+  password    String
+  blockReason String?
+  role        Role      @default(CLIENT)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    Booking[]
+  orders      Order[]
+  payments    Payment[]
+  products    Product[] @relation("UserProducts")
+  profile     Profile?
+  reviews     Review[]
 }
 
 model Profile {
@@ -68,6 +69,19 @@ model Service {
   images      Image[]
   reviews     Review[]
   provider    Profile   @relation(fields: [providerId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  userId    String
+  productId String?
+  serviceId String?
+  createdAt DateTime @default(now())
+  product   Product? @relation(fields: [productId], references: [id])
+  service   Service? @relation(fields: [serviceId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Image {
@@ -140,19 +154,6 @@ model Payment {
   booking       Booking?      @relation(fields: [bookingId], references: [id])
   order         Order?        @relation(fields: [orderId], references: [id])
   user          User          @relation(fields: [userId], references: [id])
-}
-
-model Review {
-  id        String   @id @default(uuid())
-  rating    Int
-  comment   String?
-  userId    String
-  productId String?
-  serviceId String?
-  createdAt DateTime @default(now())
-  product   Product? @relation(fields: [productId], references: [id])
-  service   Service? @relation(fields: [serviceId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
 }
 
 enum Role {

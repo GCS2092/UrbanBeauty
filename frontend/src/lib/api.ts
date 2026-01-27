@@ -48,6 +48,62 @@ api.interceptors.response.use(
       }
     }
     
+    // Gérer les erreurs 404 (Not Found) - Routes backend manquantes ou URL incorrecte
+    if (error.response?.status === 404) {
+      console.error('❌ Backend route not found (404). Possible causes:');
+      console.error('  1. Backend is not deployed or URL is incorrect');
+      console.error('  2. Backend routes are not configured correctly');
+      console.error('  3. CORS is blocking the request');
+      console.error(`  Requested URL: ${error.config?.url || 'unknown'}`);
+      console.error(`  Base URL: ${API_URL || 'not configured'}`);
+      
+      // Pour les requêtes GET, retourner un tableau vide pour éviter de bloquer l'UI
+      if (error.config?.method?.toLowerCase() === 'get') {
+        const url = error.config.url || '';
+        if (url.includes('/products') || url.includes('/services') || url.includes('/providers')) {
+          return Promise.resolve({
+            data: [],
+            status: 200,
+            statusText: 'OK (fallback)',
+            headers: {},
+            config: error.config,
+          });
+        }
+      }
+    }
+    
+    // Gérer les erreurs 503 (Service Unavailable) - Backend en veille ou indisponible
+    if (error.response?.status === 503 || error.code === 'ECONNREFUSED' || error.message?.includes('503')) {
+      console.warn('⚠️ Backend service unavailable (503). The backend may be sleeping or restarting.');
+      console.warn('💡 Tip: On Render free tier, services sleep after 15 minutes of inactivity.');
+      console.warn('💡 The service will wake up automatically on the next request (may take 30-60 seconds).');
+      
+      // Pour les requêtes GET, on peut retourner un tableau vide pour éviter de bloquer l'UI
+      if (error.config?.method?.toLowerCase() === 'get') {
+        const url = error.config.url || '';
+        // Si c'est une requête qui devrait retourner un tableau, retourner un tableau vide
+        if (url.includes('/products') || url.includes('/services') || url.includes('/providers')) {
+          return Promise.resolve({
+            data: [],
+            status: 200,
+            statusText: 'OK (cached)',
+            headers: {},
+            config: error.config,
+          });
+        }
+      }
+    }
+    
+    // Gérer les erreurs CORS
+    if (error.code === 'ERR_NETWORK' || error.message?.includes('CORS') || error.message?.includes('Cross-Origin')) {
+      console.error('❌ CORS error detected. Possible causes:');
+      console.error('  1. Backend CORS_ORIGIN is not configured correctly');
+      console.error('  2. Backend is not allowing requests from this origin');
+      console.error(`  Current origin: ${typeof window !== 'undefined' ? window.location.origin : 'unknown'}`);
+      console.error(`  Backend URL: ${API_URL || 'not configured'}`);
+      console.error('💡 Solution: Configure CORS_ORIGIN in backend to include:', typeof window !== 'undefined' ? window.location.origin : 'your frontend URL');
+    }
+    
     // Gérer le mode hors ligne pour les requêtes POST/PUT/PATCH/DELETE
     if (!navigator.onLine && error.config) {
       const method = error.config.method?.toUpperCase();
