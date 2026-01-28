@@ -4,7 +4,7 @@
 
 **Email** : slovengama@gmail.com  
 **Mot de passe** : password123  
-**Rôle** : ADMIN
+**Rôle** : ADMIN 
 
 ---
 
