@@ -150,7 +150,11 @@ export default function Home() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {featuredServices.map((service) => (
-              <ServiceCard key={service.id} {...service} />
+              <ServiceCard 
+                key={service.id} 
+                {...service} 
+                provider={service.provider ? `${service.provider.firstName} ${service.provider.lastName}` : undefined}
+              />
             ))}
           </div>
         </div>
