@@ -7,4 +7,4 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('❌ Variables Supabase manquantes. Vérifiez votre .env.local')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey) 
