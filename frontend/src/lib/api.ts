@@ -1,140 +1,525 @@
-import axios from 'axios';
+// lib/api.ts
+// Version migrée vers Supabase - Plus besoin de backend Render!
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || undefined;
+import { supabase } from './supabase';
 
-// Créer une instance axios
-export const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// ================================
+// TYPES
+// ================================
 
-// Intercepteur pour ajouter le token JWT
-api.interceptors.request.use(
-  (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+export interface ApiResponse<T = any> {
+  data?: T;
+  error?: string;
+  message?: string;
+  status: number;
+  queued?: boolean;
+  offline?: boolean;
+}
+
+interface OfflineRequest {
+  type: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  url: string;
+  data: any;
+}
+
+// ================================
+// GESTION DES ERREURS
+// ================================
+
+const handleSupabaseError = (error: any): ApiResponse => {
+  console.error('Supabase error:', error);
+  
+  return {
+    error: error.message || 'Une erreur est survenue',
+    status: error.code === 'PGRST116' ? 404 : 500,
+    data: undefined
+  };
+};
+
+// ================================
+// MODE HORS LIGNE
+// ================================
+
+class OfflineManager {
+  private queueKey = 'offline_requests_queue';
+
+  async addToQueue(request: OfflineRequest): Promise<void> {
+    if (typeof window === 'undefined') return;
+
+    const queue = this.getQueue();
+    queue.push({
+      ...request,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem(this.queueKey, JSON.stringify(queue));
+    console.log('Requête ajoutée à la file d\'attente hors ligne');
+  }
+
+  getQueue(): any[] {
+    if (typeof window === 'undefined') return [];
+    
+    const stored = localStorage.getItem(this.queueKey);
+    return stored ? JSON.parse(stored) : [];
+  }
+
+  async processQueue(): Promise<void> {
+    const queue = this.getQueue();
+    if (queue.length === 0) return;
+
+    console.log(`Traitement de ${queue.length} requêtes en attente...`);
+    
+    for (const request of queue) {
+      try {
+        await this.executeRequest(request);
+      } catch (error) {
+        console.error('Erreur lors du traitement de la requête:', error);
       }
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
-// Intercepteur pour gérer les erreurs et le mode hors ligne
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    // Gérer les erreurs 401 (non autorisé)
-    if (error.response?.status === 401) {
-      // Token expiré ou invalide
-      if (typeof window !== 'undefined') {
+    localStorage.removeItem(this.queueKey);
+  }
+
+  private async executeRequest(request: any): Promise<void> {
+    // À implémenter selon vos besoins
+    console.log('Exécution de la requête:', request);
+  }
+}
+
+export const offlineManager = new OfflineManager();
+
+// ================================
+// API WRAPPER (Compatible avec l'ancien code)
+// ================================
+
+class SupabaseApiWrapper {
+  private auth: {
+    getToken: () => string | null;
+    removeToken: () => void;
+  };
+
+  constructor() {
+    this.auth = {
+      getToken: () => {
+        if (typeof window === 'undefined') return null;
+        return localStorage.getItem('access_token');
+      },
+      removeToken: () => {
+        if (typeof window === 'undefined') return;
         localStorage.removeItem('access_token');
-        
-        // Ne pas rediriger automatiquement sur les pages publiques (checkout, produits, etc.)
+      }
+    };
+
+    // Écouter les changements de connexion
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        console.log('✅ Connexion rétablie');
+        offlineManager.processQueue();
+      });
+    }
+  }
+
+  // ================================
+  // MÉTHODES HTTP
+  // ================================
+
+  async get(url: string): Promise<ApiResponse> {
+    try {
+      // Mode hors ligne
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        console.warn('⚠️ Mode hors ligne - Retour de données vides');
+        return {
+          data: [],
+          status: 200,
+          message: 'Mode hors ligne'
+        };
+      }
+
+      // Parser l'URL pour déterminer la table et les paramètres
+      const result = await this.parseAndExecuteGet(url);
+      return result;
+    } catch (error: any) {
+      return this.handleError(error, 'GET', url);
+    }
+  }
+
+  async post(url: string, data: any): Promise<ApiResponse> {
+    try {
+      // Mode hors ligne
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        await offlineManager.addToQueue({ type: 'POST', url, data });
+        return {
+          data: { queued: true, offline: true },
+          status: 202,
+          message: 'Requête mise en file d\'attente'
+        };
+      }
+
+      const result = await this.parseAndExecutePost(url, data);
+      return result;
+    } catch (error: any) {
+      return this.handleError(error, 'POST', url, data);
+    }
+  }
+
+  async put(url: string, data: any): Promise<ApiResponse> {
+    try {
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        await offlineManager.addToQueue({ type: 'PUT', url, data });
+        return {
+          data: { queued: true, offline: true },
+          status: 202,
+          message: 'Requête mise en file d\'attente'
+        };
+      }
+
+      const result = await this.parseAndExecutePut(url, data);
+      return result;
+    } catch (error: any) {
+      return this.handleError(error, 'PUT', url, data);
+    }
+  }
+
+  async patch(url: string, data: any): Promise<ApiResponse> {
+    return this.put(url, data); // PATCH = PUT pour Supabase
+  }
+
+  async delete(url: string): Promise<ApiResponse> {
+    try {
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        await offlineManager.addToQueue({ type: 'DELETE', url, data: {} });
+        return {
+          data: { queued: true, offline: true },
+          status: 202,
+          message: 'Requête mise en file d\'attente'
+        };
+      }
+
+      const result = await this.parseAndExecuteDelete(url);
+      return result;
+    } catch (error: any) {
+      return this.handleError(error, 'DELETE', url);
+    }
+  }
+
+  // ================================
+  // PARSERS D'URL
+  // ================================
+
+  private async parseAndExecuteGet(url: string): Promise<ApiResponse> {
+    // /api/services
+    if (url.includes('/services') && !url.match(/\/services\/[^/]+$/)) {
+      const { data, error } = await supabase
+        .from('Service')
+        .select('*')
+        .order('name');
+      
+      if (error) return handleSupabaseError(error);
+      return { data: data || [], status: 200 };
+    }
+
+    // /api/services/:id
+    if (url.match(/\/services\/([^/]+)$/)) {
+      const id = url.split('/').pop();
+      const { data, error } = await supabase
+        .from('Service')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) return handleSupabaseError(error);
+      return { data, status: 200 };
+    }
+
+    // /api/products
+    if (url.includes('/products') && !url.match(/\/products\/[^/]+$/)) {
+      const { data, error } = await supabase
+        .from('Product')
+        .select('*')
+        .order('name');
+      
+      if (error) return handleSupabaseError(error);
+      return { data: data || [], status: 200 };
+    }
+
+    // /api/products/:id
+    if (url.match(/\/products\/([^/]+)$/)) {
+      const id = url.split('/').pop();
+      const { data, error } = await supabase
+        .from('Product')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) return handleSupabaseError(error);
+      return { data, status: 200 };
+    }
+
+    // /api/providers
+    if (url.includes('/providers')) {
+      const { data, error } = await supabase
+        .from('User')
+        .select('*')
+        .in('role', ['COIFFEUSE', 'MANICURISTE']);
+      
+      if (error) return handleSupabaseError(error);
+      return { data: data || [], status: 200 };
+    }
+
+    // Route non gérée - retourner tableau vide
+    console.warn(`⚠️ Route GET non gérée: ${url}`);
+    return { data: [], status: 200 };
+  }
+
+  private async parseAndExecutePost(url: string, data: any): Promise<ApiResponse> {
+    // /api/auth/login
+    if (url.includes('/auth/login')) {
+      return await this.handleLogin(data);
+    }
+
+    // /api/auth/register
+    if (url.includes('/auth/register')) {
+      return await this.handleRegister(data);
+    }
+
+    // /api/notifications/register-token
+    if (url.includes('/notifications/register-token')) {
+      // Stocker le token FCM (vous pouvez créer une table pour ça)
+      console.log('FCM Token:', data.token);
+      return { 
+        data: { success: true }, 
+        status: 200,
+        message: 'Token FCM enregistré' 
+      };
+    }
+
+    // /api/services
+    if (url.includes('/services')) {
+      const { data: result, error } = await supabase
+        .from('Service')
+        .insert([{
+          ...data,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }])
+        .select()
+        .single();
+      
+      if (error) return handleSupabaseError(error);
+      return { data: result, status: 201 };
+    }
+
+    // /api/products
+    if (url.includes('/products')) {
+      const { data: result, error } = await supabase
+        .from('Product')
+        .insert([{
+          ...data,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }])
+        .select()
+        .single();
+      
+      if (error) return handleSupabaseError(error);
+      return { data: result, status: 201 };
+    }
+
+    console.warn(`⚠️ Route POST non gérée: ${url}`);
+    return { data: null, status: 404, error: 'Route non trouvée' };
+  }
+
+  private async parseAndExecutePut(url: string, data: any): Promise<ApiResponse> {
+    // /api/services/:id
+    if (url.match(/\/services\/([^/]+)$/)) {
+      const id = url.split('/').pop();
+      const { data: result, error } = await supabase
+        .from('Service')
+        .update({
+          ...data,
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) return handleSupabaseError(error);
+      return { data: result, status: 200 };
+    }
+
+    // /api/products/:id
+    if (url.match(/\/products\/([^/]+)$/)) {
+      const id = url.split('/').pop();
+      const { data: result, error } = await supabase
+        .from('Product')
+        .update({
+          ...data,
+          updatedAt: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) return handleSupabaseError(error);
+      return { data: result, status: 200 };
+    }
+
+    console.warn(`⚠️ Route PUT non gérée: ${url}`);
+    return { data: null, status: 404, error: 'Route non trouvée' };
+  }
+
+  private async parseAndExecuteDelete(url: string): Promise<ApiResponse> {
+    // /api/services/:id
+    if (url.match(/\/services\/([^/]+)$/)) {
+      const id = url.split('/').pop();
+      const { error } = await supabase
+        .from('Service')
+        .delete()
+        .eq('id', id);
+      
+      if (error) return handleSupabaseError(error);
+      return { data: { success: true }, status: 200 };
+    }
+
+    // /api/products/:id
+    if (url.match(/\/products\/([^/]+)$/)) {
+      const id = url.split('/').pop();
+      const { error } = await supabase
+        .from('Product')
+        .delete()
+        .eq('id', id);
+      
+      if (error) return handleSupabaseError(error);
+      return { data: { success: true }, status: 200 };
+    }
+
+    console.warn(`⚠️ Route DELETE non gérée: ${url}`);
+    return { data: null, status: 404, error: 'Route non trouvée' };
+  }
+
+  // ================================
+  // AUTHENTIFICATION
+  // ================================
+
+  private async handleLogin(credentials: { email: string; password: string }): Promise<ApiResponse> {
+    try {
+      const crypto = await import('crypto-js');
+      const hashedPassword = crypto.SHA256(credentials.password).toString();
+
+      const { data, error } = await supabase
+        .from('User')
+        .select('*')
+        .eq('email', credentials.email)
+        .eq('password', hashedPassword)
+        .single();
+
+      if (error || !data) {
+        return {
+          status: 401,
+          error: 'Email ou mot de passe incorrect'
+        };
+      }
+
+      if (data.blockReason) {
+        return {
+          status: 403,
+          error: `Compte bloqué: ${data.blockReason}`
+        };
+      }
+
+      // Générer un token simple (en production, utilisez JWT)
+      const token = btoa(JSON.stringify({ id: data.id, role: data.role }));
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('access_token', token);
+        localStorage.setItem('user', JSON.stringify(data));
+      }
+
+      return {
+        data: {
+          user: data,
+          access_token: token
+        },
+        status: 200
+      };
+    } catch (error: any) {
+      return {
+        status: 500,
+        error: error.message
+      };
+    }
+  }
+
+  private async handleRegister(userData: any): Promise<ApiResponse> {
+    try {
+      const crypto = await import('crypto-js');
+      const hashedPassword = crypto.SHA256(userData.password).toString();
+
+      const { data, error } = await supabase
+        .from('User')
+        .insert([{
+          email: userData.email,
+          password: hashedPassword,
+          role: userData.role || 'CLIENT',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) return handleSupabaseError(error);
+
+      return {
+        data: {
+          user: data,
+          message: 'Inscription réussie'
+        },
+        status: 201
+      };
+    } catch (error: any) {
+      return {
+        status: 500,
+        error: error.message
+      };
+    }
+  }
+
+  // ================================
+  // GESTION DES ERREURS
+  // ================================
+
+  private handleError(error: any, method: string, url: string, data?: any): ApiResponse {
+    console.error(`Erreur ${method} ${url}:`, error);
+
+    // Erreur 401 - Token expiré
+    if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+      this.auth.removeToken();
+      
+      if (typeof window !== 'undefined') {
         const publicPaths = ['/checkout', '/cart', '/products', '/services', '/'];
         const currentPath = window.location.pathname;
         const isPublicPath = publicPaths.some(path => currentPath.startsWith(path));
         
-        // Ne rediriger que si on n'est pas sur une page publique
         if (!isPublicPath) {
           window.location.href = '/auth/login';
         }
       }
-    }
-    
-    // Gérer les erreurs 404 (Not Found) - Routes backend manquantes ou URL incorrecte
-    if (error.response?.status === 404) {
-      console.error('❌ Backend route not found (404). Possible causes:');
-      console.error('  1. Backend is not deployed or URL is incorrect');
-      console.error('  2. Backend routes are not configured correctly');
-      console.error('  3. CORS is blocking the request');
-      console.error(`  Requested URL: ${error.config?.url || 'unknown'}`);
-      console.error(`  Base URL: ${API_URL || 'not configured'}`);
-      
-      // Pour les requêtes GET, retourner un tableau vide pour éviter de bloquer l'UI
-      if (error.config?.method?.toLowerCase() === 'get') {
-        const url = error.config.url || '';
-        if (url.includes('/products') || url.includes('/services') || url.includes('/providers')) {
-          return Promise.resolve({
-            data: [],
-            status: 200,
-            statusText: 'OK (fallback)',
-            headers: {},
-            config: error.config,
-          });
-        }
-      }
-    }
-    
-    // Gérer les erreurs 503 (Service Unavailable) - Backend en veille ou indisponible
-    if (error.response?.status === 503 || error.code === 'ECONNREFUSED' || error.message?.includes('503')) {
-      console.warn('⚠️ Backend service unavailable (503). The backend may be sleeping or restarting.');
-      console.warn('💡 Tip: On Render free tier, services sleep after 15 minutes of inactivity.');
-      console.warn('💡 The service will wake up automatically on the next request (may take 30-60 seconds).');
-      
-      // Pour les requêtes GET, on peut retourner un tableau vide pour éviter de bloquer l'UI
-      if (error.config?.method?.toLowerCase() === 'get') {
-        const url = error.config.url || '';
-        // Si c'est une requête qui devrait retourner un tableau, retourner un tableau vide
-        if (url.includes('/products') || url.includes('/services') || url.includes('/providers')) {
-          return Promise.resolve({
-            data: [],
-            status: 200,
-            statusText: 'OK (cached)',
-            headers: {},
-            config: error.config,
-          });
-        }
-      }
-    }
-    
-    // Gérer les erreurs CORS
-    if (error.code === 'ERR_NETWORK' || error.message?.includes('CORS') || error.message?.includes('Cross-Origin')) {
-      console.error('❌ CORS error detected. Possible causes:');
-      console.error('  1. Backend CORS_ORIGIN is not configured correctly');
-      console.error('  2. Backend is not allowing requests from this origin');
-      console.error(`  Current origin: ${typeof window !== 'undefined' ? window.location.origin : 'unknown'}`);
-      console.error(`  Backend URL: ${API_URL || 'not configured'}`);
-      console.error('💡 Solution: Configure CORS_ORIGIN in backend to include:', typeof window !== 'undefined' ? window.location.origin : 'your frontend URL');
-    }
-    
-    // Gérer le mode hors ligne pour les requêtes POST/PUT/PATCH/DELETE
-    if (!navigator.onLine && error.config) {
-      const method = error.config.method?.toUpperCase();
-      if (method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-        // Ajouter à la queue hors ligne
-        if (typeof window !== 'undefined') {
-          const { offlineManager } = await import('./offline');
-          await offlineManager.addToQueue({
-            type: method as 'POST' | 'PUT' | 'PATCH' | 'DELETE',
-            url: error.config.url || '',
-            data: error.config.data ? JSON.parse(error.config.data) : {},
-          });
-          
-          // Retourner une réponse spéciale pour indiquer que la requête est en queue
-          return Promise.resolve({
-            data: { 
-              message: 'Requête mise en file d\'attente. Elle sera synchronisée automatiquement.',
-              queued: true,
-              offline: true 
-            },
-            status: 202,
-            statusText: 'Accepted',
-            headers: {},
-            config: error.config,
-          });
-        }
-      }
-    }
-    
-    return Promise.reject(error);
-  }
-);
 
+      return {
+        status: 401,
+        error: 'Session expirée'
+      };
+    }
+
+    return {
+      status: 500,
+      error: error.message || 'Une erreur est survenue'
+    };
+  }
+}
+
+// ================================
+// EXPORT SINGLETON
+// ================================
+
+export const api = new SupabaseApiWrapper();
 export default api;

@@ -1,8 +1,9 @@
+// hooks/useFCMNotifications.ts
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { requestNotificationPermission, onMessageListener, messaging } from '@/lib/firebase';
-import api from '@/lib/api';
+import api from '@/lib/api'; // Maintenant compatible avec Supabase!
 import { useAuth } from './useAuth';
 import { useNotifications as useAppNotifications } from '@/components/admin/NotificationProvider';
 
@@ -25,15 +26,17 @@ export function useFCMNotifications() {
       requestNotificationPermission().then((fcmToken) => {
         if (fcmToken) {
           setToken(fcmToken);
-          // Enregistrer le token dans le backend
+          // Enregistrer le token dans le backend (maintenant via Supabase)
           api
             .post('/api/notifications/register-token', { token: fcmToken })
-            .then(() => {
-              setIsRegistered(true);
-              console.log('FCM token registered successfully');
+            .then((response) => {
+              if (response.status === 200) {
+                setIsRegistered(true);
+                console.log('✅ FCM token registered successfully');
+              }
             })
             .catch((error) => {
-              console.error('Error registering FCM token:', error);
+              console.error('❌ Error registering FCM token:', error);
             });
         }
       });
@@ -43,11 +46,13 @@ export function useFCMNotifications() {
     if (isAuthenticated && token && !isRegistered) {
       api
         .post('/api/notifications/register-token', { token })
-        .then(() => {
-          setIsRegistered(true);
+        .then((response) => {
+          if (response.status === 200) {
+            setIsRegistered(true);
+          }
         })
         .catch((error) => {
-          console.error('Error registering FCM token:', error);
+          console.error('❌ Error registering FCM token:', error);
         });
     }
   }, [isAuthenticated, token, isRegistered]);
@@ -57,7 +62,7 @@ export function useFCMNotifications() {
     if (!messaging || typeof window === 'undefined') return;
 
     const unsubscribe = onMessageListener((payload: any) => {
-      console.log('Message received in foreground:', payload);
+      console.log('📬 Message received in foreground:', payload);
       if (payload && payload.notification) {
         // Afficher une notification dans l'app
         appNotifications.info(
@@ -95,11 +100,16 @@ export function useFCMNotifications() {
       
       if (isAuthenticated) {
         try {
-          await api.post('/api/notifications/register-token', { token: fcmToken });
-          setIsRegistered(true);
-          appNotifications.success('Notifications activées', 'Vous recevrez désormais les notifications push');
+          const response = await api.post('/api/notifications/register-token', { token: fcmToken });
+          if (response.status === 200) {
+            setIsRegistered(true);
+            appNotifications.success(
+              'Notifications activées', 
+              'Vous recevrez désormais les notifications push'
+            );
+          }
         } catch (error) {
-          console.error('Error registering FCM token:', error);
+          console.error('❌ Error registering FCM token:', error);
         }
       }
     }
@@ -114,4 +124,3 @@ export function useFCMNotifications() {
     requestPermission,
   };
 }
-
