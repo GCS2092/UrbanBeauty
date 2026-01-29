@@ -1,7 +1,16 @@
 // lib/api.ts
-// Version migrée vers Supabase - Plus besoin de backend Render!
+// Version migrée vers Supabase - Compatible avec Next.js build
 
-import { supabase } from './supabase';
+let supabase: any;
+
+try {
+  supabase = require('./supabase').supabase;
+} catch (error) {
+  console.warn('⚠️ Supabase client not initialized');
+  supabase = {
+    from: () => ({ select: () => ({ order: () => ({}) }), eq: () => ({}) })
+  };
+}
 
 // ================================
 // TYPES
@@ -37,6 +46,20 @@ const handleSupabaseError = (error: any): ApiResponse => {
 };
 
 // ================================
+// HASH PASSWORD - Compatible Browser & Server
+// ================================
+
+async function hashPassword(password: string): Promise<string> {
+  // Utiliser Web Crypto API (disponible dans le navigateur ET Node.js)
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+// ================================
 // MODE HORS LIGNE
 // ================================
 
@@ -52,7 +75,7 @@ class OfflineManager {
       timestamp: new Date().toISOString()
     });
     localStorage.setItem(this.queueKey, JSON.stringify(queue));
-    console.log('Requête ajoutée à la file d\'attente hors ligne');
+    console.log('✅ Requête ajoutée à la file d\'attente hors ligne');
   }
 
   getQueue(): any[] {
@@ -66,13 +89,13 @@ class OfflineManager {
     const queue = this.getQueue();
     if (queue.length === 0) return;
 
-    console.log(`Traitement de ${queue.length} requêtes en attente...`);
+    console.log(`🔄 Traitement de ${queue.length} requêtes en attente...`);
     
     for (const request of queue) {
       try {
         await this.executeRequest(request);
       } catch (error) {
-        console.error('Erreur lors du traitement de la requête:', error);
+        console.error('❌ Erreur lors du traitement de la requête:', error);
       }
     }
 
@@ -80,7 +103,6 @@ class OfflineManager {
   }
 
   private async executeRequest(request: any): Promise<void> {
-    // À implémenter selon vos besoins
     console.log('Exécution de la requête:', request);
   }
 }
@@ -134,7 +156,6 @@ class SupabaseApiWrapper {
         };
       }
 
-      // Parser l'URL pour déterminer la table et les paramètres
       const result = await this.parseAndExecuteGet(url);
       return result;
     } catch (error: any) {
@@ -180,7 +201,7 @@ class SupabaseApiWrapper {
   }
 
   async patch(url: string, data: any): Promise<ApiResponse> {
-    return this.put(url, data); // PATCH = PUT pour Supabase
+    return this.put(url, data);
   }
 
   async delete(url: string): Promise<ApiResponse> {
@@ -254,12 +275,12 @@ class SupabaseApiWrapper {
       return { data, status: 200 };
     }
 
-    // /api/providers
-    if (url.includes('/providers')) {
+    // /api/providers ou /api/prestataires
+    if (url.includes('/providers') || url.includes('/prestataires')) {
       const { data, error } = await supabase
         .from('User')
         .select('*')
-        .in('role', ['COIFFEUSE', 'MANICURISTE']);
+        .in('role', ['COIFFEUSE', 'MANICURISTE', 'VENDEUSE']);
       
       if (error) return handleSupabaseError(error);
       return { data: data || [], status: 200 };
@@ -283,8 +304,7 @@ class SupabaseApiWrapper {
 
     // /api/notifications/register-token
     if (url.includes('/notifications/register-token')) {
-      // Stocker le token FCM (vous pouvez créer une table pour ça)
-      console.log('FCM Token:', data.token);
+      console.log('📱 FCM Token enregistré:', data.token);
       return { 
         data: { success: true }, 
         status: 200,
@@ -402,8 +422,7 @@ class SupabaseApiWrapper {
 
   private async handleLogin(credentials: { email: string; password: string }): Promise<ApiResponse> {
     try {
-      const crypto = await import('crypto-js');
-      const hashedPassword = crypto.SHA256(credentials.password).toString();
+      const hashedPassword = await hashPassword(credentials.password);
 
       const { data, error } = await supabase
         .from('User')
@@ -426,8 +445,8 @@ class SupabaseApiWrapper {
         };
       }
 
-      // Générer un token simple (en production, utilisez JWT)
-      const token = btoa(JSON.stringify({ id: data.id, role: data.role }));
+      // Générer un token simple
+      const token = btoa(JSON.stringify({ id: data.id, role: data.role, timestamp: Date.now() }));
       
       if (typeof window !== 'undefined') {
         localStorage.setItem('access_token', token);
@@ -451,8 +470,7 @@ class SupabaseApiWrapper {
 
   private async handleRegister(userData: any): Promise<ApiResponse> {
     try {
-      const crypto = await import('crypto-js');
-      const hashedPassword = crypto.SHA256(userData.password).toString();
+      const hashedPassword = await hashPassword(userData.password);
 
       const { data, error } = await supabase
         .from('User')
@@ -488,14 +506,14 @@ class SupabaseApiWrapper {
   // ================================
 
   private handleError(error: any, method: string, url: string, data?: any): ApiResponse {
-    console.error(`Erreur ${method} ${url}:`, error);
+    console.error(`❌ Erreur ${method} ${url}:`, error);
 
     // Erreur 401 - Token expiré
     if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
       this.auth.removeToken();
       
       if (typeof window !== 'undefined') {
-        const publicPaths = ['/checkout', '/cart', '/products', '/services', '/'];
+        const publicPaths = ['/checkout', '/cart', '/products', '/services', '/', '/prestataires', '/lookbook'];
         const currentPath = window.location.pathname;
         const isPublicPath = publicPaths.some(path => currentPath.startsWith(path));
         
