@@ -60,7 +60,7 @@ export interface UserMeResponse {
 
 export const authService = {
   register: async (data: RegisterDto): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/api/auth/register', data);
+    const response = await api.post('/api/auth/register', data);
     if (response.data.access_token) {
       localStorage.setItem('access_token', response.data.access_token);
     }
@@ -68,7 +68,7 @@ export const authService = {
   },
 
   login: async (data: LoginDto): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/api/auth/login', data);
+    const response = await api.post('/api/auth/login', data);
     if (response.data.access_token) {
       localStorage.setItem('access_token', response.data.access_token);
     }
@@ -81,12 +81,12 @@ export const authService = {
   },
 
   getMe: async (): Promise<UserMeResponse> => {
-    const response = await api.get<UserMeResponse>('/api/auth/me');
+    const response = await api.get('/api/auth/me');
     return response.data;
   },
 
   changePassword: async (newPassword: string): Promise<UserMeResponse> => {
-    const response = await api.put<UserMeResponse>('/api/auth/change-password', {
+    const response = await api.put('/api/auth/change-password', {
       newPassword,
     });
     return response.data;
@@ -103,4 +103,3 @@ export const authService = {
     return !!authService.getToken();
   },
 };
-
