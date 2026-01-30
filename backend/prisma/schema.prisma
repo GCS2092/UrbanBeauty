@@ -159,9 +159,9 @@ model Payment {
 enum Role {
   CLIENT
   COIFFEUSE
-  MANICURISTE
   VENDEUSE
   ADMIN
+  MANICURISTE
 }
 
 enum ImageType {
