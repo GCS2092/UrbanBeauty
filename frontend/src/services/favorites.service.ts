@@ -64,12 +64,12 @@ export const favoritesService = {
   },
 
   addProduct: async (productId: string): Promise<Favorite> => {
-    const response = await api.post(`/api/favorites/product/${productId}`);
+    const response = await api.post(`/api/favorites/product/${productId}`, {});
     return response.data;
   },
 
   addService: async (serviceId: string): Promise<Favorite> => {
-    const response = await api.post(`/api/favorites/service/${serviceId}`);
+    const response = await api.post(`/api/favorites/service/${serviceId}`, {});
     return response.data;
   },
 
@@ -90,4 +90,3 @@ export const favoritesService = {
     return response.data;
   },
 };
-
