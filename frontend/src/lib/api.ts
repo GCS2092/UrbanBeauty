@@ -1,16 +1,7 @@
 // lib/api.ts
 // Version migrée vers Supabase - Compatible avec Next.js build
 
-let supabase: any;
-
-try {
-  supabase = require('./supabase').supabase;
-} catch (error) {
-  console.warn('⚠️ Supabase client not initialized');
-  supabase = {
-    from: () => ({ select: () => ({ order: () => ({}) }), eq: () => ({}) })
-  };
-}
+import { supabase } from './supabase';
 
 // ================================
 // TYPES

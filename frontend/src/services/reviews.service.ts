@@ -101,7 +101,7 @@ export const reviewsService = {
 
   // Marquer un avis comme utile
   markHelpful: async (id: string): Promise<{ helpful: boolean }> => {
-    const response = await api.post(`/api/reviews/${id}/helpful`);
+    const response = await api.post(`/api/reviews/${id}/helpful`, {});
     return response.data;
   },
 };
