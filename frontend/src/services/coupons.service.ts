@@ -33,17 +33,17 @@ export interface ValidateCouponDto {
 
 export const couponsService = {
   validate: async (data: ValidateCouponDto): Promise<ValidateCouponResponse> => {
-    const response = await api.post<ValidateCouponResponse>('/api/coupons/validate', data);
+    const response = await api.post('/api/coupons/validate', data);
     return response.data;
   },
 
   getAll: async (): Promise<Coupon[]> => {
-    const response = await api.get<Coupon[]>('/api/coupons');
+    const response = await api.get('/api/coupons');
     return response.data;
   },
 
   getById: async (id: string): Promise<Coupon> => {
-    const response = await api.get<Coupon>(`/api/coupons/${id}`);
+    const response = await api.get(`/api/coupons/${id}`);
     return response.data;
   },
 };

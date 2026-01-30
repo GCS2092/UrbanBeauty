@@ -38,27 +38,27 @@ export interface UpdateUserStatusDto {
 export const usersService = {
   getAll: async (role?: string): Promise<User[]> => {
     const params = role ? `?role=${role}` : '';
-    const response = await api.get<User[]>(`/api/users${params}`);
+    const response = await api.get(`/api/users${params}`);
     return response.data;
   },
 
   getById: async (id: string): Promise<User> => {
-    const response = await api.get<User>(`/api/users/${id}`);
+    const response = await api.get(`/api/users/${id}`);
     return response.data;
   },
 
   updateRole: async (id: string, role: 'CLIENT' | 'COIFFEUSE' | 'VENDEUSE' | 'ADMIN'): Promise<User> => {
-    const response = await api.patch<User>(`/api/users/${id}/role`, { role });
+    const response = await api.patch(`/api/users/${id}/role`, { role });
     return response.data;
   },
 
   create: async (data: CreateUserDto): Promise<User> => {
-    const response = await api.post<User>('/api/users', data);
+    const response = await api.post('/api/users', data);
     return response.data;
   },
 
   updateStatus: async (id: string, isActive: boolean, blockReason?: string): Promise<User> => {
-    const response = await api.patch<User>(`/api/users/${id}/status`, { isActive, blockReason });
+    const response = await api.patch(`/api/users/${id}/status`, { isActive, blockReason });
     return response.data;
   },
 

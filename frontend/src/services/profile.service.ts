@@ -42,12 +42,12 @@ export interface UpdateProfileDto {
 
 export const profileService = {
   getMyProfile: async (): Promise<Profile> => {
-    const response = await api.get<Profile>('/api/profile');
+    const response = await api.get('/api/profile');
     return response.data;
   },
 
   update: async (data: UpdateProfileDto): Promise<Profile> => {
-    const response = await api.patch<Profile>('/api/profile', data);
+    const response = await api.patch('/api/profile', data);
     return response.data;
   },
 };

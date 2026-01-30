@@ -47,22 +47,22 @@ export interface CreateConversationDto {
 
 export const chatService = {
   getConversations: async (): Promise<Conversation[]> => {
-    const response = await api.get<Conversation[]>('/api/chat/conversations');
+    const response = await api.get('/api/chat/conversations');
     return response.data;
   },
 
   getMessages: async (conversationId: string): Promise<Message[]> => {
-    const response = await api.get<Message[]>(`/api/chat/conversations/${conversationId}/messages`);
+    const response = await api.get(`/api/chat/conversations/${conversationId}/messages`);
     return response.data;
   },
 
   createConversation: async (data: CreateConversationDto): Promise<Conversation> => {
-    const response = await api.post<Conversation>('/api/chat/conversations', data);
+    const response = await api.post('/api/chat/conversations', data);
     return response.data;
   },
 
   sendMessage: async (conversationId: string, data: CreateMessageDto): Promise<Message> => {
-    const response = await api.post<Message>(`/api/chat/conversations/${conversationId}/messages`, data);
+    const response = await api.post(`/api/chat/conversations/${conversationId}/messages`, data);
     return response.data;
   },
 };

@@ -26,27 +26,27 @@ export interface UpdateQuickReplyDto {
 
 export const quickRepliesService = {
   getAll: async (): Promise<QuickReply[]> => {
-    const response = await api.get<QuickReply[]>('/api/quick-replies');
+    const response = await api.get('/api/quick-replies');
     return response.data;
   },
 
   getOne: async (id: string): Promise<QuickReply> => {
-    const response = await api.get<QuickReply>(`/api/quick-replies/${id}`);
+    const response = await api.get(`/api/quick-replies/${id}`);
     return response.data;
   },
 
   create: async (dto: CreateQuickReplyDto): Promise<QuickReply> => {
-    const response = await api.post<QuickReply>('/api/quick-replies', dto);
+    const response = await api.post('/api/quick-replies', dto);
     return response.data;
   },
 
   createDefaults: async (): Promise<QuickReply[]> => {
-    const response = await api.post<QuickReply[]>('/api/quick-replies/defaults');
+    const response = await api.post('/api/quick-replies/defaults');
     return response.data;
   },
 
   update: async (id: string, dto: UpdateQuickReplyDto): Promise<QuickReply> => {
-    const response = await api.patch<QuickReply>(`/api/quick-replies/${id}`, dto);
+    const response = await api.patch(`/api/quick-replies/${id}`, dto);
     return response.data;
   },
 
@@ -55,7 +55,7 @@ export const quickRepliesService = {
   },
 
   reorder: async (orderedIds: string[]): Promise<QuickReply[]> => {
-    const response = await api.patch<QuickReply[]>('/api/quick-replies/reorder', {
+    const response = await api.patch('/api/quick-replies/reorder', {
       orderedIds,
     });
     return response.data;

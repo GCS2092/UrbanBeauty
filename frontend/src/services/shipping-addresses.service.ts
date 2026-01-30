@@ -39,13 +39,13 @@ export interface UpdateShippingAddressDto {
 
 export const shippingAddressesService = {
   getAll: async (): Promise<ShippingAddress[]> => {
-    const response = await api.get<ShippingAddress[]>('/api/shipping-addresses');
+    const response = await api.get('/api/shipping-addresses');
     return response.data;
   },
 
   getDefault: async (): Promise<ShippingAddress | null> => {
     try {
-      const response = await api.get<ShippingAddress>('/api/shipping-addresses/default');
+      const response = await api.get('/api/shipping-addresses/default');
       return response.data;
     } catch {
       return null;
@@ -53,22 +53,22 @@ export const shippingAddressesService = {
   },
 
   getById: async (id: string): Promise<ShippingAddress> => {
-    const response = await api.get<ShippingAddress>(`/api/shipping-addresses/${id}`);
+    const response = await api.get(`/api/shipping-addresses/${id}`);
     return response.data;
   },
 
   create: async (dto: CreateShippingAddressDto): Promise<ShippingAddress> => {
-    const response = await api.post<ShippingAddress>('/api/shipping-addresses', dto);
+    const response = await api.post('/api/shipping-addresses', dto);
     return response.data;
   },
 
   update: async (id: string, dto: UpdateShippingAddressDto): Promise<ShippingAddress> => {
-    const response = await api.patch<ShippingAddress>(`/api/shipping-addresses/${id}`, dto);
+    const response = await api.patch(`/api/shipping-addresses/${id}`, dto);
     return response.data;
   },
 
   setDefault: async (id: string): Promise<ShippingAddress> => {
-    const response = await api.patch<ShippingAddress>(`/api/shipping-addresses/${id}/set-default`);
+    const response = await api.patch(`/api/shipping-addresses/${id}/set-default`);
     return response.data;
   },
 

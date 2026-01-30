@@ -67,22 +67,22 @@ export interface CreateProductDto {
 
 export const productsService = {
   getAll: async (): Promise<Product[]> => {
-    const response = await api.get<Product[]>('/api/products');
+    const response = await api.get('/api/products');
     return response.data;
   },
 
   getById: async (id: string): Promise<Product> => {
-    const response = await api.get<Product>(`/api/products/${id}`);
+    const response = await api.get(`/api/products/${id}`);
     return response.data;
   },
 
   create: async (data: CreateProductDto): Promise<Product> => {
-    const response = await api.post<Product>('/api/products', data);
+    const response = await api.post('/api/products', data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<CreateProductDto>): Promise<Product> => {
-    const response = await api.patch<Product>(`/api/products/${id}`, data);
+    const response = await api.patch(`/api/products/${id}`, data);
     return response.data;
   },
 

@@ -84,32 +84,32 @@ export const ordersService = {
     if (all) params.append('all', 'true');
     if (seller) params.append('seller', 'true');
     const queryString = params.toString();
-    const response = await api.get<Order[]>(`/api/orders${queryString ? `?${queryString}` : ''}`);
+    const response = await api.get(`/api/orders${queryString ? `?${queryString}` : ''}`);
     return response.data;
   },
 
   getById: async (id: string): Promise<Order> => {
-    const response = await api.get<Order>(`/api/orders/${id}`);
+    const response = await api.get(`/api/orders/${id}`);
     return response.data;
   },
 
   create: async (data: CreateOrderDto): Promise<Order> => {
-    const response = await api.post<Order>('/api/orders', data);
+    const response = await api.post('/api/orders', data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<Order>): Promise<Order> => {
-    const response = await api.patch<Order>(`/api/orders/${id}`, data);
+    const response = await api.patch(`/api/orders/${id}`, data);
     return response.data;
   },
 
   clearSellerHistory: async (): Promise<{ message: string; count: number }> => {
-    const response = await api.delete<{ message: string; count: number }>('/api/orders/seller/clear-history');
+    const response = await api.delete('/api/orders/seller/clear-history');
     return response.data;
   },
 
   updateSellerNotes: async (id: string, sellerNotes: string): Promise<Order> => {
-    const response = await api.patch<Order>(`/api/orders/${id}/seller-notes`, { sellerNotes });
+    const response = await api.patch(`/api/orders/${id}/seller-notes`, { sellerNotes });
     return response.data;
   },
 };

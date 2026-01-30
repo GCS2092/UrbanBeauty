@@ -51,7 +51,7 @@ export interface ReplyReviewDto {
 export const reviewsService = {
   // Créer un avis
   create: async (data: CreateReviewDto): Promise<Review> => {
-    const response = await api.post<Review>('/api/reviews', data);
+    const response = await api.post('/api/reviews', data);
     return response.data;
   },
 
@@ -66,25 +66,25 @@ export const reviewsService = {
     if (params?.serviceId) queryParams.serviceId = params.serviceId;
     if (params?.providerId) queryParams.providerId = params.providerId;
     
-    const response = await api.get<Review[]>('/api/reviews', { params: queryParams });
+    const response = await api.get('/api/reviews', { params: queryParams });
     return response.data;
   },
 
   // Récupérer tous les avis (admin)
   findAllForAdmin: async (): Promise<Review[]> => {
-    const response = await api.get<Review[]>('/api/reviews/admin');
+    const response = await api.get('/api/reviews/admin');
     return response.data;
   },
 
   // Récupérer un avis par ID
   findOne: async (id: string): Promise<Review> => {
-    const response = await api.get<Review>(`/api/reviews/${id}`);
+    const response = await api.get(`/api/reviews/${id}`);
     return response.data;
   },
 
   // Mettre à jour un avis
   update: async (id: string, data: { comment?: string }): Promise<Review> => {
-    const response = await api.put<Review>(`/api/reviews/${id}`, data);
+    const response = await api.put(`/api/reviews/${id}`, data);
     return response.data;
   },
 
@@ -95,13 +95,13 @@ export const reviewsService = {
 
   // Répondre à un avis (prestataire)
   reply: async (id: string, data: ReplyReviewDto): Promise<Review> => {
-    const response = await api.post<Review>(`/api/reviews/${id}/reply`, data);
+    const response = await api.post(`/api/reviews/${id}/reply`, data);
     return response.data;
   },
 
   // Marquer un avis comme utile
   markHelpful: async (id: string): Promise<{ helpful: boolean }> => {
-    const response = await api.post<{ helpful: boolean }>(`/api/reviews/${id}/helpful`);
+    const response = await api.post(`/api/reviews/${id}/helpful`);
     return response.data;
   },
 };

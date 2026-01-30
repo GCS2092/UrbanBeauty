@@ -33,32 +33,32 @@ export interface FeatureStatus {
 
 export const maintenanceService = {
   getSettings: async (): Promise<MaintenanceSettings> => {
-    const response = await api.get<MaintenanceSettings>('/api/maintenance/settings');
+    const response = await api.get('/api/maintenance/settings');
     return response.data;
   },
 
   updateSettings: async (dto: UpdateMaintenanceSettingsDto): Promise<MaintenanceSettings> => {
-    const response = await api.put<MaintenanceSettings>('/api/maintenance/settings', dto);
+    const response = await api.put('/api/maintenance/settings', dto);
     return response.data;
   },
 
   checkBooking: async (): Promise<FeatureStatus> => {
-    const response = await api.get<FeatureStatus>('/api/maintenance/check/booking');
+    const response = await api.get('/api/maintenance/check/booking');
     return response.data;
   },
 
   checkChat: async (): Promise<FeatureStatus> => {
-    const response = await api.get<FeatureStatus>('/api/maintenance/check/chat');
+    const response = await api.get('/api/maintenance/check/chat');
     return response.data;
   },
 
   checkPrestataires: async (): Promise<FeatureStatus> => {
-    const response = await api.get<FeatureStatus>('/api/maintenance/check/prestataires');
+    const response = await api.get('/api/maintenance/check/prestataires');
     return response.data;
   },
 
   checkAuth: async (): Promise<FeatureStatus> => {
-    const response = await api.get<FeatureStatus>('/api/maintenance/check/auth');
+    const response = await api.get('/api/maintenance/check/auth');
     return response.data;
   },
 };

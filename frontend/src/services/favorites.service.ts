@@ -44,32 +44,32 @@ export interface FavoritesCount {
 
 export const favoritesService = {
   getAll: async (): Promise<Favorite[]> => {
-    const response = await api.get<Favorite[]>('/api/favorites');
+    const response = await api.get('/api/favorites');
     return response.data;
   },
 
   getCount: async (): Promise<FavoritesCount> => {
-    const response = await api.get<FavoritesCount>('/api/favorites/count');
+    const response = await api.get('/api/favorites/count');
     return response.data;
   },
 
   isProductFavorite: async (productId: string): Promise<boolean> => {
-    const response = await api.get<{ isFavorite: boolean }>(`/api/favorites/check/product/${productId}`);
+    const response = await api.get(`/api/favorites/check/product/${productId}`);
     return response.data.isFavorite;
   },
 
   isServiceFavorite: async (serviceId: string): Promise<boolean> => {
-    const response = await api.get<{ isFavorite: boolean }>(`/api/favorites/check/service/${serviceId}`);
+    const response = await api.get(`/api/favorites/check/service/${serviceId}`);
     return response.data.isFavorite;
   },
 
   addProduct: async (productId: string): Promise<Favorite> => {
-    const response = await api.post<Favorite>(`/api/favorites/product/${productId}`);
+    const response = await api.post(`/api/favorites/product/${productId}`);
     return response.data;
   },
 
   addService: async (serviceId: string): Promise<Favorite> => {
-    const response = await api.post<Favorite>(`/api/favorites/service/${serviceId}`);
+    const response = await api.post(`/api/favorites/service/${serviceId}`);
     return response.data;
   },
 
@@ -86,7 +86,7 @@ export const favoritesService = {
   },
 
   clearAll: async (): Promise<{ message: string; count: number }> => {
-    const response = await api.delete<{ message: string; count: number }>('/api/favorites');
+    const response = await api.delete('/api/favorites');
     return response.data;
   },
 };

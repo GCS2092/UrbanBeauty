@@ -57,22 +57,22 @@ export interface CreateServiceDto {
 
 export const servicesService = {
   getAll: async (): Promise<Service[]> => {
-    const response = await api.get<Service[]>('/api/services');
+    const response = await api.get('/api/services');
     return response.data;
   },
 
   getById: async (id: string): Promise<Service> => {
-    const response = await api.get<Service>(`/api/services/${id}`);
+    const response = await api.get(`/api/services/${id}`);
     return response.data;
   },
 
   create: async (data: CreateServiceDto): Promise<Service> => {
-    const response = await api.post<Service>('/api/services', data);
+    const response = await api.post('/api/services', data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<CreateServiceDto>): Promise<Service> => {
-    const response = await api.patch<Service>(`/api/services/${id}`, data);
+    const response = await api.patch(`/api/services/${id}`, data);
     return response.data;
   },
 
