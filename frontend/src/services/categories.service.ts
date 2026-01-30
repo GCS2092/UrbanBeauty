@@ -46,6 +46,6 @@ export const categoriesService = {
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/api/categories/${id}`);
+    await api.delete(`/api/categories/${id}`); 
   },
 };
