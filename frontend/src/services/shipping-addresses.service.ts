@@ -68,7 +68,7 @@ export const shippingAddressesService = {
   },
 
   setDefault: async (id: string): Promise<ShippingAddress> => {
-    const response = await api.patch(`/api/shipping-addresses/${id}/set-default`);
+    const response = await api.patch(`/api/shipping-addresses/${id}/set-default`, {});
     return response.data;
   },
 
@@ -76,4 +76,3 @@ export const shippingAddressesService = {
     await api.delete(`/api/shipping-addresses/${id}`);
   },
 };
-
