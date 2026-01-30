@@ -50,14 +50,9 @@ export default function ImageUploader({ images, onChange, maxImages = 5 }: Image
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await api.post<{ url: string; publicId: string }>(
+      const response = await api.post(
         '/api/upload/image',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
+        formData
       );
 
       const newImage = { url: response.data.url, type: 'UPLOADED' as const };
