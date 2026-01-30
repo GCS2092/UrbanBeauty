@@ -1,14 +1,4 @@
-Yes 👍 je te redonne **le README COMPLET, propre et sans conflit**, prêt à être collé tel quel dans `README.md`.
-
-👉 **Tu supprimes tout le contenu actuel**
-👉 **Tu colles exactement ceci**
-👉 **Tu sauvegardes**
-👉 **Puis commit**
-
----
-
-```md
-# 🌟 UrbanBeauty
+🌟 UrbanBeauty
 
 **Plateforme beauté tout-en-un** – Marketplace + Services de coiffure + Gestion des prestataires
 
