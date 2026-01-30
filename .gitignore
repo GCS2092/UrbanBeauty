@@ -1,9 +1,8 @@
-<<<<<<< HEAD
-# compiled output
-/dist
-/node_modules
-/build
-=======
+notepad C:\urbanBeauty\.gitignore
+```
+
+**Supprimez tout** et collez ce contenu propre :
+```
 # Dependencies
 node_modules/
 .pnp
@@ -25,74 +24,19 @@ out/
 .env.development.local
 .env.test.local
 .env.production.local
->>>>>>> ce1af0a55e00aed7309910251c94e5caf36f46ce
+.env*.local
 
 # Logs
 logs
 *.log
 npm-debug.log*
-<<<<<<< HEAD
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-=======
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
->>>>>>> ce1af0a55e00aed7309910251c94e5caf36f46ce
 lerna-debug.log*
 
 # OS
 .DS_Store
-<<<<<<< HEAD
-
-# Tests
-/coverage
-/.nyc_output
-
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
-
-# temp directory
-.temp
-.tmp
-
-# uploads directory (fichiers temporaires avant upload vers Cloudinary)
-/uploads/*
-!/uploads/.gitkeep
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-.vercel
-.env*.local
-=======
 .DS_Store?
 ._*
 .Spotlight-V100
@@ -110,14 +54,21 @@ Thumbs.db
 .classpath
 .settings/
 *.sublime-workspace
+.c9/
+*.launch
 
-# Prisma
-prisma/migrations/
+# Uploads (temporary files before upload)
+/uploads/*
+!/uploads/.gitkeep
 
-# Temporary files
-*.tmp
-*.temp
-.cache/
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Vercel
 .vercel
@@ -130,7 +81,15 @@ prisma/migrations/
 *.sqlite
 *.sqlite3
 
+# Prisma
+prisma/migrations/
+
+# Temporary files
+*.tmp
+*.temp
+.temp
+.tmp
+.cache/
+
 # Cloudinary
 cloudinary.json
-
->>>>>>> ce1af0a55e00aed7309910251c94e5caf36f46ce
