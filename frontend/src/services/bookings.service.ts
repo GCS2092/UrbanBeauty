@@ -70,22 +70,22 @@ export interface UpdateBookingDto {
 export const bookingsService = {
   getAll: async (provider?: boolean): Promise<Booking[]> => {
     const params = provider ? '?provider=true' : '';
-    const response = await api.get<Booking[]>(`/api/bookings${params}`);
+    const response = await api.get(`/api/bookings${params}`);
     return response.data;
   },
 
   getById: async (id: string): Promise<Booking> => {
-    const response = await api.get<Booking>(`/api/bookings/${id}`);
+    const response = await api.get(`/api/bookings/${id}`);
     return response.data;
   },
 
   create: async (data: CreateBookingDto): Promise<Booking> => {
-    const response = await api.post<Booking>('/api/bookings', data);
+    const response = await api.post('/api/bookings', data);
     return response.data;
   },
 
   update: async (id: string, data: UpdateBookingDto): Promise<Booking> => {
-    const response = await api.patch<Booking>(`/api/bookings/${id}`, data);
+    const response = await api.patch(`/api/bookings/${id}`, data);
     return response.data;
   },
 
@@ -100,7 +100,7 @@ export const bookingsService = {
 
   // Pour les prestataires (COIFFEUSE)
   clearProviderHistory: async (): Promise<{ message: string; count: number }> => {
-    const response = await api.delete<{ message: string; count: number }>('/api/bookings/provider/clear-history');
+    const response = await api.delete('/api/bookings/provider/clear-history');
     return response.data;
   },
 
@@ -108,4 +108,3 @@ export const bookingsService = {
     await api.delete(`/api/bookings/provider/${id}`);
   },
 };
-
