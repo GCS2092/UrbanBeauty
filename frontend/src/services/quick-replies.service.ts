@@ -41,8 +41,7 @@ export const quickRepliesService = {
   },
 
   createDefaults: async (): Promise<QuickReply[]> => {
-    const response = await api.post('/api/quick-replies/defaults');
-    return response.data;
+const response = await api.post('/api/quick-replies/defaults', {});    return response.data;
   },
 
   update: async (id: string, dto: UpdateQuickReplyDto): Promise<QuickReply> => {
