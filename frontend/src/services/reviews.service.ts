@@ -61,12 +61,14 @@ export const reviewsService = {
     serviceId?: string;
     providerId?: string;
   }): Promise<Review[]> => {
-    const queryParams: any = {};
+    const queryParams: Record<string, string> = {};
     if (params?.productId) queryParams.productId = params.productId;
     if (params?.serviceId) queryParams.serviceId = params.serviceId;
     if (params?.providerId) queryParams.providerId = params.providerId;
     
-    const response = await api.get('/api/reviews', { params: queryParams });
+    const queryString = new URLSearchParams(queryParams).toString();
+    const url = `/api/reviews${queryString ? '?' + queryString : ''}`;
+    const response = await api.get(url);
     return response.data;
   },
 
@@ -105,4 +107,3 @@ export const reviewsService = {
     return response.data;
   },
 };
-
