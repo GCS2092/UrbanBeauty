@@ -11,7 +11,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "incremental": true,
     "skipDefaultLibCheck": true,
     "typeRoots": ["./node_modules/@types"],
@@ -31,6 +31,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "../backend/frontend/src/lib/supabase.ts"  ],
+  ],
   "exclude": ["node_modules"]
 }
