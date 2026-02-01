@@ -62,12 +62,11 @@ export const authService = {
   register: async (data: RegisterDto): Promise<AuthResponse> => {
     const response = await api.post('/auth/register', data);
     
-    // Vérifier si response.data existe
-    if (!response.data) {
-      throw new Error(response.error || 'Erreur lors de l\'inscription');
+    if (!response?.data || response.status >= 400) {
+      throw new Error(response?.error || 'Erreur lors de l\'inscription');
     }
     
-    if (response.data.access_token) {
+    if (response.data?.access_token && typeof window !== 'undefined') {
       localStorage.setItem('access_token', response.data.access_token);
     }
     
@@ -77,12 +76,11 @@ export const authService = {
   login: async (data: LoginDto): Promise<AuthResponse> => {
     const response = await api.post('/auth/login', data);
     
-    // Vérifier si response.data existe
-    if (!response.data) {
-      throw new Error(response.error || 'Email ou mot de passe incorrect');
+    if (!response?.data || response.status >= 400) {
+      throw new Error(response?.error || 'Email ou mot de passe incorrect');
     }
     
-    if (response.data.access_token) {
+    if (response.data?.access_token && typeof window !== 'undefined') {
       localStorage.setItem('access_token', response.data.access_token);
     }
     
@@ -90,15 +88,17 @@ export const authService = {
   },
 
   logout: () => {
-    localStorage.removeItem('access_token');
-    window.location.href = '/auth/login';
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token');
+      window.location.href = '/auth/login';
+    }
   },
 
   getMe: async (): Promise<UserMeResponse> => {
     const response = await api.get('/auth/me');
     
-    if (!response.data) {
-      throw new Error(response.error || 'Erreur lors de la récupération du profil');
+    if (!response?.data || response.status >= 400) {
+      throw new Error(response?.error || 'Erreur lors de la récupération du profil');
     }
     
     return response.data;
@@ -109,8 +109,8 @@ export const authService = {
       newPassword,
     });
     
-    if (!response.data) {
-      throw new Error(response.error || 'Erreur lors du changement de mot de passe');
+    if (!response?.data || response.status >= 400) {
+      throw new Error(response?.error || 'Erreur lors du changement de mot de passe');
     }
     
     return response.data;
