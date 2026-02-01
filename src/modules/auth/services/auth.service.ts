@@ -1,145 +1,129 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../../../prisma.service';
-import { RegisterDto } from '../dto/register.dto';
-import { LoginDto } from '../dto/login.dto';
-import { AuthResponseDto } from '../dto/auth-response.dto';
+import api from '@/lib/api';
 
-@Injectable()
-export class AuthService {
-  constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-  ) {}
-
-  async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    const { email, password, firstName, lastName, phone, role } = registerDto;
-
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException('Cet email est déjà utilisé');
-    }
-
-    // Hasher le mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Créer l'utilisateur et son profil
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        role: role || 'CLIENT',
-        profile: {
-          create: {
-            firstName,
-            lastName,
-            phone,
-          },
-        },
-      },
-      include: {
-        profile: true,
-      },
-    });
-
-    // Générer le token JWT
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    const access_token = this.jwtService.sign(payload);
-
-    return {
-      access_token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        profile: {
-          firstName: user.profile!.firstName,
-          lastName: user.profile!.lastName,
-          avatar: user.profile!.avatar || undefined,
-        },
-      },
-    };
-  }
-
-  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const { email, password } = loginDto;
-
-    // Trouver l'utilisateur
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: {
-        profile: true,
-      },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('Email ou mot de passe incorrect');
-    }
-
-    // Vérifier le mot de passe
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Email ou mot de passe incorrect');
-    }
-
-    // Générer le token JWT
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    const access_token = this.jwtService.sign(payload);
-
-    return {
-      access_token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        profile: user.profile
-          ? {
-              firstName: user.profile.firstName,
-              lastName: user.profile.lastName,
-              avatar: user.profile.avatar || undefined,
-            }
-          : undefined,
-      },
-    };
-  }
-
-  async validateUser(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        profile: true,
-      },
-    });
-
-    if (!user) {
-      return null;
-    }
-
-    return user;
-  }
-
-  async changePassword(userId: string, newPassword: string) {
-    // Hasher le nouveau mot de passe
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Mettre à jour le mot de passe
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        password: hashedPassword,
-      },
-      include: {
-        profile: true,
-      },
-    });
-
-    return user;
-  }
+export interface RegisterDto {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  role?: string;
 }
 
+export interface LoginDto {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  mustChangePassword?: boolean;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    profile?: {
+      firstName: string;
+      lastName: string;
+      avatar?: string;
+    };
+  };
+}
+
+export interface UserMeResponse {
+  id: string;
+  email: string;
+  role: string;
+  profile?: {
+    id: string;
+    userId: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    address?: string;
+    avatar?: string;
+    bio?: string;
+    city?: string;
+    country?: string;
+    postalCode?: string;
+    website?: string;
+    instagram?: string;
+    facebook?: string;
+    tiktok?: string;
+    specialties?: string[];
+    experience?: number;
+    isProvider: boolean;
+    rating?: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const authService = {
+  register: async (data: RegisterDto): Promise<AuthResponse> => {
+    const response = await api.post('/auth/register', data);
+    
+    // Vérifier si response.data existe
+    if (!response.data) {
+      throw new Error(response.error || 'Erreur lors de l\'inscription');
+    }
+    
+    if (response.data.access_token) {
+      localStorage.setItem('access_token', response.data.access_token);
+    }
+    
+    return response.data;
+  },
+
+  login: async (data: LoginDto): Promise<AuthResponse> => {
+    const response = await api.post('/auth/login', data);
+    
+    // Vérifier si response.data existe
+    if (!response.data) {
+      throw new Error(response.error || 'Email ou mot de passe incorrect');
+    }
+    
+    if (response.data.access_token) {
+      localStorage.setItem('access_token', response.data.access_token);
+    }
+    
+    return response.data;
+  },
+
+  logout: () => {
+    localStorage.removeItem('access_token');
+    window.location.href = '/auth/login';
+  },
+
+  getMe: async (): Promise<UserMeResponse> => {
+    const response = await api.get('/auth/me');
+    
+    if (!response.data) {
+      throw new Error(response.error || 'Erreur lors de la récupération du profil');
+    }
+    
+    return response.data;
+  },
+
+  changePassword: async (newPassword: string): Promise<UserMeResponse> => {
+    const response = await api.put('/auth/change-password', {
+      newPassword,
+    });
+    
+    if (!response.data) {
+      throw new Error(response.error || 'Erreur lors du changement de mot de passe');
+    }
+    
+    return response.data;
+  },
+
+  getToken: (): string | null => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('access_token');
+    }
+    return null;
+  },
+
+  isAuthenticated: (): boolean => {
+    return !!authService.getToken();
+  },
+};
