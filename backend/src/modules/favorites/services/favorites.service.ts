@@ -4,7 +4,7 @@ import { PrismaService } from '../../../prisma.service';
 @Injectable()
 export class FavoritesService {
   constructor(private prisma: PrismaService) {}
-
+ 
   async getUserFavorites(userId: string) {
     const favorites = await this.prisma.favorite.findMany({
       where: { userId },

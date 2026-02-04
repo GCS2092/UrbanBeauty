@@ -1,0 +1,76 @@
+Vous avez 3 problèmes principaux à régler dans votre **code frontend**. L'erreur du Service Worker a disparu, mais il reste :
+
+## 1. ❌ Erreur React #418 (Hydration)
+## 2. ❌ 404 - Noms de tables incorrects
+## 3. ❌ 406 - Erreur sur profiles
+
+---
+
+## Corrections à faire :
+
+### 1. Corriger les noms de tables dans votre code frontend
+
+Recherchez dans votre code et corrigez ces appels Supabase :
+
+```typescript
+// ❌ INCORRECT
+.from('notificationsunread-count')  // tirets au lieu d'underscores
+.from('favoritescount')              // manque underscore
+.from('profile')                     // au singulier
+
+// ✅ CORRECT
+.from('notifications_unread_count')  // avec underscores
+.from('favorites')                   // nom correct (pas de "count")
+.from('profiles')                    // au pluriel
+```
+
+### 2. Pour l'erreur 406 sur profiles
+
+Le problème est que vous utilisez `.eq('id', ...)` mais l'API retourne un tableau. Changez :
+
+```typescript
+// ❌ INCORRECT
+const { data } = await supabase
+  .from('profiles')
+  .select('*')
+  .eq('id', userId);
+
+// ✅ CORRECT - Option 1: Utilisez .single()
+const { data } = await supabase
+  .from('profiles')
+  .select('*')
+  .eq('id', userId)
+  .single();  // ← Ajouter ceci
+
+// ✅ CORRECT - Option 2: Prenez le premier élément
+const { data } = await supabase
+  .from('profiles')
+  .select('*')
+  .eq('id', userId);
+const profile = data?.[0];
+```
+
+### 3. Pour l'erreur React #418
+
+Ouvrez la console en **mode dev** pour voir le message complet :
+
+```bash
+cd C:\urbanBeauty
+npm run dev
+```
+
+Puis ouvrez votre navigateur et regardez l'erreur complète.
+
+---
+
+## Recherche rapide dans votre code
+
+Utilisez VS Code pour trouver et remplacer :
+
+1. **Ctrl + Shift + F** (recherche globale)
+2. Cherchez : `notificationsunread-count`
+3. Remplacez par : `notifications_unread_count`
+4. Cherchez : `favoritescount`
+5. Remplacez par : `favorites`
+
+Dites-moi quand c'est fait ! 👍

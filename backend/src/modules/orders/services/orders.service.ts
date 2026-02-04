@@ -4,7 +4,7 @@ import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { CouponsService } from '../../coupons/services/coupons.service';
 import { NotificationsService } from '../../notifications/services/notifications.service';
-
+ 
 // Fonction utilitaire pour générer un numéro de commande
 function generateOrderNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase();

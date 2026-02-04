@@ -25,13 +25,16 @@ import { fr } from 'date-fns/locale';
 
 export default function NotificationsPanel() {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: notifications = [], isLoading } = useNotifications();
-  const { data: unreadCount = 0 } = useUnreadCount();
+  const { data: notificationsData, isLoading } = useNotifications();
+  const { data: unreadCountData } = useUnreadCount();
   const { mutate: markAsRead } = useMarkAsRead();
   const { mutate: markAllAsRead } = useMarkAllAsRead();
   const { mutate: deleteNotification } = useDeleteNotification();
   const router = useRouter();
 
+  // ✅ Valeurs par défaut sûres
+  const notifications = notificationsData || [];
+  const unreadCount = unreadCountData || 0;
   const recentNotifications = notifications.slice(0, 5);
 
   const formatDate = (dateStr: string) => {

@@ -10,7 +10,7 @@ export class NotificationsService {
     private prisma: PrismaService,
     private firebaseService: FirebaseService,
   ) {}
-
+ 
   async registerToken(userId: string, registerTokenDto: RegisterTokenDto) {
     // Vérifier si l'utilisateur existe
     const user = await this.prisma.user.findUnique({

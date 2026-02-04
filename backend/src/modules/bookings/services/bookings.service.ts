@@ -9,7 +9,7 @@ function generateBookingNumber(): string {
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `RVD-${timestamp}-${random}`;
 }
-
+ 
 @Injectable()
 export class BookingsService {
   constructor(private prisma: PrismaService) {}

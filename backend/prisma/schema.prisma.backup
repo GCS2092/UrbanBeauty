@@ -1,26 +1,30 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
+ 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+ schemas   = ["public", "auth"]
 }
-
+generator client {
+  provider = "prisma-client-js"
+}
 model User {
-  id          String    @id @default(uuid())
-  email       String    @unique
-  password    String  
-  blockReason String?
-  role        Role      @default(CLIENT)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  bookings    Booking[]
-  orders      Order[]
-  payments    Payment[]
-  products    Product[] @relation("UserProducts")
-  profile     Profile?
-  reviews     Review[]
+  id                       String                     @id @default(uuid())
+  email                    String                     @unique
+  blockReason              String?
+  role                     Role                       @default(CLIENT)
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  password                 String                     @default("")
+  bookings                 Booking[]
+  orders                   Order[]
+  payments                 Payment[]
+  products                 Product[]                  @relation("UserProducts")
+  profile                  Profile?
+  reviews                  Review[]
+  favorites                Favorite[]
+  notificationsUnreadCount NotificationsUnreadCount[] // ✅ AJOUTÉ
+  chatConversations        ChatConversation[]         // ✅ AJOUTÉ
+  quickReplies             QuickReply[]               // ✅ AJOUTÉ
 }
 
 model Profile {
@@ -38,6 +42,57 @@ model Profile {
   services   Service[]
 }
 
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String?
+  serviceId String?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@unique([userId, serviceId])
+  @@map("favorites")
+}
+
+// ✅ NOUVEAUX MODÈLES AJOUTÉS
+model NotificationsUnreadCount {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  unreadCount Int      @default(0) @map("unread_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications_unread_count")
+}
+
+model ChatConversation {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chat_conversations")
+}
+
+model QuickReply {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("quick_replies")
+}
+// ✅ FIN DES NOUVEAUX MODÈLES
+
 model Product {
   id          String      @id @default(uuid())
   name        String
@@ -53,6 +108,7 @@ model Product {
   category    Category    @relation(fields: [categoryId], references: [id])
   seller      User        @relation("UserProducts", fields: [sellerId], references: [id])
   reviews     Review[]
+  favorites   Favorite[]
 }
 
 model Service {
@@ -69,6 +125,7 @@ model Service {
   images      Image[]
   reviews     Review[]
   provider    Profile   @relation(fields: [providerId], references: [id])
+  favorites   Favorite[]
 }
 
 model Review {
@@ -93,6 +150,10 @@ model Image {
   portfolioId String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  alt         String?
+  title       String?
+  order       Int?      @default(0)
+  isPrimary   Boolean?  @default(false)
   portfolio   Profile?  @relation(fields: [portfolioId], references: [id])
   product     Product?  @relation(fields: [productId], references: [id])
   service     Service?  @relation(fields: [serviceId], references: [id])

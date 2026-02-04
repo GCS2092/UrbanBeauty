@@ -1,4 +1,5 @@
-import { getSupabase } from './supabase';
+import { supabase } from './supabase';
+
 
 // Interface pour les réponses API
 interface ApiResponse<T = any> {
@@ -41,7 +42,7 @@ export const api = {
       const offlineResponse = await handleOfflineRequest<T>('POST', endpoint, data);
       if (offlineResponse) return offlineResponse;
 
-      const supabase = getSupabase();
+      // ne rien faire — supabase est déjà importé
 
       // Routes d'authentification
       if (endpoint === '/auth/register' || endpoint === '/api/auth/register') {
@@ -99,7 +100,7 @@ export const api = {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', authData.user.id)
+          .eq('userId', authData.user.id)
           .single();
 
         return {
@@ -140,7 +141,7 @@ export const api = {
   // GET request
   get: async <T = any>(endpoint: string): Promise<ApiResponse<T>> => {
     try {
-      const supabase = getSupabase();
+      
 
       // Route pour récupérer l'utilisateur connecté
       if (endpoint === '/auth/me' || endpoint === '/api/auth/me') {
@@ -154,7 +155,7 @@ export const api = {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('userId', user.id)
           .single();
 
         if (profileError && profileError.code !== 'PGRST116') {
@@ -217,7 +218,7 @@ export const api = {
       const offlineResponse = await handleOfflineRequest<T>('PUT', endpoint, data);
       if (offlineResponse) return offlineResponse;
 
-      const supabase = getSupabase();
+      
 
       // Route pour changer le mot de passe
       if (endpoint === '/auth/change-password' || endpoint === '/api/auth/change-password') {
@@ -258,7 +259,7 @@ export const api = {
       const offlineResponse = await handleOfflineRequest<T>('DELETE', endpoint);
       if (offlineResponse) return offlineResponse;
 
-      const supabase = getSupabase();
+      
       const tableName = endpoint.replace('/api/', '').replace('/', '');
       
       const { data: result, error } = await supabase

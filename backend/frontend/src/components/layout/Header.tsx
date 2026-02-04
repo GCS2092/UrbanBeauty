@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShoppingBagIcon, 
@@ -17,9 +17,14 @@ import CurrencySelector from '@/components/shared/CurrencySelector';
 import NotificationsPanel from '@/components/dashboard/NotificationsPanel';
 
 function CartBadge() {
+  const [mounted, setMounted] = useState(false);
   const itemCount = useCartStore((state) => state.getItemCount());
   
-  if (itemCount === 0) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || itemCount === 0) return null;
   
   return (
     <span className="absolute top-0 right-0 h-4 w-4 bg-pink-600 text-white text-xs rounded-full flex items-center justify-center">
@@ -29,24 +34,31 @@ function CartBadge() {
 }
 
 export default function Header() {
+  const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
   const { isAuthenticated, user, logout } = useAuth();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Rendu de base pour le SSR (sans contenu dynamique)
+  const baseHref = mounted && isAuthenticated 
+    ? user?.role === 'ADMIN' 
+      ? '/dashboard/admin'
+      : '/dashboard'
+    : '/';
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" aria-label="Top">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo - Redirige selon le rôle */}
+          {/* Logo */}
           <div className="flex items-center">
             <Link 
-              href={
-                isAuthenticated 
-                  ? user?.role === 'ADMIN' 
-                    ? '/dashboard/admin'
-                    : '/dashboard'
-                  : '/'
-              } 
+              href={baseHref}
               className="flex items-center space-x-2"
             >
               <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
@@ -55,58 +67,73 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Desktop Navigation - Masquer pour les utilisateurs connectés */}
-          {!isAuthenticated && (
-            <div className="hidden md:flex md:items-center md:space-x-8">
-              <Link 
-                href="/products" 
-                className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Produits
-              </Link>
-              <Link 
-                href="/services" 
-                className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Services
-              </Link>
-              <Link 
-                href="/lookbook" 
-                className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Lookbook
-              </Link>
-              <Link 
-                href="/prestataires" 
-                className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Prestataires
-              </Link>
-            </div>
-          )}
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex md:items-center md:space-x-8">
+            {!mounted ? (
+              // Placeholder pendant le chargement
+              <div className="flex space-x-8">
+                <div className="h-4 w-16 bg-gray-200 animate-pulse rounded"></div>
+                <div className="h-4 w-16 bg-gray-200 animate-pulse rounded"></div>
+                <div className="h-4 w-16 bg-gray-200 animate-pulse rounded"></div>
+              </div>
+            ) : !isAuthenticated ? (
+              <>
+                <Link 
+                  href="/products" 
+                  className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Produits
+                </Link>
+                <Link 
+                  href="/services" 
+                  className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Services
+                </Link>
+                <Link 
+                  href="/lookbook" 
+                  className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Lookbook
+                </Link>
+                <Link 
+                  href="/prestataires" 
+                  className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Prestataires
+                </Link>
+              </>
+            ) : null}
+          </div>
 
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
             {/* Currency Selector */}
             <div className="hidden sm:block">
-              <CurrencySelector />
+              {mounted ? (
+                <CurrencySelector />
+              ) : (
+                <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
+              )}
             </div>
             
-            {/* Mes commandes - Accessible à tous */}
-            <Link
-              href={isAuthenticated ? "/dashboard/orders" : "/orders/track"}
-              className="hidden sm:flex items-center gap-1 p-2 text-gray-600 hover:text-pink-600 transition-colors"
-              title={isAuthenticated ? "Mes commandes" : "Suivre ma commande"}
-            >
-              <ClipboardDocumentListIcon className="h-5 w-5" />
-              <span className="text-sm font-medium hidden lg:inline">
-                {isAuthenticated ? "Mes commandes" : "Suivre commande"}
-              </span>
-            </Link>
+            {/* Mes commandes */}
+            {mounted && (
+              <Link
+                href={isAuthenticated ? "/dashboard/orders" : "/orders/track"}
+                className="hidden sm:flex items-center gap-1 p-2 text-gray-600 hover:text-pink-600 transition-colors"
+                title={isAuthenticated ? "Mes commandes" : "Suivre ma commande"}
+              >
+                <ClipboardDocumentListIcon className="h-5 w-5" />
+                <span className="text-sm font-medium hidden lg:inline">
+                  {isAuthenticated ? "Mes commandes" : "Suivre commande"}
+                </span>
+              </Link>
+            )}
 
             {/* Search */}
             <button className="hidden sm:block p-2 text-gray-600 hover:text-pink-600 transition-colors">
@@ -114,86 +141,89 @@ export default function Header() {
             </button>
 
             {/* Notifications */}
-            {isAuthenticated && (
+            {mounted && isAuthenticated && (
               <div className="hidden sm:block">
                 <NotificationsPanel />
               </div>
             )}
 
-            {/* User */}
-            {isAuthenticated ? (
-              <div className="hidden sm:block relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center space-x-2 p-2 text-gray-600 hover:text-pink-600 transition-colors"
-                >
+            {/* User menu */}
+            {mounted && (
+              isAuthenticated ? (
+                <div className="hidden sm:block relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center space-x-2 p-2 text-gray-600 hover:text-pink-600 transition-colors"
+                  >
+                    <UserIcon className="h-5 w-5" />
+                    <ChevronDownIcon className="h-4 w-4" />
+                  </button>
+
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
+                      <Link
+                        href="/dashboard"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Tableau de bord
+                      </Link>
+                      <Link
+                        href="/dashboard/profile"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Mon profil
+                      </Link>
+                      {(user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE') && (
+                        <Link
+                          href="/dashboard/services"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Mes services
+                        </Link>
+                      )}
+                      {user?.role === 'VENDEUSE' && (
+                        <Link
+                          href="/dashboard/products"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Mes produits
+                        </Link>
+                      )}
+                      {user?.role === 'ADMIN' && (
+                        <Link
+                          href="/dashboard/admin"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-semibold text-pink-600"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Administration
+                        </Link>
+                      )}
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setUserMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                      >
+                        Déconnexion
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link href="/auth/login" className="hidden sm:block p-2 text-gray-600 hover:text-pink-600 transition-colors">
                   <UserIcon className="h-5 w-5" />
-                  <ChevronDownIcon className="h-4 w-4" />
-                </button>
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
-                    <Link
-                      href="/dashboard"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      Tableau de bord
-                    </Link>
-                    <Link
-                      href="/dashboard/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      Mon profil
-                    </Link>
-                    {(user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE') && (
-                      <Link
-                        href="/dashboard/services"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setUserMenuOpen(false)}
-                      >
-                        Mes services
-                      </Link>
-                    )}
-                    {user?.role === 'VENDEUSE' && (
-                      <Link
-                        href="/dashboard/products"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setUserMenuOpen(false)}
-                      >
-                        Mes produits
-                      </Link>
-                    )}
-                    {user?.role === 'ADMIN' && (
-                      <Link
-                        href="/dashboard/admin"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-semibold text-pink-600"
-                        onClick={() => setUserMenuOpen(false)}
-                      >
-                        Administration
-                      </Link>
-                    )}
-                    <div className="border-t border-gray-100 my-1"></div>
-                    <button
-                      onClick={() => {
-                        logout();
-                        setUserMenuOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
-                    >
-                      Déconnexion
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link href="/auth/login" className="hidden sm:block p-2 text-gray-600 hover:text-pink-600 transition-colors">
-                <UserIcon className="h-5 w-5" />
-              </Link>
+                </Link>
+              )
             )}
 
-            {/* Cart - Visible uniquement pour les clients et non-connectés */}
-            {(!isAuthenticated || user?.role === 'CLIENT') && (
+            {/* Cart */}
+            {mounted && (!isAuthenticated || user?.role === 'CLIENT') && (
               <Link href="/cart" className="relative p-2 text-gray-600 hover:text-pink-600 transition-colors">
                 <ShoppingBagIcon className="h-5 w-5" />
                 <CartBadge />
@@ -215,10 +245,10 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile menu - Masquer navigation publique pour utilisateurs connectés */}
-        {mobileMenuOpen && (
+        {/* Mobile menu */}
+        {mounted && mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-100 py-4 space-y-2">
-            {!isAuthenticated && (
+            {!isAuthenticated ? (
               <>
                 <Link 
                   href="/products" 
@@ -255,9 +285,15 @@ export default function Header() {
                 >
                   Suivre ma commande
                 </Link>
+                <Link 
+                  href="/auth/login" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Connexion
+                </Link>
               </>
-            )}
-            {isAuthenticated ? (
+            ) : (
               <>
                 <Link 
                   href="/dashboard" 
@@ -283,14 +319,6 @@ export default function Header() {
                   Déconnexion
                 </button>
               </>
-            ) : (
-              <Link 
-                href="/auth/login" 
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Connexion
-              </Link>
             )}
           </div>
         )}
@@ -298,4 +326,3 @@ export default function Header() {
     </header>
   );
 }
-
