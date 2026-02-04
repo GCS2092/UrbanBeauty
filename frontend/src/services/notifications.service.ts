@@ -14,12 +14,12 @@ export interface Notification {
 export const notificationsService = {
   getAll: async (): Promise<Notification[]> => {
     const response = await api.get('/api/notifications');
-    return response.data;
+    return response.data ?? [];
   },
 
   getUnreadCount: async (): Promise<number> => {
     const response = await api.get('/api/notifications/unread-count');
-    return response.data.count;
+    return response.data?.count ?? 0;
   },
 
   markAsRead: async (id: string): Promise<void> => {
@@ -36,11 +36,11 @@ export const notificationsService = {
 
   deleteAll: async (): Promise<{ message: string; count: number }> => {
     const response = await api.delete('/api/notifications');
-    return response.data;
+    return response.data ?? { message: 'OK', count: 0 };
   },
 
   deleteRead: async (): Promise<{ message: string; count: number }> => {
     const response = await api.delete('/api/notifications/read/clear');
-    return response.data;
+    return response.data ?? { message: 'OK', count: 0 };
   },
 };

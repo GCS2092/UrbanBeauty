@@ -1,109 +1,112 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
+import {
+  supabaseSignIn,
+  supabaseSignUp,
+  supabaseAdminGetUser,
+  supabaseAdminUpdateUser,
+  getSupabaseRoleFromUser,
+} from '../../../utils/supabase-admin';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     const { email, password, firstName, lastName, phone, role } = registerDto;
 
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException('Cet email est déjà utilisé');
-    }
-
-    // Hasher le mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Créer l'utilisateur et son profil
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
+    try {
+      const authData = await supabaseSignUp(email, password, {
         role: role || 'CLIENT',
-        profile: {
-          create: {
+        first_name: firstName,
+        last_name: lastName,
+      });
+
+      const userId = authData?.user?.id;
+      if (!userId) {
+        throw new ConflictException("Impossible de créer l'utilisateur");
+      }
+
+      // Le profil est créé par trigger côté DB. On met à jour les champs si besoin.
+      await this.prisma.profiles.upsert({
+        where: { userId },
+        update: {
+          firstName,
+          lastName,
+          phone,
+        },
+        create: {
+          userId,
+          firstName,
+          lastName,
+          phone,
+        },
+      });
+
+      const access_token =
+        authData?.access_token || authData?.session?.access_token || '';
+
+      return {
+        access_token,
+        user: {
+          id: userId,
+          email,
+          role: role || 'CLIENT',
+          profile: {
             firstName,
             lastName,
-            phone,
           },
         },
-      },
-      include: {
-        profile: true,
-      },
-    });
-
-    // Générer le token JWT
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    const access_token = this.jwtService.sign(payload);
-
-    return {
-      access_token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        profile: {
-          firstName: user.profile!.firstName,
-          lastName: user.profile!.lastName,
-          avatar: user.profile!.avatar || undefined,
-        },
-      },
-    };
+      };
+    } catch (err: any) {
+      const message = err?.message || 'Erreur lors de la création du compte';
+      if (
+        message.includes('already registered') ||
+        message.includes('already')
+      ) {
+        throw new ConflictException('Cet email est déjà utilisé');
+      }
+      throw err;
+    }
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const { email, password } = loginDto;
 
-    // Trouver l'utilisateur
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: {
-        profile: true,
-      },
+    const authData = await supabaseSignIn(email, password);
+
+    if (!authData?.access_token || !authData?.user?.id) {
+      throw new UnauthorizedException('Email ou mot de passe incorrect');
+    }
+
+    const userId = authData.user.id;
+    const profile = await this.prisma.profiles.findUnique({
+      where: { userId },
     });
 
-    if (!user) {
-      throw new UnauthorizedException('Email ou mot de passe incorrect');
-    }
-
-    // Vérifier le mot de passe
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Email ou mot de passe incorrect');
-    }
-
-    // Générer le token JWT
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    const access_token = this.jwtService.sign(payload);
+    const role = getSupabaseRoleFromUser(authData.user);
+    const access_token =
+      authData?.access_token || authData?.session?.access_token || '';
 
     return {
       access_token,
-      mustChangePassword: user.mustChangePassword,
+      mustChangePassword: false,
       user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        profile: user.profile
+        id: userId,
+        email,
+        role,
+        profile: profile
           ? {
-              firstName: user.profile.firstName,
-              lastName: user.profile.lastName,
-              avatar: user.profile.avatar || undefined,
+              firstName: profile.firstName,
+              lastName: profile.lastName,
+              avatar: profile.avatar || undefined,
             }
           : undefined,
       },
@@ -111,37 +114,21 @@ export class AuthService {
   }
 
   async validateUser(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        profile: true,
-      },
-    });
-
-    if (!user) {
+    try {
+      const user = await supabaseAdminGetUser(userId);
+      if (!user) return null;
+      return {
+        id: user.id,
+        email: user.email,
+        role: getSupabaseRoleFromUser(user),
+      };
+    } catch {
       return null;
     }
-
-    return user;
   }
 
   async changePassword(userId: string, newPassword: string) {
-    // Hasher le nouveau mot de passe
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Mettre à jour le mot de passe et désactiver mustChangePassword
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        password: hashedPassword,
-        mustChangePassword: false,
-      },
-      include: {
-        profile: true,
-      },
-    });
-
-    return user;
+    await supabaseAdminUpdateUser(userId, { password: newPassword });
+    return this.validateUser(userId);
   }
 }
-

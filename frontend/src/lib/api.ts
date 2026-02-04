@@ -1,7 +1,6 @@
-import { supabase } from './supabase';
+﻿import { supabase } from './supabase';
 
-
-// Interface pour les réponses API
+// Interface pour les rÃƒÂ©ponses API
 interface ApiResponse<T = any> {
   data: T | null;
   error: string | null;
@@ -10,26 +9,36 @@ interface ApiResponse<T = any> {
 
 // Helper pour convertir les endpoints en noms de table Supabase corrects
 const getTableName = (endpoint: string): string => {
-  const tableName = endpoint.replace('/api/', '').replace(/\//g, '_').split('?')[0];
-  
-  // Mapping spécial pour les cas particuliers
+  const tableName = endpoint
+    .replace('/api/', '')
+    .replace(/\//g, '_')
+    .split('?')[0];
+
+  // Mapping spÃƒÂ©cial pour les cas particuliers
   const tableMapping: { [key: string]: string } = {
     'notifications-unread-count': 'notifications_unread_count',
     'notificationsunread-count': 'notifications_unread_count',
-    'notificationsunread_count': 'notifications_unread_count',
-    'favoritescount': 'favorites',
+    notificationsunread_count: 'notifications_unread_count',
+    favoritescount: 'favorites',
     'favorites-count': 'favorites',
     'quick-replies': 'quick_replies',
     'chat-conversations': 'chat_conversations',
-    'chatconversations': 'chat_conversations',
+    chatconversations: 'chat_conversations',
   };
-  
+
   return tableMapping[tableName] || tableName.replace(/-/g, '_');
 };
 
-// Helper pour gérer les requêtes avec offline queue
-const handleOfflineRequest = async <T = any>(method: string, url: string, data?: any): Promise<ApiResponse<T> | null> => {
-  if (!navigator.onLine && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+// Helper pour gÃƒÂ©rer les requÃƒÂªtes avec offline queue
+const handleOfflineRequest = async <T = any>(
+  method: string,
+  url: string,
+  data?: any,
+): Promise<ApiResponse<T> | null> => {
+  if (
+    !navigator.onLine &&
+    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
+  ) {
     if (typeof window !== 'undefined') {
       const { offlineManager } = await import('./offline');
       await offlineManager.addToQueue({
@@ -37,12 +46,13 @@ const handleOfflineRequest = async <T = any>(method: string, url: string, data?:
         url,
         data: data || {},
       });
-      
+
       return {
-        data: { 
-          message: 'Requête mise en file d\'attente. Elle sera synchronisée automatiquement.',
+        data: {
+          message:
+            "RequÃƒÂªte mise en file d'attente. Elle sera synchronisÃƒÂ©e automatiquement.",
           queued: true,
-          offline: true 
+          offline: true,
         } as T,
         error: null,
         status: 202,
@@ -55,13 +65,20 @@ const handleOfflineRequest = async <T = any>(method: string, url: string, data?:
 // API pour l'authentification
 export const api = {
   // POST request
-  post: async <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => {
+  post: async <T = any>(
+    endpoint: string,
+    data: any,
+  ): Promise<ApiResponse<T>> => {
     try {
-      // Vérifier le mode hors ligne
-      const offlineResponse = await handleOfflineRequest<T>('POST', endpoint, data);
+      // VÃƒÂ©rifier le mode hors ligne
+      const offlineResponse = await handleOfflineRequest<T>(
+        'POST',
+        endpoint,
+        data,
+      );
       if (offlineResponse) return offlineResponse;
 
-      // ne rien faire — supabase est déjà importé
+      // ne rien faire Ã¢â‚¬â€ supabase est dÃƒÂ©jÃƒÂ  importÃƒÂ©
 
       // Routes d'authentification
       if (endpoint === '/auth/register' || endpoint === '/api/auth/register') {
@@ -74,15 +91,15 @@ export const api = {
               last_name: data.lastName,
               phone: data.phone,
               role: data.role || 'client',
-            }
-          }
+            },
+          },
         });
 
         if (error) {
           return { data: null, error: error.message };
         }
 
-        // Récupérer le token de session
+        // RÃƒÂ©cupÃƒÂ©rer le token de session
         const { data: sessionData } = await supabase.auth.getSession();
         const access_token = sessionData.session?.access_token;
 
@@ -96,18 +113,19 @@ export const api = {
               profile: {
                 firstName: data.firstName,
                 lastName: data.lastName,
-              }
-            }
+              },
+            },
           } as T,
           error: null,
         };
       }
 
       if (endpoint === '/auth/login' || endpoint === '/api/auth/login') {
-        const { data: authData, error } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password,
-        });
+        const { data: authData, error } =
+          await supabase.auth.signInWithPassword({
+            email: data.email,
+            password: data.password,
+          });
 
         if (error) {
           return { data: null, error: error.message };
@@ -115,7 +133,7 @@ export const api = {
 
         const access_token = authData.session?.access_token;
 
-        // Récupérer les infos utilisateur depuis la table profiles
+        // RÃƒÂ©cupÃƒÂ©rer les infos utilisateur depuis la table profiles
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
@@ -129,15 +147,55 @@ export const api = {
               id: authData.user.id,
               email: authData.user.email,
               role: authData.user.user_metadata?.role || 'client',
-              profile: profile ? {
-                firstName: profile.first_name,
-                lastName: profile.last_name,
-                avatar: profile.avatar_url,
-              } : undefined
-            }
+              profile: profile
+                ? {
+                    firstName: profile.first_name,
+                    lastName: profile.last_name,
+                    avatar: profile.avatar_url,
+                  }
+                : undefined,
+            },
           } as T,
           error: null,
         };
+      }
+
+      // Enregistrement du token FCM (table notification_tokens)
+      if (
+        endpoint === '/api/notifications/register-token' ||
+        endpoint === '/notifications/register-token'
+      ) {
+        const { data: authData, error: authError } =
+          await supabase.auth.getUser();
+        if (authError || !authData.user) {
+          return {
+            data: null,
+            error: authError?.message || 'Non authentifiÃƒÂ©',
+          };
+        }
+
+        const token = data?.token;
+        if (!token) {
+          return { data: null, error: 'Token FCM manquant' };
+        }
+
+        const { data: result, error } = await supabase
+          .from('notification_tokens')
+          .upsert(
+            {
+              userId: authData.user.id,
+              token,
+            },
+            { onConflict: 'userId' },
+          )
+          .select()
+          .single();
+
+        if (error) {
+          return { data: null, error: error.message };
+        }
+
+        return { data: result as T, error: null };
       }
 
       // Autres endpoints POST
@@ -160,17 +218,21 @@ export const api = {
   // GET request
   get: async <T = any>(endpoint: string): Promise<ApiResponse<T>> => {
     try {
-      
-
-      // Route pour récupérer l'utilisateur connecté
+      // Route pour rÃƒÂ©cupÃƒÂ©rer l'utilisateur connectÃƒÂ©
       if (endpoint === '/auth/me' || endpoint === '/api/auth/me') {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
         if (userError || !user) {
-          return { data: null, error: userError?.message || 'Non authentifié' };
+          return {
+            data: null,
+            error: userError?.message || 'Non authentifiÃƒÂ©',
+          };
         }
 
-        // Récupérer le profil complet
+        // RÃƒÂ©cupÃƒÂ©rer le profil complet
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -186,27 +248,29 @@ export const api = {
             id: user.id,
             email: user.email,
             role: user.user_metadata?.role || 'client',
-            profile: profile ? {
-              id: profile.id,
-              userId: profile.id,
-              firstName: profile.first_name,
-              lastName: profile.last_name,
-              phone: profile.phone,
-              address: profile.address,
-              avatar: profile.avatar_url,
-              bio: profile.bio,
-              city: profile.city,
-              country: profile.country,
-              postalCode: profile.postal_code,
-              website: profile.website,
-              instagram: profile.instagram,
-              facebook: profile.facebook,
-              tiktok: profile.tiktok,
-              specialties: profile.specialties,
-              experience: profile.experience,
-              isProvider: profile.is_provider || false,
-              rating: profile.rating,
-            } : undefined,
+            profile: profile
+              ? {
+                  id: profile.id,
+                  userId: profile.id,
+                  firstName: profile.first_name,
+                  lastName: profile.last_name,
+                  phone: profile.phone,
+                  address: profile.address,
+                  avatar: profile.avatar_url,
+                  bio: profile.bio,
+                  city: profile.city,
+                  country: profile.country,
+                  postalCode: profile.postal_code,
+                  website: profile.website,
+                  instagram: profile.instagram,
+                  facebook: profile.facebook,
+                  tiktok: profile.tiktok,
+                  specialties: profile.specialties,
+                  experience: profile.experience,
+                  isProvider: profile.is_provider || false,
+                  rating: profile.rating,
+                }
+              : undefined,
             createdAt: user.created_at,
             updatedAt: user.updated_at,
           } as T,
@@ -230,25 +294,33 @@ export const api = {
   },
 
   // PUT request
-  put: async <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => {
+  put: async <T = any>(
+    endpoint: string,
+    data: any,
+  ): Promise<ApiResponse<T>> => {
     try {
-      // Vérifier le mode hors ligne
-      const offlineResponse = await handleOfflineRequest<T>('PUT', endpoint, data);
+      // VÃƒÂ©rifier le mode hors ligne
+      const offlineResponse = await handleOfflineRequest<T>(
+        'PUT',
+        endpoint,
+        data,
+      );
       if (offlineResponse) return offlineResponse;
 
-      
-
       // Route pour changer le mot de passe
-      if (endpoint === '/auth/change-password' || endpoint === '/api/auth/change-password') {
+      if (
+        endpoint === '/auth/change-password' ||
+        endpoint === '/api/auth/change-password'
+      ) {
         const { error } = await supabase.auth.updateUser({
-          password: data.newPassword
+          password: data.newPassword,
         });
 
         if (error) {
           return { data: null, error: error.message };
         }
 
-        // Retourner les infos utilisateur mises à jour
+        // Retourner les infos utilisateur mises ÃƒÂ  jour
         return api.get('/auth/me');
       }
 
@@ -272,11 +344,10 @@ export const api = {
   // DELETE request
   delete: async <T = any>(endpoint: string): Promise<ApiResponse<T>> => {
     try {
-      // Vérifier le mode hors ligne
+      // VÃƒÂ©rifier le mode hors ligne
       const offlineResponse = await handleOfflineRequest<T>('DELETE', endpoint);
       if (offlineResponse) return offlineResponse;
 
-      
       const { data: result, error } = await supabase
         .from(getTableName(endpoint))
         .delete()
@@ -294,10 +365,14 @@ export const api = {
   },
 
   // PATCH request
-  patch: async <T = any>(endpoint: string, data: any): Promise<ApiResponse<T>> => {
-    // PATCH est similaire à PUT
+  patch: async <T = any>(
+    endpoint: string,
+    data: any,
+  ): Promise<ApiResponse<T>> => {
+    // PATCH est similaire ÃƒÂ  PUT
     return api.put<T>(endpoint, data);
   },
 };
 
 export default api;
+

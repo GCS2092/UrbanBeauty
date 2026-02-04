@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { requestNotificationPermission, onMessageListener, messaging } from '@/lib/firebase';
@@ -16,11 +16,11 @@ export function useFCMNotifications() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Vérifier la permission actuelle
+    // Verifier la permission actuelle
     const currentPermission = 'Notification' in window ? Notification.permission : 'default';
     setPermission(currentPermission);
 
-    // Si l'utilisateur a déjà accordé la permission et est authentifié, récupérer le token
+    // Si l'utilisateur a deja accorde la permission et est authentifie, recuperer le token
     if (isAuthenticated && currentPermission === 'granted' && !token) {
       requestNotificationPermission().then((fcmToken) => {
         if (fcmToken) {
@@ -28,7 +28,11 @@ export function useFCMNotifications() {
           // Enregistrer le token dans le backend
           api
             .post('/api/notifications/register-token', { token: fcmToken })
-            .then(() => {
+            .then((res) => {
+              if (res.error) {
+                console.error('Error registering FCM token:', res.error);
+                return;
+              }
               setIsRegistered(true);
               console.log('FCM token registered successfully');
             })
@@ -39,11 +43,15 @@ export function useFCMNotifications() {
       });
     }
 
-    // Si le token existe déjà mais n'est pas enregistré, l'enregistrer
+    // Si le token existe deja mais n'est pas enregistre, l'enregistrer
     if (isAuthenticated && token && !isRegistered) {
       api
         .post('/api/notifications/register-token', { token })
-        .then(() => {
+        .then((res) => {
+          if (res.error) {
+            console.error('Error registering FCM token:', res.error);
+            return;
+          }
           setIsRegistered(true);
         })
         .catch((error) => {
@@ -52,7 +60,7 @@ export function useFCMNotifications() {
     }
   }, [isAuthenticated, token, isRegistered]);
 
-  // Écouter les messages en foreground (séparé pour éviter les re-renders)
+  // Ecouter les messages en foreground (separe pour eviter les re-renders)
   useEffect(() => {
     if (!messaging || typeof window === 'undefined') return;
 
@@ -87,23 +95,27 @@ export function useFCMNotifications() {
 
   const requestPermission = async () => {
     if (typeof window === 'undefined') return null;
-    
+
     const fcmToken = await requestNotificationPermission();
     if (fcmToken) {
       setToken(fcmToken);
       setPermission(Notification.permission);
-      
+
       if (isAuthenticated) {
         try {
-          await api.post('/api/notifications/register-token', { token: fcmToken });
+          const res = await api.post('/api/notifications/register-token', { token: fcmToken });
+          if (res.error) {
+            console.error('Error registering FCM token:', res.error);
+            return null;
+          }
           setIsRegistered(true);
-          appNotifications.success('Notifications activées', 'Vous recevrez désormais les notifications push');
+          appNotifications.success('Notifications activees', 'Vous recevrez desormais les notifications push');
         } catch (error) {
           console.error('Error registering FCM token:', error);
         }
       }
     }
-    
+
     return fcmToken;
   };
 
@@ -114,4 +126,3 @@ export function useFCMNotifications() {
     requestPermission,
   };
 }
-

@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma.service';
 import { CreateMessageDto } from '../dto/create-message.dto';
 import { CreateConversationDto } from '../dto/create-conversation.dto';
 import { NotificationsService } from '../../notifications/services/notifications.service';
+import { supabaseAdminGetUser } from '../../../utils/supabase-admin';
 
 @Injectable()
 export class ChatService {
@@ -13,8 +18,8 @@ export class ChatService {
 
   async findOrCreateConversation(userId1: string, userId2: string) {
     // Vérifier que les deux utilisateurs existent
-    const user1 = await this.prisma.user.findUnique({ where: { id: userId1 } });
-    const user2 = await this.prisma.user.findUnique({ where: { id: userId2 } });
+    const user1 = await supabaseAdminGetUser(userId1);
+    const user2 = await supabaseAdminGetUser(userId2);
 
     if (!user1 || !user2) {
       throw new NotFoundException('Utilisateur introuvable');
@@ -83,10 +88,7 @@ export class ChatService {
   async getUserConversations(userId: string) {
     const conversations = await this.prisma.conversation.findMany({
       where: {
-        OR: [
-          { participant1Id: userId },
-          { participant2Id: userId },
-        ],
+        OR: [{ participant1Id: userId }, { participant2Id: userId }],
       },
       include: {
         participant1: {
@@ -105,13 +107,11 @@ export class ChatService {
       },
     });
 
-    return conversations.map(conv => {
-      const otherParticipant = conv.participant1Id === userId 
-        ? conv.participant2 
-        : conv.participant1;
-      const unreadCount = conv.participant1Id === userId 
-        ? conv.unreadCount1 
-        : conv.unreadCount2;
+    return conversations.map((conv) => {
+      const otherParticipant =
+        conv.participant1Id === userId ? conv.participant2 : conv.participant1;
+      const unreadCount =
+        conv.participant1Id === userId ? conv.unreadCount1 : conv.unreadCount2;
 
       return {
         id: conv.id,
@@ -139,8 +139,13 @@ export class ChatService {
     }
 
     // Vérifier que l'utilisateur fait partie de la conversation
-    if (conversation.participant1Id !== userId && conversation.participant2Id !== userId) {
-      throw new ForbiddenException('Vous n\'êtes pas autorisé à accéder à cette conversation');
+    if (
+      conversation.participant1Id !== userId &&
+      conversation.participant2Id !== userId
+    ) {
+      throw new ForbiddenException(
+        "Vous n'êtes pas autorisé à accéder à cette conversation",
+      );
     }
 
     // Marquer les messages comme lus
@@ -179,7 +184,11 @@ export class ChatService {
     return messages;
   }
 
-  async sendMessage(conversationId: string, senderId: string, createMessageDto: CreateMessageDto) {
+  async sendMessage(
+    conversationId: string,
+    senderId: string,
+    createMessageDto: CreateMessageDto,
+  ) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
       include: {
@@ -193,8 +202,13 @@ export class ChatService {
     }
 
     // Vérifier que l'utilisateur fait partie de la conversation
-    if (conversation.participant1Id !== senderId && conversation.participant2Id !== senderId) {
-      throw new ForbiddenException('Vous n\'êtes pas autorisé à envoyer un message dans cette conversation');
+    if (
+      conversation.participant1Id !== senderId &&
+      conversation.participant2Id !== senderId
+    ) {
+      throw new ForbiddenException(
+        "Vous n'êtes pas autorisé à envoyer un message dans cette conversation",
+      );
     }
 
     // Créer le message
@@ -212,9 +226,10 @@ export class ChatService {
     });
 
     // Mettre à jour la conversation
-    const otherParticipantId = conversation.participant1Id === senderId 
-      ? conversation.participant2Id 
-      : conversation.participant1Id;
+    const otherParticipantId =
+      conversation.participant1Id === senderId
+        ? conversation.participant2Id
+        : conversation.participant1Id;
 
     if (conversation.participant1Id === senderId) {
       await this.prisma.conversation.update({
@@ -239,20 +254,20 @@ export class ChatService {
     // Envoyer une notification à l'autre participant
     try {
       // Récupérer le nom de l'expéditeur
-      const sender = await this.prisma.user.findUnique({
-        where: { id: senderId },
-        include: { profile: true },
+      const sender = await supabaseAdminGetUser(senderId);
+      const senderProfile = await this.prisma.profiles.findUnique({
+        where: { userId: senderId },
       });
-      
-      const senderName = sender?.profile 
-        ? `${sender.profile.firstName} ${sender.profile.lastName}`
-        : sender?.email || 'Quelqu\'un';
+      const senderName = senderProfile
+        ? `${senderProfile.firstName} ${senderProfile.lastName}`
+        : sender?.email || "Quelqu'un";
 
       await this.notificationsService.sendToUser(otherParticipantId, {
         title: `Nouveau message de ${senderName}`,
-        body: createMessageDto.content.length > 100 
-          ? createMessageDto.content.substring(0, 100) + '...'
-          : createMessageDto.content,
+        body:
+          createMessageDto.content.length > 100
+            ? createMessageDto.content.substring(0, 100) + '...'
+            : createMessageDto.content,
         data: {
           type: 'message',
           conversationId,
@@ -262,14 +277,19 @@ export class ChatService {
       });
     } catch (error) {
       // Ne pas bloquer l'envoi du message si la notification échoue
-      console.error('Erreur lors de l\'envoi de notification:', error);
+      console.error("Erreur lors de l'envoi de notification:", error);
     }
 
     return message;
   }
 
-  async createConversation(userId: string, createConversationDto: CreateConversationDto) {
-    return this.findOrCreateConversation(userId, createConversationDto.participant2Id);
+  async createConversation(
+    userId: string,
+    createConversationDto: CreateConversationDto,
+  ) {
+    return this.findOrCreateConversation(
+      userId,
+      createConversationDto.participant2Id,
+    );
   }
 }
-

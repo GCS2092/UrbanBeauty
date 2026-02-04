@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';  // ✅ Correct
+import { supabase } from '@/lib/supabase'; // ✅ Correct
 
 export interface RegisterDto {
   email: string;
@@ -31,7 +31,6 @@ export interface AuthResponse {
 
 export const authService = {
   register: async (data: RegisterDto): Promise<AuthResponse> => {
-    // 1. Créer l'utilisateur dans Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -39,21 +38,6 @@ export const authService = {
 
     if (authError) throw authError;
 
-    // 2. Créer le profil dans la table profiles
-    if (authData.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          userId: authData.user.id,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          phone: data.phone,
-        });
-
-      if (profileError) throw profileError;
-    }
-
-    // 3. Stocker le token
     if (authData.session) {
       localStorage.setItem('access_token', authData.session.access_token);
     }
@@ -63,7 +47,7 @@ export const authService = {
       user: {
         id: authData.user?.id || '',
         email: authData.user?.email || '',
-        role: data.role || 'user',
+        role: data.role || 'CLIENT',
         profile: {
           firstName: data.firstName,
           lastName: data.lastName,
@@ -73,7 +57,6 @@ export const authService = {
   },
 
   login: async (data: LoginDto): Promise<AuthResponse> => {
-    // 1. Se connecter avec Supabase Auth
     const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
@@ -81,14 +64,16 @@ export const authService = {
 
     if (error) throw error;
 
-    // 2. Récupérer le profil
-    const { data: profileData } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('userId', authData.user.id)
-      .single();
+      .maybeSingle();
 
-    // 3. Stocker le token
+    if (profileError) {
+      console.warn('Profil introuvable ou erreur Supabase:', profileError.message);
+    }
+
     if (authData.session) {
       localStorage.setItem('access_token', authData.session.access_token);
     }
@@ -98,12 +83,14 @@ export const authService = {
       user: {
         id: authData.user.id,
         email: authData.user.email || '',
-        role: 'user', // À adapter selon votre logique
-        profile: profileData ? {
-          firstName: profileData.firstName,
-          lastName: profileData.lastName,
-          avatar: profileData.avatar,
-        } : undefined,
+        role: (authData.user.user_metadata?.role as string) || 'CLIENT',
+        profile: profileData
+          ? {
+              firstName: profileData.firstName ?? profileData.first_name,
+              lastName: profileData.lastName ?? profileData.last_name,
+              avatar: profileData.avatar ?? profileData.avatar_url,
+            }
+          : undefined,
       },
     };
   },
@@ -115,23 +102,29 @@ export const authService = {
   },
 
   getMe: async (): Promise<any> => {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
     if (error) throw error;
     if (!user) throw new Error('Not authenticated');
 
-    // Récupérer le profil complet
-    const { data: profileData } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('userId', user.id)
-      .single();
+      .maybeSingle();
+
+    if (profileError) {
+      console.warn('Profil introuvable ou erreur Supabase:', profileError.message);
+    }
 
     return {
       id: user.id,
       email: user.email,
-      role: 'user', // À adapter
-      profile: profileData,
+      role: (user.user_metadata?.role as string) || 'CLIENT',
+      profile: profileData || undefined,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };

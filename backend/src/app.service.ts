@@ -13,14 +13,14 @@ export class AppService {
     try {
       // Test de connexion simple
       await this.prisma.$queryRaw`SELECT 1`;
-      
+
       // Compter les utilisateurs (test de lecture)
-      const userCount = await this.prisma.user.count();
-      
+      const userCount = await this.prisma.profiles.count();
+
       // Lister les tables (test de connexion)
       const tables = await this.prisma.$queryRaw<Array<{ tablename: string }>>`
-        SELECT tablename 
-        FROM pg_tables 
+        SELECT tablename
+        FROM pg_tables
         WHERE schemaname = 'public'
         ORDER BY tablename
       `;
@@ -30,7 +30,7 @@ export class AppService {
         message: 'Database connection successful',
         connected: true,
         userCount,
-        tables: tables.map(t => t.tablename),
+        tables: tables.map((t) => t.tablename),
         timestamp: new Date().toISOString(),
       };
     } catch (error) {

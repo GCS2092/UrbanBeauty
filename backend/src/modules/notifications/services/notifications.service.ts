@@ -10,11 +10,11 @@ export class NotificationsService {
     private prisma: PrismaService,
     private firebaseService: FirebaseService,
   ) {}
- 
+
   async registerToken(userId: string, registerTokenDto: RegisterTokenDto) {
     // Vérifier si l'utilisateur existe
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const user = await this.prisma.profiles.findUnique({
+      where: { userId },
     });
 
     if (!user) {
@@ -46,13 +46,15 @@ export class NotificationsService {
         title: sendNotificationDto.title,
         body: sendNotificationDto.body,
         type: sendNotificationDto.data?.type || null,
-        data: sendNotificationDto.data ? JSON.stringify(sendNotificationDto.data) : null,
+        data: sendNotificationDto.data
+          ? JSON.stringify(sendNotificationDto.data)
+          : null,
       },
     });
 
     // Envoyer la notification FCM si le token existe
     const token = await this.getUserFCMToken(userId);
-    
+
     if (token) {
       try {
         await this.firebaseService.sendNotification(
@@ -63,16 +65,19 @@ export class NotificationsService {
         );
       } catch (error) {
         // Ne pas bloquer si l'envoi FCM échoue, la notification est déjà enregistrée
-        console.error('Erreur lors de l\'envoi FCM:', error);
+        console.error("Erreur lors de l'envoi FCM:", error);
       }
     }
 
     return { success: true, message: 'Notification envoyée' };
   }
 
-  async sendToMultipleUsers(userIds: string[], sendNotificationDto: SendNotificationDto) {
+  async sendToMultipleUsers(
+    userIds: string[],
+    sendNotificationDto: SendNotificationDto,
+  ) {
     const tokens: string[] = [];
-    
+
     for (const userId of userIds) {
       const token = await this.getUserFCMToken(userId);
       if (token) {
@@ -194,4 +199,3 @@ export class NotificationsService {
     };
   }
 }
-

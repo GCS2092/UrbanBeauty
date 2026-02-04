@@ -56,7 +56,7 @@ model identities {
   updated_at      DateTime?  @db.Timestamptz(6)
   email           String?    @default(dbgenerated("lower((identity_data ->> 'email'::text))"))
   id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  users           auth_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           User @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([provider_id, provider], map: "identities_provider_id_provider_unique")
   @@index([email])
@@ -123,7 +123,7 @@ model mfa_factors {
   web_authn_aaguid             String?          @db.Uuid
   last_webauthn_challenge_data Json?
   mfa_challenges               mfa_challenges[]
-  users                        auth_users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                        User       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, phone], map: "unique_phone_factor_per_user")
   @@index([user_id, created_at], map: "factor_id_created_at_idx")
@@ -151,7 +151,7 @@ model oauth_authorizations {
   approved_at           DateTime?                  @db.Timestamptz(6)
   nonce                 String?
   oauth_clients         oauth_clients              @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                 auth_users?                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                 User?                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@schema("auth")
 }
@@ -198,7 +198,7 @@ model oauth_consents {
   granted_at    DateTime      @default(now()) @db.Timestamptz(6)
   revoked_at    DateTime?     @db.Timestamptz(6)
   oauth_clients oauth_clients @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users         auth_users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         User    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, client_id], map: "oauth_consents_user_client_unique")
   @@index([user_id, granted_at(sort: Desc)], map: "oauth_consents_user_order_idx")
@@ -215,7 +215,7 @@ model one_time_tokens {
   relates_to String
   created_at DateTime            @default(now()) @db.Timestamp(6)
   updated_at DateTime            @default(now()) @db.Timestamp(6)
-  users      auth_users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      User          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, token_type])
   @@index([relates_to], map: "one_time_tokens_relates_to_hash_idx", type: Hash)
@@ -315,7 +315,7 @@ model sessions {
   mfa_amr_claims         mfa_amr_claims[]
   refresh_tokens         refresh_tokens[]
   oauth_clients          oauth_clients?   @relation(fields: [oauth_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users                  auth_users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                  User       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([not_after(sort: Desc)])
   @@index([oauth_client_id])
@@ -362,7 +362,7 @@ model sso_providers {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
-model auth_users {
+model User {
   instance_id                 String?                @db.Uuid
   id                          String                 @id @db.Uuid
   aud                         String?                @db.VarChar(255)
@@ -404,7 +404,16 @@ model auth_users {
   oauth_consents              oauth_consents[]
   one_time_tokens             one_time_tokens[]
   sessions                    sessions[]
+  bookings                    bookings[]
+  favorites                   favorites[]
+  notification_tokens         notification_tokens?
+  notifications               notifications[]
+  orders                      orders[]
+  payments                    payments[]
+  products                    products[]
+  profile                     profiles?
   quick_replies               quick_replies[]
+  reviews                     reviews[]
 
   @@index([instance_id])
   @@index([is_anonymous])
@@ -415,16 +424,16 @@ model auth_users {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model bookings {
   id        String        @id
-  userId    String
+  userId    String        @db.Uuid
   serviceId String
   date      DateTime
   status    BookingStatus @default(PENDING)
   notes     String?
   createdAt DateTime      @default(now())
   updatedAt DateTime
-  services  services      @relation(fields: [serviceId], references: [id])
-  users     public_users  @relation(fields: [userId], references: [id])
-  payments  payments?
+  service   services      @relation(fields: [serviceId], references: [id])
+  user      User          @relation(fields: [userId], references: [id], map: "bookings_userid_fkey")
+  payment   payments?
 
   @@schema("public")
 }
@@ -452,14 +461,14 @@ model chat_conversations {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model favorites {
-  id        String       @id
-  userId    String
+  id        String     @id
+  userId    String     @db.Uuid
   productId String?
   serviceId String?
-  createdAt DateTime     @default(now())
-  products  products?    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  services  services?    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  users     public_users @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  product   products?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  service   services?  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], map: "favorites_userid_fkey")
 
   @@unique([userId, productId])
   @@unique([userId, serviceId])
@@ -480,25 +489,37 @@ model images {
   title       String?
   order       Int?      @default(0)
   isPrimary   Boolean?  @default(false)
-  profiles    profiles? @relation(fields: [portfolioId], references: [id])
-  products    products? @relation(fields: [productId], references: [id])
-  services    services? @relation(fields: [serviceId], references: [id])
+  profile     profiles? @relation(fields: [portfolioId], references: [id])
+  product     products? @relation(fields: [productId], references: [id])
+  service     services? @relation(fields: [serviceId], references: [id])
 
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model notifications {
-  id        String       @id
-  userId    String
+  id        String     @id
+  userId    String     @db.Uuid
   title     String
   message   String
   type      String?
-  isRead    Boolean      @default(false)
-  createdAt DateTime     @default(now())
+  isRead    Boolean    @default(false)
+  createdAt DateTime   @default(now())
   updatedAt DateTime
-  users     public_users @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User @relation(fields: [userId], references: [id], map: "notifications_userid_fkey")
 
+  @@schema("public")
+}
+
+model notification_tokens {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String     @unique(map: "notification_tokens_userid_key") @db.Uuid
+  token     String     @unique
+  createdAt DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime   @default(now()) @db.Timestamptz(6)
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("notification_tokens")
   @@schema("public")
 }
 
@@ -519,8 +540,8 @@ model order_items {
   productId String
   quantity  Int
   price     Float
-  orders    orders   @relation(fields: [orderId], references: [id])
-  products  products @relation(fields: [productId], references: [id])
+  order     orders   @relation(fields: [orderId], references: [id])
+  product   products @relation(fields: [productId], references: [id])
 
   @@schema("public")
 }
@@ -528,14 +549,14 @@ model order_items {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model orders {
   id          String        @id
-  userId      String
+  userId      String        @db.Uuid
   total       Float
   status      OrderStatus   @default(PENDING)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime
-  order_items order_items[]
-  users       public_users  @relation(fields: [userId], references: [id])
-  payments    payments?
+  items       order_items[]
+  user        User          @relation(fields: [userId], references: [id], map: "orders_userid_fkey")
+  payment     payments?
 
   @@schema("public")
 }
@@ -547,14 +568,14 @@ model payments {
   status        PaymentStatus @default(PENDING)
   provider      String
   transactionId String?
-  userId        String
+  userId        String        @db.Uuid
   bookingId     String?       @unique
   orderId       String?       @unique
   createdAt     DateTime      @default(now())
   updatedAt     DateTime
-  bookings      bookings?     @relation(fields: [bookingId], references: [id])
-  orders        orders?       @relation(fields: [orderId], references: [id])
-  users         public_users  @relation(fields: [userId], references: [id])
+  booking       bookings?     @relation(fields: [bookingId], references: [id])
+  order         orders?       @relation(fields: [orderId], references: [id])
+  user          User          @relation(fields: [userId], references: [id], map: "payments_userid_fkey")
 
   @@schema("public")
 }
@@ -567,14 +588,14 @@ model products {
   price       Float
   categoryId  String
   stock       Int
-  sellerId    String
+  sellerId    String        @db.Uuid
   createdAt   DateTime      @default(now())
   updatedAt   DateTime
   favorites   favorites[]
   images      images[]
   order_items order_items[]
-  categories  categories    @relation(fields: [categoryId], references: [id])
-  users       public_users  @relation(fields: [sellerId], references: [id])
+  category    categories    @relation(fields: [categoryId], references: [id])
+  seller      User          @relation(fields: [sellerId], references: [id], map: "products_sellerid_fkey")
   reviews     reviews[]
 
   @@schema("public")
@@ -582,17 +603,17 @@ model products {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model profiles {
-  id         String       @id
-  userId     String       @unique
+  id         String     @id @default(dbgenerated("gen_random_uuid()"))
+  userId     String     @unique @db.Uuid
   firstName  String
   lastName   String
   phone      String?
   address    String?
   avatar     String?
-  isProvider Boolean      @default(false)
+  isProvider Boolean    @default(false)
   rating     Float?
   images     images[]
-  users      public_users @relation(fields: [userId], references: [id])
+  user       User @relation(fields: [userId], references: [id], map: "profiles_userid_fkey")
   services   services[]
 
   @@schema("public")
@@ -604,7 +625,7 @@ model quick_replies {
   message    String
   shortcut   String?
   created_at DateTime?   @default(now()) @db.Timestamptz(6)
-  users      auth_users? @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       User?       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([user_id], map: "idx_quick_replies_user")
   @@schema("public")
@@ -612,16 +633,16 @@ model quick_replies {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model reviews {
-  id        String       @id
+  id        String     @id
   rating    Int
   comment   String?
-  userId    String
+  userId    String     @db.Uuid
   productId String?
   serviceId String?
-  createdAt DateTime     @default(now())
-  products  products?    @relation(fields: [productId], references: [id])
-  services  services?    @relation(fields: [serviceId], references: [id])
-  users     public_users @relation(fields: [userId], references: [id])
+  createdAt DateTime   @default(now())
+  product   products?  @relation(fields: [productId], references: [id])
+  service   services?  @relation(fields: [serviceId], references: [id])
+  user      User       @relation(fields: [userId], references: [id], map: "reviews_userid_fkey")
 
   @@schema("public")
 }
@@ -641,30 +662,21 @@ model services {
   favorites   favorites[]
   images      images[]
   reviews     reviews[]
-  profiles    profiles    @relation(fields: [providerId], references: [id])
+  provider    profiles    @relation(fields: [providerId], references: [id])
 
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model public_users {
-  id            String          @id
-  email         String          @unique
-  blockReason   String?
-  role          Role            @default(CLIENT)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime
-  password      String          @default("")
-  bookings      bookings[]
-  favorites     favorites[]
-  notifications notifications[]
-  orders        orders[]
-  payments      payments[]
-  products      products[]
-  profiles      profiles?
-  reviews       reviews[]
+model users {
+  id          String   @id
+  email       String   @unique
+  blockReason String?
+  role        Role     @default(CLIENT)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  password    String   @default("")
 
-  @@map("users")
   @@schema("public")
 }
 

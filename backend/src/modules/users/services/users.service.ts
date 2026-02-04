@@ -1,165 +1,128 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma.service';
 import { Role } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../dto/create-user.dto';
+import {
+  supabaseAdminDeleteUser,
+  supabaseAdminGetUser,
+  supabaseAdminListUsers,
+  supabaseAdminUpdateUser,
+  supabaseSignUp,
+  getSupabaseRoleFromUser,
+} from '../../../utils/supabase-admin';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(role?: string) {
-    const where: any = {};
-    
-    if (role && Object.values(Role).includes(role as Role)) {
-      where.role = role as Role;
-    }
+    const response = await supabaseAdminListUsers(1, 1000);
+    const users = response?.users || [];
 
-    return this.prisma.user.findMany({
-      where,
-      include: {
-        profile: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+    const filtered = role
+      ? users.filter((u: any) => getSupabaseRoleFromUser(u) === role)
+      : users;
+
+    const userIds = filtered.map((u: any) => u.id);
+    const profiles = await this.prisma.profiles.findMany({
+      where: { userId: { in: userIds } },
     });
+
+    const profileByUser = new Map(profiles.map((p) => [p.userId, p]));
+
+    return filtered.map((u: any) => ({
+      id: u.id,
+      email: u.email,
+      role: getSupabaseRoleFromUser(u),
+      profile: profileByUser.get(u.id) || null,
+      createdAt: u.created_at,
+      updatedAt: u.updated_at,
+    }));
   }
 
   async findOne(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      include: {
-        profile: true,
-      },
-    });
-
+    const user = await supabaseAdminGetUser(id);
     if (!user) {
       throw new NotFoundException('Utilisateur introuvable');
     }
-
-    return user;
+    const profile = await this.prisma.profiles.findUnique({
+      where: { userId: id },
+    });
+    return {
+      id: user.id,
+      email: user.email,
+      role: getSupabaseRoleFromUser(user),
+      profile: profile || null,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    };
   }
 
   async updateRole(id: string, role: Role) {
-    const user = await this.findOne(id);
-
     if (!Object.values(Role).includes(role)) {
       throw new BadRequestException('Rôle invalide');
     }
-
-    return this.prisma.user.update({
-      where: { id },
-      data: { role },
-      include: {
-        profile: true,
-      },
+    await supabaseAdminUpdateUser(id, {
+      user_metadata: { role },
     });
+    return this.findOne(id);
   }
 
   async create(createUserDto: CreateUserDto) {
-    // Vérifier si l'email existe déjà
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: createUserDto.email },
-    });
+    const { email, password, firstName, lastName, phone, role } = createUserDto;
 
-    if (existingUser) {
-      throw new ConflictException('Cet email est déjà utilisé');
-    }
-
-    // Si aucun mot de passe n'est fourni, utiliser "password" par défaut
-    const passwordToUse = createUserDto.password || 'password';
-    const mustChangePassword = !createUserDto.password; // Si pas de mot de passe fourni, l'utilisateur devra le changer
-
-    // Hasher le mot de passe
-    const hashedPassword = await bcrypt.hash(passwordToUse, 10);
-
-    // Créer l'utilisateur
-    const user = await this.prisma.user.create({
-      data: {
-        email: createUserDto.email,
-        password: hashedPassword,
-        role: createUserDto.role,
-        isActive: true,
-        mustChangePassword: mustChangePassword,
-      },
-      include: {
-        profile: true,
-      },
-    });
-
-    // Créer le profil si firstName ou lastName sont fournis
-    if (createUserDto.firstName || createUserDto.lastName) {
-      await this.prisma.profile.create({
-        data: {
-          userId: user.id,
-          firstName: createUserDto.firstName || 'Utilisateur',
-          lastName: createUserDto.lastName || '',
-          phone: createUserDto.phone,
-        },
+    try {
+      const authData = await supabaseSignUp(email, password || 'password', {
+        role: role || 'CLIENT',
+        first_name: firstName,
+        last_name: lastName,
       });
 
-      // Recharger l'utilisateur avec le profil
-      return this.findOne(user.id);
-    }
+      const userId = authData?.user?.id;
+      if (!userId) {
+        throw new ConflictException('Impossible de créer l’utilisateur');
+      }
 
-    return user;
+      await this.prisma.profiles.upsert({
+        where: { userId },
+        update: { firstName: firstName || 'Utilisateur', lastName: lastName || '', phone },
+        create: { userId, firstName: firstName || 'Utilisateur', lastName: lastName || '', phone },
+      });
+
+      return this.findOne(userId);
+    } catch (err: any) {
+      const message = err?.message || 'Erreur lors de la création';
+      if (message.includes('already')) {
+        throw new ConflictException('Cet email est déjà utilisé');
+      }
+      throw err;
+    }
   }
 
   async remove(id: string) {
-    const user = await this.findOne(id);
-
-    // Supprimer le profil s'il existe
-    if (user.profile) {
-      await this.prisma.profile.delete({
-        where: { userId: id },
-      });
-    }
-
-    // Supprimer l'utilisateur
-    return this.prisma.user.delete({
-      where: { id },
-    });
+    await this.prisma.profiles.deleteMany({ where: { userId: id } });
+    await supabaseAdminDeleteUser(id);
+    return { success: true };
   }
 
   async updateStatus(id: string, isActive: boolean, blockReason?: string) {
-    const user = await this.findOne(id);
-
-    return this.prisma.user.update({
-      where: { id },
-      data: { 
-        isActive,
-        blockReason: isActive ? null : (blockReason || null), // Effacer le message si débloqué
-      },
-      include: {
-        profile: true,
-      },
+    await supabaseAdminUpdateUser(id, {
+      user_metadata: { blocked: !isActive, block_reason: blockReason || null },
     });
+    return this.findOne(id);
   }
 
   async updateProfile(id: string, profileData: { firstName?: string; lastName?: string; phone?: string }) {
-    const user = await this.findOne(id);
-
-    // Si le profil existe, le mettre à jour
-    if (user.profile) {
-      await this.prisma.profile.update({
-        where: { userId: id },
-        data: profileData,
-      });
-    } else {
-      // Sinon, créer le profil
-      await this.prisma.profile.create({
-        data: {
-          userId: id,
-          firstName: profileData.firstName || 'Utilisateur',
-          lastName: profileData.lastName || '',
-          phone: profileData.phone,
-        },
-      });
-    }
-
-    // Retourner l'utilisateur avec le profil mis à jour
+    await this.prisma.profiles.upsert({
+      where: { userId: id },
+      update: profileData,
+      create: {
+        userId: id,
+        firstName: profileData.firstName || 'Utilisateur',
+        lastName: profileData.lastName || '',
+        phone: profileData.phone,
+      },
+    });
     return this.findOne(id);
   }
 }
-

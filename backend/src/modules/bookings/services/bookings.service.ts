@@ -1,7 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma.service';
 import { CreateBookingDto } from '../dto/create-booking.dto';
 import { UpdateBookingDto } from '../dto/update-booking.dto';
+import {
+  supabaseAdminGetUser,
+  getSupabaseRoleFromUser,
+} from '../../../utils/supabase-admin';
 
 // Fonction utilitaire pour générer un numéro de réservation
 function generateBookingNumber(): string {
@@ -9,18 +18,18 @@ function generateBookingNumber(): string {
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `RVD-${timestamp}-${random}`;
 }
- 
+
 @Injectable()
 export class BookingsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(userId?: string, providerId?: string) {
     const where: any = {};
-    
+
     if (userId) {
       where.userId = userId;
     }
-    
+
     if (providerId) {
       // Trouver les réservations pour les services d'un prestataire
       where.service = {
@@ -33,21 +42,8 @@ export class BookingsService {
       include: {
         service: {
           include: {
-            provider: {
-              include: {
-                user: {
-                  include: {
-                    profile: true,
-                  },
-                },
-              },
-            },
+            provider: true,
             images: true,
-          },
-        },
-        user: {
-          include: {
-            profile: true,
           },
         },
         payment: true,
@@ -64,21 +60,8 @@ export class BookingsService {
       include: {
         service: {
           include: {
-            provider: {
-              include: {
-                user: {
-                  include: {
-                    profile: true,
-                  },
-                },
-              },
-            },
+            provider: true,
             images: true,
-          },
-        },
-        user: {
-          include: {
-            profile: true,
           },
         },
         payment: true,
@@ -126,16 +109,18 @@ export class BookingsService {
     // Créer les créneaux de 30 minutes
     for (let hour = startHour; hour < endHour; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        const slotTime = new Date(`${date}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`);
+        const slotTime = new Date(
+          `${date}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`,
+        );
         const slotEndTime = new Date(slotTime.getTime() + slotDuration * 60000);
 
         // Vérifier si le créneau chevauche avec une réservation existante
-        const isAvailable = !bookings.some(booking => {
+        const isAvailable = !bookings.some((booking) => {
           const bookingStart = new Date(booking.startTime);
           const bookingEnd = new Date(booking.endTime);
-          
+
           // Vérifier si le créneau chevauche avec la réservation
-          return (slotTime < bookingEnd && slotEndTime > bookingStart);
+          return slotTime < bookingEnd && slotEndTime > bookingStart;
         });
 
         // Vérifier que le créneau ne dépasse pas l'heure de fin
@@ -153,7 +138,7 @@ export class BookingsService {
       date,
       duration: slotDuration,
       slots,
-      bookedSlots: bookings.map(b => ({
+      bookedSlots: bookings.map((b) => ({
         start: new Date(b.startTime).toISOString(),
         end: new Date(b.endTime).toISOString(),
       })),
@@ -174,7 +159,9 @@ export class BookingsService {
     }
 
     if (!service.available) {
-      throw new BadRequestException('Ce service n\'est pas disponible pour le moment');
+      throw new BadRequestException(
+        "Ce service n'est pas disponible pour le moment",
+      );
     }
 
     // Récupérer les informations client
@@ -184,30 +171,34 @@ export class BookingsService {
 
     // Si l'utilisateur est connecté, récupérer les infos depuis son profil si non fournies
     if (userId) {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        include: { profile: true },
+      const profile = await this.prisma.profiles.findUnique({
+        where: { userId },
       });
+      const user = await supabaseAdminGetUser(userId);
 
-      if (user) {
-        if (!finalClientName && user.profile) {
-          finalClientName = `${user.profile.firstName} ${user.profile.lastName}`;
+      if (profile) {
+        if (!finalClientName) {
+          finalClientName = `${profile.firstName} ${profile.lastName}`;
         }
-        if (!finalClientEmail) {
-          finalClientEmail = user.email;
+        if (!finalClientPhone && profile.phone) {
+          finalClientPhone = profile.phone;
         }
-        if (!finalClientPhone && user.profile?.phone) {
-          finalClientPhone = user.profile.phone;
-        }
+      }
+      if (!finalClientEmail) {
+        finalClientEmail = user?.email || '';
       }
     }
 
     // Vérifier que toutes les informations client sont disponibles
     if (!finalClientName || !finalClientEmail || !finalClientPhone) {
       if (!userId) {
-        throw new BadRequestException('Les informations client (nom, email, téléphone) sont requises pour les réservations sans compte');
+        throw new BadRequestException(
+          'Les informations client (nom, email, téléphone) sont requises pour les réservations sans compte',
+        );
       } else {
-        throw new BadRequestException('Votre profil doit contenir un numéro de téléphone pour effectuer une réservation. Veuillez compléter votre profil.');
+        throw new BadRequestException(
+          'Votre profil doit contenir un numéro de téléphone pour effectuer une réservation. Veuillez compléter votre profil.',
+        );
       }
     }
 
@@ -228,7 +219,9 @@ export class BookingsService {
       });
 
       if (bookingsOnDate >= service.maxBookingsPerDay) {
-        throw new BadRequestException('Le nombre maximum de réservations pour ce jour est atteint');
+        throw new BadRequestException(
+          'Le nombre maximum de réservations pour ce jour est atteint',
+        );
       }
     }
 
@@ -241,7 +234,7 @@ export class BookingsService {
 
       if (bookingDate > maxDate) {
         throw new BadRequestException(
-          `Vous ne pouvez pas réserver plus de ${service.advanceBookingDays} jours à l'avance`
+          `Vous ne pouvez pas réserver plus de ${service.advanceBookingDays} jours à l'avance`,
         );
       }
     }
@@ -263,42 +256,31 @@ export class BookingsService {
       include: {
         service: {
           include: {
-            provider: {
-              include: {
-                user: {
-                  include: {
-                    profile: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        user: {
-          include: {
-            profile: true,
+            provider: true,
           },
         },
       },
     });
   }
 
-  async update(id: string, updateBookingDto: UpdateBookingDto, userId?: string) {
+  async update(
+    id: string,
+    updateBookingDto: UpdateBookingDto,
+    userId?: string,
+  ) {
     const booking = await this.findOne(id);
 
     // Vérifier les permissions
     if (userId) {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          profile: true,
-        },
+      const user = await supabaseAdminGetUser(userId);
+      const profile = await this.prisma.profiles.findUnique({
+        where: { userId },
       });
 
       // L'utilisateur peut modifier sa propre réservation
       // Le prestataire peut modifier les réservations de ses services
       // L'admin peut tout modifier
-      if (user?.role !== 'ADMIN') {
+      if (getSupabaseRoleFromUser(user) !== 'ADMIN') {
         if (booking.userId !== userId) {
           const service = await this.prisma.service.findUnique({
             where: { id: booking.serviceId },
@@ -307,8 +289,10 @@ export class BookingsService {
             },
           });
 
-          if (!service || service.providerId !== user?.profile?.id) {
-            throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier cette réservation');
+          if (!service || service.providerId !== profile?.id) {
+            throw new ForbiddenException(
+              "Vous n'êtes pas autorisé à modifier cette réservation",
+            );
           }
         }
       }
@@ -323,9 +307,15 @@ export class BookingsService {
       });
 
       if (service) {
-        const newDate = updateBookingDto.date ? new Date(updateBookingDto.date) : booking.date;
-        const newStartTime = updateBookingDto.startTime ? new Date(updateBookingDto.startTime) : booking.startTime;
-        updateData.endTime = new Date(newStartTime.getTime() + service.duration * 60000);
+        const newDate = updateBookingDto.date
+          ? new Date(updateBookingDto.date)
+          : booking.date;
+        const newStartTime = updateBookingDto.startTime
+          ? new Date(updateBookingDto.startTime)
+          : booking.startTime;
+        updateData.endTime = new Date(
+          newStartTime.getTime() + service.duration * 60000,
+        );
         updateData.date = newDate;
         updateData.startTime = newStartTime;
       }
@@ -337,20 +327,7 @@ export class BookingsService {
       include: {
         service: {
           include: {
-            provider: {
-              include: {
-                user: {
-                  include: {
-                    profile: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        user: {
-          include: {
-            profile: true,
+            provider: true,
           },
         },
       },
@@ -362,12 +339,12 @@ export class BookingsService {
 
     // Vérifier les permissions
     if (userId && booking.userId !== userId) {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
+      const user = await supabaseAdminGetUser(userId);
 
-      if (user?.role !== 'ADMIN') {
-        throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer cette réservation');
+      if (getSupabaseRoleFromUser(user) !== 'ADMIN') {
+        throw new ForbiddenException(
+          "Vous n'êtes pas autorisé à supprimer cette réservation",
+        );
       }
     }
 
@@ -383,7 +360,7 @@ export class BookingsService {
       select: { id: true },
     });
 
-    const serviceIds = services.map(s => s.id);
+    const serviceIds = services.map((s) => s.id);
 
     // Supprimer les réservations terminées ou annulées
     const result = await this.prisma.booking.deleteMany({
@@ -408,12 +385,16 @@ export class BookingsService {
     });
 
     if (!service || service.providerId !== profileId) {
-      throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer cette réservation');
+      throw new ForbiddenException(
+        "Vous n'êtes pas autorisé à supprimer cette réservation",
+      );
     }
 
     // Seules les réservations terminées ou annulées peuvent être supprimées
     if (!['COMPLETED', 'CANCELLED'].includes(booking.status)) {
-      throw new BadRequestException('Seules les réservations terminées ou annulées peuvent être supprimées');
+      throw new BadRequestException(
+        'Seules les réservations terminées ou annulées peuvent être supprimées',
+      );
     }
 
     return this.prisma.booking.delete({
@@ -421,4 +402,3 @@ export class BookingsService {
     });
   }
 }
-
