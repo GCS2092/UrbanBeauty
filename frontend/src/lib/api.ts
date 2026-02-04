@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase';
+import { supabase } from './supabase';
 
 // Interface pour les rÃƒÂ©ponses API
 interface ApiResponse<T = any> {
@@ -149,9 +149,9 @@ export const api = {
               role: authData.user.user_metadata?.role || 'client',
               profile: profile
                 ? {
-                    firstName: profile.first_name,
-                    lastName: profile.last_name,
-                    avatar: profile.avatar_url,
+                    firstName: profile.firstName ?? profile.first_name,
+                    lastName: profile.lastName ?? profile.last_name,
+                    avatar: profile.avatar ?? profile.avatar_url,
                   }
                 : undefined,
             },
@@ -251,23 +251,24 @@ export const api = {
             profile: profile
               ? {
                   id: profile.id,
-                  userId: profile.id,
-                  firstName: profile.first_name,
-                  lastName: profile.last_name,
+                  userId: profile.userId ?? profile.user_id,
+                  firstName: profile.firstName ?? profile.first_name,
+                  lastName: profile.lastName ?? profile.last_name,
                   phone: profile.phone,
                   address: profile.address,
-                  avatar: profile.avatar_url,
+                  avatar: profile.avatar ?? profile.avatar_url,
                   bio: profile.bio,
                   city: profile.city,
                   country: profile.country,
-                  postalCode: profile.postal_code,
+                  postalCode: profile.postalCode ?? profile.postal_code,
                   website: profile.website,
                   instagram: profile.instagram,
                   facebook: profile.facebook,
                   tiktok: profile.tiktok,
                   specialties: profile.specialties,
                   experience: profile.experience,
-                  isProvider: profile.is_provider || false,
+                  isProvider:
+                    profile.isProvider ?? (profile.is_provider || false),
                   rating: profile.rating,
                 }
               : undefined,
@@ -375,4 +376,3 @@ export const api = {
 };
 
 export default api;
-
