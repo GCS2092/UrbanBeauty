@@ -8,6 +8,25 @@ interface ApiResponse<T = any> {
   status?: number;
 }
 
+// Helper pour convertir les endpoints en noms de table Supabase corrects
+const getTableName = (endpoint: string): string => {
+  const tableName = endpoint.replace('/api/', '').replace(/\//g, '_').split('?')[0];
+  
+  // Mapping spécial pour les cas particuliers
+  const tableMapping: { [key: string]: string } = {
+    'notifications-unread-count': 'notifications_unread_count',
+    'notificationsunread-count': 'notifications_unread_count',
+    'notificationsunread_count': 'notifications_unread_count',
+    'favoritescount': 'favorites',
+    'favorites-count': 'favorites',
+    'quick-replies': 'quick_replies',
+    'chat-conversations': 'chat_conversations',
+    'chatconversations': 'chat_conversations',
+  };
+  
+  return tableMapping[tableName] || tableName.replace(/-/g, '_');
+};
+
 // Helper pour gérer les requêtes avec offline queue
 const handleOfflineRequest = async <T = any>(method: string, url: string, data?: any): Promise<ApiResponse<T> | null> => {
   if (!navigator.onLine && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -123,7 +142,7 @@ export const api = {
 
       // Autres endpoints POST
       const { data: result, error } = await supabase
-        .from(endpoint.replace('/api/', '').replace('/', ''))
+        .from(getTableName(endpoint))
         .insert(data)
         .select()
         .single();
@@ -196,9 +215,8 @@ export const api = {
       }
 
       // Autres endpoints GET
-      const tableName = endpoint.replace('/api/', '').replace('/', '').split('?')[0];
       const { data: result, error } = await supabase
-        .from(tableName)
+        .from(getTableName(endpoint))
         .select('*');
 
       if (error) {
@@ -235,9 +253,8 @@ export const api = {
       }
 
       // Autres endpoints PUT
-      const tableName = endpoint.replace('/api/', '').replace('/', '');
       const { data: result, error } = await supabase
-        .from(tableName)
+        .from(getTableName(endpoint))
         .update(data)
         .select()
         .single();
@@ -260,10 +277,8 @@ export const api = {
       if (offlineResponse) return offlineResponse;
 
       
-      const tableName = endpoint.replace('/api/', '').replace('/', '');
-      
       const { data: result, error } = await supabase
-        .from(tableName)
+        .from(getTableName(endpoint))
         .delete()
         .select()
         .single();

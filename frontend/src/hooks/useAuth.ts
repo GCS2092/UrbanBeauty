@@ -8,10 +8,20 @@ import { useEffect, useState } from 'react';
 export function useAuth() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [isAuthenticated, setIsAuthenticated] = useState(() => authService.isAuthenticated());
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Initialiser l'authentification côté client uniquement
+  useEffect(() => {
+    const newAuthState = authService.isAuthenticated();
+    setIsAuthenticated(newAuthState);
+    setIsHydrated(true);
+  }, []);
 
   // Écouter les changements de localStorage pour mettre à jour l'état d'authentification
   useEffect(() => {
+    if (!isHydrated) return;
+
     const checkAuth = () => {
       const newAuthState = authService.isAuthenticated();
       if (newAuthState !== isAuthenticated) {
@@ -23,9 +33,6 @@ export function useAuth() {
         }
       }
     };
-
-    // Vérifier immédiatement
-    checkAuth();
 
     // Écouter les événements de stockage (pour les changements dans d'autres onglets)
     const handleStorageChange = (e: StorageEvent) => {
@@ -42,15 +49,15 @@ export function useAuth() {
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('auth-change', handleAuthChange);
 
-    // Vérifier périodiquement (toutes les secondes)
-    const interval = setInterval(checkAuth, 1000);
+    // Vérifier périodiquement (toutes les 5 secondes, au lieu de 1)
+    const interval = setInterval(checkAuth, 5000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('auth-change', handleAuthChange);
       clearInterval(interval);
     };
-  }, [isAuthenticated, queryClient]);
+  }, [isHydrated, isAuthenticated, queryClient]);
 
   const registerMutation = useMutation({
     mutationFn: (data: RegisterDto) => authService.register(data),
@@ -105,6 +112,7 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated,
+    isHydrated,
     register: (data: RegisterDto, options?: any) => {
       // Permettre de passer redirectTo dans les options
       const redirectTo = options?.redirectTo || '/dashboard';

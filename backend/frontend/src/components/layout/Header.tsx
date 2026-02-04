@@ -38,11 +38,11 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, isHydrated } = useAuth();
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(isHydrated);
+  }, [isHydrated]);
 
   // Rendu de base pour le SSR (sans contenu dynamique)
   const baseHref = mounted && isAuthenticated 

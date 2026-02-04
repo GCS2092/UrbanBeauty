@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   ShoppingBagIcon, 
@@ -31,7 +31,15 @@ function CartBadge() {
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { isAuthenticated, user, logout } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  const { isAuthenticated, user, logout, isHydrated } = useAuth();
+
+  useEffect(() => {
+    setMounted(isHydrated);
+  }, [isHydrated]);
+
+  // Ne pas rendre le contenu authentifié jusqu'à hydration complète
+  const shouldShowAuth = mounted && isAuthenticated;
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
@@ -41,7 +49,7 @@ export default function Header() {
           <div className="flex items-center">
             <Link 
               href={
-                isAuthenticated 
+                shouldShowAuth
                   ? user?.role === 'ADMIN' 
                     ? '/dashboard/admin'
                     : '/dashboard'
@@ -56,7 +64,7 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation - Masquer pour les utilisateurs connectés */}
-          {!isAuthenticated && (
+          {!shouldShowAuth && (
             <div className="hidden md:flex md:items-center md:space-x-8">
               <Link 
                 href="/products" 
@@ -98,13 +106,13 @@ export default function Header() {
             
             {/* Mes commandes - Accessible à tous */}
             <Link
-              href={isAuthenticated ? "/dashboard/orders" : "/orders/track"}
+              href={shouldShowAuth ? "/dashboard/orders" : "/orders/track"}
               className="hidden sm:flex items-center gap-1 p-2 text-gray-600 hover:text-pink-600 transition-colors"
-              title={isAuthenticated ? "Mes commandes" : "Suivre ma commande"}
+              title={shouldShowAuth ? "Mes commandes" : "Suivre ma commande"}
             >
               <ClipboardDocumentListIcon className="h-5 w-5" />
               <span className="text-sm font-medium hidden lg:inline">
-                {isAuthenticated ? "Mes commandes" : "Suivre commande"}
+                {shouldShowAuth ? "Mes commandes" : "Suivre commande"}
               </span>
             </Link>
 
@@ -114,7 +122,7 @@ export default function Header() {
             </button>
 
             {/* Notifications */}
-            {isAuthenticated && (
+            {shouldShowAuth && (
               <div className="hidden sm:block">
                 <NotificationsPanel />
               </div>
