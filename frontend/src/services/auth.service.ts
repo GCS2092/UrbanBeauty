@@ -67,7 +67,23 @@ export const authService = {
       .maybeSingle();
 
     if (profileError) {
-      console.warn('Profile not found or Supabase error:', profileError.message);
+      console.warn(
+        'Profile not found or Supabase error:',
+        profileError.message,
+      );
+    }
+
+    const { data: appUserData, error: appUserError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', authData.user.id)
+      .maybeSingle();
+
+    if (appUserError) {
+      console.warn(
+        'User role not found or Supabase error:',
+        appUserError.message,
+      );
     }
 
     return {
@@ -75,7 +91,10 @@ export const authService = {
       user: {
         id: authData.user.id,
         email: authData.user.email || '',
-        role: (authData.user.user_metadata?.role as string) || 'CLIENT',
+        role:
+          (appUserData?.role as string) ||
+          (authData.user.user_metadata?.role as string) ||
+          'CLIENT',
         profile: profileData
           ? {
               firstName: profileData.firstName ?? profileData.first_name,
@@ -108,13 +127,32 @@ export const authService = {
       .maybeSingle();
 
     if (profileError) {
-      console.warn('Profile not found or Supabase error:', profileError.message);
+      console.warn(
+        'Profile not found or Supabase error:',
+        profileError.message,
+      );
+    }
+
+    const { data: appUserData, error: appUserError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (appUserError) {
+      console.warn(
+        'User role not found or Supabase error:',
+        appUserError.message,
+      );
     }
 
     return {
       id: user.id,
       email: user.email,
-      role: (user.user_metadata?.role as string) || 'CLIENT',
+      role:
+        (appUserData?.role as string) ||
+        (user.user_metadata?.role as string) ||
+        'CLIENT',
       profile: profileData || undefined,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
