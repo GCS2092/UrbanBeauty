@@ -6,6 +6,20 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+const getDashboardPath = (role?: string) => {
+  switch (role) {
+    case 'ADMIN':
+      return '/dashboard/admin';
+    case 'VENDEUSE':
+      return '/dashboard/products';
+    case 'COIFFEUSE':
+    case 'MANICURISTE':
+      return '/dashboard/services';
+    default:
+      return '/dashboard';
+  }
+};
+
 export function useAuth() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -17,10 +31,6 @@ export function useAuth() {
 
     const initSession = async () => {
       const { data } = await supabase.auth.getSession();
-      console.log('[auth] getSession', {
-        hasSession: !!data.session,
-        userId: data.session?.user?.id,
-      });
       if (!isMounted) return;
 
       const hasSession = !!data.session;
@@ -38,11 +48,6 @@ export function useAuth() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        console.log('[auth] onAuthStateChange', {
-          event: _event,
-          hasSession: !!session,
-          userId: session?.user?.id,
-        });
         const hasSession = !!session;
         setIsAuthenticated(hasSession);
         if (hasSession) {
@@ -78,7 +83,7 @@ export function useAuth() {
       if (response.mustChangePassword) {
         router.push('/auth/change-password');
       } else {
-        router.push('/dashboard');
+        router.push(getDashboardPath(response.user?.role));
       }
     },
     onError: (error) => {

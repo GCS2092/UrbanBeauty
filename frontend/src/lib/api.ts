@@ -78,6 +78,41 @@ export const api = {
       );
       if (offlineResponse) return offlineResponse;
 
+      // Shipping addresses
+      if (
+        endpoint.startsWith('/api/shipping-addresses/') ||
+        endpoint.startsWith('/shipping-addresses/')
+      ) {
+        const { data: authData, error: authError } =
+          await supabase.auth.getUser();
+        if (authError || !authData.user) {
+          return {
+            data: null,
+            error: authError?.message || 'Non authentifi????????',
+          };
+        }
+
+        const match = endpoint.match(/\/shipping-addresses\/([^/]+)$/i);
+        const id = match ? match[1] : null;
+        if (!id) {
+          return { data: null, error: 'ID manquant' };
+        }
+
+        const { data: result, error } = await supabase
+          .from('shipping_addresses')
+          .delete()
+          .eq('id', id)
+          .eq('userId', authData.user.id)
+          .select()
+          .single();
+
+        if (error) {
+          return { data: null, error: error.message };
+        }
+
+        return { data: result as T, error: null };
+      }
+
       // ne rien faire Ã¢â‚¬â€ supabase est dÃƒÂ©jÃƒÂ  importÃƒÂ©
 
       // Routes d'authentification
@@ -201,6 +236,45 @@ export const api = {
         return { data: result as T, error: null };
       }
 
+      // Shipping addresses
+      if (
+        endpoint === '/api/shipping-addresses' ||
+        endpoint === '/shipping-addresses'
+      ) {
+        const { data: authData, error: authError } =
+          await supabase.auth.getUser();
+        if (authError || !authData.user) {
+          return {
+            data: null,
+            error: authError?.message || 'Non authentifiÃƒÆ’Ã‚Â©',
+          };
+        }
+
+        const payload = {
+          ...data,
+          userId: authData.user.id,
+        };
+
+        if (payload.isDefault) {
+          await supabase
+            .from('shipping_addresses')
+            .update({ isDefault: false })
+            .eq('userId', authData.user.id);
+        }
+
+        const { data: result, error } = await supabase
+          .from('shipping_addresses')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          return { data: null, error: error.message };
+        }
+
+        return { data: result as T, error: null };
+      }
+
       // Autres endpoints POST
       const { data: result, error } = await supabase
         .from(getTableName(endpoint))
@@ -282,6 +356,67 @@ export const api = {
         };
       }
 
+      // Shipping addresses
+      if (
+        endpoint === '/api/shipping-addresses' ||
+        endpoint === '/shipping-addresses' ||
+        endpoint.startsWith('/api/shipping-addresses/') ||
+        endpoint.startsWith('/shipping-addresses/')
+      ) {
+        const { data: authData, error: authError } =
+          await supabase.auth.getUser();
+        if (authError || !authData.user) {
+          return {
+            data: null,
+            error: authError?.message || 'Non authentifiÃƒÆ’Ã‚Â©',
+          };
+        }
+
+        if (endpoint.endsWith('/default')) {
+          const { data: result, error } = await supabase
+            .from('shipping_addresses')
+            .select('*')
+            .eq('userId', authData.user.id)
+            .eq('isDefault', true)
+            .maybeSingle();
+
+          if (error) {
+            return { data: null, error: error.message };
+          }
+
+          return { data: result as T, error: null };
+        }
+
+        const match = endpoint.match(/\/shipping-addresses\/([^/]+)$/i);
+        if (match) {
+          const id = match[1];
+          const { data: result, error } = await supabase
+            .from('shipping_addresses')
+            .select('*')
+            .eq('id', id)
+            .eq('userId', authData.user.id)
+            .maybeSingle();
+
+          if (error) {
+            return { data: null, error: error.message };
+          }
+
+          return { data: result as T, error: null };
+        }
+
+        const { data: result, error } = await supabase
+          .from('shipping_addresses')
+          .select('*')
+          .eq('userId', authData.user.id)
+          .order('createdAt', { ascending: false });
+
+        if (error) {
+          return { data: null, error: error.message };
+        }
+
+        return { data: result as T, error: null };
+      }
+
       // Autres endpoints GET
       const { data: result, error } = await supabase
         .from(getTableName(endpoint))
@@ -326,6 +461,48 @@ export const api = {
 
         // Retourner les infos utilisateur mises ÃƒÂ  jour
         return api.get('/auth/me');
+      }
+
+      // Shipping addresses (PUT as update)
+      if (
+        endpoint.startsWith('/api/shipping-addresses/') ||
+        endpoint.startsWith('/shipping-addresses/')
+      ) {
+        const { data: authData, error: authError } =
+          await supabase.auth.getUser();
+        if (authError || !authData.user) {
+          return {
+            data: null,
+            error: authError?.message || 'Non authentifi????????',
+          };
+        }
+
+        const match = endpoint.match(/\/shipping-addresses\/([^/]+)$/i);
+        const id = match ? match[1] : null;
+        if (!id) {
+          return { data: null, error: 'ID manquant' };
+        }
+
+        if (data?.isDefault) {
+          await supabase
+            .from('shipping_addresses')
+            .update({ isDefault: false })
+            .eq('userId', authData.user.id);
+        }
+
+        const { data: result, error } = await supabase
+          .from('shipping_addresses')
+          .update({ ...data, updatedAt: new Date().toISOString() })
+          .eq('id', id)
+          .eq('userId', authData.user.id)
+          .select()
+          .single();
+
+        if (error) {
+          return { data: null, error: error.message };
+        }
+
+        return { data: result as T, error: null };
       }
 
       // Autres endpoints PUT
