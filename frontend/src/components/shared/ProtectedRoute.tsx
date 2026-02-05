@@ -4,9 +4,11 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
+type Role = 'CLIENT' | 'COIFFEUSE' | 'MANICURISTE' | 'VENDEUSE' | 'ADMIN';
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'CLIENT' | 'COIFFEUSE' | 'MANICURISTE' | 'VENDEUSE' | 'ADMIN' | Array<'CLIENT' | 'COIFFEUSE' | 'MANICURISTE' | 'VENDEUSE' | 'ADMIN'>;
+  requiredRole?: Role | Array<Role>;
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
@@ -19,7 +21,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
       router.push('/auth/login');
     } else if (!isLoading && isAuthenticated && requiredRole) {
       const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-      if (!allowedRoles.includes(user?.role as any)) {
+      const userRole = user?.role as Role | undefined;
+      if (!userRole || !allowedRoles.includes(userRole)) {
         router.push('/dashboard');
       }
     }
@@ -42,11 +45,12 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   if (requiredRole) {
     const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    if (!allowedRoles.includes(user?.role as any)) {
+    const userRole = user?.role as Role | undefined;
+    if (!userRole || !allowedRoles.includes(userRole)) {
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-red-600">Accès refusé. Vous n'avez pas les permissions nécessaires.</p>
+            <p className="text-red-600">Acc?s refus?. Vous n&apos;avez pas les permissions n?cessaires.</p>
           </div>
         </div>
       );

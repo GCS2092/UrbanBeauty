@@ -1,19 +1,26 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  MutateOptions,
+} from '@tanstack/react-query';
 import { authService, RegisterDto, LoginDto } from '@/services/auth.service';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-const normalizeRole = (role?: string) => {
+type Role = 'CLIENT' | 'COIFFEUSE' | 'MANICURISTE' | 'VENDEUSE' | 'ADMIN';
+
+const normalizeRole = (role?: string): Role => {
   switch ((role || '').toUpperCase()) {
     case 'ADMIN':
     case 'VENDEUSE':
     case 'COIFFEUSE':
     case 'MANICURISTE':
     case 'CLIENT':
-      return role!.toUpperCase();
+      return role!.toUpperCase() as Role;
     default:
       return 'CLIENT';
   }
@@ -32,6 +39,22 @@ const getDashboardPath = (role?: string) => {
       return '/dashboard';
   }
 };
+
+type RegisterOptions = MutateOptions<
+  Awaited<ReturnType<typeof authService.register>>,
+  unknown,
+  RegisterDto,
+  unknown
+> & {
+  redirectTo?: string;
+};
+
+type LoginOptions = MutateOptions<
+  Awaited<ReturnType<typeof authService.login>>,
+  unknown,
+  LoginDto,
+  unknown
+>;
 
 export function useAuth() {
   const router = useRouter();
@@ -125,23 +148,23 @@ export function useAuth() {
     isLoading,
     isAuthenticated,
     isHydrated,
-    register: (data: RegisterDto, options?: any) => {
+    register: (data: RegisterDto, options?: RegisterOptions) => {
       const redirectTo = options?.redirectTo || '/dashboard';
 
       registerMutation.mutate(data, {
         ...options,
-        onSuccess: (response) => {
+        onSuccess: (response, variables, context, meta) => {
           setIsAuthenticated(true);
           window.dispatchEvent(new Event('auth-change'));
           queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
           router.push(redirectTo);
           if (options?.onSuccess) {
-            options.onSuccess(response);
+            options.onSuccess(response, variables, context, meta);
           }
         },
       });
     },
-    login: (data: LoginDto, options?: any) =>
+    login: (data: LoginDto, options?: LoginOptions) =>
       loginMutation.mutate(data, options),
     logout,
     isRegistering: registerMutation.isPending,
