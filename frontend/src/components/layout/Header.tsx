@@ -2,25 +2,52 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  ShoppingBagIcon, 
-  UserIcon, 
+import {
+  ShoppingBagIcon,
+  UserIcon,
   MagnifyingGlassIcon,
   Bars3Icon,
   XMarkIcon,
   ChevronDownIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartStore } from '@/store/cart.store';
 import CurrencySelector from '@/components/shared/CurrencySelector';
 import NotificationsPanel from '@/components/dashboard/NotificationsPanel';
 
+const normalizeRole = (role?: string) => {
+  switch ((role || '').toUpperCase()) {
+    case 'ADMIN':
+    case 'VENDEUSE':
+    case 'COIFFEUSE':
+    case 'MANICURISTE':
+    case 'CLIENT':
+      return role!.toUpperCase();
+    default:
+      return 'CLIENT';
+  }
+};
+
+const getDashboardPath = (role?: string) => {
+  switch (normalizeRole(role)) {
+    case 'ADMIN':
+      return '/dashboard/admin';
+    case 'VENDEUSE':
+      return '/dashboard/products';
+    case 'COIFFEUSE':
+    case 'MANICURISTE':
+      return '/dashboard/services';
+    default:
+      return '/dashboard';
+  }
+};
+
 function CartBadge() {
   const itemCount = useCartStore((state) => state.getItemCount());
-  
+
   if (itemCount === 0) return null;
-  
+
   return (
     <span className="absolute top-0 right-0 h-4 w-4 bg-pink-600 text-white text-xs rounded-full flex items-center justify-center">
       {itemCount > 9 ? '9+' : itemCount}
@@ -47,14 +74,8 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo - Redirige selon le rôle */}
           <div className="flex items-center">
-            <Link 
-              href={
-                shouldShowAuth
-                  ? user?.role === 'ADMIN' 
-                    ? '/dashboard/admin'
-                    : '/dashboard'
-                  : '/'
-              } 
+            <Link
+              href={shouldShowAuth ? getDashboardPath(user?.role) : '/'}
               className="flex items-center space-x-2"
             >
               <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
@@ -66,29 +87,29 @@ export default function Header() {
           {/* Desktop Navigation - Masquer pour les utilisateurs connectés */}
           {!shouldShowAuth && (
             <div className="hidden md:flex md:items-center md:space-x-8">
-              <Link 
-                href="/products" 
+              <Link
+                href="/products"
                 className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Produits
               </Link>
-              <Link 
-                href="/services" 
+              <Link
+                href="/services"
                 className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Services
               </Link>
-              <Link 
-                href="/lookbook" 
+              <Link
+                href="/lookbook"
                 className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Lookbook
               </Link>
-              <Link 
-                href="/prestataires" 
+              <Link
+                href="/prestataires"
                 className="text-sm font-medium text-gray-700 hover:text-pink-600 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -103,16 +124,16 @@ export default function Header() {
             <div className="hidden sm:block">
               <CurrencySelector />
             </div>
-            
+
             {/* Mes commandes - Accessible à tous */}
             <Link
-              href={shouldShowAuth ? "/dashboard/orders" : "/orders/track"}
+              href={shouldShowAuth ? '/dashboard/orders' : '/orders/track'}
               className="hidden sm:flex items-center gap-1 p-2 text-gray-600 hover:text-pink-600 transition-colors"
-              title={shouldShowAuth ? "Mes commandes" : "Suivre ma commande"}
+              title={shouldShowAuth ? 'Mes commandes' : 'Suivre ma commande'}
             >
               <ClipboardDocumentListIcon className="h-5 w-5" />
               <span className="text-sm font-medium hidden lg:inline">
-                {shouldShowAuth ? "Mes commandes" : "Suivre commande"}
+                {shouldShowAuth ? 'Mes commandes' : 'Suivre commande'}
               </span>
             </Link>
 
@@ -154,7 +175,8 @@ export default function Header() {
                     >
                       Mon profil
                     </Link>
-                    {(user?.role === 'COIFFEUSE' || user?.role === 'MANICURISTE') && (
+                    {(user?.role === 'COIFFEUSE' ||
+                      user?.role === 'MANICURISTE') && (
                       <Link
                         href="/dashboard/services"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -195,14 +217,20 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <Link href="/auth/login" className="hidden sm:block p-2 text-gray-600 hover:text-pink-600 transition-colors">
+              <Link
+                href="/auth/login"
+                className="hidden sm:block p-2 text-gray-600 hover:text-pink-600 transition-colors"
+              >
                 <UserIcon className="h-5 w-5" />
               </Link>
             )}
 
             {/* Cart - Visible uniquement pour les clients et non-connectés */}
             {(!isAuthenticated || user?.role === 'CLIENT') && (
-              <Link href="/cart" className="relative p-2 text-gray-600 hover:text-pink-600 transition-colors">
+              <Link
+                href="/cart"
+                className="relative p-2 text-gray-600 hover:text-pink-600 transition-colors"
+              >
                 <ShoppingBagIcon className="h-5 w-5" />
                 <CartBadge />
               </Link>
@@ -228,36 +256,36 @@ export default function Header() {
           <div className="md:hidden border-t border-gray-100 py-4 space-y-2">
             {!isAuthenticated && (
               <>
-                <Link 
-                  href="/products" 
+                <Link
+                  href="/products"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Produits
                 </Link>
-                <Link 
-                  href="/services" 
+                <Link
+                  href="/services"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Services
                 </Link>
-                <Link 
-                  href="/lookbook" 
+                <Link
+                  href="/lookbook"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Lookbook
                 </Link>
-                <Link 
-                  href="/prestataires" 
+                <Link
+                  href="/prestataires"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Prestataires
                 </Link>
-                <Link 
-                  href="/orders/track" 
+                <Link
+                  href="/orders/track"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -267,15 +295,15 @@ export default function Header() {
             )}
             {isAuthenticated ? (
               <>
-                <Link 
-                  href="/dashboard" 
+                <Link
+                  href="/dashboard"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Tableau de bord
                 </Link>
-                <Link 
-                  href="/dashboard/orders" 
+                <Link
+                  href="/dashboard/orders"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -292,8 +320,8 @@ export default function Header() {
                 </button>
               </>
             ) : (
-              <Link 
-                href="/auth/login" 
+              <Link
+                href="/auth/login"
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -306,4 +334,3 @@ export default function Header() {
     </header>
   );
 }
-

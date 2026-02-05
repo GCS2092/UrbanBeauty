@@ -113,6 +113,41 @@ export const api = {
         return { data: result as T, error: null };
       }
 
+      // Shipping addresses
+      if (
+        endpoint.startsWith('/api/shipping-addresses/') ||
+        endpoint.startsWith('/shipping-addresses/')
+      ) {
+        const { data: authData, error: authError } =
+          await supabase.auth.getUser();
+        if (authError || !authData.user) {
+          return {
+            data: null,
+            error: authError?.message || 'Non authentifie',
+          };
+        }
+
+        const match = endpoint.match(/\/shipping-addresses\/([^/]+)$/i);
+        const id = match ? match[1] : null;
+        if (!id) {
+          return { data: null, error: 'ID manquant' };
+        }
+
+        const { data: result, error } = await supabase
+          .from('shipping_addresses')
+          .delete()
+          .eq('id', id)
+          .eq('userId', authData.user.id)
+          .select()
+          .single();
+
+        if (error) {
+          return { data: null, error: error.message };
+        }
+
+        return { data: result as T, error: null };
+      }
+
       // ne rien faire Ã¢â‚¬â€ supabase est dÃƒÂ©jÃƒÂ  importÃƒÂ©
 
       // Routes d'authentification
@@ -473,7 +508,7 @@ export const api = {
         if (authError || !authData.user) {
           return {
             data: null,
-            error: authError?.message || 'Non authentifi????????',
+            error: authError?.message || 'Non authentifie',
           };
         }
 
@@ -550,7 +585,50 @@ export const api = {
     endpoint: string,
     data: any,
   ): Promise<ApiResponse<T>> => {
-    // PATCH est similaire ÃƒÂ  PUT
+    // Shipping addresses set-default
+    if (
+      endpoint.endsWith('/set-default') &&
+      (endpoint.startsWith('/api/shipping-addresses/') ||
+        endpoint.startsWith('/shipping-addresses/'))
+    ) {
+      const { data: authData, error: authError } =
+        await supabase.auth.getUser();
+      if (authError || !authData.user) {
+        return {
+          data: null,
+          error: authError?.message || 'Non authentifi????????',
+        };
+      }
+
+      const match = endpoint.match(
+        /\/shipping-addresses\/([^/]+)\/set-default$/i,
+      );
+      const id = match ? match[1] : null;
+      if (!id) {
+        return { data: null, error: 'ID manquant' };
+      }
+
+      await supabase
+        .from('shipping_addresses')
+        .update({ isDefault: false })
+        .eq('userId', authData.user.id);
+
+      const { data: result, error } = await supabase
+        .from('shipping_addresses')
+        .update({ isDefault: true, updatedAt: new Date().toISOString() })
+        .eq('id', id)
+        .eq('userId', authData.user.id)
+        .select()
+        .single();
+
+      if (error) {
+        return { data: null, error: error.message };
+      }
+
+      return { data: result as T, error: null };
+    }
+
+    // PATCH est similaire ???????? PUT
     return api.put<T>(endpoint, data);
   },
 };

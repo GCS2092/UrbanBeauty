@@ -91,10 +91,21 @@ export const authService = {
       user: {
         id: authData.user.id,
         email: authData.user.email || '',
-        role:
-          (appUserData?.role as string) ||
-          (authData.user.user_metadata?.role as string) ||
-          'CLIENT',
+        role: (() => {
+          const rawRole =
+            (appUserData?.role as string) ||
+            (authData.user.user_metadata?.role as string) ||
+            'CLIENT';
+          const normalized = rawRole.toUpperCase();
+          const allowed = [
+            'CLIENT',
+            'COIFFEUSE',
+            'MANICURISTE',
+            'VENDEUSE',
+            'ADMIN',
+          ];
+          return allowed.includes(normalized) ? normalized : 'CLIENT';
+        })(),
         profile: profileData
           ? {
               firstName: profileData.firstName ?? profileData.first_name,
@@ -149,10 +160,21 @@ export const authService = {
     return {
       id: user.id,
       email: user.email,
-      role:
-        (appUserData?.role as string) ||
-        (user.user_metadata?.role as string) ||
-        'CLIENT',
+      role: (() => {
+        const rawRole =
+          (appUserData?.role as string) ||
+          (user.user_metadata?.role as string) ||
+          'CLIENT';
+        const normalized = rawRole.toUpperCase();
+        const allowed = [
+          'CLIENT',
+          'COIFFEUSE',
+          'MANICURISTE',
+          'VENDEUSE',
+          'ADMIN',
+        ];
+        return allowed.includes(normalized) ? normalized : 'CLIENT';
+      })(),
       profile: profileData || undefined,
       createdAt: user.created_at,
       updatedAt: user.updated_at,

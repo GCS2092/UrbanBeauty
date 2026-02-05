@@ -6,8 +6,21 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+const normalizeRole = (role?: string) => {
+  switch ((role || '').toUpperCase()) {
+    case 'ADMIN':
+    case 'VENDEUSE':
+    case 'COIFFEUSE':
+    case 'MANICURISTE':
+    case 'CLIENT':
+      return role!.toUpperCase();
+    default:
+      return 'CLIENT';
+  }
+};
+
 const getDashboardPath = (role?: string) => {
-  switch (role) {
+  switch (normalizeRole(role)) {
     case 'ADMIN':
       return '/dashboard/admin';
     case 'VENDEUSE':
