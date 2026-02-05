@@ -10,10 +10,11 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading, isHydrated } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
+    if (!isHydrated) return;
     if (!isLoading && !isAuthenticated) {
       router.push('/auth/login');
     } else if (!isLoading && isAuthenticated && requiredRole) {
@@ -22,9 +23,9 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
         router.push('/dashboard');
       }
     }
-  }, [isAuthenticated, isLoading, user, requiredRole, router]);
+  }, [isAuthenticated, isLoading, isHydrated, user, requiredRole, router]);
 
-  if (isLoading) {
+  if (!isHydrated || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -54,4 +55,3 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   return <>{children}</>;
 }
-

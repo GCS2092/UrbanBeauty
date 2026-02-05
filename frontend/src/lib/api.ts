@@ -179,6 +179,9 @@ export const api = {
           return { data: null, error: 'Token FCM manquant' };
         }
 
+        // Nettoyer un token deja enregistre (evite le conflit unique)
+        await supabase.from('notification_tokens').delete().eq('token', token);
+
         const { data: result, error } = await supabase
           .from('notification_tokens')
           .upsert(

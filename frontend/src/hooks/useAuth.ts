@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authService, RegisterDto, LoginDto } from '@/services/auth.service';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -11,62 +12,59 @@ export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Initialiser l'authentification côté client uniquement
   useEffect(() => {
-    const newAuthState = authService.isAuthenticated();
-    setIsAuthenticated(newAuthState);
-    setIsHydrated(true);
-  }, []);
+    let isMounted = true;
 
-  // Écouter les changements de localStorage pour mettre à jour l'état d'authentification
-  useEffect(() => {
-    if (!isHydrated) return;
+    const initSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      console.log('[auth] getSession', {
+        hasSession: !!data.session,
+        userId: data.session?.user?.id,
+      });
+      if (!isMounted) return;
 
-    const checkAuth = () => {
-      const newAuthState = authService.isAuthenticated();
-      if (newAuthState !== isAuthenticated) {
-        setIsAuthenticated(newAuthState);
-        if (newAuthState) {
+      const hasSession = !!data.session;
+      setIsAuthenticated(hasSession);
+      setIsHydrated(true);
+
+      if (hasSession) {
+        queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+      } else {
+        queryClient.setQueryData(['auth', 'me'], null);
+      }
+    };
+
+    initSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        console.log('[auth] onAuthStateChange', {
+          event: _event,
+          hasSession: !!session,
+          userId: session?.user?.id,
+        });
+        const hasSession = !!session;
+        setIsAuthenticated(hasSession);
+        if (hasSession) {
           queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
         } else {
           queryClient.setQueryData(['auth', 'me'], null);
         }
-      }
-    };
-
-    // Écouter les événements de stockage (pour les changements dans d'autres onglets)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'access_token') {
-        checkAuth();
-      }
-    };
-
-    // Écouter les événements personnalisés (pour les changements dans le même onglet)
-    const handleAuthChange = () => {
-      checkAuth();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('auth-change', handleAuthChange);
-
-    // Vérifier périodiquement (toutes les 5 secondes, au lieu de 1)
-    const interval = setInterval(checkAuth, 5000);
+      },
+    );
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('auth-change', handleAuthChange);
-      clearInterval(interval);
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
     };
-  }, [isHydrated, isAuthenticated, queryClient]);
+  }, [queryClient]);
 
   const registerMutation = useMutation({
     mutationFn: (data: RegisterDto) => authService.register(data),
     onSuccess: () => {
       setIsAuthenticated(true);
-      // Déclencher un événement personnalisé
       window.dispatchEvent(new Event('auth-change'));
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
-      // La redirection sera gérée dans la fonction register() ci-dessous
     },
   });
 
@@ -74,11 +72,9 @@ export function useAuth() {
     mutationFn: (data: LoginDto) => authService.login(data),
     onSuccess: (response) => {
       setIsAuthenticated(true);
-      // Déclencher un événement personnalisé
       window.dispatchEvent(new Event('auth-change'));
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
-      
-      // Si l'utilisateur doit changer son mot de passe, rediriger vers la page de changement
+
       if (response.mustChangePassword) {
         router.push('/auth/change-password');
       } else {
@@ -86,7 +82,6 @@ export function useAuth() {
       }
     },
     onError: (error) => {
-      // Les erreurs sont gérées dans le composant qui appelle login()
       console.error('Login error:', error);
     },
   });
@@ -104,7 +99,6 @@ export function useAuth() {
     authService.logout();
     setIsAuthenticated(false);
     queryClient.clear();
-    // Déclencher un événement personnalisé
     window.dispatchEvent(new Event('auth-change'));
   };
 
@@ -114,9 +108,8 @@ export function useAuth() {
     isAuthenticated,
     isHydrated,
     register: (data: RegisterDto, options?: any) => {
-      // Permettre de passer redirectTo dans les options
       const redirectTo = options?.redirectTo || '/dashboard';
-      
+
       registerMutation.mutate(data, {
         ...options,
         onSuccess: (response) => {
@@ -124,14 +117,14 @@ export function useAuth() {
           window.dispatchEvent(new Event('auth-change'));
           queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
           router.push(redirectTo);
-          // Appeler le callback onSuccess personnalisé si fourni
           if (options?.onSuccess) {
             options.onSuccess(response);
           }
         },
       });
     },
-    login: (data: LoginDto, options?: any) => loginMutation.mutate(data, options),
+    login: (data: LoginDto, options?: any) =>
+      loginMutation.mutate(data, options),
     logout,
     isRegistering: registerMutation.isPending,
     isLoggingIn: loginMutation.isPending,
@@ -139,4 +132,3 @@ export function useAuth() {
     loginError: loginMutation.error,
   };
 }
-

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'; // ✅ Correct
+import { supabase } from '@/lib/supabase';
 
 export interface RegisterDto {
   email: string;
@@ -38,10 +38,6 @@ export const authService = {
 
     if (authError) throw authError;
 
-    if (authData.session) {
-      localStorage.setItem('access_token', authData.session.access_token);
-    }
-
     return {
       access_token: authData.session?.access_token || '',
       user: {
@@ -71,11 +67,7 @@ export const authService = {
       .maybeSingle();
 
     if (profileError) {
-      console.warn('Profil introuvable ou erreur Supabase:', profileError.message);
-    }
-
-    if (authData.session) {
-      localStorage.setItem('access_token', authData.session.access_token);
+      console.warn('Profile not found or Supabase error:', profileError.message);
     }
 
     return {
@@ -96,7 +88,6 @@ export const authService = {
   },
 
   logout: () => {
-    localStorage.removeItem('access_token');
     supabase.auth.signOut();
     window.location.href = '/auth/login';
   },
@@ -117,7 +108,7 @@ export const authService = {
       .maybeSingle();
 
     if (profileError) {
-      console.warn('Profil introuvable ou erreur Supabase:', profileError.message);
+      console.warn('Profile not found or Supabase error:', profileError.message);
     }
 
     return {
@@ -138,16 +129,5 @@ export const authService = {
     if (error) throw error;
 
     return authService.getMe();
-  },
-
-  getToken: (): string | null => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('access_token');
-    }
-    return null;
-  },
-
-  isAuthenticated: (): boolean => {
-    return !!authService.getToken();
   },
 };

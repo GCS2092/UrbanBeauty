@@ -1,4 +1,6 @@
-// Utilitaires pour gérer le mode hors ligne
+// Utilities to manage offline mode
+
+import { supabase } from './supabase';
 
 export interface OfflineQueueItem {
   id: string;
@@ -69,7 +71,7 @@ class OfflineManager {
       await store.add(queueItem);
     }
 
-    // Notifier le service worker
+    // Notify the service worker
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({
         type: 'QUEUE_ITEM',
@@ -103,6 +105,8 @@ class OfflineManager {
     let failed = 0;
 
     const itemsToSync = [...this.queue];
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
     for (const item of itemsToSync) {
       try {
@@ -110,7 +114,7 @@ class OfflineManager {
           method: item.type,
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('access_token') || ''}`,
+            Authorization: accessToken ? `Bearer ${accessToken}` : '',
           },
           body: JSON.stringify(item.data),
         });
@@ -140,7 +144,7 @@ class OfflineManager {
         scope: '/',
       });
 
-      // Attendre que le service worker soit activé
+      // Wait for the service worker to be activated
       if (registration.installing) {
         await new Promise((resolve) => {
           registration.installing!.addEventListener('statechange', function () {
@@ -176,18 +180,18 @@ class OfflineManager {
 
 export const offlineManager = new OfflineManager();
 
-// Initialiser au chargement
+// Initialize on load
 if (typeof window !== 'undefined') {
   offlineManager.init().then(() => {
-    // Synchroniser automatiquement quand la connexion revient
+    // Auto-sync when connection returns
     offlineManager.onOnline(() => {
       offlineManager.syncQueue().then((result) => {
         if (result.success > 0) {
-          console.log(`✅ ${result.success} éléments synchronisés`);
-          // Optionnel: afficher une notification
+          console.log(`Synced ${result.success} item(s)`);
+          // Optional: show a notification
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Synchronisation terminée', {
-              body: `${result.success} éléments ont été synchronisés`,
+            new Notification('Sync complete', {
+              body: `${result.success} item(s) were synced`,
               icon: '/icon-192x192.png',
             });
           }
@@ -196,4 +200,3 @@ if (typeof window !== 'undefined') {
     });
   });
 }
-
