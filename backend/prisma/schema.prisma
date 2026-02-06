@@ -412,8 +412,10 @@ model User {
   payments                    payments[]
   products                    products[]
   profile                     profiles?
-  quick_replies               quick_replies[]
   reviews                     reviews[]
+  conversationsAsParticipant1 chat_conversations[] @relation("ConversationParticipant1")
+  conversationsAsParticipant2 chat_conversations[] @relation("ConversationParticipant2")
+  messages                    messages[] @relation("MessageSender")
 
   @@index([instance_id])
   @@index([is_anonymous])
@@ -423,37 +425,66 @@ model User {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model bookings {
-  id        String        @id
-  userId    String        @db.Uuid
-  serviceId String
-  date      DateTime
-  status    BookingStatus @default(PENDING)
-  notes     String?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime
-  service   services      @relation(fields: [serviceId], references: [id])
-  user      User          @relation(fields: [userId], references: [id], map: "bookings_userid_fkey")
-  payment   payments?
+  id            String        @id
+  userId        String?       @db.Uuid
+  serviceId     String
+  date          DateTime
+  status        BookingStatus @default(PENDING)
+  notes         String?
+  bookingNumber String?       @unique
+  startTime     DateTime?
+  endTime       DateTime?
+  location      String?
+  clientName    String?
+  clientPhone   String?
+  clientEmail   String?
+  reminderSent  Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime
+  service       services      @relation(fields: [serviceId], references: [id])
+  user          User?         @relation(fields: [userId], references: [id], map: "bookings_userid_fkey")
+  payment       payments?
 
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model categories {
-  id       String     @id
-  name     String
-  products products[]
+  id          String       @id
+  name        String
+  slug        String?      @unique
+  description String?
+  image       String?
+  isActive    Boolean      @default(true)
+  order       Int          @default(0)
+  parentId    String?
+  providerId  String?
+  parent      categories?  @relation("CategoryParent", fields: [parentId], references: [id])
+  children    categories[] @relation("CategoryParent")
+  provider    profiles?    @relation("CategoryProvider", fields: [providerId], references: [id])
+  products    products[]
 
   @@schema("public")
 }
 
 model chat_conversations {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id      String?   @db.Uuid
-  title        String?
-  last_message String?
-  created_at   DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String?   @db.Uuid
+  title          String?
+  last_message   String?
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime? @default(now()) @db.Timestamptz(6)
+  participant1Id String?   @db.Uuid
+  participant2Id String?   @db.Uuid
+  lastMessage    String?
+  lastMessageAt  DateTime? @db.Timestamptz(6)
+  unreadCount1   Int       @default(0)
+  unreadCount2   Int       @default(0)
+  createdAt      DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime? @default(now()) @db.Timestamptz(6)
+  participant1   User?     @relation("ConversationParticipant1", fields: [participant1Id], references: [id])
+  participant2   User?     @relation("ConversationParticipant2", fields: [participant2Id], references: [id])
+  messages       messages[]
 
   @@index([user_id], map: "idx_chat_conversations_user")
   @@schema("public")
@@ -477,19 +508,19 @@ model favorites {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model images {
-  id          String    @id
+  id          String    @id @default(dbgenerated("gen_random_uuid()"))
   url         String
   type        ImageType
   productId   String?
   serviceId   String?
   portfolioId String?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime  @default(now())
   alt         String?
   title       String?
   order       Int?      @default(0)
   isPrimary   Boolean?  @default(false)
-  profile     profiles? @relation(fields: [portfolioId], references: [id])
+  profile     profiles? @relation("ProfilePortfolio", fields: [portfolioId], references: [id])
   product     products? @relation(fields: [productId], references: [id])
   service     services? @relation(fields: [serviceId], references: [id])
 
@@ -541,22 +572,40 @@ model order_items {
   quantity  Int
   price     Float
   order     orders   @relation(fields: [orderId], references: [id])
-  product   products @relation(fields: [productId], references: [id])
+  product   products @relation("ProductOrders", fields: [productId], references: [id])
 
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model orders {
-  id          String        @id
-  userId      String        @db.Uuid
-  total       Float
-  status      OrderStatus   @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime
-  items       order_items[]
-  user        User          @relation(fields: [userId], references: [id], map: "orders_userid_fkey")
-  payment     payments?
+  id                    String        @id
+  userId                String?       @db.Uuid
+  total                 Float
+  status                OrderStatus   @default(PENDING)
+  orderNumber           String?       @unique
+  trackingCode          String?       @unique
+  customerEmail         String?
+  customerName          String?
+  customerPhone         String?
+  shippingAddress       String?
+  billingAddress        String?
+  shippingMethod        String?
+  shippingCost          Float         @default(0)
+  subtotal              Float         @default(0)
+  discount              Float         @default(0)
+  couponId              String?
+  notes                 String?
+  trackingNumber        String?
+  estimatedDeliveryDate DateTime?
+  cancellationReason    String?
+  sellerNotes           String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime
+  items                 order_items[]
+  user                  User?         @relation(fields: [userId], references: [id], map: "orders_userid_fkey")
+  payment               payments?
+  coupon                coupon?       @relation(fields: [couponId], references: [id])
 
   @@schema("public")
 }
@@ -582,87 +631,122 @@ model payments {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model products {
-  id          String        @id
-  name        String
-  description String
-  price       Float
-  categoryId  String
-  stock       Int
-  sellerId    String        @db.Uuid
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime
-  favorites   favorites[]
-  images      images[]
-  order_items order_items[]
-  category    categories    @relation(fields: [categoryId], references: [id])
-  seller      User          @relation(fields: [sellerId], references: [id], map: "products_sellerid_fkey")
-  reviews     reviews[]
+  id                String        @id
+  name              String
+  description       String
+  price             Float
+  categoryId        String
+  stock             Int
+  sellerId          String        @db.Uuid
+  slug              String?
+  brand             String?
+  sku               String?
+  volume            String?
+  ingredients       String?
+  skinType          String?
+  lowStockThreshold Int?
+  isActive          Boolean       @default(true)
+  salesCount        Int           @default(0)
+  rating            Float?
+  averageRating     Float?
+  reviewCount       Int           @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime
+  favorites         favorites[]
+  images            images[]
+  orders            order_items[] @relation("ProductOrders")
+  category          categories    @relation(fields: [categoryId], references: [id])
+  seller            User          @relation(fields: [sellerId], references: [id], map: "products_sellerid_fkey")
+  reviews           reviews[]
 
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model profiles {
-  id         String     @id @default(dbgenerated("gen_random_uuid()"))
-  userId     String     @unique @db.Uuid
-  firstName  String
-  lastName   String
-  phone      String?
-  address    String?
-  avatar     String?
-  isProvider Boolean    @default(false)
-  rating     Float?
-  images     images[]
-  user       User @relation(fields: [userId], references: [id], map: "profiles_userid_fkey")
-  services   services[]
+  id                String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId            String    @unique @db.Uuid
+  firstName         String
+  lastName          String
+  phone             String?
+  address           String?
+  avatar            String?
+  isProvider        Boolean   @default(false)
+  rating            Float?
+  city              String?
+  country           String?
+  bio               String?
+  specialties       String[] @default([])
+  experience        String?
+  totalBookings     Int       @default(0)
+  completedBookings Int       @default(0)
+  cancellationRate  Float     @default(0)
+  portfolio         images[]  @relation("ProfilePortfolio")
+  user              User      @relation(fields: [userId], references: [id], map: "profiles_userid_fkey")
+  services          services[]
+  categories        categories[] @relation("CategoryProvider")
 
   @@schema("public")
 }
 
-model quick_replies {
-  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String?     @db.Uuid
-  message    String
+model quickReply {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?   @map("user_id") @db.Uuid
+  title      String?
+  content    String    @map("message")
   shortcut   String?
-  created_at DateTime?   @default(now()) @db.Timestamptz(6)
-  user       User?       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  order      Int       @default(0) @map("order")
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  @@index([user_id], map: "idx_quick_replies_user")
+  @@map("quick_replies")
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model reviews {
-  id        String     @id
-  rating    Int
-  comment   String?
-  userId    String     @db.Uuid
-  productId String?
-  serviceId String?
-  createdAt DateTime   @default(now())
-  product   products?  @relation(fields: [productId], references: [id])
-  service   services?  @relation(fields: [serviceId], references: [id])
-  user      User       @relation(fields: [userId], references: [id], map: "reviews_userid_fkey")
+  id                 String    @id
+  rating             Int
+  comment            String?
+  userId             String    @db.Uuid
+  productId          String?
+  serviceId          String?
+  isPublished        Boolean   @default(true)
+  isVerifiedPurchase Boolean   @default(false)
+  providerReply      String?
+  providerReplyAt    DateTime?
+  helpfulCount       Int       @default(0)
+  createdAt          DateTime  @default(now())
+  product            products? @relation(fields: [productId], references: [id])
+  service            services? @relation(fields: [serviceId], references: [id])
+  user               User      @relation(fields: [userId], references: [id], map: "reviews_userid_fkey")
 
   @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model services {
-  id          String      @id
-  name        String
-  description String?
-  price       Float
-  duration    Int
-  available   Boolean     @default(true)
-  providerId  String
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime
-  bookings    bookings[]
-  favorites   favorites[]
-  images      images[]
-  reviews     reviews[]
-  provider    profiles    @relation(fields: [providerId], references: [id])
+  id                 String      @id
+  name               String
+  description        String?
+  price              Float
+  duration           Int
+  available          Boolean     @default(true)
+  providerId         String
+  slug               String?
+  category           String?
+  maxBookingsPerDay  Int?
+  advanceBookingDays Int?
+  rating             Float?
+  averageRating      Float?
+  reviewCount        Int         @default(0)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime
+  bookings           bookings[]
+  favorites          favorites[]
+  images             images[]
+  reviews            reviews[]
+  provider           profiles    @relation(fields: [providerId], references: [id])
 
   @@schema("public")
 }
@@ -673,9 +757,133 @@ model users {
   email       String   @unique
   blockReason String?
   role        Role     @default(CLIENT)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime
   password    String   @default("")
+
+  @@schema("public")
+}
+
+
+model coupon {
+  id           String        @id @default(dbgenerated("gen_random_uuid()"))
+  code         String        @unique
+  description  String?
+  discountType DiscountType
+  discountValue Float
+  maxDiscount  Float?
+  minPurchase  Float?
+  validFrom    DateTime
+  validUntil   DateTime
+  isActive     Boolean       @default(true)
+  usageLimit   Int?
+  usageCount   Int           @default(0)
+  userLimit    Int?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  orders       orders[]
+
+  @@map("coupons")
+  @@schema("public")
+}
+
+model shippingAddress {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @db.Uuid
+  label      String
+  fullName   String
+  phone      String?
+  address    String
+  city       String
+  postalCode String?
+  country    String?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("shipping_addresses")
+  @@schema("public")
+}
+
+model reviewHelpful {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reviewId  String
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  @@map("review_helpful")
+  @@schema("public")
+}
+
+model hairStyleRequest {
+  id                String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lookbookItemId    String?
+  lookbookItemName  String?
+  clientName        String
+  clientPhone       String
+  clientEmail       String?
+  hairStyleType     String
+  numberOfBraids    Int?
+  braidType         String?
+  numberOfPackages  Int?
+  preferredTime     DateTime?
+  preferredDate     DateTime?
+  additionalDetails String?
+  status            HairStyleRequestStatus @default(PENDING)
+  providerId        String?
+  userId            String?                @db.Uuid
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@map("hair_style_requests")
+  @@schema("public")
+}
+
+model messages {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String   @db.Uuid
+  senderId       String   @db.Uuid
+  content        String
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  conversation   chat_conversations @relation(fields: [conversationId], references: [id])
+  sender         User               @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@schema("public")
+}
+
+model maintenanceSettings {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  isBookingDisabled      Boolean  @default(false)
+  isChatDisabled         Boolean  @default(false)
+  isPrestatairesDisabled Boolean  @default(false)
+  isAuthDisabled         Boolean  @default(false)
+  bookingMessage         String?
+  chatMessage            String?
+  prestatairesMessage    String?
+  authMessage            String?
+  updatedBy              String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("maintenance_settings")
+  @@schema("public")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+
+  @@schema("public")
+}
+
+enum HairStyleRequestStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  COMPLETED
 
   @@schema("public")
 }

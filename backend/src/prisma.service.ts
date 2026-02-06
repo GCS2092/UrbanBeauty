@@ -42,9 +42,6 @@ export class PrismaService
   get review() {
     return this.reviews;
   }
-  get user() {
-    return this.users;
-  }
   get shippingAddress() {
     return (this as any).shipping_addresses;
   }
