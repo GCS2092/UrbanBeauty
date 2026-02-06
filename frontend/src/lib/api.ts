@@ -1,11 +1,71 @@
 import { supabase } from './supabase';
 
-// Interface pour les rÃƒÂ©ponses API
+// Interface pour les reponses API
 interface ApiResponse<T = any> {
   data: T | null;
   error: string | null;
   status?: number;
 }
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+const shouldUseBackend = (endpoint: string): boolean => {
+  return (
+    /^\/api\/analytics(\/|$)/.test(endpoint) ||
+    /^\/api\/analytics[-_]/.test(endpoint) ||
+    /^\/analytics[-_]/.test(endpoint) ||
+    /^\/api\/maintenance(\/|$)/.test(endpoint) ||
+    /^\/api\/maintenance[-_]/.test(endpoint) ||
+    /^\/maintenance[-_]/.test(endpoint) ||
+    /^\/api\/users(\/|$)/.test(endpoint) ||
+    /^\/users(\/|$)/.test(endpoint) ||
+    /^\/api\/notifications\/send$/.test(endpoint) ||
+    /^\/api\/notifications[-_]/.test(endpoint) ||
+    /^\/notifications[-_]send$/.test(endpoint) ||
+    /^\/api\/reviews\/admin$/.test(endpoint) ||
+    /^\/api\/reviews[-_]/.test(endpoint) ||
+    /^\/reviews[-_]admin$/.test(endpoint)
+  );
+};
+
+const backendRequest = async <T = any>(
+  method: string,
+  endpoint: string,
+  data?: any,
+): Promise<ApiResponse<T>> => {
+  if (!BACKEND_URL) {
+    return { data: null, error: 'API URL non configuree' };
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+
+  const res = await fetch(`${BACKEND_URL}${endpoint}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: data ? JSON.stringify(data) : undefined,
+  });
+
+  let json: any = null;
+  try {
+    json = await res.json();
+  } catch (_) {
+    json = null;
+  }
+
+  if (!res.ok) {
+    return {
+      data: null,
+      error: json?.message || json?.error || res.statusText,
+      status: res.status,
+    };
+  }
+
+  return { data: json as T, error: null, status: res.status };
+};
 
 // Helper pour convertir les endpoints en noms de table Supabase corrects
 const getTableName = (endpoint: string): string => {
@@ -14,7 +74,7 @@ const getTableName = (endpoint: string): string => {
     .replace(/\//g, '_')
     .split('?')[0];
 
-  // Mapping spÃƒÂ©cial pour les cas particuliers
+  // Mapping special pour les cas particuliers
   const tableMapping: { [key: string]: string } = {
     'notifications-unread-count': 'notifications_unread_count',
     'notificationsunread-count': 'notifications_unread_count',
@@ -70,6 +130,9 @@ export const api = {
     data: any,
   ): Promise<ApiResponse<T>> => {
     try {
+      if (shouldUseBackend(endpoint)) {
+        return backendRequest<T>('POST', endpoint, data);
+      }
       // VÃƒÂ©rifier le mode hors ligne
       const offlineResponse = await handleOfflineRequest<T>(
         'POST',
@@ -330,6 +393,9 @@ export const api = {
   // GET request
   get: async <T = any>(endpoint: string): Promise<ApiResponse<T>> => {
     try {
+      if (shouldUseBackend(endpoint)) {
+        return backendRequest<T>('GET', endpoint);
+      }
       // Route pour rÃƒÂ©cupÃƒÂ©rer l'utilisateur connectÃƒÂ©
       if (endpoint === '/auth/me' || endpoint === '/api/auth/me') {
         const {
@@ -452,6 +518,108 @@ export const api = {
         return { data: result as T, error: null };
       }
 
+
+      // Product by id
+      if (endpoint.match(/^\/api\/products\/[^/]+$/) || endpoint.match(/^\/products\/[^/]+$/)) {
+        const id = endpoint.split('/').pop();
+        const { data: result, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) {
+          return { data: null, error: error.message };
+        }
+        return { data: result as T, error: null };
+      }
+
+      if (endpoint.match(/^\/api\/products[-_][^/]+$/) || endpoint.match(/^\/products[-_][^/]+$/)) {
+        const id = endpoint
+          .replace(/^\/api\/products[-_]/, '')
+          .replace(/^\/products[-_]/, '');
+        const { data: result, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) {
+          return { data: null, error: error.message };
+        }
+        return { data: result as T, error: null };
+      }
+
+      // Service by id
+      if (endpoint.match(/^\/api\/services\/[^/]+$/) || endpoint.match(/^\/services\/[^/]+$/)) {
+        const id = endpoint.split('/').pop();
+        const { data: result, error } = await supabase
+          .from('services')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) {
+          return { data: null, error: error.message };
+        }
+        return { data: result as T, error: null };
+      }
+
+      if (endpoint.match(/^\/api\/services[-_][^/]+$/) || endpoint.match(/^\/services[-_][^/]+$/)) {
+        const id = endpoint
+          .replace(/^\/api\/services[-_]/, '')
+          .replace(/^\/services[-_]/, '');
+        const { data: result, error } = await supabase
+          .from('services')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) {
+          return { data: null, error: error.message };
+        }
+        return { data: result as T, error: null };
+      }
+
+
+      // Category by id
+      if (endpoint.match(/^\/api\/categories\/[^/]+$/) || endpoint.match(/^\/categories\/[^/]+$/)) {
+        const id = endpoint.split('/').pop();
+        const { data: result, error } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) {
+          return { data: null, error: error.message };
+        }
+        return { data: result as T, error: null };
+      }
+
+      // Order by id
+      if (endpoint.match(/^\/api\/orders\/[^/]+$/) || endpoint.match(/^\/orders\/[^/]+$/)) {
+        const id = endpoint.split('/').pop();
+        const { data: result, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) {
+          return { data: null, error: error.message };
+        }
+        return { data: result as T, error: null };
+      }
+
+      // Booking by id
+      if (endpoint.match(/^\/api\/bookings\/[^/]+$/) || endpoint.match(/^\/bookings\/[^/]+$/)) {
+        const id = endpoint.split('/').pop();
+        const { data: result, error } = await supabase
+          .from('bookings')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) {
+          return { data: null, error: error.message };
+        }
+        return { data: result as T, error: null };
+      }
+
       // Autres endpoints GET
       const { data: result, error } = await supabase
         .from(getTableName(endpoint))
@@ -473,6 +641,9 @@ export const api = {
     data: any,
   ): Promise<ApiResponse<T>> => {
     try {
+      if (shouldUseBackend(endpoint)) {
+        return backendRequest<T>('PUT', endpoint, data);
+      }
       // VÃƒÂ©rifier le mode hors ligne
       const offlineResponse = await handleOfflineRequest<T>(
         'PUT',
@@ -560,6 +731,9 @@ export const api = {
   // DELETE request
   delete: async <T = any>(endpoint: string): Promise<ApiResponse<T>> => {
     try {
+      if (shouldUseBackend(endpoint)) {
+        return backendRequest<T>('DELETE', endpoint);
+      }
       // VÃƒÂ©rifier le mode hors ligne
       const offlineResponse = await handleOfflineRequest<T>('DELETE', endpoint);
       if (offlineResponse) return offlineResponse;
@@ -585,6 +759,9 @@ export const api = {
     endpoint: string,
     data: any,
   ): Promise<ApiResponse<T>> => {
+    if (shouldUseBackend(endpoint)) {
+      return backendRequest<T>('PATCH', endpoint, data);
+    }
     // Shipping addresses set-default
     if (
       endpoint.endsWith('/set-default') &&
