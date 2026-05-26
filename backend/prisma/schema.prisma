@@ -5,220 +5,317 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["auth", "public"]
 }
 
-model Booking {
-  id        String        @id
+// ─────────────────────────────────────────
+// USERS & AUTH
+// ─────────────────────────────────────────
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  role          Role           @default(CUSTOMER)
+  refreshToken  String?
+  isActive      Boolean        @default(true)
+  addresses     Address[]
+  orders        Order[]
+  carts         Cart[]
+  wishlist      Wishlist[]
+  reviews       Review[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
   userId    String
-  serviceId String
-  date      DateTime
-  status    BookingStatus @default(PENDING)
-  notes     String?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime
-  Service   Service       @relation(fields: [serviceId], references: [id])
-  User      User          @relation(fields: [userId], references: [id])
-  Payment   Payment?
-
-  @@schema("public")
+  label     String
+  fullName  String
+  phone     String
+  street    String
+  city      String
+  country   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
+
+// ─────────────────────────────────────────
+// CATALOGUE
+// ─────────────────────────────────────────
 
 model Category {
-  id      String    @id
-  name    String
-  Product Product[]
-
-  @@schema("public")
-}
-
-model Image {
-  id          String    @id
-  url         String
-  type        ImageType
-  productId   String?
-  serviceId   String?
-  portfolioId String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime
-  Profile     Profile?  @relation(fields: [portfolioId], references: [id])
-  Product     Product?  @relation(fields: [productId], references: [id])
-  Service     Service?  @relation(fields: [serviceId], references: [id])
-
-  @@schema("public")
-}
-
-model Order {
-  id        String      @id
-  userId    String
-  total     Float
-  status    OrderStatus @default(PENDING)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime
-  User      User        @relation(fields: [userId], references: [id])
-  OrderItem OrderItem[]
-  Payment   Payment?
-
-  @@schema("public")
-}
-
-model OrderItem {
-  id        String  @id
-  orderId   String
-  productId String
-  quantity  Int
-  price     Float
-  Order     Order   @relation(fields: [orderId], references: [id])
-  Product   Product @relation(fields: [productId], references: [id])
-
-  @@schema("public")
-}
-
-model Payment {
-  id            String        @id
-  amount        Float
-  status        PaymentStatus @default(PENDING)
-  provider      String
-  transactionId String?
-  userId        String
-  bookingId     String?       @unique
-  orderId       String?       @unique
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime
-  Booking       Booking?      @relation(fields: [bookingId], references: [id])
-  Order         Order?        @relation(fields: [orderId], references: [id])
-  User          User          @relation(fields: [userId], references: [id])
-
-  @@schema("public")
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  imageUrl  String?
+  isActive  Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Product {
-  id          String      @id
-  name        String
-  description String
-  price       Float
-  categoryId  String
-  stock       Int
-  sellerId    String
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime
-  Image       Image[]
-  OrderItem   OrderItem[]
-  Category    Category    @relation(fields: [categoryId], references: [id])
-  User        User        @relation(fields: [sellerId], references: [id])
-  Review      Review[]
-
-  @@schema("public")
+  id           String           @id @default(cuid())
+  name         String
+  slug         String           @unique
+  description  String
+  price        Int
+  comparePrice Int?
+  stock        Int
+  isActive     Boolean          @default(true)
+  isFeatured   Boolean          @default(false)
+  category     Category         @relation(fields: [categoryId], references: [id])
+  categoryId   String
+  images       ProductImage[]
+  variants     ProductVariant[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  wishlist     Wishlist[]
+  reviews      Review[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 }
 
-model Profile {
-  id         String    @id
-  userId     String    @unique
-  firstName  String
-  lastName   String
-  phone      String?
-  address    String?
-  avatar     String?
-  isProvider Boolean   @default(false)
-  rating     Float?
-  Image      Image[]
-  User       User      @relation(fields: [userId], references: [id])
-  Service    Service[]
-
-  @@schema("public")
+model ProductImage {
+  id        String  @id @default(cuid())
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  url       String
+  publicId  String
+  position  Int     @default(0)
+  isMain    Boolean @default(false)
 }
+
+model ProductVariant {
+  id         String      @id @default(cuid())
+  product    Product     @relation(fields: [productId], references: [id])
+  productId  String
+  size       String
+  color      String
+  stock      Int
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([productId, size, color])
+}
+
+// ─────────────────────────────────────────
+// WISHLIST
+// ─────────────────────────────────────────
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+// ─────────────────────────────────────────
+// REVIEWS
+// ─────────────────────────────────────────
 
 model Review {
-  id        String   @id
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
   rating    Int
   comment   String?
-  userId    String
-  productId String?
-  serviceId String?
+  isVisible Boolean  @default(true)
   createdAt DateTime @default(now())
-  Product   Product? @relation(fields: [productId], references: [id])
-  Service   Service? @relation(fields: [serviceId], references: [id])
-  User      User     @relation(fields: [userId], references: [id])
+  updatedAt DateTime @updatedAt
 
-  @@schema("public")
+  @@unique([userId, productId])
 }
 
-model Service {
-  id          String    @id
-  name        String
-  description String?
-  price       Float
-  duration    Int
-  available   Boolean   @default(true)
-  providerId  String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime
-  Booking     Booking[]
-  Image       Image[]
-  Review      Review[]
-  Profile     Profile   @relation(fields: [providerId], references: [id])
+// ─────────────────────────────────────────
+// CART
+// ─────────────────────────────────────────
 
-  @@schema("public")
+model Cart {
+  id          String     @id @default(cuid())
+  user        User?      @relation(fields: [userId], references: [id])
+  userId      String?
+  anonymousId String?    @unique
+  items       CartItem[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
-model User {
-  id        String    @id
-  email     String    @unique
-  password  String
-  role      Role      @default(CLIENT)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime
-  Booking   Booking[]
-  Order     Order[]
-  Payment   Payment[]
-  Product   Product[]
-  Profile   Profile?
-  Review    Review[]
-
-  @@schema("public")
+model CartItem {
+  id        String          @id @default(cuid())
+  cart      Cart            @relation(fields: [cartId], references: [id])
+  cartId    String
+  product   Product         @relation(fields: [productId], references: [id])
+  productId String
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  variantId String?
+  quantity  Int             @default(1)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 }
 
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
+// ─────────────────────────────────────────
+// COUPONS
+// ─────────────────────────────────────────
 
-  @@schema("public")
+model Coupon {
+  id              String       @id @default(cuid())
+  code            String       @unique
+  type            DiscountType
+  value           Int
+  minOrderAmount  Int?
+  maxUses         Int?
+  usedCount       Int          @default(0)
+  isActive        Boolean      @default(true)
+  expiresAt       DateTime?
+  orders          Order[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 }
 
-enum ImageType {
-  UPLOADED
-  URL
+// ─────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────
 
-  @@schema("public")
+model Order {
+  id              String          @id @default(cuid())
+  orderNumber     String          @unique
+  user            User?           @relation(fields: [userId], references: [id])
+  userId          String?
+  guestEmail      String?
+  guestPhone      String?
+  guestName       String?
+  status          OrderStatus     @default(PENDING)
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus   @default(PENDING)
+  subtotal        Int
+  shippingCost    Int
+  discount        Int             @default(0)
+  total           Int
+  shippingAddress Json
+  notes           String?
+  coupon          Coupon?         @relation(fields: [couponId], references: [id])
+  couponId        String?
+  items           OrderItem[]
+  tracking        OrderTracking[]
+  payments        Payment[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model OrderItem {
+  id           String          @id @default(cuid())
+  order        Order           @relation(fields: [orderId], references: [id])
+  orderId      String
+  product      Product         @relation(fields: [productId], references: [id])
+  productId    String
+  variant      ProductVariant? @relation(fields: [variantId], references: [id])
+  variantId    String?
+  productName  String
+  variantLabel String?
+  price        Int
+  quantity     Int
+  subtotal     Int
+}
+
+model OrderTracking {
+  id        String      @id @default(cuid())
+  order     Order       @relation(fields: [orderId], references: [id])
+  orderId   String
+  status    OrderStatus
+  message   String
+  location  String?
+  createdAt DateTime    @default(now())
+}
+
+// ─────────────────────────────────────────
+// PAYMENTS
+// ─────────────────────────────────────────
+
+model Payment {
+  id            String        @id @default(cuid())
+  order         Order         @relation(fields: [orderId], references: [id])
+  orderId       String
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  amount        Int
+  transactionId String?
+  momoNumber    String?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+// ─────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  user      User             @relation(fields: [userId], references: [id])
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum Role {
+  CUSTOMER
+  ADMIN
 }
 
 enum OrderStatus {
   PENDING
+  CONFIRMED
   PROCESSING
-  PAID
   SHIPPED
   DELIVERED
   CANCELLED
+}
 
-  @@schema("public")
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+  MOBILE_MONEY
 }
 
 enum PaymentStatus {
   PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
-
-  @@schema("public")
+  PARTIAL
+  PAID
 }
 
-enum Role {
-  CLIENT
-  COIFFEUSE
-  VENDEUSE
-  ADMIN
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
 
-  @@schema("public")
+enum NotificationType {
+  ORDER_CONFIRMED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  PAYMENT_RECEIVED
+  PROMO
 }
