@@ -1,0 +1,53 @@
+import { createContext, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import useAuthStore from '../store/authStore';
+import useCartStore from '../store/cartStore';
+import { authApi } from '../api/auth.api';
+import { ANONYMOUS_CART_KEY } from '../utils/constants';
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const { user, token, isAuthenticated, setAuth, logout: storeLogout } = useAuthStore();
+  const { fetchCart } = useCartStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      fetchCart(user.id);
+    }
+  }, [isAuthenticated]);
+
+  const login = async (credentials) => {
+    const { data } = await authApi.login(credentials);
+    const anonymousId = localStorage.getItem(ANONYMOUS_CART_KEY);
+    setAuth(data.user, data.token);
+    // Fusion panier invité au login
+    await fetchCart(data.user.id, anonymousId);
+    localStorage.removeItem(ANONYMOUS_CART_KEY);
+    toast.success(`Bienvenue ${data.user.firstName} !`);
+    navigate(data.user.role === 'ADMIN' ? '/admin' : '/');
+  };
+
+  const register = async (formData) => {
+    await authApi.register(formData);
+    toast.success('Compte créé ! Connectez-vous.');
+    navigate('/login');
+  };
+
+  const logout = async () => {
+    try { await authApi.logout(); } catch {}
+    storeLogout();
+    toast.success('À bientôt !');
+    navigate('/login');
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, token, isAuthenticated, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const useAuth = () => useContext(AuthContext);

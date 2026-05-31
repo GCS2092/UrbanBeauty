@@ -1,0 +1,518 @@
+Voici tout le contenu du cahier des charges en format textuel :
+
+---
+
+# URBANBEAUTY
+## Cahier des Charges — Plateforme E-Commerce
+### Version 1.0 — 2025
+
+*Plateforme e-commerce complète, automatisée et accessible*
+*Conçue pour fonctionner sur mobile bas de gamme · Paiement à la livraison · WhatsApp/SMS natif · Sans compte obligatoire*
+
+---
+
+## Principe fondamental
+
+La plateforme UrbanBeauty doit rester simple, rapide et accessible pour tout le monde, quels que soient le niveau numérique, le type d'appareil ou la qualité de la connexion internet.
+
+**Contraintes non négociables :**
+- Fonctionne sur un téléphone d'entrée de gamme avec une connexion lente (PWA)
+- Commande possible en moins de 3 minutes
+- Pas besoin d'email, de compte, ni d'aisance avec le digital
+- Au moins un moyen de contact obligatoire au checkout : email OU numéro de téléphone
+- Paiement à la livraison (cash on delivery) en mode principal — paiement en ligne activable plus tard
+- Interface livreur simple, accessible hors ligne, synchronisée à la reconnexion
+
+---
+
+## 1. Les 3 types d'acheteurs
+
+La plateforme gère trois profils distincts, chacun avec son niveau de service. Aucun compte n'est jamais forcé.
+
+### Visiteur anonyme
+- Navigue librement, consulte les produits
+- Peut ajouter au panier (panier temporaire, lié au navigateur)
+- Aucune donnée collectée tant qu'il ne commande pas
+- Panier abandonné sans contact → aucune relance possible
+
+### Client invité
+- Commande sans créer de compte
+- Fournit uniquement email OU numéro de téléphone au checkout
+- Reçoit confirmation, suivi et facture via le canal fourni
+- Suit sa commande via un lien court sécurisé (ex : monsite.com/s/AB12)
+- Gère ses retours via ce même lien
+- Pas de dashboard, pas d'historique, pas de fidélité
+
+### Client avec compte
+- Connexion par email + mot de passe OU numéro + OTP SMS/WhatsApp
+- Dashboard personnel : commandes, adresses, factures, points, retours
+- Historique complet — commandes invité rattachées automatiquement si même contact
+- Adresses multiples sauvegardées
+- Programme de fidélité à points, wishlist, offres personnalisées
+
+### Tableau de différenciation
+
+| Fonctionnalité | Visiteur | Invité | Compte |
+|---|---|---|---|
+| Parcourir le catalogue | ✅ | ✅ | ✅ |
+| Ajouter au panier | ✅ | ✅ | ✅ |
+| Commander | ❌ | ✅ | ✅ |
+| Suivi commande | ❌ | Lien court SMS/email | Dashboard |
+| Historique | ❌ | ❌ | ✅ complet |
+| Adresses sauvegardées | ❌ | ❌ | ✅ |
+| Wishlist | ❌ | ❌ | ✅ |
+| Fidélité & points | ❌ | ❌ | ✅ |
+| Relance panier abandonné | ❌ | Si contact fourni | ✅ complète |
+| Facture téléchargeable | ❌ | Via lien | Dashboard |
+| Retours en ligne | ❌ | Via lien court | Dashboard |
+| Alerte stock disponible | ❌ | SMS/WhatsApp/email | Notif + dashboard |
+| Commande par WhatsApp | ✅ | ✅ | ✅ |
+
+---
+
+## 2. Canaux de contact & communication
+
+### Canaux disponibles & priorité
+
+| Canal | Quand l'utiliser | Priorité |
+|---|---|---|
+| WhatsApp | Numéro actif sur WhatsApp | 1re priorité |
+| SMS | Numéro sans WhatsApp | 2e priorité |
+| Email | Email fourni | Complémentaire |
+| Appel / agent | Client non digital | Sur demande |
+
+**Logique de fallback automatique :**
+- WhatsApp si le numéro est actif dessus (vérification via API)
+- SMS si WhatsApp non détecté ou non disponible
+- Email si email fourni (en complément ou seul)
+- Les deux canaux en parallèle si email + téléphone fournis
+
+### Les 4 formats de résumé de commande
+
+Chaque client reçoit son résumé dans le format adapté à son canal. Le client peut choisir son format préféré dans ses préférences.
+
+**Format 1 — Email HTML**
+- Mise en page complète avec logo, photos produits, montants, adresse de livraison
+- Bouton de suivi cliquable, lien de téléchargement de la facture PDF
+
+**Format 2 — WhatsApp message**
+```
+✅ Commande #AB12 confirmée
+Produit : Sac cuir noir x1 — 25 000 FCFA
+Livraison : Dakar Plateau
+Total : 27 500 FCFA (livraison incluse)
+Paiement : À la livraison (COD)
+Suivi → monsite.com/s/AB12
+```
+
+**Format 3 — SMS court**
+```
+Commande AB12 confirmée. Total 27500F. Suivi: monsite.com/s/AB12
+```
+
+**Format 4 — PDF téléchargeable**
+- Facture complète avec logo, mentions légales, QR code de vérification
+- Envoyé en pièce jointe email ou lien WhatsApp selon canal disponible
+- Accessible depuis le lien de suivi ou le dashboard (comptes)
+
+---
+
+## 3. Catalogue & expérience produit
+
+### Fonctionnalités
+- Interface simple : grandes images, peu de texte, bouton "Commander" visible immédiatement
+- Fiches produit légères : photos compressées (Sharp + Cloudinary), chargement rapide sur connexion lente
+- Variantes (taille, couleur, poids) sélectionnables en un tap
+- Moteur de recherche avec autocomplétion
+- Filtres simples : prix, disponibilité, catégorie
+- Comparateur de produits
+- Wishlist (comptes uniquement — proposée aux invités après achat)
+- Avis et notes clients vérifiés
+- Badge "Stock limité" affiché automatiquement sous seuil défini
+- Bouton "M'avertir" quand produit indisponible (email ou téléphone, invité ou compte)
+- Catalogue WhatsApp Business : commande possible directement depuis WhatsApp sans passer par le site
+
+### Automatisations
+- Stock passe sous le seuil → badge "Plus que X en stock" affiché automatiquement sur la fiche
+- Stock = 0 → fiche passe en "Indisponible" + activation du bouton "M'avertir"
+- Stock repasse > 0 → réactivation automatique de la fiche + notification à toute la liste d'attente (WhatsApp/SMS/email selon canal)
+- Produit sans vente depuis X jours → alerte admin pour décision (promo, retrait, mise en avant)
+- Nouveau produit ajouté → sitemap XML régénéré + notification aux abonnés de la catégorie (comptes)
+- Image uploadée trop lourde → compression automatique sans perte visible (Sharp)
+- Prix dynamique optionnel : stock faible → prix ajusté selon règle définie
+
+---
+
+## 4. Compte client & authentification
+
+### Fonctionnalités
+- Inscription par email OU numéro de téléphone uniquement (pas besoin des deux)
+- Connexion : email + mot de passe OU numéro + code OTP reçu par SMS/WhatsApp
+- Tableau de bord simple, lisible sur mobile bas de gamme
+- Historique des commandes — commandes invité rattachées si même contact
+- Adresses multiples sauvegardées avec description textuelle libre
+- Programme de fidélité à points (consultable par SMS ou WhatsApp)
+- Rôles : client standard, client B2B, livreur, vendeur, admin
+
+### Automatisations
+- À l'inscription → message de bienvenue + coupon envoyé (WhatsApp/SMS/email)
+- Invité créant un compte avec le même contact → toutes ses commandes passées rattachées automatiquement
+- Client inactif depuis X mois → message de réactivation avec offre
+- Client atteint un palier de fidélité → notification automatique + badge débloqué
+- Tentative de connexion suspecte → alerte de sécurité immédiate par SMS ou email
+- Anniversaire du client → message automatique avec code promo
+- Segment "gros acheteurs" détecté → passage automatique VIP + accès offres exclusives
+- Invité commandant régulièrement avec même contact → campagne automatique de conversion vers un compte
+
+---
+
+## 5. Panier & paiement
+
+### Fonctionnalités
+- Panier persistant pour les comptes, temporaire (navigateur) pour les invités
+- Checkout en une page, maximum 3 étapes : contact → adresse → paiement
+- Détection silencieuse : si le contact correspond à un compte existant → invitation discrète à se connecter, sans bloquer
+
+**Phase 1 — Actif au lancement :**
+- Paiement à la livraison (cash on delivery) — mode principal
+- Virement bancaire avec confirmation manuelle par l'admin
+
+**Phase 2 — Activable plus tard (Stripe déjà installé) :**
+- Wave, Orange Money, Free Money, MTN MoMo, Airtel Money
+- Carte bancaire (Visa, Mastercard) via Stripe
+- QR code de paiement généré automatiquement
+- Paiement en plusieurs fois
+
+- Codes promo et réductions (pourcentage, montant fixe, livraison offerte)
+- Facturation automatique PDF à chaque commande (PDFKit)
+
+### Automatisations
+- Panier abandonné (contact connu) → séquence automatique J+1 relance simple, J+2 coupon -5%, J+3 dernier rappel
+- Panier abandonné (sans contact) → aucune relance
+- Commande COD → confirmation obligatoire par SMS/WhatsApp avant préparation (anti-fraude)
+- Client ne confirme pas en 2h → première relance automatique
+- Client ne confirme pas en 6h → commande annulée automatiquement + notification
+- Commande confirmée → résumé de commande envoyé dans la seconde (4 formats selon canal)
+- Commande à fort montant → notification interne admin
+- Après commande invité → proposition création compte en 1 clic, infos déjà préremplies
+- Invité ne convertit pas en 7 jours → rappel des avantages du compte
+
+---
+
+## 6. Adresse & localisation
+
+### Fonctionnalités
+- Champ adresse libre en texte (ex : "Marché Sandaga, 2ème allée, magasin bleu")
+- Intégration carte Leaflet / OpenStreetMap (gratuit) : le client pose un marqueur GPS
+- Possibilité d'envoyer sa localisation WhatsApp en temps réel au livreur
+- Zones de livraison définies par quartier/secteur plutôt que par adresse précise
+- Estimation du délai et du coût affichée selon la zone sélectionnée
+
+### Automatisations
+- Commande confirmée → lien GPS avec position du client envoyé automatiquement au livreur
+- Zone non couverte → message automatique proposant le click & collect ou un point relais proche
+- Livraison à domicile impossible → suggestion automatique des points relais disponibles dans le secteur
+
+---
+
+## 7. Commandes & suivi
+
+### Fonctionnalités
+- Suivi comptes : dashboard personnel
+- Suivi invités : lien court sécurisé reçu par SMS/WhatsApp/email (ex : monsite.com/s/AB12)
+- Page de suivi ultra-légère, accessible même avec une faible connexion
+- Numéro de commande court et simple (4-6 chiffres), facile à mémoriser et à dicter
+- Portail de retour : lien court (invités) ou dashboard (comptes)
+- Retour simplifié : photo du produit défectueux par WhatsApp suffit pour les petits montants
+
+### Statuts de commande
+
+| Statut | Description | Notification client |
+|---|---|---|
+| En attente | Commande reçue, confirmation COD en cours | SMS/WhatsApp de confirmation |
+| Confirmée | Client a confirmé, préparation lancée | Notification |
+| En préparation | Entrepôt prépare la commande | Notification |
+| Expédiée | Remise au livreur | Message + lien GPS livreur |
+| Livrée | Livraison réussie, paiement encaissé | Demande d'avis J+1 |
+| Annulée | Annulation (non-confirmation, refus) | Notification |
+| Remboursée | Retour traité | Confirmation remboursement |
+
+### Automatisations
+- Commande confirmée → résumé envoyé immédiatement (4 formats selon canal)
+- Passage en "en préparation" → notification client
+- Commande expédiée → message avec lien GPS livreur et numéro de suivi
+- Colis livré → message 24h après demandant un avis + invitation compte (invités)
+- Retour initié → confirmation + instructions envoyées par WhatsApp/SMS/email
+- Photo retour reçue via WhatsApp → remboursement déclenché automatiquement si montant < seuil
+- Retour physique reçu → remboursement automatique + notification client
+- Commande non livrée après X jours → alerte admin + message au client
+- Livraison échouée → message au client avec lien de reprogrammation
+
+---
+
+## 8. Interface livreur
+
+Le livreur est un acteur clé du cash on delivery. Il dispose d'une interface dédiée, simple, accessible sur mobile bas de gamme.
+
+### Fonctionnalités
+- Liste des livraisons du jour avec priorité et ordre de passage
+- Détail de chaque commande : produits, montant à encaisser, description adresse, lien GPS
+- Boutons simples : "En route" / "Livré et encaissé" / "Client absent" / "Refus de livraison"
+- Total encaissé de la journée visible en temps réel
+- Accessible hors ligne (PWA) avec synchronisation automatique à la reconnexion
+
+### Automatisations
+- Commande confirmée et payée (COD validé) → livreur notifié automatiquement avec numéro, adresse, montant à encaisser, lien GPS
+- Livreur marque "Livré" → commande passe en "Livrée", montant encaissé enregistré, demande d'avis déclenchée 24h après
+- Livreur marque "Client absent" → relance SMS/WhatsApp au client + proposition nouveau créneau
+- Livreur marque "Refus" → alerte admin + score de confiance client diminué + note sur profil
+- Fin de journée → rapport automatique admin : montants encaissés, livraisons réussies/échouées, montants à reverser
+
+---
+
+## 9. Stocks & inventaire
+
+### Fonctionnalités
+- Mise à jour du stock en temps réel à chaque commande
+- Gestion des variantes par stock (taille S = 10 unités, taille L = 3 unités...)
+- Gestion multi-entrepôts
+- Import/export en masse (CSV, API fournisseur)
+- Journalisation de tous les mouvements de stock
+- Liste d'attente produit indisponible (ouverte aux invités et comptes via email ou téléphone)
+
+### Automatisations
+- Stock passe sous le seuil défini → alerte automatique à l'admin (WhatsApp/email)
+- Stock = 0 → désactivation automatique de la fiche + activation bouton "M'avertir"
+- Stock repasse > 0 → réactivation fiche + notifications à toute la liste d'attente
+- Rapport hebdomadaire automatique → récapitulatif admin : produits à faible stock, meilleures ventes, produits sans mouvement
+- Dropshipping → synchronisation automatique avec le stock fournisseur via API
+- Rapport mensuel de performance des stocks envoyé automatiquement à l'admin
+
+---
+
+## 10. Livraison & logistique
+
+### Fonctionnalités
+- Calcul automatique des frais selon zone, poids, dimensions
+- Intégration API transporteurs locaux et internationaux
+- Génération automatique des étiquettes d'expédition et bons de livraison PDF
+- Click & collect et points relais partenaires
+- Livraison internationale avec estimation des droits de douane au checkout
+
+### Automatisations
+- Commande COD validée → étiquette générée + transmise à l'entrepôt automatiquement
+- Livreur notifié automatiquement avec numéro de commande, description adresse, lien GPS, montant à encaisser
+- Statut de livraison mis à jour automatiquement via API transporteur
+- Livraison en retard → alerte au client et à l'admin
+- Livraison échouée → message au client avec lien de reprogrammation
+- Colis livré → déclenchement automatique de la demande d'avis 24h après
+
+---
+
+## 11. Anti-fraude & confiance
+
+### Fonctionnalités
+- Score de confiance par client basé sur l'historique des livraisons
+- Première commande COD → confirmation SMS/WhatsApp obligatoire avant préparation
+- Client régulier (score élevé) → traitement automatique sans vérification manuelle
+- Blacklist automatique des contacts ayant refusé plusieurs livraisons
+- Limite de commandes COD par numéro de téléphone
+- Dépôt partiel obligatoire pour les grosses commandes COD
+- Chat/WhatsApp de support accessible depuis le checkout pour rassurer en temps réel
+
+### Automatisations
+- Paiement/commande suspect → commande mise en attente + alerte admin + message client
+- Numéro blacklisté tente de commander → blocage automatique + alerte admin
+- Client refuse 3 livraisons → passage automatique en liste de surveillance + alerte admin
+- Score de confiance élevé → commande traitée automatiquement sans vérification
+
+---
+
+## 12. Marketing & fidélisation
+
+### Fonctionnalités
+- Campagnes WhatsApp/SMS/email selon canal disponible du client
+- Segmentation : nouveaux, fidèles, inactifs, invités récurrents, par panier moyen
+- Codes promo et ventes flash
+- Programme de parrainage (lien ou code court partageable par WhatsApp)
+- Programme de fidélité accessible sans email (via numéro de téléphone)
+- Points consultables par SMS ou WhatsApp
+- Upsell et cross-sell visibles sur la fiche produit et au checkout
+
+### Automatisations — clients avec compte
+- Séquence post-achat : J+3 conseil d'utilisation, J+7 demande d'avis, J+30 offre de réachat
+- Client inactif → message de relance avec ses produits vus ou en wishlist
+- Vente flash → activation/désactivation automatique des prix à l'heure exacte
+- Parrainage → message automatique au parrain quand un filleul achète
+- Nouveauté dans catégorie suivie → notification automatique
+
+### Automatisations — clients invités
+- Séquence de conversion post-achat : J+1 invitation compte, J+7 rappel avantages
+- Demande d'avis 24h après livraison
+- Invité qui recommande → détection + relance conversion compte plus ciblée
+
+---
+
+## 13. SEO & performance
+
+### Fonctionnalités
+- Site PWA : fonctionne partiellement hors ligne, synchronisation à la reconnexion
+- Pages légères, images compressées (Sharp + Cloudinary WebP auto), lazy loading
+- Panier sauvegardé localement si connexion coupée pendant le checkout
+- URLs propres et personnalisables (slugify)
+- Méta-titres et descriptions dynamiques
+- Données structurées schema.org (produits, avis, prix)
+- Sitemap XML auto-généré
+- Redirections 301 automatiques
+- CDN, lazy loading, Core Web Vitals optimisé
+- HTTPS obligatoire, RGPD, bannière cookies
+
+### Automatisations
+- Nouveau produit → sitemap régénéré et soumis à Google automatiquement
+- Image trop lourde uploadée → compression automatique sans perte visible
+- Page produit supprimée → redirection 301 automatique vers la catégorie parente
+- Rapport SEO hebdomadaire : pages peu performantes, produits sans description ni avis
+
+---
+
+## 14. Administration & analytics
+
+### Fonctionnalités
+- Dashboard temps réel : CA, commandes, visiteurs, taux de conversion
+- Distinction claire : commandes invité email / invité téléphone / compte
+- Taux de conversion invité → compte
+- Répartition des canaux : X% WhatsApp, X% SMS, X% email
+- Suivi des encaissements livreurs : montants collectés, à reverser, historique
+- Rapports : produits les plus vendus, clients les plus actifs, panier moyen, taux d'abandon
+- Coût des SMS/WhatsApp Business tracké dans le dashboard
+- SAV intégré : tickets, chat, WhatsApp
+- Export comptabilité (ERP, QuickBooks, Sage...)
+- Intégrations : Google Analytics, Meta Ads, Stripe (inactif phase 1)
+
+### Contrôle manuel — ce que l'admin peut faire à tout moment
+- Modifier le statut d'une commande manuellement
+- Bloquer ou débloquer un client/numéro manuellement
+- Ajuster le stock manuellement
+- Forcer l'envoi d'un message à un client spécifique
+- Annuler ou valider une commande en attente
+- Modifier les seuils d'alerte stock à la volée
+- Activer/désactiver une automatisation spécifique
+- Consulter tous les logs d'actions (Winston)
+- Approuver manuellement une commande COD à fort montant
+- Gérer les reversements livreurs
+
+### Automatisations
+- Rapport journalier admin : CA, commandes, incidents, ratio invités/comptes, alertes fraude
+- Rapport mensuel complet : bilan, top produits, évolution, taux conversion
+- Anomalie détectée (chute des ventes, pic de remboursements, fraudes) → alerte immédiate admin
+- Facture mensuelle générée et envoyée automatiquement aux clients abonnés
+- Synchronisation comptable automatique à chaque commande
+
+---
+
+## 15. Sécurité & conformité
+
+### Fonctionnalités
+- HTTPS obligatoire
+- Conformité RGPD (applicable aux invités aussi)
+- Pare-feu applicatif (WAF) — Helmet + express-rate-limit + express-slow-down
+- Détection des comportements frauduleux (brute force, fausses commandes COD)
+- Sauvegarde quotidienne automatique
+- Lien de suivi invité sécurisé par token unique et expirant (dayjs)
+- Logs complets de toutes les actions admin (Winston + fichiers rotatifs)
+- Monitoring erreurs production : Sentry (backend + frontend)
+
+### Automatisations
+- Commande suspecte → mise en attente automatique + alerte admin + message client
+- Sauvegarde complète chaque nuit → rapport succès/échec envoyé à l'admin
+- Certificat SSL proche de l'expiration → alerte email 30 jours avant
+- Brute force détecté → IP bloquée automatiquement + notification admin
+- Token de suivi invité expiré → lien désactivé, client invité à contacter le support
+- Erreur critique en production → alerte Sentry envoyée immédiatement à l'équipe
+
+---
+
+## 16. Stack technique
+
+### Backend
+
+| Package | Rôle dans le projet |
+|---|---|
+| express | Serveur API REST |
+| @prisma/client + prisma | ORM — base de données PostgreSQL |
+| bcryptjs + jsonwebtoken | Authentification — hash mots de passe + JWT |
+| nodemailer | Envoi des emails (confirmations, factures, alertes) |
+| africastalking | SMS locaux Afrique de l'Ouest (moins cher que Twilio) |
+| twilio | WhatsApp Business API — messages interactifs |
+| pg-boss | File d'attente jobs asynchrones (remplace Redis/Bull) |
+| node-cron | Tâches planifiées : rapports, alertes, relances programmées |
+| pdfkit | Génération des factures PDF et bons de livraison |
+| socket.io | Temps réel : notifs live, suivi commande, interface livreur |
+| cloudinary + multer | Upload et stockage des images produits |
+| sharp | Compression automatique des images avant upload |
+| helmet + express-rate-limit + express-slow-down | Sécurité HTTP, anti-brute-force |
+| winston + winston-daily-rotate-file | Logs structurés en fichiers rotatifs |
+| @sentry/node | Monitoring erreurs backend en production |
+| slugify | Génération automatique URLs produits (SEO) |
+| stripe | Paiement en ligne — installé mais inactif (phase 2) |
+| dayjs | Gestion des dates, fuseaux, expiration des tokens |
+| swagger-jsdoc + swagger-ui-express | Documentation API |
+
+### Frontend
+
+| Package | Rôle dans le projet |
+|---|---|
+| react + react-dom + react-router-dom | Base React 19, routing |
+| tailwindcss + tailwind-merge + clsx | Styles utilitaires |
+| framer-motion | Animations UI |
+| @radix-ui/* | Composants accessibles (dialog, select, tabs, toast...) |
+| lucide-react + react-icons | Icônes |
+| axios + @tanstack/react-query | Requêtes API + cache côté client |
+| zustand + immer | État global (panier, auth, préférences) |
+| react-hook-form + zod + @hookform/resolvers | Formulaires validés |
+| socket.io-client | Connexion temps réel (notifs, suivi live) |
+| leaflet + react-leaflet | Carte GPS pour sélection adresse livraison |
+| react-lazy-load-image-component | Lazy loading des images produit |
+| swiper | Carrousel photos produit |
+| sonner | Notifications toast |
+| date-fns + dayjs | Affichage des dates |
+| jwt-decode | Décodage du token JWT côté client |
+| nprogress | Barre de progression lors du chargement des pages |
+| @sentry/react | Monitoring erreurs frontend en production |
+
+---
+
+## Récapitulatif global des automatisations
+
+| Déclencheur | Action automatique | Canal | Concerne |
+|---|---|---|---|
+| Stock < seuil défini | Alerte admin | WhatsApp/email | Admin |
+| Stock = 0 | Désactivation fiche + bouton M'avertir | Site | Tous |
+| Stock repasse > 0 | Réactivation + notifs liste d'attente | WhatsApp/SMS/email | Tous |
+| Panier abandonné (contact connu) | Séquence J+1, J+2, J+3 | WhatsApp/SMS/email | Invités & comptes |
+| Panier abandonné (contact inconnu) | Aucune action | — | — |
+| Commande COD passée | Confirmation obligatoire avant préparation | WhatsApp/SMS | Invités & comptes |
+| Client ne confirme pas en 6h | Annulation automatique | WhatsApp/SMS | Invités & comptes |
+| Paiement/commande confirmé(e) | Résumé commande (4 formats) | Selon canal | Invités & comptes |
+| Commande expédiée | Numéro de suivi + lien GPS livreur | WhatsApp/SMS/email | Invités & comptes |
+| Colis livré | Demande d'avis 24h après | WhatsApp/SMS/email | Invités & comptes |
+| Achat en invité | Proposition création compte | WhatsApp/SMS/email | Invités |
+| Invité ne convertit pas en 7j | Rappel avantages compte | WhatsApp/SMS/email | Invités |
+| Invité crée un compte | Rattachement historique automatique | — | Invités → comptes |
+| Photo retour reçue (< seuil) | Remboursement automatique | WhatsApp/SMS/email | Invités & comptes |
+| Retour physique reçu | Remboursement automatique | WhatsApp/SMS/email | Invités & comptes |
+| Client inactif X mois | Message réactivation avec offre | WhatsApp/SMS/email | Comptes |
+| Palier fidélité atteint | Notification + badge débloqué | WhatsApp/SMS/email | Comptes |
+| Nouveau produit ajouté | Sitemap + notif abonnés catégorie | Email/notif push | Comptes |
+| Livreur marque "Client absent" | Relance client + nouveau créneau | WhatsApp/SMS | Client + admin |
+| 3 refus de livraison | Passage en liste surveillance | Interne | Admin |
+| Anomalie ventes détectée | Alerte immédiate admin | WhatsApp/email | Admin |
+| Rapport hebdomadaire stocks | Email récapitulatif | Email | Admin |
+| Rapport journalier | Bilan du jour + encaissements livreurs | WhatsApp/email | Admin |
+| Sauvegarde nocturne | Rapport succès/échec | Email | Admin |
+| SSL proche expiration | Alerte 30j avant | Email | Admin |
+| Erreur critique production | Alerte Sentry immédiate | Email/Sentry | Admin |
+
+---
+
+*Document généré automatiquement — UrbanBeauty 2025*
