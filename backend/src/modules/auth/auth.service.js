@@ -5,7 +5,7 @@ const { signToken } = require('../../utils/jwt.utils');
 async function register({ email, password, firstName, lastName, phone }) {
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
-    const error = new Error('Cet email est déjà utilisé.');
+    const error = new Error('Cet email est deja utilise.');
     error.status = 400;
     throw error;
   }
@@ -44,6 +44,12 @@ async function login({ email, password }) {
     error.status = 401;
     throw error;
   }
+
+  // Rattacher les commandes invité au compte
+  await prisma.order.updateMany({
+    where: { guestEmail: email, userId: null },
+    data: { userId: user.id },
+  });
 
   const token = signToken({ id: user.id, email: user.email, role: user.role });
 

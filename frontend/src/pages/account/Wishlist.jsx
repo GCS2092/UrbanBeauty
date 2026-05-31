@@ -22,13 +22,13 @@ export default function Wishlist() {
 
   const { mutate: remove } = useMutation({
     mutationFn: (productId) => wishlistApi.remove(productId),
-    onSuccess: () => { queryClient.invalidateQueries(['wishlist']); toast.success('Retiré des favoris'); },
+    onSuccess: () => { queryClient.invalidateQueries(['wishlist']); toast.success('Retirï¿½ des favoris'); },
   });
 
   const handleAddToCart = async (item) => {
     try {
       await addItem(user?.id, { productId: item.product.id, quantity: 1 });
-      toast.success('Ajouté au panier !');
+      toast.success('Ajoutï¿½ au panier !');
     } catch { toast.error('Erreur'); }
   };
 
@@ -44,8 +44,8 @@ export default function Wishlist() {
         <EmptyState
           icon="??"
           title="Aucun favori"
-          description="Ajoutez des produits à vos favoris pour les retrouver facilement"
-          action={<Link to="/products"><Button>Découvrir la boutique</Button></Link>}
+          description="Ajoutez des produits ï¿½ vos favoris pour les retrouver facilement"
+          action={<Link to="/products"><Button>Dï¿½couvrir la boutique</Button></Link>}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

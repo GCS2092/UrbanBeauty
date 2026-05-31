@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, MapPin, CreditCard, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { addressesApi } from '../../api/addresses.api';
@@ -19,18 +19,20 @@ import { toast } from 'sonner';
 
 const schema = z.object({
   fullName: z.string().min(2, 'Nom requis'),
-  phone: z.string().min(6, 'TÈlÈphone requis'),
+  phone: z.string().min(6, 'Telephone requis'),
   street: z.string().min(3, 'Adresse requise'),
   city: z.string().min(2, 'Ville requise'),
   country: z.string().min(2, 'Pays requis'),
   paymentMethod: z.enum(['CASH_ON_DELIVERY', 'MOBILE_MONEY']),
   notes: z.string().optional(),
+  guestEmail: z.string().email('Email invalide').optional().or(z.literal('')),
 });
 
 const SHIPPING_COST = 2000;
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { cart, getTotalPrice, clearCart } = useCartStore();
   const [couponCode, setCouponCode] = useState('');
@@ -40,11 +42,12 @@ export default function Checkout() {
   const { data: addresses } = useQuery({
     queryKey: ['addresses'],
     queryFn: () => addressesApi.getAll().then((r) => r.data),
+    enabled: !!user,
   });
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { paymentMethod: 'CASH_ON_DELIVERY', country: 'SÈnÈgal' },
+    defaultValues: { paymentMethod: 'CASH_ON_DELIVERY', country: 'Senegal' },
   });
 
   const paymentMethod = watch('paymentMethod');
@@ -70,7 +73,7 @@ export default function Checkout() {
     try {
       const { data } = await couponsApi.validate(couponCode);
       setCoupon(data);
-      toast.success(`Coupon appliquÈ : -${data.type === 'PERCENTAGE' ? data.value + '%' : formatPrice(data.value)}`);
+      toast.success(`Coupon applique : -${data.type === 'PERCENTAGE' ? data.value + '%' : formatPrice(data.value)}`);
     } catch (err) {
       toast.error(err.message || 'Coupon invalide');
       setCoupon(null);
@@ -82,8 +85,9 @@ export default function Checkout() {
   const { mutate: placeOrder, isPending } = useMutation({
     mutationFn: (data) => ordersApi.create(data),
     onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       clearCart(user?.id);
-      toast.success('Commande passÈe avec succËs !');
+      toast.success('Commande passee avec succes !');
       navigate(`/orders/${res.data.orderNumber}`);
     },
     onError: (err) => toast.error(err.message || 'Erreur lors de la commande'),
@@ -111,6 +115,9 @@ export default function Checkout() {
       shippingCost: SHIPPING_COST,
       notes: formData.notes,
       couponId: coupon?.id || null,
+      guestEmail: !user ? formData.guestEmail : undefined,
+      guestName: !user ? formData.fullName : undefined,
+      guestPhone: !user ? formData.phone : undefined,
     });
   };
 
@@ -127,7 +134,7 @@ export default function Checkout() {
         {/* Formulaire */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Adresses sauvegardÈes */}
+          {/* Adresses sauvegardees */}
           {addresses?.length > 0 && (
             <div className="bg-white rounded-2xl border border-stone-100 p-5">
               <h2 className="font-semibold text-stone-800 mb-3 flex items-center gap-2">
@@ -149,6 +156,24 @@ export default function Checkout() {
             </div>
           )}
 
+          {/* Email invit√© */}
+          {!user && (
+            <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-3">
+              <h2 className="font-semibold text-stone-800 flex items-center gap-2">
+                Email de confirmation
+              </h2>
+              <Input
+                label="Email (pour suivre votre commande)"
+                placeholder="votre@email.com"
+                error={errors.guestEmail?.message}
+                {...register('guestEmail')}
+              />
+              <p className="text-xs text-stone-400">
+                Vous pourrez retrouver vos commandes en vous connectant avec cet email.
+              </p>
+            </div>
+          )}
+
           {/* Adresse livraison */}
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
             <h2 className="font-semibold text-stone-800 flex items-center gap-2">
@@ -156,12 +181,12 @@ export default function Checkout() {
             </h2>
             <div className="grid grid-cols-2 gap-3">
               <Input label="Nom complet" placeholder="Marie Dupont" error={errors.fullName?.message} {...register('fullName')} />
-              <Input label="TÈlÈphone" placeholder="+221 77 000 00 00" error={errors.phone?.message} {...register('phone')} />
+              <Input label="Telephone" placeholder="+221 77 000 00 00" error={errors.phone?.message} {...register('phone')} />
             </div>
             <Input label="Adresse" placeholder="123 Rue de la Paix" error={errors.street?.message} {...register('street')} />
             <div className="grid grid-cols-2 gap-3">
               <Input label="Ville" placeholder="Dakar" error={errors.city?.message} {...register('city')} />
-              <Input label="Pays" placeholder="SÈnÈgal" error={errors.country?.message} {...register('country')} />
+              <Input label="Pays" placeholder="Senegal" error={errors.country?.message} {...register('country')} />
             </div>
             <div>
               <label className="text-sm font-medium text-stone-700 block mb-1.5">Notes (optionnel)</label>
@@ -188,7 +213,7 @@ export default function Checkout() {
           </div>
         </div>
 
-        {/* RÈcap commande */}
+        {/* Recap commande */}
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
             <h2 className="font-semibold text-stone-800">Votre commande</h2>
@@ -199,7 +224,7 @@ export default function Checkout() {
                   <div className="w-12 h-12 rounded-xl bg-stone-50 overflow-hidden shrink-0">
                     {item.product.images?.[0] ? (
                       <img src={item.product.images.find((i) => i.isMain)?.url || item.product.images[0].url} alt="" className="w-full h-full object-cover" />
-                    ) : <div className="w-full h-full flex items-center justify-center">???</div>}
+                    ) : <div className="w-full h-full flex items-center justify-center">?</div>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-stone-800 truncate">{item.product.name}</p>
@@ -232,7 +257,7 @@ export default function Checkout() {
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>RÈduction</span><span>-{formatPrice(discount)}</span>
+                  <span>Reduction</span><span>-{formatPrice(discount)}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-stone-900 pt-2 border-t border-stone-100 text-base">

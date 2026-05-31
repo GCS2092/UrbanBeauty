@@ -41,7 +41,7 @@ export default function OrderDetail() {
         {/* Articles */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-2xl border border-stone-100 p-5">
-            <h2 className="font-semibold text-stone-800 mb-4">Articles commandés</h2>
+            <h2 className="font-semibold text-stone-800 mb-4">Articles commandï¿½s</h2>
             <div className="space-y-4">
               {order.items?.map((item) => (
                 <div key={item.id} className="flex gap-4 items-center">
@@ -49,7 +49,7 @@ export default function OrderDetail() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-stone-800 text-sm">{item.productName}</p>
                     {item.variantLabel && <p className="text-xs text-stone-400">{item.variantLabel}</p>}
-                    <p className="text-xs text-stone-400 mt-0.5">x{item.quantity} · {formatPrice(item.price)} / unité</p>
+                    <p className="text-xs text-stone-400 mt-0.5">x{item.quantity} ï¿½ {formatPrice(item.price)} / unitï¿½</p>
                   </div>
                   <p className="font-semibold text-stone-800 text-sm shrink-0">{formatPrice(item.subtotal)}</p>
                 </div>
@@ -60,7 +60,7 @@ export default function OrderDetail() {
               <div className="flex justify-between text-stone-600"><span>Sous-total</span><span>{formatPrice(order.subtotal)}</span></div>
               <div className="flex justify-between text-stone-600"><span>Livraison</span><span>{formatPrice(order.shippingCost)}</span></div>
               {order.discount > 0 && (
-                <div className="flex justify-between text-green-600"><span>Réduction</span><span>-{formatPrice(order.discount)}</span></div>
+                <div className="flex justify-between text-green-600"><span>Rï¿½duction</span><span>-{formatPrice(order.discount)}</span></div>
               )}
               <div className="flex justify-between font-bold text-stone-900 pt-2 border-t border-stone-100 text-base">
                 <span>Total</span><span>{formatPrice(order.total)}</span>

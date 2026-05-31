@@ -13,6 +13,8 @@ export default function Orders() {
   const { data: orders, isLoading } = useQuery({
     queryKey: ['my-orders'],
     queryFn: () => ordersApi.getMyOrders().then((r) => r.data),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   if (isLoading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
@@ -23,10 +25,10 @@ export default function Orders() {
 
       {!orders?.length ? (
         <EmptyState
-          icon="??"
+          icon="ðŸ“¦"
           title="Aucune commande"
-          description="Vous n'avez pas encore passé de commande"
-          action={<Link to="/products"><Button>Découvrir la boutique</Button></Link>}
+          description="Vous n'avez pas encore passe de commande"
+          action={<Link to="/products"><Button>Decouvrir la boutique</Button></Link>}
         />
       ) : (
         <div className="space-y-4">
@@ -47,7 +49,7 @@ export default function Orders() {
                       <OrderStatusBadge status={order.status} />
                     </div>
                     <p className="text-xs text-stone-400">
-                      {order.items?.length} article{order.items?.length > 1 ? 's' : ''} · {formatDate(order.createdAt)}
+                      {order.items?.length} article{order.items?.length > 1 ? 's' : ''} Â· {formatDate(order.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -57,7 +59,6 @@ export default function Orders() {
                 </div>
               </div>
 
-              {/* Aperçu articles */}
               {order.items?.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-stone-50 flex gap-2">
                   {order.items.slice(0, 4).map((item) => (

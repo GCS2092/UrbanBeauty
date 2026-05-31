@@ -14,9 +14,9 @@ import Spinner from '../../components/ui/Spinner';
 import { toast } from 'sonner';
 
 const schema = z.object({
-  label: z.string().min(1, 'Libellé requis'),
+  label: z.string().min(1, 'Libellï¿½ requis'),
   fullName: z.string().min(2, 'Nom requis'),
-  phone: z.string().min(6, 'Téléphone requis'),
+  phone: z.string().min(6, 'Tï¿½lï¿½phone requis'),
   street: z.string().min(3, 'Adresse requise'),
   city: z.string().min(2, 'Ville requise'),
   country: z.string().min(2, 'Pays requis'),
@@ -34,17 +34,17 @@ export default function Addresses() {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { country: 'Sénégal' },
+    defaultValues: { country: 'Sï¿½nï¿½gal' },
   });
 
-  const openAdd = () => { setEditing(null); reset({ country: 'Sénégal' }); setOpen(true); };
+  const openAdd = () => { setEditing(null); reset({ country: 'Sï¿½nï¿½gal' }); setOpen(true); };
   const openEdit = (addr) => { setEditing(addr); reset(addr); setOpen(true); };
 
   const { mutate: save, isPending } = useMutation({
     mutationFn: (data) => editing ? addressesApi.update(editing.id, data) : addressesApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries(['addresses']);
-      toast.success(editing ? 'Adresse modifiée' : 'Adresse ajoutée');
+      toast.success(editing ? 'Adresse modifiï¿½e' : 'Adresse ajoutï¿½e');
       setOpen(false);
     },
     onError: () => toast.error('Erreur'),
@@ -52,7 +52,7 @@ export default function Addresses() {
 
   const { mutate: del } = useMutation({
     mutationFn: (id) => addressesApi.delete(id),
-    onSuccess: () => { queryClient.invalidateQueries(['addresses']); toast.success('Adresse supprimée'); },
+    onSuccess: () => { queryClient.invalidateQueries(['addresses']); toast.success('Adresse supprimï¿½e'); },
   });
 
   if (isLoading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
@@ -80,10 +80,10 @@ export default function Addresses() {
 
       <Modal open={open} onClose={() => setOpen(false)} title={editing ? 'Modifier l\'adresse' : 'Nouvelle adresse'}>
         <div className="space-y-3">
-          <Input label="Libellé" placeholder="Maison, Bureau..." error={errors.label?.message} {...register('label')} />
+          <Input label="Libellï¿½" placeholder="Maison, Bureau..." error={errors.label?.message} {...register('label')} />
           <div className="grid grid-cols-2 gap-3">
             <Input label="Nom complet" error={errors.fullName?.message} {...register('fullName')} />
-            <Input label="Téléphone" error={errors.phone?.message} {...register('phone')} />
+            <Input label="Tï¿½lï¿½phone" error={errors.phone?.message} {...register('phone')} />
           </div>
           <Input label="Adresse" error={errors.street?.message} {...register('street')} />
           <div className="grid grid-cols-2 gap-3">

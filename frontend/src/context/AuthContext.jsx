@@ -23,7 +23,6 @@ export function AuthProvider({ children }) {
     const { data } = await authApi.login(credentials);
     const anonymousId = localStorage.getItem(ANONYMOUS_CART_KEY);
     setAuth(data.user, data.token);
-    // Fusion panier invité au login
     await fetchCart(data.user.id, anonymousId);
     localStorage.removeItem(ANONYMOUS_CART_KEY);
     toast.success(`Bienvenue ${data.user.firstName} !`);
@@ -32,14 +31,14 @@ export function AuthProvider({ children }) {
 
   const register = async (formData) => {
     await authApi.register(formData);
-    toast.success('Compte créé ! Connectez-vous.');
+    toast.success('Compte cree ! Connectez-vous.');
     navigate('/login');
   };
 
   const logout = async () => {
     try { await authApi.logout(); } catch {}
     storeLogout();
-    toast.success('À bientôt !');
+    toast.success('A bientot !');
     navigate('/login');
   };
 

@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { useEffect } from 'react';
 
 const schema = z.object({
-  firstName: z.string().min(2, 'Prénom requis'),
+  firstName: z.string().min(2, 'Prï¿½nom requis'),
   lastName: z.string().min(2, 'Nom requis'),
   phone: z.string().optional(),
 });
@@ -39,9 +39,9 @@ export default function Profile() {
     onSuccess: (res) => {
       updateUser(res.data);
       queryClient.invalidateQueries(['profile']);
-      toast.success('Profil mis à jour !');
+      toast.success('Profil mis ï¿½ jour !');
     },
-    onError: () => toast.error('Erreur lors de la mise à jour'),
+    onError: () => toast.error('Erreur lors de la mise ï¿½ jour'),
   });
 
   return (
@@ -61,11 +61,11 @@ export default function Profile() {
           <User size={17} className="text-rose-400" /> Informations personnelles
         </h2>
         <div className="grid grid-cols-2 gap-4">
-          <Input label="Prénom" error={errors.firstName?.message} {...register('firstName')} />
+          <Input label="Prï¿½nom" error={errors.firstName?.message} {...register('firstName')} />
           <Input label="Nom" error={errors.lastName?.message} {...register('lastName')} />
         </div>
-        <Input label="Email" value={user?.email || ''} disabled hint="L'email ne peut pas être modifié" />
-        <Input label="Téléphone" placeholder="+221 77 000 00 00" {...register('phone')} />
+        <Input label="Email" value={user?.email || ''} disabled hint="L'email ne peut pas ï¿½tre modifiï¿½" />
+        <Input label="Tï¿½lï¿½phone" placeholder="+221 77 000 00 00" {...register('phone')} />
         <div className="pt-2">
           <Button loading={isPending} onClick={handleSubmit(mutate)}>
             Sauvegarder les modifications
