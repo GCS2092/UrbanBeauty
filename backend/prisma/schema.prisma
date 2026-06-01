@@ -1,3 +1,8 @@
+// ============================================================
+// SCHEMA PRISMA COMPLET ET CORRIGÉ
+// Remplace ENTIÈREMENT le contenu de backend/prisma/schema.prisma
+// ============================================================
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -62,25 +67,28 @@ model Category {
 }
 
 model Product {
-  id           String           @id @default(cuid())
-  name         String
-  slug         String           @unique
-  description  String
-  price        Int
-  comparePrice Int?
-  stock        Int
-  isActive     Boolean          @default(true)
-  isFeatured   Boolean          @default(false)
-  category     Category         @relation(fields: [categoryId], references: [id])
-  categoryId   String
-  images       ProductImage[]
-  variants     ProductVariant[]
-  cartItems    CartItem[]
-  orderItems   OrderItem[]
-  wishlist     Wishlist[]
-  reviews      Review[]
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id              String           @id @default(cuid())
+  name            String
+  slug            String           @unique
+  description     String
+  price           Int
+  comparePrice    Int?
+  stock           Int
+  isActive        Boolean          @default(true)
+  isFeatured      Boolean          @default(false)
+  purchasePrice   Int?
+  lowStockAlert   Int              @default(5)
+  category        Category         @relation(fields: [categoryId], references: [id])
+  categoryId      String
+  images          ProductImage[]
+  variants        ProductVariant[]
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+  wishlist        Wishlist[]
+  reviews         Review[]
+  stockMovements  StockMovement[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model ProductImage {
@@ -94,16 +102,17 @@ model ProductImage {
 }
 
 model ProductVariant {
-  id         String      @id @default(cuid())
-  product    Product     @relation(fields: [productId], references: [id])
-  productId  String
-  size       String
-  color      String
-  stock      Int
-  cartItems  CartItem[]
-  orderItems OrderItem[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id             String          @id @default(cuid())
+  product        Product         @relation(fields: [productId], references: [id])
+  productId      String
+  size           String
+  color          String
+  stock          Int
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  stockMovements StockMovement[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@unique([productId, size, color])
 }
@@ -174,18 +183,18 @@ model CartItem {
 // ─────────────────────────────────────────
 
 model Coupon {
-  id              String       @id @default(cuid())
-  code            String       @unique
-  type            DiscountType
-  value           Int
-  minOrderAmount  Int?
-  maxUses         Int?
-  usedCount       Int          @default(0)
-  isActive        Boolean      @default(true)
-  expiresAt       DateTime?
-  orders          Order[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id             String       @id @default(cuid())
+  code           String       @unique
+  type           DiscountType
+  value          Int
+  minOrderAmount Int?
+  maxUses        Int?
+  usedCount      Int          @default(0)
+  isActive       Boolean      @default(true)
+  expiresAt      DateTime?
+  orders         Order[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 // ─────────────────────────────────────────
@@ -278,6 +287,68 @@ model Notification {
 }
 
 // ─────────────────────────────────────────
+// SETTINGS
+// ─────────────────────────────────────────
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
+// COMPTABILITÉ
+// ─────────────────────────────────────────
+
+model Supplier {
+  id           String          @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  address      String?
+  isActive     Boolean         @default(true)
+  stockEntries StockMovement[]
+  expenses     Expense[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model StockMovement {
+  id         String            @id @default(cuid())
+  product    Product           @relation(fields: [productId], references: [id])
+  productId  String
+  variant    ProductVariant?   @relation(fields: [variantId], references: [id])
+  variantId  String?
+  type       StockMovementType
+  quantity   Int
+  unitCost   Int?
+  totalCost  Int?
+  reason     String?
+  supplier   Supplier?         @relation(fields: [supplierId], references: [id])
+  supplierId String?
+  reference  String?
+  orderId    String?
+  createdBy  String?
+  createdAt  DateTime          @default(now())
+}
+
+model Expense {
+  id         String          @id @default(cuid())
+  category   ExpenseCategory
+  label      String
+  amount     Int
+  date       DateTime
+  supplier   Supplier?       @relation(fields: [supplierId], references: [id])
+  supplierId String?
+  reference  String?
+  notes      String?
+  createdBy  String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+// ─────────────────────────────────────────
 // ENUMS
 // ─────────────────────────────────────────
 
@@ -320,9 +391,23 @@ enum NotificationType {
   PAYMENT_RECEIVED
   PROMO
 }
-model Setting {
-  id        Int      @id @default(autoincrement())
-  key       String   @unique
-  value     String
-  updatedAt DateTime @updatedAt
+
+enum StockMovementType {
+  IN
+  OUT_SALE
+  OUT_LOSS
+  OUT_RETURN
+  ADJUSTMENT
+  RETURN_IN
+}
+
+enum ExpenseCategory {
+  STOCK_PURCHASE
+  SHIPPING
+  MARKETING
+  PACKAGING
+  SALARY
+  RENT
+  UTILITIES
+  OTHER
 }

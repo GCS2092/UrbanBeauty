@@ -3,7 +3,7 @@ import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag,
   Tag, Ticket, Users, LogOut, Menu, X, Sparkles,
-  CreditCard, Settings  // ✅ NOUVEAU
+  CreditCard, Settings, BookOpen
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -11,11 +11,12 @@ const links = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/products', label: 'Produits', icon: Package },
   { to: '/admin/orders', label: 'Commandes', icon: ShoppingBag },
-  { to: '/admin/payments', label: 'Paiements', icon: CreditCard },   // ✅ NOUVEAU
+  { to: '/admin/payments', label: 'Paiements', icon: CreditCard },
+  { to: '/admin/accounting', label: 'Comptabilité', icon: BookOpen }, // ✅ NOUVEAU
   { to: '/admin/categories', label: 'Catégories', icon: Tag },
   { to: '/admin/coupons', label: 'Coupons', icon: Ticket },
   { to: '/admin/users', label: 'Utilisateurs', icon: Users },
-  { to: '/admin/settings', label: 'Paramètres', icon: Settings },    // ✅ NOUVEAU
+  { to: '/admin/settings', label: 'Paramètres', icon: Settings },
 ];
 
 export default function AdminSidebar() {
