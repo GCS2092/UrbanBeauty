@@ -20,19 +20,37 @@ export function AuthProvider({ children }) {
   }, [isAuthenticated]);
 
   const login = async (credentials) => {
-    const { data } = await authApi.login(credentials);
-    const anonymousId = localStorage.getItem(ANONYMOUS_CART_KEY);
-    setAuth(data.user, data.token);
-    await fetchCart(data.user.id, anonymousId);
-    localStorage.removeItem(ANONYMOUS_CART_KEY);
-    toast.success(`Bienvenue ${data.user.firstName} !`);
-    navigate(data.user.role === 'ADMIN' ? '/admin' : '/');
+    try {
+      const { data } = await authApi.login(credentials);
+      const anonymousId = localStorage.getItem(ANONYMOUS_CART_KEY);
+      setAuth(data.user, data.token);
+      await fetchCart(data.user.id, anonymousId);
+      localStorage.removeItem(ANONYMOUS_CART_KEY);
+      toast.success(`Bienvenue ${data.user.firstName} !`);
+      navigate(data.user.role === 'ADMIN' ? '/admin' : '/');
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Email ou mot de passe incorrect';
+      toast.error(message);
+      throw err; // re-throw pour que Login.jsx puisse arreter le loading
+    }
   };
 
   const register = async (formData) => {
-    await authApi.register(formData);
-    toast.success('Compte cree ! Connectez-vous.');
-    navigate('/login');
+    try {
+      await authApi.register(formData);
+      toast.success('Compte cree ! Connectez-vous.');
+      navigate('/login');
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Erreur lors de la creation du compte';
+      toast.error(message);
+      throw err;
+    }
   };
 
   const logout = async () => {

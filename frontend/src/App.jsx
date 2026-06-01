@@ -56,9 +56,11 @@ export default function App() {
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
 
-              {/* Protégées client */}
+              {/* Accessible sans compte */}
+              <Route path="/checkout" element={<Checkout />} />
+
+              {/* Protegees client connecte */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/checkout" element={<Checkout />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/orders/:orderNumber" element={<OrderDetail />} />
                 <Route path="/account/profile" element={<Profile />} />

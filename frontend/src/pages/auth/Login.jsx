@@ -9,18 +9,25 @@ import Button from '../../components/ui/Button';
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
-  password: z.string().min(6, 'Minimum 6 caractères'),
+  password: z.string().min(6, 'Minimum 6 caracteres'),
 });
 
 export default function Login() {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(schema),
+  });
 
   const onSubmit = async (data) => {
     setLoading(true);
-    try { await login(data); } catch {}
-    finally { setLoading(false); }
+    try {
+      await login(data);
+    } catch {
+      // L'erreur est deja affichee via toast dans AuthContext
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -35,7 +42,7 @@ export default function Login() {
             </span>
           </Link>
           <h1 className="text-2xl font-semibold text-stone-800">Bon retour !</h1>
-          <p className="text-stone-400 text-sm mt-1">Connectez-vous à votre compte</p>
+          <p className="text-stone-400 text-sm mt-1">Connectez-vous a votre compte</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-6 space-y-4">
@@ -66,7 +73,7 @@ export default function Login() {
         <p className="text-center text-sm text-stone-400 mt-4">
           Pas encore de compte ?{' '}
           <Link to="/register" className="text-rose-500 hover:text-rose-600 font-medium">
-            Créer un compte
+            Creer un compte
           </Link>
         </p>
       </div>
