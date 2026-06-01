@@ -3,6 +3,7 @@ const transporter = require('../../config/email');
 const { buildOrderConfirmationEmail, buildOrderStatusEmail } = require('../../utils/email.utils');
 const { generateOrderNumber } = require('../../utils/order.utils');
 const { parsePagination, buildPaginationResponse } = require('../../utils/pagination.utils');
+const { incrementStock } = require('../products/stock.service');
 
 async function createOrder(payload, user) {
   if (!Array.isArray(payload.items) || payload.items.length === 0) {
@@ -69,20 +70,7 @@ async function createOrder(payload, user) {
     include: { items: true, tracking: true },
   });
 
-  // Réduire le stock de chaque produit
-  for (const item of payload.items) {
-    await prisma.product.update({
-      where: { id: item.productId },
-      data: { stock: { decrement: item.quantity } },
-    });
-
-    if (item.variantId) {
-      await prisma.productVariant.update({
-        where: { id: item.variantId },
-        data: { stock: { decrement: item.quantity } },
-      });
-    }
-  }
+  // ✅ Stock NON décrémenté ici — sera décrémenté à la validation du paiement admin
 
   // Envoyer email de confirmation
   if (guestEmail) {
@@ -119,6 +107,17 @@ async function getOrderByNumber(orderNumber) {
 }
 
 async function changeOrderStatus(orderId, payload) {
+  // Récupère la commande avant update pour avoir les items
+  const existingOrder = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true, user: true },
+  });
+
+  // ✅ Si on annule une commande déjà payée → on remet le stock
+  if (payload.status === 'CANCELLED' && existingOrder.paymentStatus === 'PAID') {
+    await incrementStock(existingOrder.items);
+  }
+
   const order = await prisma.order.update({
     where: { id: orderId },
     data: { status: payload.status },

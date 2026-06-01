@@ -23,6 +23,8 @@ const wishlistRoutes = require('./modules/wishlist/wishlist.routes');
 const reviewsRoutes = require('./modules/reviews/reviews.routes');
 const couponsRoutes = require('./modules/coupons/coupons.routes');
 const notificationsRoutes = require('./modules/notifications/notifications.routes');
+const settingsRoutes = require('./modules/settings/settings.routes'); // ✅ NOUVEAU
+const ordersAdminRoutes = require('./modules/orders/orders.admin.routes');
 
 const app = express();
 
@@ -76,12 +78,12 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/addresses', addressesRoutes);
 app.use('/api/upload', uploadRoutes);
-
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewsRoutes);
 app.use('/api/coupons', couponsRoutes);
 app.use('/api/notifications', notificationsRoutes);
-
+app.use('/api/settings', settingsRoutes); // ✅ NOUVEAU
+app.use('/api/admin/orders', ordersAdminRoutes);
 /* =======================
    ERROR HANDLER
 ======================= */

@@ -8,7 +8,11 @@
     "start": "node server.js",
     "db:migrate": "prisma migrate dev --name init",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^5.13.0",

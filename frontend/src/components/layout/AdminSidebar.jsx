@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag,
-  Tag, Ticket, Users, LogOut, Menu, X, Sparkles
+  Tag, Ticket, Users, LogOut, Menu, X, Sparkles,
+  CreditCard, Settings  // ✅ NOUVEAU
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -10,9 +11,11 @@ const links = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/products', label: 'Produits', icon: Package },
   { to: '/admin/orders', label: 'Commandes', icon: ShoppingBag },
+  { to: '/admin/payments', label: 'Paiements', icon: CreditCard },   // ✅ NOUVEAU
   { to: '/admin/categories', label: 'Catégories', icon: Tag },
   { to: '/admin/coupons', label: 'Coupons', icon: Ticket },
   { to: '/admin/users', label: 'Utilisateurs', icon: Users },
+  { to: '/admin/settings', label: 'Paramètres', icon: Settings },    // ✅ NOUVEAU
 ];
 
 export default function AdminSidebar() {
@@ -84,7 +87,6 @@ export default function AdminSidebar() {
 
   return (
     <>
-      {/* Mobile toggle button */}
       <button
         onClick={() => setMobileOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-stone-900 rounded-xl flex items-center justify-center text-white shadow-lg border border-white/10"
@@ -92,7 +94,6 @@ export default function AdminSidebar() {
         <Menu size={18} />
       </button>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div
           className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
@@ -100,7 +101,6 @@ export default function AdminSidebar() {
         />
       )}
 
-      {/* Mobile drawer */}
       <aside className={`lg:hidden fixed top-0 left-0 z-50 h-full w-72 bg-stone-950 border-r border-white/10 transform transition-transform duration-300 ease-in-out ${
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
@@ -113,7 +113,6 @@ export default function AdminSidebar() {
         <SidebarContent />
       </aside>
 
-      {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-stone-950 border-r border-white/10 sticky top-0 shrink-0">
         <SidebarContent />
       </aside>

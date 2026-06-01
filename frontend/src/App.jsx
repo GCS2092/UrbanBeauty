@@ -28,6 +28,8 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminCoupons from './pages/admin/AdminCoupons';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminPayments from './pages/admin/AdminPayments';
+import AdminSettings from './pages/admin/AdminSettings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,11 +57,7 @@ export default function App() {
               <Route path="/products" element={<Products />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
-
-              {/* Accessible sans compte */}
               <Route path="/checkout" element={<Checkout />} />
-
-              {/* Protegees client connecte */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/orders/:orderNumber" element={<OrderDetail />} />
@@ -76,9 +74,11 @@ export default function App() {
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/admin/products" element={<AdminProducts />} />
                 <Route path="/admin/orders" element={<AdminOrders />} />
+                <Route path="/admin/payments" element={<AdminPayments />} />
                 <Route path="/admin/categories" element={<AdminCategories />} />
                 <Route path="/admin/coupons" element={<AdminCoupons />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/settings" element={<AdminSettings />} />
               </Route>
             </Route>
 

@@ -9,12 +9,14 @@ import { Link } from 'react-router-dom';
 import { addressesApi } from '../../api/addresses.api';
 import { couponsApi } from '../../api/coupons.api';
 import { ordersApi } from '../../api/orders.api';
+import { settingsApi } from '../../api/settings.api';
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
 import { formatPrice } from '../../utils/formatPrice';
 import { PAYMENT_METHOD_LABELS } from '../../utils/constants';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import PaymentModal from '../../components/checkout/PaymentModal';
 import { toast } from 'sonner';
 
 const schema = z.object({
@@ -38,11 +40,19 @@ export default function Checkout() {
   const [couponCode, setCouponCode] = useState('');
   const [coupon, setCoupon] = useState(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingOrderData, setPendingOrderData] = useState(null);
 
   const { data: addresses } = useQuery({
     queryKey: ['addresses'],
     queryFn: () => addressesApi.getAll().then((r) => r.data),
     enabled: !!user,
+  });
+
+  // ✅ Récupère les settings (numéros Mobile Money)
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => settingsApi.getPublic().then((r) => r.data),
   });
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
@@ -87,42 +97,74 @@ export default function Checkout() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       clearCart(user?.id);
+      setShowPaymentModal(false);
       toast.success('Commande passee avec succes !');
       navigate(`/orders/${res.data.orderNumber}`);
     },
-    onError: (err) => toast.error(err.message || 'Erreur lors de la commande'),
+    onError: (err) => {
+      toast.error(err.message || 'Erreur lors de la commande');
+    },
+  });
+
+  // ✅ Prépare les données de commande
+  const buildOrderPayload = (formData) => ({
+    items: cart.items.map((item) => ({
+      productId: item.product.id,
+      variantId: item.variant?.id || null,
+      productName: item.product.name,
+      variantLabel: item.variant ? `${item.variant.size} - ${item.variant.color}` : null,
+      price: item.product.price,
+      quantity: item.quantity,
+    })),
+    paymentMethod: formData.paymentMethod,
+    shippingAddress: {
+      fullName: formData.fullName,
+      phone: formData.phone,
+      street: formData.street,
+      city: formData.city,
+      country: formData.country,
+    },
+    shippingCost: SHIPPING_COST,
+    notes: formData.notes,
+    couponId: coupon?.id || null,
+    guestEmail: !user ? formData.guestEmail : undefined,
+    guestName: !user ? formData.fullName : undefined,
+    guestPhone: !user ? formData.phone : undefined,
   });
 
   const onSubmit = (formData) => {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
-    placeOrder({
-      items: cart.items.map((item) => ({
-        productId: item.product.id,
-        variantId: item.variant?.id || null,
-        productName: item.product.name,
-        variantLabel: item.variant ? `${item.variant.size} - ${item.variant.color}` : null,
-        price: item.product.price,
-        quantity: item.quantity,
-      })),
-      paymentMethod: formData.paymentMethod,
-      shippingAddress: {
-        fullName: formData.fullName,
-        phone: formData.phone,
-        street: formData.street,
-        city: formData.city,
-        country: formData.country,
-      },
-      shippingCost: SHIPPING_COST,
-      notes: formData.notes,
-      couponId: coupon?.id || null,
-      guestEmail: !user ? formData.guestEmail : undefined,
-      guestName: !user ? formData.fullName : undefined,
-      guestPhone: !user ? formData.phone : undefined,
-    });
+
+    if (formData.paymentMethod === 'MOBILE_MONEY') {
+      // ✅ Affiche la modal au lieu de soumettre directement
+      setPendingOrderData(buildOrderPayload(formData));
+      setShowPaymentModal(true);
+      return;
+    }
+
+    // Paiement à la livraison → commande directe
+    placeOrder(buildOrderPayload(formData));
+  };
+
+  const handleConfirmPayment = () => {
+    if (pendingOrderData) {
+      placeOrder(pendingOrderData);
+    }
   };
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+      {/* ✅ Modal paiement Mobile Money */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onConfirm={handleConfirmPayment}
+        total={total}
+        settings={settings}
+        isPending={isPending}
+      />
+
       <Link to="/cart" className="inline-flex items-center gap-1 text-sm text-stone-400 hover:text-stone-700 mb-6 transition-colors">
         <ChevronLeft size={16} /> Retour au panier
       </Link>
@@ -134,7 +176,6 @@ export default function Checkout() {
         {/* Formulaire */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Adresses sauvegardees */}
           {addresses?.length > 0 && (
             <div className="bg-white rounded-2xl border border-stone-100 p-5">
               <h2 className="font-semibold text-stone-800 mb-3 flex items-center gap-2">
@@ -156,7 +197,6 @@ export default function Checkout() {
             </div>
           )}
 
-          {/* Email invité */}
           {!user && (
             <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-3">
               <h2 className="font-semibold text-stone-800 flex items-center gap-2">
@@ -174,7 +214,6 @@ export default function Checkout() {
             </div>
           )}
 
-          {/* Adresse livraison */}
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
             <h2 className="font-semibold text-stone-800 flex items-center gap-2">
               <Truck size={17} className="text-rose-400" /> Adresse de livraison
@@ -199,7 +238,6 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Paiement */}
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-3">
             <h2 className="font-semibold text-stone-800 flex items-center gap-2">
               <CreditCard size={17} className="text-rose-400" /> Mode de paiement
@@ -235,7 +273,6 @@ export default function Checkout() {
               ))}
             </div>
 
-            {/* Coupon */}
             <div className="flex gap-2 pt-2 border-t border-stone-100">
               <input
                 value={couponCode}
@@ -266,7 +303,7 @@ export default function Checkout() {
             </div>
 
             <Button className="w-full" size="lg" loading={isPending} onClick={handleSubmit(onSubmit)}>
-              Confirmer la commande
+              {paymentMethod === 'MOBILE_MONEY' ? 'Payer par Mobile Money' : 'Confirmer la commande'}
             </Button>
           </div>
         </div>
