@@ -80,7 +80,7 @@ router.get('/:slug', apiLimiter, productsController.getProductBySlug);
 router.post('/', authenticate, requireAdmin,
   body('name').notEmpty(),
   body('slug').notEmpty(),
-  body('description').notEmpty(),
+  body('description').optional().notEmpty(),
   body('price').isInt({ min: 0 }),
   body('stock').isInt({ min: 0 }),
   body('categoryId').notEmpty(),

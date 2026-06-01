@@ -42,15 +42,46 @@ async function getProductBySlug(slug) {
 }
 
 async function createProduct(data) {
+  const { images, ...productData } = data;
+
   return prisma.product.create({
-    data,
+    data: {
+      ...productData,
+      ...(images && images.length > 0 && {
+        images: {
+          create: images.map((img) => ({
+            url: img.url,
+            publicId: img.publicId || '',
+            isMain: img.isMain ?? false,
+            position: img.position ?? 0,
+          })),
+        },
+      }),
+    },
+    include: { images: true, variants: true },
   });
 }
 
 async function updateProduct(id, data) {
+  const { images, ...productData } = data;
+
   return prisma.product.update({
     where: { id },
-    data,
+    data: {
+      ...productData,
+      ...(images && images.length > 0 && {
+        images: {
+          deleteMany: {},
+          create: images.map((img) => ({
+            url: img.url,
+            publicId: img.publicId || '',
+            isMain: img.isMain ?? false,
+            position: img.position ?? 0,
+          })),
+        },
+      }),
+    },
+    include: { images: true, variants: true },
   });
 }
 
