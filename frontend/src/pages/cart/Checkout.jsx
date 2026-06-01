@@ -49,7 +49,6 @@ export default function Checkout() {
     enabled: !!user,
   });
 
-  // ✅ Récupère les settings (numéros Mobile Money)
   const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: () => settingsApi.getPublic().then((r) => r.data),
@@ -106,7 +105,6 @@ export default function Checkout() {
     },
   });
 
-  // ✅ Prépare les données de commande
   const buildOrderPayload = (formData) => ({
     items: cart.items.map((item) => ({
       productId: item.product.id,
@@ -136,13 +134,11 @@ export default function Checkout() {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
 
     if (formData.paymentMethod === 'MOBILE_MONEY') {
-      // ✅ Affiche la modal au lieu de soumettre directement
       setPendingOrderData(buildOrderPayload(formData));
       setShowPaymentModal(true);
       return;
     }
 
-    // Paiement à la livraison → commande directe
     placeOrder(buildOrderPayload(formData));
   };
 
@@ -155,7 +151,7 @@ export default function Checkout() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-      {/* ✅ Modal paiement Mobile Money */}
+      {/* ✅ orderData ajouté pour le résumé WhatsApp */}
       <PaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
@@ -163,6 +159,7 @@ export default function Checkout() {
         total={total}
         settings={settings}
         isPending={isPending}
+        orderData={pendingOrderData}
       />
 
       <Link to="/cart" className="inline-flex items-center gap-1 text-sm text-stone-400 hover:text-stone-700 mb-6 transition-colors">

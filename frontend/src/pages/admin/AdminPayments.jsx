@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   CheckCircle, XCircle, Clock, Filter,
-  Smartphone, Truck, RefreshCw, Eye
+  Smartphone, Truck, RefreshCw, Search, RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminApi } from '../../api/admin.api';
@@ -25,17 +25,36 @@ const PAYMENT_STATUS_CONFIG = {
   REJECTED: { label: 'Rejeté',     color: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-400' },
 };
 
-// Modal de confirmation
+// ✅ Modal de confirmation avec champ commentaire pour remise en attente
 function ConfirmModal({ isOpen, onClose, onConfirm, action, order, isPending }) {
+  const [note, setNote] = useState('');
+
   if (!isOpen) return null;
+
   const isValidate = action === 'PAID';
+  const isReset = action === 'PENDING';
+  const isReject = action === 'REJECTED';
+
+  const handleConfirm = () => {
+    if (isReset && !note.trim()) {
+      toast.error('Le commentaire est obligatoire');
+      return;
+    }
+    onConfirm(note);
+  };
+
+  const handleClose = () => {
+    setNote('');
+    onClose();
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
         <>
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             className="fixed inset-0 bg-black/40 z-40"
           />
           <motion.div
@@ -45,14 +64,18 @@ function ConfirmModal({ isOpen, onClose, onConfirm, action, order, isPending }) 
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto ${isValidate ? 'bg-emerald-100' : 'bg-red-100'}`}>
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto ${
+                isValidate ? 'bg-emerald-100' : isReset ? 'bg-amber-100' : 'bg-red-100'
+              }`}>
                 {isValidate
                   ? <CheckCircle size={24} className="text-emerald-600" />
+                  : isReset
+                  ? <RotateCcw size={24} className="text-amber-600" />
                   : <XCircle size={24} className="text-red-600" />}
               </div>
               <div className="text-center">
                 <h3 className="font-bold text-stone-900 text-lg">
-                  {isValidate ? 'Valider le paiement ?' : 'Rejeter le paiement ?'}
+                  {isValidate ? 'Valider le paiement ?' : isReset ? 'Remettre en attente ?' : 'Rejeter le paiement ?'}
                 </h3>
                 <p className="text-sm text-stone-500 mt-1">
                   Commande <span className="font-mono font-bold">{order?.orderNumber}</span>
@@ -65,20 +88,46 @@ function ConfirmModal({ isOpen, onClose, onConfirm, action, order, isPending }) 
                     Le stock sera automatiquement décrémenté
                   </p>
                 )}
+                {isReset && (
+                  <p className="text-xs text-amber-600 bg-amber-50 rounded-xl px-3 py-2 mt-2">
+                    Le stock sera réincrémenté automatiquement
+                  </p>
+                )}
               </div>
+
+              {/* ✅ Champ commentaire obligatoire pour remise en attente */}
+              {(isReset || isReject) && (
+                <div>
+                  <label className="text-xs font-semibold text-stone-600 mb-1 block">
+                    Commentaire {isReset ? <span className="text-red-500">*</span> : '(optionnel)'}
+                  </label>
+                  <textarea
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    placeholder={isReset ? 'Raison de la remise en attente...' : 'Raison du rejet...'}
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-xl border border-stone-200 text-sm text-stone-700 outline-none focus:ring-2 focus:ring-rose-300 resize-none"
+                  />
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="flex-1 px-4 py-2.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
-                  onClick={onConfirm}
+                  onClick={handleConfirm}
                   disabled={isPending}
-                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 ${isValidate ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'}`}
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-colors disabled:opacity-50 ${
+                    isValidate ? 'bg-emerald-500 hover:bg-emerald-600'
+                    : isReset ? 'bg-amber-500 hover:bg-amber-600'
+                    : 'bg-red-500 hover:bg-red-600'
+                  }`}
                 >
-                  {isPending ? '...' : isValidate ? 'Valider' : 'Rejeter'}
+                  {isPending ? '...' : isValidate ? 'Valider' : isReset ? 'Remettre en attente' : 'Rejeter'}
                 </button>
               </div>
             </div>
@@ -91,7 +140,8 @@ function ConfirmModal({ isOpen, onClose, onConfirm, action, order, isPending }) 
 
 export default function AdminPayments() {
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState({ paymentMethod: '', paymentStatus: '', page: 1 });
+  const [filters, setFilters] = useState({ paymentMethod: '', paymentStatus: '', page: 1, phone: '' });
+  const [phoneInput, setPhoneInput] = useState('');
   const [modal, setModal] = useState({ open: false, action: null, order: null });
 
   const { data, isLoading, refetch } = useQuery({
@@ -100,15 +150,20 @@ export default function AdminPayments() {
       ...filters,
       paymentMethod: filters.paymentMethod || undefined,
       paymentStatus: filters.paymentStatus || undefined,
+      phone: filters.phone || undefined,
     }).then(r => r.data),
   });
 
   const { mutate: updatePayment, isPending } = useMutation({
-    mutationFn: ({ id, status }) => adminApi.updatePayment(id, { paymentStatus: status }),
+    mutationFn: ({ id, status, note }) => adminApi.updatePayment(id, { paymentStatus: status, note }),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
       setModal({ open: false, action: null, order: null });
-      toast.success(vars.status === 'PAID' ? 'Paiement validé ✅' : 'Paiement rejeté ❌');
+      toast.success(
+        vars.status === 'PAID' ? 'Paiement validé ✅'
+        : vars.status === 'PENDING' ? 'Paiement remis en attente 🔄'
+        : 'Paiement rejeté ❌'
+      );
     },
     onError: () => toast.error('Erreur lors de la mise à jour'),
   });
@@ -116,15 +171,24 @@ export default function AdminPayments() {
   const openModal = (action, order) => setModal({ open: true, action, order });
   const closeModal = () => setModal({ open: false, action: null, order: null });
 
-  const handleConfirm = () => {
-    updatePayment({ id: modal.order.id, status: modal.action });
+  const handleConfirm = (note) => {
+    updatePayment({ id: modal.order.id, status: modal.action, note });
+  };
+
+  const handlePhoneSearch = (e) => {
+    e.preventDefault();
+    setFilters(f => ({ ...f, phone: phoneInput, page: 1 }));
+  };
+
+  const handleReset = () => {
+    setFilters({ paymentMethod: '', paymentStatus: '', page: 1, phone: '' });
+    setPhoneInput('');
   };
 
   const orders = data?.data || [];
   const total = data?.total || 0;
-
-  // Compteurs rapides
   const pendingCount = orders.filter(o => o.paymentStatus === 'PENDING').length;
+  const hasFilters = filters.paymentMethod || filters.paymentStatus || filters.phone;
 
   return (
     <div className="min-h-screen bg-stone-50 p-4 sm:p-6 lg:p-8">
@@ -177,6 +241,26 @@ export default function AdminPayments() {
       <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
         <Filter size={15} className="text-stone-400" />
 
+        {/* ✅ Recherche par téléphone */}
+        <form onSubmit={handlePhoneSearch} className="flex items-center gap-2">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+            <input
+              type="text"
+              value={phoneInput}
+              onChange={e => setPhoneInput(e.target.value)}
+              placeholder="Rechercher par téléphone..."
+              className="pl-8 pr-3 py-2 rounded-xl border border-stone-200 text-sm text-stone-700 outline-none focus:ring-2 focus:ring-rose-300 w-52"
+            />
+          </div>
+          <button
+            type="submit"
+            className="px-3 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium transition-colors"
+          >
+            Chercher
+          </button>
+        </form>
+
         <select
           value={filters.paymentMethod}
           onChange={e => setFilters(f => ({ ...f, paymentMethod: e.target.value, page: 1 }))}
@@ -198,9 +282,9 @@ export default function AdminPayments() {
           <option value="REJECTED">Rejeté</option>
         </select>
 
-        {(filters.paymentMethod || filters.paymentStatus) && (
+        {hasFilters && (
           <button
-            onClick={() => setFilters({ paymentMethod: '', paymentStatus: '', page: 1 })}
+            onClick={handleReset}
             className="px-3 py-2 rounded-xl text-sm text-stone-400 hover:text-stone-600 hover:bg-stone-50 transition-colors"
           >
             Réinitialiser
@@ -225,6 +309,7 @@ export default function AdminPayments() {
             const statusCfg = PAYMENT_STATUS_CONFIG[order.paymentStatus] || PAYMENT_STATUS_CONFIG.PENDING;
             const MethodIcon = methodCfg.icon;
             const isPending = order.paymentStatus === 'PENDING';
+            const isPaid = order.paymentStatus === 'PAID';
 
             return (
               <motion.div
@@ -266,7 +351,7 @@ export default function AdminPayments() {
                     <div className="text-xs text-stone-400">{order.items?.length} article{order.items?.length > 1 ? 's' : ''}</div>
                   </div>
 
-                  {/* Actions */}
+                  {/* Actions pour PENDING */}
                   {isPending && (
                     <div className="flex gap-2 shrink-0">
                       <button
@@ -284,7 +369,24 @@ export default function AdminPayments() {
                     </div>
                   )}
 
-                  {!isPending && (
+                  {/* ✅ Action pour PAID → remettre en attente */}
+                  {isPaid && (
+                    <div className="flex gap-2 shrink-0">
+                      <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold ${statusCfg.color}`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                        {statusCfg.label}
+                      </div>
+                      <button
+                        onClick={() => openModal('PENDING', order)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-200 text-amber-600 bg-amber-50 hover:bg-amber-100 text-xs font-semibold transition-colors"
+                      >
+                        <RotateCcw size={14} /> Remettre en attente
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Statut pour REJECTED */}
+                  {!isPending && !isPaid && (
                     <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold shrink-0 ${statusCfg.color}`}>
                       <div className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
                       {statusCfg.label}

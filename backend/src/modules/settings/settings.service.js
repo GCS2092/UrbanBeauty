@@ -1,6 +1,5 @@
 const prisma = require('../../config/database');
 
-// Les clés gérées et leurs valeurs par défaut
 const DEFAULT_SETTINGS = {
   wave_number: '',
   orange_money_number: '',
@@ -8,11 +7,11 @@ const DEFAULT_SETTINGS = {
   payment_instructions: 'Envoyez le montant exact puis cliquez sur "J\'ai payé".',
   delivery_fee: '2000',
   free_delivery_threshold: '50000',
+  whatsapp_number: '', // ✅ ajout
 };
 
 async function getSettings() {
   const rows = await prisma.setting.findMany();
-  // Fusionner avec les défauts
   const result = { ...DEFAULT_SETTINGS };
   for (const row of rows) {
     result[row.key] = row.value;
@@ -21,7 +20,6 @@ async function getSettings() {
 }
 
 async function updateSettings(data) {
-  // Upsert chaque clé reçue
   const updates = Object.entries(data).map(([key, value]) =>
     prisma.setting.upsert({
       where: { key },

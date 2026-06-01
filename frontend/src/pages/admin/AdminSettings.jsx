@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings, Smartphone, Truck, Save, CheckCircle } from 'lucide-react';
+import { Settings, Smartphone, Truck, Save, CheckCircle, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminApi } from '../../api/admin.api';
 
@@ -28,6 +28,7 @@ export default function AdminSettings() {
     payment_instructions: '',
     delivery_fee: '2000',
     free_delivery_threshold: '50000',
+    whatsapp_number: '',
   });
   const [saved, setSaved] = useState(false);
 
@@ -36,7 +37,6 @@ export default function AdminSettings() {
     queryFn: () => adminApi.getSettings().then(r => r.data),
   });
 
-  // Remplit le formulaire dès que les settings sont chargés
   useEffect(() => {
     if (settings) setForm(prev => ({ ...prev, ...settings }));
   }, [settings]);
@@ -117,6 +117,24 @@ export default function AdminSettings() {
             />
             <p className="text-xs text-stone-400">Ce texte apparaît dans la modal de paiement côté client</p>
           </div>
+        </div>
+
+        {/* ✅ WhatsApp */}
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
+            <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center">
+              <MessageCircle size={15} className="text-green-600" />
+            </div>
+            <h2 className="font-semibold text-stone-900">WhatsApp Admin</h2>
+          </div>
+
+          <SettingInput
+            label="Numéro WhatsApp (avec indicatif pays)"
+            value={form.whatsapp_number}
+            onChange={update('whatsapp_number')}
+            placeholder="221771234567"
+            hint="Sans espaces ni + (ex: 221771234567). Le client sera redirigé ici après paiement."
+          />
         </div>
 
         {/* Livraison */}

@@ -12,7 +12,6 @@ async function createOrder(payload, user) {
     throw error;
   }
 
-  // Vérifier le stock de chaque produit
   for (const item of payload.items) {
     const product = await prisma.product.findUnique({ where: { id: item.productId } });
     if (!product) {
@@ -70,22 +69,24 @@ async function createOrder(payload, user) {
     include: { items: true, tracking: true },
   });
 
-  // ✅ Stock NON décrémenté ici — sera décrémenté à la validation du paiement admin
-
-  // Envoyer email de confirmation
+  // ✅ Email désactivé temporairement — SMTP non configuré
   if (guestEmail) {
-    const emailData = buildOrderConfirmationEmail({
-      orderNumber,
-      guestName,
-      total,
-      clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
-    });
-    await transporter.sendMail({
-      to: guestEmail,
-      from: process.env.SMTP_USER,
-      subject: emailData.subject,
-      html: emailData.html,
-    });
+    try {
+      const emailData = buildOrderConfirmationEmail({
+        orderNumber,
+        guestName,
+        total,
+        clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+      });
+      await transporter.sendMail({
+        to: guestEmail,
+        from: process.env.SMTP_USER,
+        subject: emailData.subject,
+        html: emailData.html,
+      });
+    } catch (emailErr) {
+      console.warn('Email non envoyé (SMTP non configuré) :', emailErr.message);
+    }
   }
 
   return order;
@@ -107,13 +108,11 @@ async function getOrderByNumber(orderNumber) {
 }
 
 async function changeOrderStatus(orderId, payload) {
-  // Récupère la commande avant update pour avoir les items
   const existingOrder = await prisma.order.findUnique({
     where: { id: orderId },
     include: { items: true, user: true },
   });
 
-  // ✅ Si on annule une commande déjà payée → on remet le stock
   if (payload.status === 'CANCELLED' && existingOrder.paymentStatus === 'PAID') {
     await incrementStock(existingOrder.items);
   }
@@ -133,32 +132,31 @@ async function changeOrderStatus(orderId, payload) {
     },
   });
 
-  // Email au client si statut change
+  // ✅ Email désactivé temporairement — SMTP non configuré
   const customerEmail = order.user?.email || order.guestEmail;
   const customerName = order.user
     ? `${order.user.firstName} ${order.user.lastName}`
     : order.guestName;
 
-  // Envoyer email de confirmation
-if (guestEmail) {
-  try {
-    const emailData = buildOrderConfirmationEmail({
-      orderNumber,
-      guestName,
-      total,
-      clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
-    });
-    await transporter.sendMail({
-      to: guestEmail,
-      from: process.env.SMTP_USER,
-      subject: emailData.subject,
-      html: emailData.html,
-    });
-  } catch (emailErr) {
-    console.warn('Email non envoyé :', emailErr.message);
-    // On ne bloque pas la commande si l'email échoue
+  if (customerEmail) {
+    try {
+      const emailData = buildOrderStatusEmail({
+        orderNumber: order.orderNumber,
+        customerName,
+        status: order.status,
+        clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+      });
+      await transporter.sendMail({
+        to: customerEmail,
+        from: process.env.SMTP_USER,
+        subject: emailData.subject,
+        html: emailData.html,
+      });
+    } catch (emailErr) {
+      console.warn('Email non envoyé (SMTP non configuré) :', emailErr.message);
+    }
   }
-}
+
   return order;
 }
 

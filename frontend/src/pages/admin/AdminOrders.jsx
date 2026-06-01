@@ -123,19 +123,40 @@ export default function AdminOrders() {
                   return (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
-                        <span className="font-mono text-xs font-semibold text-gray-800">{order.orderNumber || order.id.slice(0, 8).toUpperCase()}</span>
+                        <span className="font-mono text-xs font-semibold text-gray-800">
+                          {order.orderNumber || order.id.slice(0, 8).toUpperCase()}
+                        </span>
                       </td>
+
+                      {/* ✅ Affiche user connecté OU guest */}
                       <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900">{order.user?.name || order.user?.firstName || '—'}</div>
-                        <div className="text-xs text-gray-400">{order.user?.email || ''}</div>
+                        <div className="font-medium text-gray-900">
+                          {order.user
+                            ? `${order.user.firstName} ${order.user.lastName}`
+                            : order.guestName || '—'}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {order.user?.email || order.guestEmail || ''}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {order.user?.phone || order.guestPhone || ''}
+                        </div>
                       </td>
+
                       <td className="px-6 py-4 text-gray-600">{formatDate(order.createdAt)}</td>
-                      <td className="px-6 py-4 font-semibold text-gray-900">{formatPrice(order.total || order.totalAmount || 0)}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {formatPrice(order.total || order.totalAmount || 0)}
+                      </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.color}`}>{s.label}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.color}`}>
+                          {s.label}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button onClick={() => openStatusModal(order)} className="text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors font-medium">
+                        <button
+                          onClick={() => openStatusModal(order)}
+                          className="text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors font-medium"
+                        >
                           Changer statut
                         </button>
                       </td>
@@ -156,17 +177,31 @@ export default function AdminOrders() {
               <button onClick={() => setStatusModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
             </div>
             <p className="text-sm text-gray-500 mb-4">
-              Commande <span className="font-mono font-semibold text-gray-800">{selected.orderNumber || selected.id.slice(0, 8).toUpperCase()}</span>
+              Commande <span className="font-mono font-semibold text-gray-800">
+                {selected.orderNumber || selected.id.slice(0, 8).toUpperCase()}
+              </span>
             </p>
-            <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20 mb-4">
+            <select
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20 mb-4"
+            >
               {Object.entries(STATUS_LABELS).map(([val, { label }]) => (
                 <option key={val} value={val}>{label}</option>
               ))}
             </select>
             <div className="flex gap-3">
-              <button onClick={() => setStatusModal(false)} className="flex-1 border border-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors">Annuler</button>
-              <button onClick={handleStatusChange} disabled={submitting} className="flex-1 bg-black text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60">
+              <button
+                onClick={() => setStatusModal(false)}
+                className="flex-1 border border-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleStatusChange}
+                disabled={submitting}
+                className="flex-1 bg-black text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60"
+              >
                 {submitting ? 'En cours...' : 'Confirmer'}
               </button>
             </div>
