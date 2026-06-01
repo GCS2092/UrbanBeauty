@@ -43,11 +43,11 @@ async function updatePaymentStatus(req, res, next) {
     const { id } = req.params;
     const { paymentStatus, note } = req.body;
 
-    if (!['PAID', 'REJECTED', 'PENDING'].includes(paymentStatus)) {
+    // ✅ Les 4 valeurs valides de l'enum
+    if (!['PAID', 'REJECTED', 'PENDING', 'PARTIAL'].includes(paymentStatus)) {
       return res.status(400).json({ message: 'Statut invalide.' });
     }
 
-    // Récupère la commande avec ses items pour gérer le stock
     const existingOrder = await prisma.order.findUnique({
       where: { id },
       include: { items: true, user: true },
@@ -57,20 +57,16 @@ async function updatePaymentStatus(req, res, next) {
       return res.status(404).json({ message: 'Commande introuvable.' });
     }
 
-    // ✅ Gestion du stock selon la transition
     const wasPaid = existingOrder.paymentStatus === 'PAID';
     const willBePaid = paymentStatus === 'PAID';
     const willBeRejected = paymentStatus === 'REJECTED';
 
     if (!wasPaid && willBePaid) {
-      // Paiement validé → décrémente le stock
       await decrementStock(existingOrder.items);
     } else if (wasPaid && willBeRejected) {
-      // Paiement annulé après validation → réincrémente
       await incrementStock(existingOrder.items);
     }
 
-    // Met à jour la commande
     const order = await prisma.order.update({
       where: { id },
       data: {
@@ -95,20 +91,26 @@ async function updatePaymentStatus(req, res, next) {
       },
     });
 
-    // Notification au client
-    const message = paymentStatus === 'PAID'
-      ? `Votre paiement pour la commande ${order.orderNumber} a été validé ✅`
-      : `Votre paiement pour la commande ${order.orderNumber} a été rejeté ❌. ${note || ''}`;
+    // ✅ Notification uniquement si commande liée à un utilisateur
+    if (existingOrder.user) {
+      const message = paymentStatus === 'PAID'
+        ? `Votre paiement pour la commande ${order.orderNumber} a été validé ✅`
+        : paymentStatus === 'REJECTED'
+        ? `Votre paiement pour la commande ${order.orderNumber} a été rejeté ❌. ${note || ''}`
+        : `Votre paiement pour la commande ${order.orderNumber} est en attente.`;
 
-    await prisma.notification.create({
-      data: {
-        userId: existingOrder.user.id,
-        type: paymentStatus === 'PAID' ? 'ORDER_CONFIRMED' : 'ORDER_CANCELLED',
-        title: paymentStatus === 'PAID' ? 'Paiement validé !' : 'Paiement rejeté',
-        message,
-        link: `/orders/${order.orderNumber}`,
-      },
-    });
+      await prisma.notification.create({
+        data: {
+          userId: existingOrder.user.id,
+          type: paymentStatus === 'PAID' ? 'ORDER_CONFIRMED' : 'ORDER_CANCELLED',
+          title: paymentStatus === 'PAID' ? 'Paiement validé !'
+               : paymentStatus === 'REJECTED' ? 'Paiement rejeté'
+               : 'Paiement en attente',
+          message,
+          link: `/orders/${order.orderNumber}`,
+        },
+      });
+    }
 
     res.json(order);
   } catch (err) {

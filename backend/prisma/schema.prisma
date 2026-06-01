@@ -304,6 +304,7 @@ enum PaymentStatus {
   PENDING
   PARTIAL
   PAID
+  REJECTED
 }
 
 enum DiscountType {

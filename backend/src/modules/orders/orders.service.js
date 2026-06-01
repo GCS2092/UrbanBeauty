@@ -139,21 +139,26 @@ async function changeOrderStatus(orderId, payload) {
     ? `${order.user.firstName} ${order.user.lastName}`
     : order.guestName;
 
-  if (customerEmail) {
-    const emailData = buildOrderStatusEmail({
-      orderNumber: order.orderNumber,
-      customerName,
-      status: order.status,
+  // Envoyer email de confirmation
+if (guestEmail) {
+  try {
+    const emailData = buildOrderConfirmationEmail({
+      orderNumber,
+      guestName,
+      total,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
     });
     await transporter.sendMail({
-      to: customerEmail,
+      to: guestEmail,
       from: process.env.SMTP_USER,
       subject: emailData.subject,
       html: emailData.html,
     });
+  } catch (emailErr) {
+    console.warn('Email non envoyé :', emailErr.message);
+    // On ne bloque pas la commande si l'email échoue
   }
-
+}
   return order;
 }
 
