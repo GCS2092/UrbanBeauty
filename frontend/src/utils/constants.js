@@ -16,11 +16,11 @@ export const ORDER_STATUS = {
 
 export const ORDER_STATUS_LABELS = {
   PENDING: 'En attente',
-  CONFIRMED: 'Confirmée',
+  CONFIRMED: 'ConfirmÃ©e',
   PROCESSING: 'En traitement',
-  SHIPPED: 'Expédiée',
-  DELIVERED: 'Livrée',
-  CANCELLED: 'Annulée',
+  SHIPPED: 'ExpÃ©diÃ©e',
+  DELIVERED: 'LivrÃ©e',
+  CANCELLED: 'AnnulÃ©e',
 };
 
 export const ORDER_STATUS_COLORS = {
@@ -38,14 +38,14 @@ export const PAYMENT_METHODS = {
 };
 
 export const PAYMENT_METHOD_LABELS = {
-  CASH_ON_DELIVERY: 'Paiement à la livraison',
+  CASH_ON_DELIVERY: 'Paiement Ã  la livraison',
   MOBILE_MONEY: 'Mobile Money',
 };
 
 export const PAYMENT_STATUS_LABELS = {
   PENDING: 'En attente',
   PARTIAL: 'Partiel',
-  PAID: 'Payé',
+  PAID: 'PayÃ©',
 };
 
 export const DISCOUNT_TYPES = {
@@ -54,11 +54,11 @@ export const DISCOUNT_TYPES = {
 };
 
 export const NOTIFICATION_TYPE_LABELS = {
-  ORDER_CONFIRMED: 'Commande confirmée',
-  ORDER_SHIPPED: 'Commande expédiée',
-  ORDER_DELIVERED: 'Commande livrée',
-  ORDER_CANCELLED: 'Commande annulée',
-  PAYMENT_RECEIVED: 'Paiement reçu',
+  ORDER_CONFIRMED: 'Commande confirmÃ©e',
+  ORDER_SHIPPED: 'Commande expÃ©diÃ©e',
+  ORDER_DELIVERED: 'Commande livrÃ©e',
+  ORDER_CANCELLED: 'Commande annulÃ©e',
+  PAYMENT_RECEIVED: 'Paiement reÃ§u',
   PROMO: 'Promotion',
 };
 

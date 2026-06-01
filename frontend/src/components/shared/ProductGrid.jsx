@@ -15,7 +15,7 @@ export default function ProductGrid({ products, loading }) {
     return (
       <EmptyState
         icon="??"
-        title="Aucun produit trouvé"
+        title="Aucun produit trouvÃ©"
         description="Essayez de modifier vos filtres de recherche"
       />
     );

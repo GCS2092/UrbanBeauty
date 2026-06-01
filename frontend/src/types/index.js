@@ -1,6 +1,6 @@
 /**
- * Shapes des données — basées sur le schema Prisma UrbanBeauty
- * Utilisé comme référence dans tout le frontend
+ * Shapes des donnÃ©es Â— basÃ©es sur le schema Prisma UrbanBeauty
+ * UtilisÃ© comme rÃ©fÃ©rence dans tout le frontend
  */
 
 /**

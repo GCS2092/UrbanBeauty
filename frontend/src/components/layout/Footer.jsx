@@ -14,7 +14,7 @@ export default function Footer() {
               </span>
             </div>
             <p className="text-sm leading-relaxed">
-              Votre boutique de beauté en ligne. Produits authentiques, livraison rapide.
+              Votre boutique de beautÃ© en ligne. Produits authentiques, livraison rapide.
             </p>
           </div>
 
@@ -38,7 +38,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-stone-800 pt-6 text-xs text-center">
-          © {new Date().getFullYear()} UrbanBeauty — Tous droits réservés
+          Â© {new Date().getFullYear()} UrbanBeauty Â— Tous droits rÃ©servÃ©s
         </div>
       </div>
     </footer>

@@ -11,9 +11,9 @@ export default function AddressCard({ address, onEdit, onDelete }) {
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <p className="font-semibold text-stone-800 text-sm">{address.label}</p>
-            {address.isDefault && <Badge variant="rose">Par défaut</Badge>}
+            {address.isDefault && <Badge variant="rose">Par dÃ©faut</Badge>}
           </div>
-          <p className="text-sm text-stone-600">{address.fullName} — {address.phone}</p>
+          <p className="text-sm text-stone-600">{address.fullName} Â— {address.phone}</p>
           <p className="text-xs text-stone-400 mt-0.5">
             {address.street}, {address.city}, {address.country}
           </p>

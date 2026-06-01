@@ -25,7 +25,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">??</span>
+            <span className="text-2xl">🛍️</span>
             <span className="font-bold text-xl tracking-tight text-stone-800">
               Urban<span className="text-rose-400">Beauty</span>
             </span>
@@ -103,7 +103,7 @@ export default function Navbar() {
                         </Link>
                       )}
                       <button onClick={() => { setProfileOpen(false); logout(); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors">
-                        D�connexion
+                        Déconnexion
                       </button>
                     </div>
                   )}
@@ -125,7 +125,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Menu mobile d�roulant */}
+        {/* Menu mobile déroulant */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-stone-100 py-4 flex flex-col gap-3">
             {navLinks.map((link) => (

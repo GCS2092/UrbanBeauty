@@ -16,7 +16,7 @@ export default function ProductCard({ product }) {
     e.preventDefault();
     try {
       await addItem(user?.id, { productId: product.id, quantity: 1 });
-      toast.success('Ajouté au panier !');
+      toast.success('AjoutÃ© au panier !');
     } catch {
       toast.error('Erreur lors de l\'ajout');
     }

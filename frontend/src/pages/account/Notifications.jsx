@@ -26,12 +26,12 @@ export default function Notifications() {
 
   const { mutate: markAll } = useMutation({
     mutationFn: () => notificationsApi.markAllAsRead(),
-    onSuccess: () => { invalidate(); toast.success('Tout marqué comme lu'); },
+    onSuccess: () => { invalidate(); toast.success('Tout marquÃ© comme lu'); },
   });
 
   const { mutate: del } = useMutation({
     mutationFn: (id) => notificationsApi.delete(id),
-    onSuccess: () => { invalidate(); toast.success('Notification supprimée'); },
+    onSuccess: () => { invalidate(); toast.success('Notification supprimÃ©e'); },
   });
 
   const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
@@ -55,7 +55,7 @@ export default function Notifications() {
       </div>
 
       {!notifications?.length ? (
-        <EmptyState icon="??" title="Aucune notification" description="Vous êtes à jour !" />
+        <EmptyState icon="??" title="Aucune notification" description="Vous Ãªtes Ã  jour !" />
       ) : (
         <div className="space-y-2">
           {notifications.map((notif) => (

@@ -1,5 +1,5 @@
 export function formatPrice(amount) {
-  if (amount == null) return '—';
+  if (amount == null) return 'Â—';
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'XOF',

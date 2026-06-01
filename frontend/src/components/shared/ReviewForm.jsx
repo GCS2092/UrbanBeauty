@@ -22,7 +22,7 @@ export default function ReviewForm({ productId, onSuccess }) {
   const { mutate, isPending } = useMutation({
     mutationFn: (data) => reviewsApi.create({ productId, rating, ...data }),
     onSuccess: () => {
-      toast.success('Avis publié !');
+      toast.success('Avis publiÃ© !');
       reset();
       setRating(0);
       queryClient.invalidateQueries(['reviews', productId]);
@@ -32,7 +32,7 @@ export default function ReviewForm({ productId, onSuccess }) {
   });
 
   const onSubmit = (data) => {
-    if (rating === 0) return toast.error('Veuillez sélectionner une note');
+    if (rating === 0) return toast.error('Veuillez sÃ©lectionner une note');
     mutate(data);
   };
 
