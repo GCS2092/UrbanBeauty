@@ -66,10 +66,15 @@ export default function AdminProducts() {
   };
 
   const buildBody = () => ({
-    name: form.name, slug: form.slug, description: form.description,
-    price: Number(form.price), comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
-    stock: Number(form.stock), categoryId: form.categoryId || undefined,
-    isActive: form.isActive, isFeatured: form.isFeatured,
+    name: form.name,
+    slug: form.slug,
+    description: form.description,
+    price: Number(form.price),
+    comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
+    stock: Number(form.stock),
+    ...(form.categoryId && { categoryId: form.categoryId }), // ✅ omis si vide
+    isActive: form.isActive,
+    isFeatured: form.isFeatured,
     ...(form.imageUrl ? { images: [{ url: form.imageUrl, isMain: true, position: 0 }] } : {}),
   });
 

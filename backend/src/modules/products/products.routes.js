@@ -80,10 +80,10 @@ router.get('/:slug', apiLimiter, productsController.getProductBySlug);
 router.post('/', authenticate, requireAdmin,
   body('name').notEmpty(),
   body('slug').notEmpty(),
-  body('description').optional().notEmpty(),
+  body('description').optional().notEmpty(),  // ✅ optionnelle
   body('price').isInt({ min: 0 }),
   body('stock').isInt({ min: 0 }),
-  body('categoryId').notEmpty(),
+  body('categoryId').optional().notEmpty(),   // ✅ optionnelle
   checkValidation,
   productsController.createProduct
 );
@@ -111,8 +111,10 @@ router.post('/', authenticate, requireAdmin,
  */
 router.put('/:id', authenticate, requireAdmin,
   body('name').optional().notEmpty(),
+  body('description').optional().notEmpty(),  // ✅ ajouté
   body('price').optional().isInt({ min: 0 }),
   body('stock').optional().isInt({ min: 0 }),
+  body('categoryId').optional().notEmpty(),   // ✅ ajouté
   checkValidation,
   productsController.updateProduct
 );

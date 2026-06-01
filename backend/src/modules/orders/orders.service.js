@@ -32,7 +32,28 @@ async function createOrder(payload, user) {
   const guestName = payload.guestName || payload.shippingAddress?.fullName || 'Client';
   const shippingCost = Number(payload.shippingCost || 0);
   const subtotal = payload.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const total = subtotal + shippingCost;
+
+  // ✅ Appliquer le coupon
+  let discount = 0;
+  let couponId = null;
+
+  if (payload.couponId) {
+    const coupon = await prisma.coupon.findUnique({ where: { id: payload.couponId } });
+    if (coupon && coupon.isActive) {
+      discount = coupon.type === 'PERCENTAGE'
+        ? Math.floor(subtotal * coupon.value / 100)
+        : coupon.value;
+      couponId = coupon.id;
+
+      // ✅ Incrémenter le nombre d'utilisations
+      await prisma.coupon.update({
+        where: { id: coupon.id },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
+  }
+
+  const total = subtotal + shippingCost - discount;
 
   const order = await prisma.order.create({
     data: {
@@ -44,6 +65,8 @@ async function createOrder(payload, user) {
       paymentMethod: payload.paymentMethod,
       subtotal,
       shippingCost,
+      discount,
+      couponId,
       total,
       shippingAddress: payload.shippingAddress,
       notes: payload.notes,
