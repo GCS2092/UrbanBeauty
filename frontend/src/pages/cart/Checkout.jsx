@@ -76,20 +76,21 @@ export default function Checkout() {
     setValue('country', addr.country);
   };
 
-  const handleValidateCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setValidatingCoupon(true);
-    try {
-      const { data } = await couponsApi.validate(couponCode);
-      setCoupon(data);
-      toast.success(`Coupon applique : -${data.type === 'PERCENTAGE' ? data.value + '%' : formatPrice(data.value)}`);
-    } catch (err) {
-      toast.error(err.message || 'Coupon invalide');
-      setCoupon(null);
-    } finally {
-      setValidatingCoupon(false);
-    }
-  };
+ const handleValidateCoupon = async () => {
+  if (!couponCode.trim()) return;
+  setValidatingCoupon(true);
+  try {
+    const { data } = await couponsApi.validate(couponCode, subtotal);
+    // data = { coupon, discount }
+    setCoupon(data.coupon);  // ← pas data directement
+    toast.success(`Coupon appliqué : -${data.coupon.type === 'PERCENTAGE' ? data.coupon.value + '%' : formatPrice(data.discount)}`);
+  } catch (err) {
+    toast.error(err.message || 'Coupon invalide');
+    setCoupon(null);
+  } finally {
+    setValidatingCoupon(false);
+  }
+};
 
   const { mutate: placeOrder, isPending } = useMutation({
     mutationFn: (data) => ordersApi.create(data),

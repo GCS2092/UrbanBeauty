@@ -1,16 +1,11 @@
 import { useState, useEffect } from 'react';
-import useAuthStore from '../../store/authStore';
-
-const API_URL = 'http://localhost:5000';
-
-const DISCOUNT_TYPES = ['PERCENTAGE', 'FIXED'];
+import { couponsApi } from '../../api/coupons.api';
 
 const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR') : '—';
 const formatDiscount = (type, value) =>
   type === 'PERCENTAGE' ? `${value}%` : `${Number(value).toLocaleString('fr-FR')} FCFA`;
 
 export default function AdminCoupons() {
-  const { token } = useAuthStore();
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,10 +13,17 @@ export default function AdminCoupons() {
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const emptyForm = { code: '', discountType: 'PERCENTAGE', discountValue: '', minOrderAmount: '', maxUses: '', expiresAt: '', isActive: true };
-  const [form, setForm] = useState(emptyForm);
 
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  const emptyForm = {
+    code: '',
+    type: 'PERCENTAGE',
+    value: '',
+    minOrderAmount: '',
+    maxUses: '',
+    expiresAt: '',
+    isActive: true,
+  };
+  const [form, setForm] = useState(emptyForm);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -29,14 +31,17 @@ export default function AdminCoupons() {
   };
 
   const fetchCoupons = async () => {
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/coupons`, { headers });
-      if (!res.ok) throw new Error('Erreur chargement');
-      const data = await res.json();
+      const res = await couponsApi.getAll();
+      const data = res.data;
       setCoupons(Array.isArray(data) ? data : data.data || []);
-    } catch (e) { setError(e.message); }
-    finally { setLoading(false); }
+    } catch (e) {
+      setError(e.message || 'Erreur chargement');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchCoupons(); }, []);
@@ -44,11 +49,16 @@ export default function AdminCoupons() {
   const openCreate = () => { setForm(emptyForm); setSelected(null); setModal('create'); };
   const openEdit = (c) => {
     setForm({
-      code: c.code, discountType: c.discountType, discountValue: c.discountValue,
-      minOrderAmount: c.minOrderAmount || '', maxUses: c.maxUses || '',
-      expiresAt: c.expiresAt ? c.expiresAt.slice(0, 10) : '', isActive: c.isActive ?? true,
+      code: c.code,
+      type: c.type,
+      value: c.value,
+      minOrderAmount: c.minOrderAmount || '',
+      maxUses: c.maxUses || '',
+      expiresAt: c.expiresAt ? c.expiresAt.slice(0, 10) : '',
+      isActive: c.isActive ?? true,
     });
-    setSelected(c); setModal('edit');
+    setSelected(c);
+    setModal('edit');
   };
   const openDelete = (c) => { setSelected(c); setModal('delete'); };
   const closeModal = () => { setModal(null); setSelected(null); };
@@ -59,38 +69,57 @@ export default function AdminCoupons() {
   };
 
   const buildBody = () => ({
-    ...form,
-    discountValue: Number(form.discountValue),
+    code: form.code,
+    type: form.type,
+    value: Number(form.value),
     minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : undefined,
     maxUses: form.maxUses ? Number(form.maxUses) : undefined,
     expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : undefined,
+    isActive: form.isActive,
   });
 
   const handleCreate = async (e) => {
-    e.preventDefault(); setSubmitting(true);
+    e.preventDefault();
+    setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/api/coupons`, { method: 'POST', headers, body: JSON.stringify(buildBody()) });
-      if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Erreur'); }
-      await fetchCoupons(); closeModal(); showToast('Coupon créé');
-    } catch (e) { showToast(e.message, 'error'); } finally { setSubmitting(false); }
+      await couponsApi.create(buildBody());
+      await fetchCoupons();
+      closeModal();
+      showToast('Coupon créé');
+    } catch (e) {
+      showToast(e.message || 'Erreur création', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleEdit = async (e) => {
-    e.preventDefault(); setSubmitting(true);
+    e.preventDefault();
+    setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/api/coupons/${selected.id}`, { method: 'PUT', headers, body: JSON.stringify(buildBody()) });
-      if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Erreur'); }
-      await fetchCoupons(); closeModal(); showToast('Coupon modifié');
-    } catch (e) { showToast(e.message, 'error'); } finally { setSubmitting(false); }
+      await couponsApi.update(selected.id, buildBody());
+      await fetchCoupons();
+      closeModal();
+      showToast('Coupon modifié');
+    } catch (e) {
+      showToast(e.message || 'Erreur modification', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async () => {
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/api/coupons/${selected.id}`, { method: 'DELETE', headers });
-      if (!res.ok) throw new Error('Erreur suppression');
-      await fetchCoupons(); closeModal(); showToast('Coupon supprimé');
-    } catch (e) { showToast(e.message, 'error'); } finally { setSubmitting(false); }
+      await couponsApi.delete(selected.id);
+      await fetchCoupons();
+      closeModal();
+      showToast('Coupon supprimé');
+    } catch (e) {
+      showToast(e.message || 'Erreur suppression', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 transition';
@@ -153,7 +182,7 @@ export default function AdminCoupons() {
                     <td className="px-6 py-4">
                       <span className="font-mono font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">{c.code}</span>
                     </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">{formatDiscount(c.discountType, c.discountValue)}</td>
+                    <td className="px-6 py-4 font-medium text-gray-900">{formatDiscount(c.type, c.value)}</td>
                     <td className="px-6 py-4 text-gray-600">{c.minOrderAmount ? `${Number(c.minOrderAmount).toLocaleString('fr-FR')} FCFA` : '—'}</td>
                     <td className="px-6 py-4 text-gray-600">{c.usedCount ?? 0}{c.maxUses ? ` / ${c.maxUses}` : ''}</td>
                     <td className="px-6 py-4 text-gray-600">{formatDate(c.expiresAt)}</td>
@@ -191,14 +220,14 @@ export default function AdminCoupons() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Type <span className="text-red-500">*</span></label>
-                  <select name="discountType" value={form.discountType} onChange={handleChange} className={inputClass}>
+                  <select name="type" value={form.type} onChange={handleChange} className={inputClass}>
                     <option value="PERCENTAGE">Pourcentage (%)</option>
                     <option value="FIXED">Montant fixe (FCFA)</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Valeur <span className="text-red-500">*</span></label>
-                  <input type="number" name="discountValue" value={form.discountValue} onChange={handleChange} required min="0" placeholder={form.discountType === 'PERCENTAGE' ? '20' : '5000'} className={inputClass} />
+                  <input type="number" name="value" value={form.value} onChange={handleChange} required min="0" placeholder={form.type === 'PERCENTAGE' ? '20' : '5000'} className={inputClass} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
