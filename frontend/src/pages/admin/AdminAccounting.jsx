@@ -1,5 +1,6 @@
 // frontend/src/pages/admin/AdminAccounting.jsx
-// npm install jspdf jspdf-autotable  ← à installer si pas déjà fait
+// Remplace ENTIÈREMENT ton fichier existant
+// npm install jspdf jspdf-autotable  ← si pas déjà fait
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,14 +18,13 @@ const fmt = (amount) =>
 
 const pct = (v) => `${v ?? '—'}%`;
 
-// Formatage spécial pour jsPDF : évite les caractères Unicode non supportés
 const fmtPDF = (amount) => {
   if (amount == null || isNaN(amount)) return '0 FCFA';
   return (
     new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
       .format(amount)
-      .replace(/\u202f/g, ' ')  // espace fine insécable → espace normale
-      .replace(/\u00a0/g, ' ')  // espace insécable → espace normale
+      .replace(/\u202f/g, ' ')
+      .replace(/\u00a0/g, ' ')
     + ' FCFA'
   );
 };
@@ -33,30 +33,33 @@ const pctPDF = (v) => (v != null ? `${v}%` : '—');
 
 const EXPENSE_CATEGORIES = [
   { value: 'STOCK_PURCHASE', label: 'Achat stock' },
-  { value: 'SHIPPING', label: 'Livraison / transport' },
-  { value: 'MARKETING', label: 'Marketing' },
-  { value: 'PACKAGING', label: 'Emballages' },
-  { value: 'SALARY', label: 'Salaires' },
-  { value: 'RENT', label: 'Loyer' },
-  { value: 'UTILITIES', label: 'Charges (eau, élec…)' },
-  { value: 'OTHER', label: 'Autres' },
+  { value: 'SHIPPING',       label: 'Livraison / transport' },
+  { value: 'MARKETING',      label: 'Marketing' },
+  { value: 'PACKAGING',      label: 'Emballages' },
+  { value: 'SALARY',         label: 'Salaires' },
+  { value: 'RENT',           label: 'Loyer' },
+  { value: 'UTILITIES',      label: 'Charges (eau, élec…)' },
+  { value: 'OTHER',          label: 'Autres' },
 ];
 
 const MOVEMENT_TYPES = [
-  { value: 'IN', label: 'Entrée stock', color: 'text-emerald-600' },
-  { value: 'OUT_SALE', label: 'Vente', color: 'text-blue-600' },
-  { value: 'OUT_LOSS', label: 'Perte / casse', color: 'text-red-500' },
-  { value: 'OUT_RETURN', label: 'Retour fournisseur', color: 'text-amber-600' },
-  { value: 'ADJUSTMENT', label: 'Ajustement', color: 'text-violet-600' },
-  { value: 'RETURN_IN', label: 'Retour client', color: 'text-teal-600' },
+  { value: 'IN',         label: 'Entrée stock',        color: 'text-emerald-600' },
+  { value: 'OUT_SALE',   label: 'Vente',               color: 'text-blue-600' },
+  { value: 'OUT_LOSS',   label: 'Perte / casse',        color: 'text-red-500' },
+  { value: 'OUT_RETURN', label: 'Retour fournisseur',   color: 'text-amber-600' },
+  { value: 'ADJUSTMENT', label: 'Ajustement',           color: 'text-violet-600' },
+  { value: 'RETURN_IN',  label: 'Retour client',        color: 'text-teal-600' },
 ];
 
-const PIE_COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#14b8a6'];
+const PIE_COLORS = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#8b5cf6','#14b8a6'];
+
+// Types pour lesquels on affiche fournisseur + coût (= entrées stock)
+const IS_INCOMING = (type) => ['IN', 'RETURN_IN'].includes(type);
 
 // ─── Export PDF ────────────────────────────────────────────────
 const exportPDF = async (dashboard, period, year, month) => {
   try {
-    const { default: jsPDF } = await import('jspdf');
+    const { default: jsPDF }    = await import('jspdf');
     const { default: autoTable } = await import('jspdf-autotable');
 
     const doc = new jsPDF();
@@ -64,7 +67,6 @@ const exportPDF = async (dashboard, period, year, month) => {
       ? `${['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'][month - 1]} ${year}`
       : period === 'year' ? `Annee ${year}` : 'Toute la periode';
 
-    // En-tête
     doc.setFillColor(99, 102, 241);
     doc.rect(0, 0, 210, 28, 'F');
     doc.setTextColor(255, 255, 255);
@@ -75,7 +77,6 @@ const exportPDF = async (dashboard, period, year, month) => {
     doc.setFont('helvetica', 'normal');
     doc.text(`Periode : ${periodLabel}   -   Genere le ${new Date().toLocaleDateString('fr-FR')}`, 14, 22);
 
-    // KPIs
     doc.setTextColor(30, 30, 30);
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
@@ -100,7 +101,6 @@ const exportPDF = async (dashboard, period, year, month) => {
       columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
     });
 
-    // Stock
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
     doc.text('Stock', 14, doc.lastAutoTable.finalY + 12);
@@ -109,9 +109,9 @@ const exportPDF = async (dashboard, period, year, month) => {
       startY: doc.lastAutoTable.finalY + 16,
       head: [['Indicateur', 'Valeur']],
       body: [
-        ['Valeur stock (prix achat)', fmtPDF(dashboard.stockValue)],
-        ['Valeur stock (prix vente)', fmtPDF(dashboard.stockRetailValue)],
-        ['Marge potentielle stock', pctPDF(dashboard.stockMargin)],
+        ['Valeur stock (prix achat)',   fmtPDF(dashboard.stockValue)],
+        ['Valeur stock (prix vente)',   fmtPDF(dashboard.stockRetailValue)],
+        ['Marge potentielle stock',     pctPDF(dashboard.stockMargin)],
       ],
       headStyles: { fillColor: [139, 92, 246], textColor: 255, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [245, 245, 255] },
@@ -119,12 +119,10 @@ const exportPDF = async (dashboard, period, year, month) => {
       columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
     });
 
-    // Alertes stock bas
     if (dashboard.lowStockProducts?.length > 0) {
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
       doc.text('Alertes stock bas', 14, doc.lastAutoTable.finalY + 12);
-
       autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 16,
         head: [['Produit', 'Stock restant']],
@@ -135,14 +133,12 @@ const exportPDF = async (dashboard, period, year, month) => {
       });
     }
 
-    // Évolution CA
     if (dashboard.revenueChart?.length > 0) {
       doc.addPage();
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(30, 30, 30);
       doc.text('Evolution du CA - 6 derniers mois', 14, 20);
-
       autoTable(doc, {
         startY: 24,
         head: [["Mois", "Chiffre d'affaires"]],
@@ -155,7 +151,7 @@ const exportPDF = async (dashboard, period, year, month) => {
     }
 
     doc.save(`rapport-comptable-${periodLabel.replace(/\s/g, '-')}.pdf`);
-    toast.success('Rapport PDF exporte !');
+    toast.success('Rapport PDF exporté !');
   } catch (err) {
     console.error(err);
     toast.error('Installer jspdf et jspdf-autotable : npm install jspdf jspdf-autotable');
@@ -199,7 +195,7 @@ function Modal({ open, onClose, title, children }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-200">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h3 className="font-bold text-slate-800">{title}</h3>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors text-lg">✕</button>
@@ -216,8 +212,9 @@ function Badge({ children, color = 'indigo' }) {
     green:  'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
     red:    'bg-red-50 text-red-700 ring-1 ring-red-200',
     amber:  'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+    slate:  'bg-slate-100 text-slate-500 ring-1 ring-slate-200',
   };
-  return <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${colors[color]}`}>{children}</span>;
+  return <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${colors[color] ?? colors.indigo}`}>{children}</span>;
 }
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -236,46 +233,71 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function AdminAccounting() {
   const [tab, setTab] = useState('dashboard');
   const [period, setPeriod] = useState('month');
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [showStockModal, setShowStockModal] = useState(false);
+  const [year,   setYear]   = useState(new Date().getFullYear());
+  const [month,  setMonth]  = useState(new Date().getMonth() + 1);
+
+  const [showExpenseModal,  setShowExpenseModal]  = useState(false);
+  const [showStockModal,    setShowStockModal]    = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [editingSupplier,   setEditingSupplier]   = useState(null); // null = création, objet = édition
+
+  // État local du formulaire mouvement stock (pour affichage conditionnel)
+  const [stockMovementType, setStockMovementType] = useState('IN');
 
   const qc = useQueryClient();
 
+  // ── Queries ─────────────────────────────────────────────────
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['accounting-dashboard', period, year, month],
-    queryFn: () => accountingApi.getDashboard({ period, year, month }).then((r) => r.data),
+    queryFn:  () => accountingApi.getDashboard({ period, year, month }).then((r) => r.data),
   });
 
   const { data: expenses } = useQuery({
     queryKey: ['accounting-expenses'],
-    queryFn: () => accountingApi.getExpenses({ limit: 50 }).then((r) => r.data),
-    enabled: tab === 'expenses',
+    queryFn:  () => accountingApi.getExpenses({ limit: 50 }).then((r) => r.data),
+    enabled:  tab === 'expenses',
   });
 
   const { data: stockMovements } = useQuery({
     queryKey: ['accounting-stock'],
-    queryFn: () => accountingApi.getStockMovements({ limit: 50 }).then((r) => r.data),
-    enabled: tab === 'stock',
+    queryFn:  () => accountingApi.getStockMovements({ limit: 50 }).then((r) => r.data),
+    enabled:  tab === 'stock',
   });
 
   const { data: margins } = useQuery({
     queryKey: ['accounting-margins'],
-    queryFn: () => accountingApi.getProductMargins().then((r) => r.data),
-    enabled: tab === 'margins',
+    queryFn:  () => accountingApi.getProductMargins().then((r) => r.data),
+    enabled:  tab === 'margins',
   });
 
+  // Fournisseurs actifs → pour les selects dans les modals
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers'],
-    queryFn: () => accountingApi.getSuppliers().then((r) => r.data),
+    queryFn:  () => accountingApi.getSuppliers().then((r) => r.data),
   });
 
+  // Tous les fournisseurs → pour l'onglet gestion fournisseurs
+  const { data: allSuppliers, isLoading: suppliersLoading } = useQuery({
+    queryKey: ['suppliers-all'],
+    queryFn:  () => accountingApi.getAllSuppliers().then((r) => r.data),
+    enabled:  tab === 'suppliers',
+  });
+
+  // Produits → pour le select dans le modal mouvement stock
+  const { data: productsData } = useQuery({
+    queryKey: ['admin-products-select'],
+    queryFn:  () => accountingApi.getAdminProducts().then((r) => r.data),
+    staleTime: 1000 * 60 * 5,
+  });
+  const products = productsData?.products ?? productsData?.data ?? productsData ?? [];
+
+  // ── Mutations ────────────────────────────────────────────────
   const createExpenseMutation = useMutation({
     mutationFn: accountingApi.createExpense,
     onSuccess: () => {
       toast.success('Dépense enregistrée');
-      qc.invalidateQueries(['accounting-expenses', 'accounting-dashboard']);
+      qc.invalidateQueries({ queryKey: ['accounting-expenses'] });
+      qc.invalidateQueries({ queryKey: ['accounting-dashboard'] });
       setShowExpenseModal(false);
     },
     onError: () => toast.error("Erreur lors de l'enregistrement"),
@@ -285,7 +307,8 @@ export default function AdminAccounting() {
     mutationFn: accountingApi.deleteExpense,
     onSuccess: () => {
       toast.success('Dépense supprimée');
-      qc.invalidateQueries(['accounting-expenses', 'accounting-dashboard']);
+      qc.invalidateQueries({ queryKey: ['accounting-expenses'] });
+      qc.invalidateQueries({ queryKey: ['accounting-dashboard'] });
     },
   });
 
@@ -293,24 +316,59 @@ export default function AdminAccounting() {
     mutationFn: accountingApi.createStockMovement,
     onSuccess: () => {
       toast.success('Mouvement de stock enregistré');
-      qc.invalidateQueries(['accounting-stock', 'accounting-dashboard']);
+      qc.invalidateQueries({ queryKey: ['accounting-stock'] });
+      qc.invalidateQueries({ queryKey: ['accounting-dashboard'] });
+      qc.invalidateQueries({ queryKey: ['admin-products-select'] });
       setShowStockModal(false);
     },
     onError: () => toast.error("Erreur lors de l'enregistrement"),
   });
 
-  // ── Handlers — montants en FCFA directs (pas de centimes)
+  const createSupplierMutation = useMutation({
+    mutationFn: accountingApi.createSupplier,
+    onSuccess: () => {
+      toast.success('Fournisseur ajouté');
+      qc.invalidateQueries({ queryKey: ['suppliers'] });
+      qc.invalidateQueries({ queryKey: ['suppliers-all'] });
+      setShowSupplierModal(false);
+      setEditingSupplier(null);
+    },
+    onError: () => toast.error("Erreur lors de la création"),
+  });
+
+  const updateSupplierMutation = useMutation({
+    mutationFn: ({ id, data }) => accountingApi.updateSupplier(id, data),
+    onSuccess: () => {
+      toast.success('Fournisseur mis à jour');
+      qc.invalidateQueries({ queryKey: ['suppliers'] });
+      qc.invalidateQueries({ queryKey: ['suppliers-all'] });
+      setShowSupplierModal(false);
+      setEditingSupplier(null);
+    },
+    onError: () => toast.error("Erreur lors de la mise à jour"),
+  });
+
+  const toggleSupplierMutation = useMutation({
+    mutationFn: accountingApi.toggleSupplier,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['suppliers'] });
+      qc.invalidateQueries({ queryKey: ['suppliers-all'] });
+    },
+    onError: () => toast.error("Erreur lors du changement de statut"),
+  });
+
+  // ── Handlers ─────────────────────────────────────────────────
   const handleExpenseSubmit = (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     createExpenseMutation.mutate({
-      category: fd.get('category'),
-      label: fd.get('label'),
-      amount: parseFloat(fd.get('amount')),
-      date: fd.get('date'),
+      category:   fd.get('category'),
+      label:      fd.get('label'),
+      amount:     parseFloat(fd.get('amount')),
+      date:       fd.get('date'),
       supplierId: fd.get('supplierId') || null,
-      reference: fd.get('reference') || null,
-      notes: fd.get('notes') || null,
+      reference:  fd.get('reference')  || null,
+      notes:      fd.get('notes')      || null,
     });
   };
 
@@ -319,26 +377,45 @@ export default function AdminAccounting() {
     const fd = new FormData(e.target);
     const unitCostRaw = fd.get('unitCost');
     createStockMutation.mutate({
-      productId: fd.get('productId'),
-      type: fd.get('type'),
-      quantity: parseInt(fd.get('quantity'), 10),
-      unitCost: unitCostRaw ? parseFloat(unitCostRaw) : null,
-      reason: fd.get('reason') || null,
+      productId:  fd.get('productId'),
+      type:       fd.get('type'),
+      quantity:   parseInt(fd.get('quantity'), 10),
+      unitCost:   unitCostRaw ? parseFloat(unitCostRaw) : null,
+      reason:     fd.get('reason')     || null,
       supplierId: fd.get('supplierId') || null,
-      reference: fd.get('reference') || null,
+      reference:  fd.get('reference')  || null,
     });
   };
 
+  const handleSupplierSubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const data = {
+      name:    fd.get('name'),
+      email:   fd.get('email')   || null,
+      phone:   fd.get('phone')   || null,
+      address: fd.get('address') || null,
+    };
+    if (editingSupplier) {
+      updateSupplierMutation.mutate({ id: editingSupplier.id, data });
+    } else {
+      createSupplierMutation.mutate(data);
+    }
+  };
+
+  // ── Config ────────────────────────────────────────────────────
   const tabs = [
     { id: 'dashboard', label: '📊 Tableau de bord' },
     { id: 'expenses',  label: '💸 Dépenses' },
     { id: 'stock',     label: '📦 Stock' },
     { id: 'margins',   label: '📈 Marges' },
+    { id: 'suppliers', label: '🏭 Fournisseurs' },
   ];
 
   const inputCls = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all bg-slate-50 focus:bg-white';
   const labelCls = 'block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide';
 
+  // ─────────────────────────────────────────────────────────────
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
 
@@ -349,7 +426,6 @@ export default function AdminAccounting() {
           <p className="text-sm text-slate-400 mt-0.5">Suivi financier, stock et bénéfices</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Filtres période */}
           <select value={period} onChange={(e) => setPeriod(e.target.value)}
             className="text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none">
             <option value="month">Ce mois</option>
@@ -368,15 +444,19 @@ export default function AdminAccounting() {
               {[2023, 2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </>)}
-          {/* Export PDF */}
           {tab === 'dashboard' && dashboard && (
-            <button
-              onClick={() => exportPDF(dashboard, period, year, month)}
+            <button onClick={() => exportPDF(dashboard, period, year, month)}
               className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
               </svg>
               Exporter PDF
+            </button>
+          )}
+          {tab === 'suppliers' && (
+            <button onClick={() => { setEditingSupplier(null); setShowSupplierModal(true); }}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors shadow-sm">
+              + Nouveau fournisseur
             </button>
           )}
         </div>
@@ -396,7 +476,9 @@ export default function AdminAccounting() {
         ))}
       </div>
 
-      {/* ── TAB: DASHBOARD ──────────────────────── */}
+      {/* ══════════════════════════════════════════
+          TAB: DASHBOARD
+      ══════════════════════════════════════════ */}
       {tab === 'dashboard' && (
         <div className="space-y-6">
           {isLoading ? (
@@ -405,7 +487,6 @@ export default function AdminAccounting() {
               <span className="text-slate-400 text-sm">Chargement…</span>
             </div>
           ) : dashboard ? (<>
-            {/* KPIs row 1 */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <KpiCard label="Chiffre d'affaires" value={fmt(dashboard.revenue)} variant="blue" icon="💰"
                 sub={`${dashboard.orderCount} commande${dashboard.orderCount !== 1 ? 's' : ''}`} />
@@ -418,7 +499,6 @@ export default function AdminAccounting() {
                 sub="Après toutes dépenses" />
             </div>
 
-            {/* KPIs row 2 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <KpiCard label="Valeur stock (achat)" value={fmt(dashboard.stockValue)} variant="purple" icon="📦"
                 sub={`Vente potentielle : ${fmt(dashboard.stockRetailValue)}`} />
@@ -426,18 +506,11 @@ export default function AdminAccounting() {
               <KpiCard label="Panier moyen" value={fmt(dashboard.avgOrderValue)} icon="🛒" />
             </div>
 
-            {/* Graphique CA */}
             {dashboard.revenueChart && (
               <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                 <h3 className="text-sm font-bold text-slate-700 mb-5 uppercase tracking-wide">Évolution CA — 6 derniers mois</h3>
                 <ResponsiveContainer width="100%" height={240}>
                   <LineChart data={dashboard.revenueChart}>
-                    <defs>
-                      <linearGradient id="caGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
@@ -450,21 +523,17 @@ export default function AdminAccounting() {
               </div>
             )}
 
-            {/* Dépenses + alertes */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {dashboard.expensesByCategory?.length > 0 && (
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                   <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wide">Dépenses par catégorie</h3>
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
-                      <Pie
-                        data={dashboard.expensesByCategory.map((d) => ({
+                      <Pie data={dashboard.expensesByCategory.map((d) => ({
                           name: EXPENSE_CATEGORIES.find((c) => c.value === d.category)?.label || d.category,
                           value: d._sum.amount,
                         }))}
-                        cx="50%" cy="50%" innerRadius={55} outerRadius={85}
-                        paddingAngle={3} dataKey="value" nameKey="name"
-                      >
+                        cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value" nameKey="name">
                         {dashboard.expensesByCategory.map((_, i) => (
                           <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                         ))}
@@ -497,16 +566,15 @@ export default function AdminAccounting() {
               </div>
             </div>
 
-            {/* Résumé comptable */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
               <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wide">Résumé comptable de la période</h3>
               <div className="space-y-3 text-sm max-w-md">
                 {[
-                  { label: "Chiffre d'affaires (CA)", value: fmt(dashboard.revenue), cls: 'text-slate-800' },
-                  { label: '— Coût des marchandises vendues (CMV)', value: `- ${fmt(dashboard.cogs)}`, cls: 'text-red-500' },
-                  { label: '= Bénéfice brut', value: fmt(dashboard.grossProfit), cls: 'font-semibold text-slate-800 border-t border-slate-200 pt-3 mt-1' },
-                  { label: '— Dépenses opérationnelles', value: `- ${fmt(dashboard.expenses)}`, cls: 'text-red-500' },
-                  { label: '= Bénéfice net', value: fmt(dashboard.netProfit), cls: `font-extrabold text-base border-t border-slate-200 pt-3 mt-1 ${dashboard.netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}` },
+                  { label: "Chiffre d'affaires (CA)",        value: fmt(dashboard.revenue),    cls: 'text-slate-800' },
+                  { label: '— Coût des marchandises (CMV)',   value: `- ${fmt(dashboard.cogs)}`, cls: 'text-red-500' },
+                  { label: '= Bénéfice brut',                value: fmt(dashboard.grossProfit), cls: 'font-semibold text-slate-800 border-t border-slate-200 pt-3 mt-1' },
+                  { label: '— Dépenses opérationnelles',     value: `- ${fmt(dashboard.expenses)}`, cls: 'text-red-500' },
+                  { label: '= Bénéfice net',                 value: fmt(dashboard.netProfit),   cls: `font-extrabold text-base border-t border-slate-200 pt-3 mt-1 ${dashboard.netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}` },
                 ].map((row, i) => (
                   <div key={i} className={`flex justify-between ${row.cls}`}>
                     <span>{row.label}</span>
@@ -521,7 +589,9 @@ export default function AdminAccounting() {
         </div>
       )}
 
-      {/* ── TAB: DÉPENSES ───────────────────────── */}
+      {/* ══════════════════════════════════════════
+          TAB: DÉPENSES
+      ══════════════════════════════════════════ */}
       {tab === 'expenses' && (
         <div>
           <SectionHeader
@@ -570,7 +640,9 @@ export default function AdminAccounting() {
         </div>
       )}
 
-      {/* ── TAB: STOCK ──────────────────────────── */}
+      {/* ══════════════════════════════════════════
+          TAB: STOCK
+      ══════════════════════════════════════════ */}
       {tab === 'stock' && (
         <div>
           <SectionHeader
@@ -586,31 +658,33 @@ export default function AdminAccounting() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  {['Date', 'Produit', 'Type', 'Quantité', 'Coût unitaire', 'Coût total', 'Motif'].map((h) => (
-                    <th key={h} className="px-4 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{h}</th>
+                  {['Date', 'Produit', 'Type', 'Quantité', 'Coût unitaire', 'Coût total', 'Fournisseur', 'Référence', 'Motif'].map((h) => (
+                    <th key={h} className="px-4 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {stockMovements?.movements?.map((m) => {
                   const typeInfo = MOVEMENT_TYPES.find((t) => t.value === m.type);
-                  const isIn = ['IN', 'RETURN_IN', 'ADJUSTMENT'].includes(m.type);
+                  const isIn = IS_INCOMING(m.type);
                   return (
                     <tr key={m.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3.5 text-slate-400 text-xs">{new Date(m.createdAt).toLocaleDateString('fr-FR')}</td>
-                      <td className="px-4 py-3.5 text-slate-800 font-medium">{m.product?.name}</td>
-                      <td className="px-4 py-3.5"><span className={`text-xs font-semibold ${typeInfo?.color}`}>{typeInfo?.label}</span></td>
-                      <td className={`px-4 py-3.5 font-bold ${isIn ? 'text-emerald-600' : 'text-red-500'}`}>
+                      <td className="px-4 py-3.5 text-slate-400 text-xs whitespace-nowrap">{new Date(m.createdAt).toLocaleDateString('fr-FR')}</td>
+                      <td className="px-4 py-3.5 text-slate-800 font-medium max-w-[160px] truncate">{m.product?.name}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap"><span className={`text-xs font-semibold ${typeInfo?.color}`}>{typeInfo?.label}</span></td>
+                      <td className={`px-4 py-3.5 font-bold whitespace-nowrap ${isIn ? 'text-emerald-600' : 'text-red-500'}`}>
                         {isIn ? '+' : '-'}{m.quantity}
                       </td>
                       <td className="px-4 py-3.5 text-slate-500">{m.unitCost ? fmt(m.unitCost) : '—'}</td>
                       <td className="px-4 py-3.5 text-slate-500">{m.totalCost ? fmt(m.totalCost) : '—'}</td>
+                      <td className="px-4 py-3.5 text-slate-400 text-xs">{m.supplier?.name || '—'}</td>
+                      <td className="px-4 py-3.5 text-slate-300 font-mono text-xs">{m.reference || '—'}</td>
                       <td className="px-4 py-3.5 text-slate-400 text-xs">{m.reason || '—'}</td>
                     </tr>
                   );
                 })}
                 {!stockMovements?.movements?.length && (
-                  <tr><td colSpan={7} className="px-4 py-16 text-center text-slate-400">Aucun mouvement enregistré</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-16 text-center text-slate-400">Aucun mouvement enregistré</td></tr>
                 )}
               </tbody>
             </table>
@@ -618,7 +692,9 @@ export default function AdminAccounting() {
         </div>
       )}
 
-      {/* ── TAB: MARGES ─────────────────────────── */}
+      {/* ══════════════════════════════════════════
+          TAB: MARGES
+      ══════════════════════════════════════════ */}
       {tab === 'margins' && (
         <div>
           <SectionHeader title="Marges par produit" />
@@ -636,17 +712,17 @@ export default function AdminAccounting() {
                   <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3.5 text-slate-800 font-semibold max-w-[160px] truncate">{p.name}</td>
                     <td className="px-4 py-3.5"><Badge color="indigo">{p.category}</Badge></td>
-                    <td className="px-4 py-3.5 text-slate-700 font-medium">{fmt(p.price)}</td>
-                    <td className="px-4 py-3.5 text-slate-500">
+                    <td className="px-4 py-3.5 text-slate-700 font-medium whitespace-nowrap">{fmt(p.price)}</td>
+                    <td className="px-4 py-3.5 text-slate-500 whitespace-nowrap">
                       {p.purchasePrice ? fmt(p.purchasePrice) : <span className="text-amber-400 text-xs font-medium">Non défini</span>}
                     </td>
                     <td className={`px-4 py-3.5 font-bold ${p.stock === 0 ? 'text-red-500' : p.stock <= 5 ? 'text-amber-500' : 'text-slate-700'}`}>
                       {p.stock}
                     </td>
-                    <td className="px-4 py-3.5 text-slate-500">{fmt(p.stockValue)}</td>
+                    <td className="px-4 py-3.5 text-slate-500 whitespace-nowrap">{fmt(p.stockValue)}</td>
                     <td className="px-4 py-3.5 text-slate-500">{p.totalSold}</td>
-                    <td className="px-4 py-3.5 text-slate-700 font-medium">{fmt(p.totalRevenue)}</td>
-                    <td className={`px-4 py-3.5 font-bold ${p.grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    <td className="px-4 py-3.5 text-slate-700 font-medium whitespace-nowrap">{fmt(p.totalRevenue)}</td>
+                    <td className={`px-4 py-3.5 font-bold whitespace-nowrap ${p.grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                       {fmt(p.grossProfit)}
                     </td>
                     <td className="px-4 py-3.5">
@@ -667,7 +743,105 @@ export default function AdminAccounting() {
         </div>
       )}
 
-      {/* ── MODAL: Dépense ──────────────────────── */}
+      {/* ══════════════════════════════════════════
+          TAB: FOURNISSEURS
+      ══════════════════════════════════════════ */}
+      {tab === 'suppliers' && (
+        <div>
+          <SectionHeader title={`Fournisseurs (${allSuppliers?.length ?? 0})`} />
+
+          {suppliersLoading ? (
+            <div className="flex items-center justify-center py-24">
+              <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {allSuppliers?.map((s) => (
+                <div key={s.id}
+                  className={`bg-white rounded-2xl border shadow-sm p-5 transition-all ${s.isActive ? 'border-slate-200' : 'border-slate-100 opacity-60'}`}>
+                  {/* En-tête */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm">
+                        {s.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800 leading-tight">{s.name}</p>
+                        {s.address && <p className="text-xs text-slate-400 mt-0.5">{s.address}</p>}
+                      </div>
+                    </div>
+                    <Badge color={s.isActive ? 'green' : 'slate'}>
+                      {s.isActive ? 'Actif' : 'Inactif'}
+                    </Badge>
+                  </div>
+
+                  {/* Coordonnées */}
+                  <div className="space-y-1.5 mb-4 text-sm">
+                    {s.email && (
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <span className="text-slate-300">✉</span>
+                        <a href={`mailto:${s.email}`} className="hover:text-indigo-600 transition-colors truncate">{s.email}</a>
+                      </div>
+                    )}
+                    {s.phone && (
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <span className="text-slate-300">📞</span>
+                        <span>{s.phone}</span>
+                      </div>
+                    )}
+                    {!s.email && !s.phone && (
+                      <p className="text-xs text-slate-300 italic">Aucune coordonnée renseignée</p>
+                    )}
+                  </div>
+
+                  {/* Compteurs */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className="bg-slate-50 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-bold text-slate-800">{s._count?.stockEntries ?? 0}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">entrées stock</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-bold text-slate-800">{s._count?.expenses ?? 0}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">dépenses liées</p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setEditingSupplier(s); setShowSupplierModal(true); }}
+                      className="flex-1 text-xs font-semibold py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
+                      ✏️ Modifier
+                    </button>
+                    <button
+                      onClick={() => toggleSupplierMutation.mutate(s.id)}
+                      disabled={toggleSupplierMutation.isPending}
+                      className={`flex-1 text-xs font-semibold py-2 rounded-xl border transition-colors disabled:opacity-50 ${
+                        s.isActive
+                          ? 'border-red-200 text-red-500 hover:bg-red-50'
+                          : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'
+                      }`}>
+                      {s.isActive ? '⏸ Désactiver' : '▶ Activer'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Card "Ajouter" */}
+              <button
+                onClick={() => { setEditingSupplier(null); setShowSupplierModal(true); }}
+                className="border-2 border-dashed border-slate-200 rounded-2xl p-5 flex flex-col items-center justify-center gap-3 text-slate-400 hover:border-indigo-300 hover:text-indigo-500 transition-all min-h-[200px]">
+                <span className="text-3xl">+</span>
+                <span className="text-sm font-semibold">Nouveau fournisseur</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          MODAL: Dépense
+      ══════════════════════════════════════════ */}
       <Modal open={showExpenseModal} onClose={() => setShowExpenseModal(false)} title="Enregistrer une dépense">
         <form onSubmit={handleExpenseSubmit} className="space-y-4">
           <div>
@@ -721,19 +895,33 @@ export default function AdminAccounting() {
         </form>
       </Modal>
 
-      {/* ── MODAL: Stock ────────────────────────── */}
-      <Modal open={showStockModal} onClose={() => setShowStockModal(false)} title="Enregistrer un mouvement de stock">
+      {/* ══════════════════════════════════════════
+          MODAL: Mouvement de stock
+          — productId = SELECT (plus de saisie manuelle)
+          — fournisseur + coût = affiché seulement si type IN / RETURN_IN
+      ══════════════════════════════════════════ */}
+      <Modal open={showStockModal} onClose={() => { setShowStockModal(false); setStockMovementType('IN'); }} title="Enregistrer un mouvement de stock">
         <form onSubmit={handleStockSubmit} className="space-y-4">
+          {/* Produit — SELECT depuis la vraie liste */}
           <div>
             <label className={labelCls}>Produit *</label>
-            <input name="productId" required placeholder="ID du produit" className={`${inputCls} font-mono`} />
-            <p className="text-xs text-slate-400 mt-1">Copier l'ID depuis la page Produits</p>
+            <select name="productId" required className={inputCls}>
+              <option value="">Sélectionner un produit…</option>
+              {Array.isArray(products) && products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} {p.stock !== undefined ? `— stock: ${p.stock}` : ''}
+                </option>
+              ))}
+            </select>
           </div>
+
           <div className="grid grid-cols-2 gap-3">
+            {/* Type — déclenche l'affichage conditionnel */}
             <div>
               <label className={labelCls}>Type de mouvement *</label>
-              <select name="type" required className={inputCls}>
-                <option value="">Sélectionner…</option>
+              <select name="type" required className={inputCls}
+                value={stockMovementType}
+                onChange={(e) => setStockMovementType(e.target.value)}>
                 {MOVEMENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
@@ -742,19 +930,25 @@ export default function AdminAccounting() {
               <input name="quantity" type="number" min="1" required className={inputCls} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Prix d'achat unitaire (FCFA)</label>
-              <input name="unitCost" type="number" min="0" step="1" placeholder="Pour les entrées stock" className={inputCls} />
+
+          {/* Champs affichés uniquement pour les entrées stock */}
+          {IS_INCOMING(stockMovementType) && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Prix d'achat unitaire (FCFA)</label>
+                <input name="unitCost" type="number" min="0" step="1" placeholder="0" className={inputCls} />
+                <p className="text-xs text-slate-400 mt-1">Met à jour le prix d'achat du produit</p>
+              </div>
+              <div>
+                <label className={labelCls}>Fournisseur</label>
+                <select name="supplierId" className={inputCls}>
+                  <option value="">Aucun</option>
+                  {suppliers?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className={labelCls}>Fournisseur</label>
-              <select name="supplierId" className={inputCls}>
-                <option value="">Aucun</option>
-                {suppliers?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-          </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>N° facture / référence</label>
@@ -765,8 +959,9 @@ export default function AdminAccounting() {
               <input name="reason" placeholder="Ex: Réapprovisionnement mensuel" className={inputCls} />
             </div>
           </div>
+
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={() => setShowStockModal(false)}
+            <button type="button" onClick={() => { setShowStockModal(false); setStockMovementType('IN'); }}
               className="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
               Annuler
             </button>
@@ -777,6 +972,48 @@ export default function AdminAccounting() {
           </div>
         </form>
       </Modal>
+
+      {/* ══════════════════════════════════════════
+          MODAL: Fournisseur (création + édition)
+      ══════════════════════════════════════════ */}
+      <Modal
+        open={showSupplierModal}
+        onClose={() => { setShowSupplierModal(false); setEditingSupplier(null); }}
+        title={editingSupplier ? `Modifier — ${editingSupplier.name}` : 'Nouveau fournisseur'}>
+        <form onSubmit={handleSupplierSubmit} className="space-y-4">
+          <div>
+            <label className={labelCls}>Nom *</label>
+            <input name="name" required placeholder="Nom de l'entreprise" defaultValue={editingSupplier?.name ?? ''} className={inputCls} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Email</label>
+              <input name="email" type="email" placeholder="contact@fournisseur.com" defaultValue={editingSupplier?.email ?? ''} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Téléphone</label>
+              <input name="phone" placeholder="+221 77 xxx xx xx" defaultValue={editingSupplier?.phone ?? ''} className={inputCls} />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Adresse</label>
+            <input name="address" placeholder="Quartier, Ville" defaultValue={editingSupplier?.address ?? ''} className={inputCls} />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={() => { setShowSupplierModal(false); setEditingSupplier(null); }}
+              className="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+              Annuler
+            </button>
+            <button type="submit" disabled={createSupplierMutation.isPending || updateSupplierMutation.isPending}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-2.5 text-sm font-semibold transition-colors disabled:opacity-50">
+              {(createSupplierMutation.isPending || updateSupplierMutation.isPending)
+                ? 'Enregistrement…'
+                : editingSupplier ? 'Mettre à jour' : 'Ajouter'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
     </div>
   );
 }

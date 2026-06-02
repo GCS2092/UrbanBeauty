@@ -350,4 +350,67 @@ router.get('/product-margins', isAdmin, async (req, res) => {
   }
 });
 
+// ============================================================
+// AJOUTS À COLLER À LA FIN DE :
+// backend/src/modules/accounting/accounting.routes.js
+// (juste avant la ligne `module.exports = router;`)
+// ============================================================
+
+// PUT /api/admin/accounting/suppliers/:id
+router.put('/suppliers/:id', isAdmin, async (req, res) => {
+  try {
+    const { name, email, phone, address } = req.body;
+    const supplier = await prisma.supplier.update({
+      where: { id: req.params.id },
+      data: {
+        ...(name    !== undefined && { name }),
+        ...(email   !== undefined && { email }),
+        ...(phone   !== undefined && { phone }),
+        ...(address !== undefined && { address }),
+      },
+    });
+    res.json(supplier);
+  } catch (error) {
+    if (error.code === 'P2025') return res.status(404).json({ error: 'Fournisseur introuvable' });
+    console.error('[accounting/suppliers PUT]', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// PATCH /api/admin/accounting/suppliers/:id/toggle
+// Active ou désactive un fournisseur
+router.patch('/suppliers/:id/toggle', isAdmin, async (req, res) => {
+  try {
+    const existing = await prisma.supplier.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: 'Fournisseur introuvable' });
+
+    const supplier = await prisma.supplier.update({
+      where: { id: req.params.id },
+      data:  { isActive: !existing.isActive },
+    });
+    res.json(supplier);
+  } catch (error) {
+    console.error('[accounting/suppliers PATCH toggle]', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/admin/accounting/suppliers/all
+// Retourne TOUS les fournisseurs (actifs + inactifs) pour la page de gestion
+router.get('/suppliers/all', isAdmin, async (req, res) => {
+  try {
+    const suppliers = await prisma.supplier.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        _count: {
+          select: { stockEntries: true, expenses: true },
+        },
+      },
+    });
+    res.json(suppliers);
+  } catch (error) {
+    console.error('[accounting/suppliers/all GET]', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
 module.exports = router;
