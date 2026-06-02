@@ -1,7 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const productsController = require('./products.controller');
-const authenticate = require('../../middlewares/auth.middleware');
+const { authenticate } = require('../../middlewares/auth.middleware');
 const requireAdmin = require('../../middlewares/admin.middleware');
 const { apiLimiter } = require('../../middlewares/rateLimit.middleware');
 const { checkValidation } = require('../../middlewares/validation.middleware');

@@ -45,24 +45,30 @@ async function mergeGuestCart(userId, anonymousId) {
 async function findOrCreateCart({ userId, anonymousId }) {
   if (userId && anonymousId) {
     const mergedCart = await mergeGuestCart(userId, anonymousId);
-    if (mergedCart) {
-      return mergedCart;
-    }
+    if (mergedCart) return mergedCart;
   }
 
   if (userId) {
-    let cart = await prisma.cart.findFirst({ where: { userId } });
-    if (!cart) {
-      cart = await prisma.cart.create({ data: { userId } });
+    // ✅ Vérifie que le user existe avant de créer le cart
+    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) {
+      // User fantôme en localStorage → fallback anonyme
+      if (anonymousId) {
+        let cart = await prisma.cart.findUnique({ where: { anonymousId } });
+        if (!cart) cart = await prisma.cart.create({ data: { anonymousId } });
+        return cart;
+      }
+      return prisma.cart.create({ data: {} });
     }
+
+    let cart = await prisma.cart.findFirst({ where: { userId } });
+    if (!cart) cart = await prisma.cart.create({ data: { userId } });
     return cart;
   }
 
   if (anonymousId) {
     let cart = await prisma.cart.findUnique({ where: { anonymousId } });
-    if (!cart) {
-      cart = await prisma.cart.create({ data: { anonymousId } });
-    }
+    if (!cart) cart = await prisma.cart.create({ data: { anonymousId } });
     return cart;
   }
 

@@ -25,7 +25,7 @@ const couponsRoutes = require('./modules/coupons/coupons.routes');
 const notificationsRoutes = require('./modules/notifications/notifications.routes');
 const settingsRoutes = require('./modules/settings/settings.routes'); // ✅ NOUVEAU
 const ordersAdminRoutes = require('./modules/orders/orders.admin.routes');
-
+const accountingRoutes = require('./modules/accounting/accounting.routes');
 const app = express();
 
 /* =======================
@@ -84,6 +84,7 @@ app.use('/api/coupons', couponsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/settings', settingsRoutes); // ✅ NOUVEAU
 app.use('/api/admin/orders', ordersAdminRoutes);
+app.use('/api/admin/accounting', accountingRoutes);
 /* =======================
    ERROR HANDLER
 ======================= */

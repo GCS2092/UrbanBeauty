@@ -1,6 +1,6 @@
 const express = require('express');
 const ordersController = require('./orders.controller');
-const authenticate = require('../../middlewares/auth.middleware');
+const { authenticate } = require('../../middlewares/auth.middleware');
 const requireAdmin = require('../../middlewares/admin.middleware');
 const { apiLimiter } = require('../../middlewares/rateLimit.middleware');
 
