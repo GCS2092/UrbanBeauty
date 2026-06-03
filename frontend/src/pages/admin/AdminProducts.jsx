@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import useAuthStore from '../../store/authStore';
-
-const API_URL = 'http://localhost:5000';
+import { API_URL } from '../../utils/constants';
 const formatPrice = (p) => `${Number(p).toLocaleString('fr-FR')} FCFA`;
 
 export default function AdminProducts() {
@@ -163,7 +162,9 @@ export default function AdminProducts() {
                   <th className="px-6 py-3">Produit</th>
                   <th className="px-6 py-3">Catégorie</th>
                   <th className="px-6 py-3">Prix</th>
-                  <th className="px-6 py-3">Stock</th>
+                  <th className="px-6 py-3">Stock réel</th>
+                  <th className="px-6 py-3">Réservé</th>
+                  <th className="px-6 py-3">Disponible</th>
                   <th className="px-6 py-3">Statut</th>
                   <th className="px-6 py-3 text-right">Actions</th>
                 </tr>
@@ -192,8 +193,17 @@ export default function AdminProducts() {
                         <div className="font-semibold text-gray-900">{formatPrice(p.price)}</div>
                         {p.comparePrice && <div className="text-xs text-gray-400 line-through">{formatPrice(p.comparePrice)}</div>}
                       </td>
+                      <td className="px-6 py-4 font-medium text-gray-900">{p.stock ?? 0}</td>
+                      <td className="px-6 py-4 text-amber-700">{p.reservedStock ?? 0}</td>
                       <td className="px-6 py-4">
-                        <span className={`font-medium ${p.stock <= 5 ? 'text-red-600' : 'text-gray-900'}`}>{p.stock}</span>
+                        {(() => {
+                          const available = (p.stock ?? 0) - (p.reservedStock ?? 0);
+                          return (
+                            <span className={`font-semibold ${available <= 5 ? 'text-red-600' : 'text-emerald-700'}`}>
+                              {available}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">

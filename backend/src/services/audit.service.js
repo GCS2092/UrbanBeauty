@@ -1,0 +1,29 @@
+const prisma = require('../config/database');
+
+async function logAudit({
+  userId = null,
+  action,
+  module,
+  entityId = null,
+  entityType = null,
+  oldValue = null,
+  newValue = null,
+  ip = null,
+  tx = null,
+}) {
+  const client = tx || prisma;
+  return client.auditLog.create({
+    data: {
+      userId,
+      action,
+      module,
+      entityId,
+      entityType,
+      oldValue: oldValue ?? undefined,
+      newValue: newValue ?? undefined,
+      ip,
+    },
+  });
+}
+
+module.exports = { logAudit };

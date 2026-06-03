@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import useAuthStore from '../../store/authStore';
+import { adminApi } from '../../api/admin.api';
+import { API_URL } from '../../utils/constants';
 import {
   TrendingUp, Package, ShoppingBag, Users,
   AlertTriangle, Clock, CheckCircle, XCircle,
   ArrowUpRight, BarChart3
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000';
 const formatPrice = (p) => `${Number(p || 0).toLocaleString('fr-FR')} FCFA`;
 const formatDate = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 
@@ -75,16 +76,16 @@ export default function Dashboard() {
       setLoading(true);
       try {
         const [oRes, pRes, cRes, uRes] = await Promise.all([
-          fetch(`${API_URL}/api/orders/admin/all`, { headers }),
+          adminApi.getOrders({ limit: 100 }),
           fetch(`${API_URL}/api/products?limit=100`),
           fetch(`${API_URL}/api/categories`),
           fetch(`${API_URL}/api/users`, { headers }),
         ]);
-        const [oData, pData, cData, uData] = await Promise.all([
-          oRes.json(), pRes.json(), cRes.json(), uRes.json()
+        const [pData, cData, uData] = await Promise.all([
+          pRes.json(), cRes.json(), uRes.json()
         ]);
         setData({
-          orders: Array.isArray(oData) ? oData : oData.data || [],
+          orders: oRes.data?.data || [],
           products: Array.isArray(pData) ? pData : pData.data || [],
           categories: Array.isArray(cData) ? cData : cData.data || [],
           users: Array.isArray(uData) ? uData : uData.data || [],
@@ -100,7 +101,10 @@ export default function Dashboard() {
     .reduce((sum, o) => sum + Number(o.total || o.totalAmount || 0), 0);
 
   const pendingOrders = data.orders.filter(o => o.status === 'PENDING');
-  const lowStockProducts = data.products.filter(p => p.stock <= 5);
+  const lowStockProducts = data.products.filter((p) => {
+    const available = (p.stock || 0) - (p.reservedStock || 0);
+    return available <= (p.lowStockAlert ?? 5);
+  });
   const recentOrders = [...data.orders]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 6);

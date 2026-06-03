@@ -26,6 +26,8 @@ const notificationsRoutes = require('./modules/notifications/notifications.route
 const settingsRoutes = require('./modules/settings/settings.routes'); // ✅ NOUVEAU
 const ordersAdminRoutes = require('./modules/orders/orders.admin.routes');
 const accountingRoutes = require('./modules/accounting/accounting.routes');
+const auditRoutes = require('./modules/audit/audit.routes');
+const invoicesRoutes = require('./modules/invoices/invoices.routes');
 const app = express();
 
 /* =======================
@@ -85,6 +87,8 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/settings', settingsRoutes); // ✅ NOUVEAU
 app.use('/api/admin/orders', ordersAdminRoutes);
 app.use('/api/admin/accounting', accountingRoutes);
+app.use('/api/admin/audit', auditRoutes);
+app.use('/api/admin/invoices', invoicesRoutes);
 /* =======================
    ERROR HANDLER
 ======================= */

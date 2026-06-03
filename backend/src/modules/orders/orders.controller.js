@@ -2,7 +2,7 @@ const ordersService = require('./orders.service');
 
 async function createOrder(req, res, next) {
   try {
-    const order = await ordersService.createOrder(req.body, req.user);
+    const order = await ordersService.createOrder(req.body, req.user, req.ip);
     res.status(201).json(order);
   } catch (error) {
     next(error);
@@ -32,7 +32,12 @@ async function getOrderByNumber(req, res, next) {
 
 async function changeOrderStatus(req, res, next) {
   try {
-    const order = await ordersService.changeOrderStatus(req.params.id, req.body);
+    const order = await ordersService.changeOrderStatus(
+      req.params.id,
+      req.body,
+      req.user,
+      req.ip,
+    );
     res.json(order);
   } catch (error) {
     next(error);

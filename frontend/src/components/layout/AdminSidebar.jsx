@@ -3,7 +3,7 @@ import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag,
   Tag, Ticket, Users, LogOut, Menu, X, Sparkles,
-  CreditCard, Settings, BookOpen
+  CreditCard, Settings, BookOpen, FileText, Shield
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -12,7 +12,9 @@ const links = [
   { to: '/admin/products', label: 'Produits', icon: Package },
   { to: '/admin/orders', label: 'Commandes', icon: ShoppingBag },
   { to: '/admin/payments', label: 'Paiements', icon: CreditCard },
-  { to: '/admin/accounting', label: 'Comptabilité', icon: BookOpen }, // ✅ NOUVEAU
+  { to: '/admin/accounting', label: 'Comptabilité', icon: BookOpen },
+  { to: '/admin/invoices', label: 'Factures', icon: FileText },
+  { to: '/admin/audit', label: 'Journal d\'audit', icon: Shield },
   { to: '/admin/categories', label: 'Catégories', icon: Tag },
   { to: '/admin/coupons', label: 'Coupons', icon: Ticket },
   { to: '/admin/users', label: 'Utilisateurs', icon: Users },

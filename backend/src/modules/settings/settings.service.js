@@ -7,7 +7,11 @@ const DEFAULT_SETTINGS = {
   payment_instructions: 'Envoyez le montant exact puis cliquez sur "J\'ai payé".',
   delivery_fee: '2000',
   free_delivery_threshold: '50000',
-  whatsapp_number: '', // ✅ ajout
+  whatsapp_number: '',
+  company_name: 'Urban Beauty',
+  company_address: '',
+  company_phone: '',
+  company_email: '',
 };
 
 async function getSettings() {

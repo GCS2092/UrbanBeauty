@@ -74,6 +74,7 @@ model Product {
   price           Int
   comparePrice    Int?
   stock           Int
+  reservedStock   Int              @default(0)
   isActive        Boolean          @default(true)
   isFeatured      Boolean          @default(false)
   purchasePrice   Int?
@@ -108,6 +109,7 @@ model ProductVariant {
   size           String
   color          String
   stock          Int
+  reservedStock  Int              @default(0)
   cartItems      CartItem[]
   orderItems     OrderItem[]
   stockMovements StockMovement[]
@@ -223,8 +225,24 @@ model Order {
   items           OrderItem[]
   tracking        OrderTracking[]
   payments        Payment[]
+  statusHistory   OrderStatusHistory[]
+  invoice         Invoice?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(cuid())
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId    String
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  message    String?
+  reason     String?
+  changedBy  String?
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId])
 }
 
 model OrderItem {
@@ -250,6 +268,51 @@ model OrderTracking {
   message   String
   location  String?
   createdAt DateTime    @default(now())
+}
+
+// ─────────────────────────────────────────
+// FACTURES
+// ─────────────────────────────────────────
+
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  order         Order         @relation(fields: [orderId], references: [id])
+  orderId       String        @unique
+  subtotal      Int
+  shippingCost  Int           @default(0)
+  discount      Int           @default(0)
+  tax           Int           @default(0)
+  total         Int
+  status        InvoiceStatus @default(GENERATED)
+  issuedAt      DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model InvoiceSequence {
+  year       Int @id
+  lastNumber Int @default(0)
+}
+
+// ─────────────────────────────────────────
+// JOURNAL D'AUDIT
+// ─────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  module     String
+  entityId   String?
+  entityType String?
+  oldValue   Json?
+  newValue   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([module, createdAt])
+  @@index([userId])
 }
 
 // ─────────────────────────────────────────
@@ -410,4 +473,11 @@ enum ExpenseCategory {
   RENT
   UTILITIES
   OTHER
+}
+
+enum InvoiceStatus {
+  GENERATED
+  SENT
+  PAID
+  CANCELLED
 }

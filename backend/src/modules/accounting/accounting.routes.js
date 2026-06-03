@@ -48,7 +48,15 @@ router.get('/dashboard', isAdmin, async (req, res) => {
       }),
       prisma.product.findMany({
         where: { isActive: true },
-        select: { id: true, stock: true, purchasePrice: true, price: true, name: true, lowStockAlert: true },
+        select: {
+          id: true,
+          stock: true,
+          reservedStock: true,
+          purchasePrice: true,
+          price: true,
+          name: true,
+          lowStockAlert: true,
+        },
       }),
     ]);
 
@@ -56,8 +64,15 @@ router.get('/dashboard', isAdmin, async (req, res) => {
     const stockRetailValue = products.reduce((acc, p) => acc + p.price * p.stock, 0);
 
     const lowStockProducts = products
-      .filter((p) => p.stock <= p.lowStockAlert)
-      .sort((a, b) => a.stock - b.stock)
+      .filter((p) => {
+        const available = p.stock - (p.reservedStock || 0);
+        return available <= p.lowStockAlert;
+      })
+      .map((p) => ({
+        ...p,
+        availableStock: p.stock - (p.reservedStock || 0),
+      }))
+      .sort((a, b) => a.availableStock - b.availableStock)
       .slice(0, 10);
 
     // Évolution CA 6 derniers mois

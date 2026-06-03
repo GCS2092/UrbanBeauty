@@ -30,7 +30,9 @@ import AdminCoupons from './pages/admin/AdminCoupons';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminPayments from './pages/admin/AdminPayments';
 import AdminSettings from './pages/admin/AdminSettings';
-import AdminAccounting from './pages/admin/AdminAccounting'; // ✅ NOUVEAU
+import AdminAccounting from './pages/admin/AdminAccounting';
+import AdminInvoices from './pages/admin/AdminInvoices';
+import AdminAudit from './pages/admin/AdminAudit';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,7 +82,9 @@ export default function App() {
                 <Route path="/admin/coupons" element={<AdminCoupons />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />
-                <Route path="/admin/accounting" element={<AdminAccounting />} /> {/* ✅ NOUVEAU */}
+                <Route path="/admin/accounting" element={<AdminAccounting />} />
+                <Route path="/admin/invoices" element={<AdminInvoices />} />
+                <Route path="/admin/audit" element={<AdminAudit />} />
               </Route>
             </Route>
 

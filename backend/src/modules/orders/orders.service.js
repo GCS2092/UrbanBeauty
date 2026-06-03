@@ -2,28 +2,27 @@ const prisma = require('../../config/database');
 const transporter = require('../../config/email');
 const { buildOrderConfirmationEmail, buildOrderStatusEmail } = require('../../utils/email.utils');
 const { generateOrderNumber } = require('../../utils/order.utils');
-const { parsePagination, buildPaginationResponse } = require('../../utils/pagination.utils');
-const { incrementStock } = require('../products/stock.service');
+const {
+  parsePagination,
+  buildPaginationResponse,
+  applyDateRangeFilter,
+} = require('../../utils/pagination.utils');
+const { checkStock, reserveStockItems } = require('../products/stock.service');
+const { logAudit } = require('../../services/audit.service');
+const { changeOrderStatusAtomic } = require('./order-fulfillment.service');
 
-async function createOrder(payload, user) {
+async function createOrder(payload, user, ip = null) {
   if (!Array.isArray(payload.items) || payload.items.length === 0) {
     const error = new Error('La commande doit contenir au moins un produit.');
     error.status = 400;
     throw error;
   }
 
-  for (const item of payload.items) {
-    const product = await prisma.product.findUnique({ where: { id: item.productId } });
-    if (!product) {
-      const error = new Error(`Produit introuvable : ${item.productId}`);
-      error.status = 404;
-      throw error;
-    }
-    if (product.stock < item.quantity) {
-      const error = new Error(`Stock insuffisant pour : ${product.name}`);
-      error.status = 400;
-      throw error;
-    }
+  const stockErrors = await checkStock(payload.items);
+  if (stockErrors.length > 0) {
+    const error = new Error(stockErrors[0]);
+    error.status = 400;
+    throw error;
   }
 
   const orderNumber = generateOrderNumber();
@@ -33,66 +32,99 @@ async function createOrder(payload, user) {
   const shippingCost = Number(payload.shippingCost || 0);
   const subtotal = payload.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // ✅ Appliquer le coupon
   let discount = 0;
   let couponId = null;
 
   if (payload.couponId) {
     const coupon = await prisma.coupon.findUnique({ where: { id: payload.couponId } });
-    if (coupon && coupon.isActive) {
-      discount = coupon.type === 'PERCENTAGE'
-        ? Math.floor(subtotal * coupon.value / 100)
-        : coupon.value;
-      couponId = coupon.id;
-
-      // ✅ Incrémenter le nombre d'utilisations
-      await prisma.coupon.update({
-        where: { id: coupon.id },
-        data: { usedCount: { increment: 1 } },
-      });
+    if (!coupon || !coupon.isActive) {
+      const error = new Error('Code promo invalide ou expiré.');
+      error.status = 400;
+      throw error;
     }
+    discount = coupon.type === 'PERCENTAGE'
+      ? Math.floor(subtotal * coupon.value / 100)
+      : coupon.value;
+    couponId = coupon.id;
   }
 
   const total = subtotal + shippingCost - discount;
 
-  const order = await prisma.order.create({
-    data: {
-      orderNumber,
-      userId,
-      guestEmail,
-      guestPhone: payload.guestPhone,
-      guestName,
-      paymentMethod: payload.paymentMethod,
-      subtotal,
-      shippingCost,
-      discount,
-      couponId,
-      total,
-      shippingAddress: payload.shippingAddress,
-      notes: payload.notes,
-      items: {
-        create: payload.items.map((item) => ({
-          productId: item.productId,
-          variantId: item.variantId,
-          productName: item.productName,
-          variantLabel: item.variantLabel,
-          price: item.price,
-          quantity: item.quantity,
-          subtotal: item.price * item.quantity,
-        })),
-      },
-      tracking: {
-        create: {
-          status: 'PENDING',
-          message: 'Commande enregistrée et en attente de confirmation.',
-          location: payload.shippingAddress?.city || null,
+  const order = await prisma.$transaction(async (tx) => {
+    await reserveStockItems(tx, payload.items);
+
+    if (couponId) {
+      await tx.coupon.update({
+        where: { id: couponId },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
+
+    const created = await tx.order.create({
+      data: {
+        orderNumber,
+        userId,
+        guestEmail,
+        guestPhone: payload.guestPhone,
+        guestName,
+        paymentMethod: payload.paymentMethod,
+        subtotal,
+        shippingCost,
+        discount,
+        couponId,
+        total,
+        shippingAddress: payload.shippingAddress,
+        notes: payload.notes,
+        items: {
+          create: payload.items.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            productName: item.productName,
+            variantLabel: item.variantLabel,
+            price: item.price,
+            quantity: item.quantity,
+            subtotal: item.price * item.quantity,
+          })),
+        },
+        tracking: {
+          create: {
+            status: 'PENDING',
+            message: 'Commande enregistrée et en attente de confirmation.',
+            location: payload.shippingAddress?.city || null,
+          },
+        },
+        statusHistory: {
+          create: {
+            toStatus: 'PENDING',
+            message: 'Commande créée',
+            changedBy: userId,
+          },
+        },
+        payments: {
+          create: {
+            method: payload.paymentMethod,
+            status: 'PENDING',
+            amount: total,
+          },
         },
       },
-    },
-    include: { items: true, tracking: true },
+      include: { items: true, tracking: true, payments: true },
+    });
+
+    await logAudit({
+      tx,
+      userId,
+      action: 'ORDER_CREATE',
+      module: 'orders',
+      entityId: created.id,
+      entityType: 'Order',
+      newValue: { orderNumber, total },
+      ip,
+    });
+
+    return created;
   });
 
-  // ✅ Email désactivé temporairement — SMTP non configuré
   if (guestEmail) {
     try {
       const emailData = buildOrderConfirmationEmail({
@@ -119,43 +151,25 @@ async function getUserOrders(userId) {
   return prisma.order.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
-    include: { items: true, tracking: true },
+    include: { items: true, tracking: true, invoice: true },
   });
 }
 
 async function getOrderByNumber(orderNumber) {
   return prisma.order.findUnique({
     where: { orderNumber },
-    include: { items: true, tracking: true },
+    include: {
+      items: true,
+      tracking: true,
+      invoice: true,
+      statusHistory: { orderBy: { createdAt: 'desc' } },
+    },
   });
 }
 
-async function changeOrderStatus(orderId, payload) {
-  const existingOrder = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: { items: true, user: true },
-  });
+async function changeOrderStatus(orderId, payload, adminUser, ip) {
+  const order = await changeOrderStatusAtomic(orderId, payload, adminUser, ip);
 
-  if (payload.status === 'CANCELLED' && existingOrder.paymentStatus === 'PAID') {
-    await incrementStock(existingOrder.items);
-  }
-
-  const order = await prisma.order.update({
-    where: { id: orderId },
-    data: { status: payload.status },
-    include: { tracking: true, user: true },
-  });
-
-  await prisma.orderTracking.create({
-    data: {
-      orderId: order.id,
-      status: order.status,
-      message: payload.message || `Statut changé en ${order.status}`,
-      location: payload.location,
-    },
-  });
-
-  // ✅ Email désactivé temporairement — SMTP non configuré
   const customerEmail = order.user?.email || order.guestEmail;
   const customerName = order.user
     ? `${order.user.firstName} ${order.user.lastName}`
@@ -183,15 +197,49 @@ async function changeOrderStatus(orderId, payload) {
   return order;
 }
 
+function buildOrdersWhere(query) {
+  const where = {};
+
+  if (query.status) where.status = query.status;
+  if (query.paymentStatus) where.paymentStatus = query.paymentStatus;
+  if (query.paymentMethod) where.paymentMethod = query.paymentMethod;
+
+  applyDateRangeFilter(where, 'createdAt', query);
+
+  if (query.search) {
+    const s = String(query.search).trim();
+    where.OR = [
+      { orderNumber: { contains: s, mode: 'insensitive' } },
+      { guestName: { contains: s, mode: 'insensitive' } },
+      { guestEmail: { contains: s, mode: 'insensitive' } },
+      { guestPhone: { contains: s, mode: 'insensitive' } },
+      { user: { email: { contains: s, mode: 'insensitive' } } },
+      { user: { firstName: { contains: s, mode: 'insensitive' } } },
+      { user: { lastName: { contains: s, mode: 'insensitive' } } },
+    ];
+  }
+
+  return where;
+}
+
 async function getAllOrders(query) {
   const { page, limit, skip } = parsePagination(query);
+  const where = buildOrdersWhere(query);
+
   const [total, orders] = await Promise.all([
-    prisma.order.count(),
+    prisma.order.count({ where }),
     prisma.order.findMany({
+      where,
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
-      include: { items: true, tracking: true, user: true },
+      include: {
+        items: true,
+        tracking: true,
+        user: true,
+        invoice: true,
+        statusHistory: { orderBy: { createdAt: 'desc' }, take: 3 },
+      },
     }),
   ]);
   return buildPaginationResponse({ data: orders, total, page, limit });
@@ -203,4 +251,5 @@ module.exports = {
   getOrderByNumber,
   changeOrderStatus,
   getAllOrders,
+  buildOrdersWhere,
 };

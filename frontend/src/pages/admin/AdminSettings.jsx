@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings, Smartphone, Truck, Save, CheckCircle, MessageCircle } from 'lucide-react';
+import { Settings, Smartphone, Truck, Save, CheckCircle, MessageCircle, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminApi } from '../../api/admin.api';
 
@@ -29,6 +29,10 @@ export default function AdminSettings() {
     delivery_fee: '2000',
     free_delivery_threshold: '50000',
     whatsapp_number: '',
+    company_name: '',
+    company_address: '',
+    company_phone: '',
+    company_email: '',
   });
   const [saved, setSaved] = useState(false);
 
@@ -76,6 +80,22 @@ export default function AdminSettings() {
       </div>
 
       <div className="max-w-2xl space-y-5">
+
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
+            <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center">
+              <Building2 size={15} className="text-rose-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-stone-900">Entreprise (factures PDF)</h2>
+              <p className="text-xs text-stone-400">Affiché en en-tête des factures</p>
+            </div>
+          </div>
+          <SettingInput label="Nom de l'entreprise" value={form.company_name} onChange={update('company_name')} placeholder="Urban Beauty" />
+          <SettingInput label="Adresse" value={form.company_address} onChange={update('company_address')} placeholder="Dakar, Sénégal" />
+          <SettingInput label="Téléphone" value={form.company_phone} onChange={update('company_phone')} placeholder="+221 77 000 00 00" />
+          <SettingInput label="Email" value={form.company_email} onChange={update('company_email')} placeholder="contact@urbanbeauty.sn" />
+        </div>
 
         {/* Numéros Mobile Money */}
         <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
