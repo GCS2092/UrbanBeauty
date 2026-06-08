@@ -1,5 +1,4 @@
 // frontend/src/api/accounting.api.js
-// Remplace ENTIÈREMENT ton fichier existant
 import api from './axios';
 
 export const accountingApi = {
@@ -12,6 +11,8 @@ export const accountingApi = {
     api.get('/api/admin/accounting/stock-movements', { params }),
   createStockMovement: (data) =>
     api.post('/api/admin/accounting/stock-movements', data),
+  cancelStockMovement: (id) =>
+    api.post(`/api/admin/accounting/stock-movements/${id}/cancel`),
 
   // ── Dépenses ──────────────────────────────────────────────
   getExpenses: (params) =>
@@ -42,7 +43,7 @@ export const accountingApi = {
     api.get('/api/admin/accounting/product-margins'),
 
   // ── Produits (pour le select dans modal mouvement stock) ──
-  // Utilise la route admin produits existante
+  // ✅ Route admin dédiée — retourne tous les produits (actifs + inactifs)
   getAdminProducts: () =>
-    api.get('/api/admin/products', { params: { limit: 200, isActive: true } }),
+    api.get('/api/products/admin/all', { params: { limit: 200 } }),
 };

@@ -150,10 +150,11 @@ export default function AdminProducts() {
   const [selected, setSelected] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});  // ← alertes champs
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const emptyForm = {
     name: '', slug: '', description: '', price: '', comparePrice: '',
+    purchasePrice: '',  // ← NOUVEAU
     stock: '', categoryId: '', isActive: true, isFeatured: false, images: [],
   };
   const [form, setForm] = useState(emptyForm);
@@ -191,6 +192,7 @@ export default function AdminProducts() {
     setForm({
       name: p.name, slug: p.slug, description: p.description || '',
       price: p.price, comparePrice: p.comparePrice || '',
+      purchasePrice: p.purchasePrice || '',  // ← NOUVEAU
       stock: p.stock, categoryId: p.categoryId || '',
       isActive: p.isActive ?? true, isFeatured: p.isFeatured ?? false,
       images: p.images || [],
@@ -207,27 +209,26 @@ export default function AdminProducts() {
       [name]: type === 'checkbox' ? checked : value,
       ...(name === 'name' ? { slug: slugify(value) } : {}),
     }));
-    // Efface l'erreur du champ dès que l'utilisateur tape
     if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: null }));
   };
 
-  // ── Validation frontend ────────────────────────────────────────────────
   const validate = () => {
     const errors = {};
     if (!form.name.trim()) errors.name = 'Le nom est obligatoire';
     if (!form.price || Number(form.price) < 0) errors.price = 'Prix invalide';
     if (form.stock === '' || Number(form.stock) < 0) errors.stock = 'Stock invalide';
+    // ← Validation optionnelle prix achat
+    if (form.purchasePrice !== '' && Number(form.purchasePrice) < 0) errors.purchasePrice = 'Prix achat invalide';
     return errors;
   };
 
-  // ── Body envoyé au backend ─────────────────────────────────────────────
-  // description vide → on n'envoie pas le champ (évite l'erreur notEmpty)
   const buildBody = () => ({
     name: form.name.trim(),
     slug: form.slug.trim(),
     ...(form.description.trim() ? { description: form.description.trim() } : {}),
     price: Number(form.price),
     comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
+    purchasePrice: form.purchasePrice !== '' ? Number(form.purchasePrice) : null,  // ← NOUVEAU
     stock: Number(form.stock),
     ...(form.categoryId ? { categoryId: form.categoryId } : {}),
     isActive: form.isActive,
@@ -278,7 +279,6 @@ export default function AdminProducts() {
     p.slug.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Classes dynamiques selon erreur
   const inputClass = (field) =>
     `w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition ${
       fieldErrors[field]
@@ -336,7 +336,8 @@ export default function AdminProducts() {
                 <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   <th className="px-6 py-3">Produit</th>
                   <th className="px-6 py-3">Catégorie</th>
-                  <th className="px-6 py-3">Prix</th>
+                  <th className="px-6 py-3">Prix vente</th>
+                  <th className="px-6 py-3">Prix achat</th>
                   <th className="px-6 py-3">Stock réel</th>
                   <th className="px-6 py-3">Réservé</th>
                   <th className="px-6 py-3">Disponible</th>
@@ -367,6 +368,13 @@ export default function AdminProducts() {
                       <td className="px-6 py-4">
                         <div className="font-semibold text-gray-900">{formatPrice(p.price)}</div>
                         {p.comparePrice && <div className="text-xs text-gray-400 line-through">{formatPrice(p.comparePrice)}</div>}
+                      </td>
+                      {/* ← NOUVELLE COLONNE prix achat */}
+                      <td className="px-6 py-4">
+                        {p.purchasePrice
+                          ? <span className="text-gray-700">{formatPrice(p.purchasePrice)}</span>
+                          : <span className="text-gray-300 text-xs italic">Non défini</span>
+                        }
                       </td>
                       <td className="px-6 py-4 font-medium text-gray-900">{p.stock ?? 0}</td>
                       <td className="px-6 py-4 text-amber-700">{p.reservedStock ?? 0}</td>
@@ -412,7 +420,6 @@ export default function AdminProducts() {
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
 
-            {/* Bandeau erreurs si plusieurs champs invalides */}
             {Object.keys(fieldErrors).length > 0 && (
               <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
                 <p className="text-sm font-medium text-red-700 mb-1">Corrigez les erreurs suivantes :</p>
@@ -441,7 +448,7 @@ export default function AdminProducts() {
                   placeholder="robe-wax-elegante" className={`${inputClass('slug')} font-mono`} />
               </div>
 
-              {/* Description (optionnelle) */}
+              {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Description <span className="text-gray-400 text-xs font-normal">(optionnelle)</span>
@@ -450,11 +457,11 @@ export default function AdminProducts() {
                   rows={3} placeholder="Description du produit..." className={inputClass('description')} />
               </div>
 
-              {/* Prix */}
+              {/* Prix vente + Prix barré */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Prix (FCFA) <span className="text-red-500">*</span>
+                    Prix vente (FCFA) <span className="text-red-500">*</span>
                   </label>
                   <input type="number" name="price" value={form.price} onChange={handleChange}
                     min="0" placeholder="25000" className={inputClass('price')} />
@@ -465,6 +472,37 @@ export default function AdminProducts() {
                   <input type="number" name="comparePrice" value={form.comparePrice} onChange={handleChange}
                     min="0" placeholder="35000" className={inputClass('comparePrice')} />
                 </div>
+              </div>
+
+              {/* ← NOUVEAU : Prix achat (ligne séparée pour mettre en valeur l'info) */}
+              <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 space-y-1">
+                <label className="block text-sm font-medium text-amber-800 mb-1">
+                  💰 Prix d'achat (FCFA) <span className="text-amber-500 text-xs font-normal">(optionnel — utilisé pour les marges)</span>
+                </label>
+                <input
+                  type="number"
+                  name="purchasePrice"
+                  value={form.purchasePrice}
+                  onChange={handleChange}
+                  min="0"
+                  placeholder="ex : 15000"
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition ${
+                    fieldErrors.purchasePrice
+                      ? 'border-red-400 focus:ring-red-200 bg-red-50'
+                      : 'border-amber-200 focus:ring-amber-300 bg-white'
+                  }`}
+                />
+                {fieldErrors.purchasePrice && <p className="text-xs text-red-500 mt-1">{fieldErrors.purchasePrice}</p>}
+                {/* Aperçu marge en temps réel */}
+                {form.price && form.purchasePrice && Number(form.purchasePrice) > 0 && (
+                  <p className="text-xs text-amber-700 mt-1">
+                    Marge estimée :{' '}
+                    <span className="font-semibold">
+                      {formatPrice(Number(form.price) - Number(form.purchasePrice))}
+                    </span>{' '}
+                    ({Math.round(((Number(form.price) - Number(form.purchasePrice)) / Number(form.price)) * 100)}%)
+                  </p>
+                )}
               </div>
 
               {/* Stock + Catégorie */}

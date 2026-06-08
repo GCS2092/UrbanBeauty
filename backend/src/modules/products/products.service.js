@@ -30,6 +30,33 @@ async function getProducts(query) {
   return buildPaginationResponse({ data: products, total, page, limit });
 }
 
+// ← NOUVEAU : tous les produits sans filtre isActive (admin uniquement)
+async function getAllProductsAdmin(query) {
+  const { page, limit, skip } = parsePagination(query);
+
+  const where = {
+    ...(query.search && {
+      OR: [
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+      ],
+    }),
+  };
+
+  const [total, products] = await Promise.all([
+    prisma.product.count({ where }),
+    prisma.product.findMany({
+      where,
+      skip,
+      take: limit,
+      include: { images: true, variants: true, category: true },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
+
+  return buildPaginationResponse({ data: products, total, page, limit });
+}
+
 async function getProductBySlug(slug) {
   return prisma.product.findUnique({
     where: { slug },
@@ -91,6 +118,7 @@ async function deleteProduct(id) {
 
 module.exports = {
   getProducts,
+  getAllProductsAdmin,
   getProductBySlug,
   createProduct,
   updateProduct,

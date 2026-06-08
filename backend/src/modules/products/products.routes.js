@@ -37,6 +37,19 @@ router.get('/', apiLimiter, productsController.getProducts);
 
 /**
  * @swagger
+ * /api/products/admin/all:
+ *   get:
+ *     summary: Liste tous les produits sans filtre isActive (Admin)
+ *     tags: [Produits]
+ *     responses:
+ *       200:
+ *         description: Liste paginée — actifs + inactifs
+ */
+// ⚠️ DOIT être avant /:slug pour ne pas être capturé comme slug
+router.get('/admin/all', authenticate, requireAdmin, productsController.getAllProductsAdmin);
+
+/**
+ * @swagger
  * /api/products/{slug}:
  *   get:
  *     summary: Détail d'un produit par slug
@@ -73,6 +86,7 @@ router.get('/:slug', apiLimiter, productsController.getProductBySlug);
  *             price: 25000
  *             stock: 10
  *             categoryId: "clxxxxxx"
+ *             purchasePrice: 15000
  *     responses:
  *       201:
  *         description: Produit créé
@@ -80,10 +94,11 @@ router.get('/:slug', apiLimiter, productsController.getProductBySlug);
 router.post('/', authenticate, requireAdmin,
   body('name').notEmpty(),
   body('slug').notEmpty(),
-  body('description').optional().notEmpty(),  // ✅ optionnelle
+  body('description').optional().notEmpty(),
   body('price').isInt({ min: 0 }),
   body('stock').isInt({ min: 0 }),
-  body('categoryId').optional().notEmpty(),   // ✅ optionnelle
+  body('categoryId').optional().notEmpty(),
+  body('purchasePrice').optional({ nullable: true }).isInt({ min: 0 }),
   checkValidation,
   productsController.createProduct
 );
@@ -105,16 +120,18 @@ router.post('/', authenticate, requireAdmin,
  *           example:
  *             price: 30000
  *             stock: 15
+ *             purchasePrice: 15000
  *     responses:
  *       200:
  *         description: Produit modifié
  */
 router.put('/:id', authenticate, requireAdmin,
   body('name').optional().notEmpty(),
-  body('description').optional().notEmpty(),  // ✅ ajouté
+  body('description').optional().notEmpty(),
   body('price').optional().isInt({ min: 0 }),
   body('stock').optional().isInt({ min: 0 }),
-  body('categoryId').optional().notEmpty(),   // ✅ ajouté
+  body('categoryId').optional().notEmpty(),
+  body('purchasePrice').optional({ nullable: true }).isInt({ min: 0 }),
   checkValidation,
   productsController.updateProduct
 );

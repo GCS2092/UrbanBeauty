@@ -211,6 +211,77 @@ router.post('/stock-movements', isAdmin, async (req, res) => {
   }
 });
 
+// POST /api/admin/accounting/stock-movements/:id/cancel
+router.post('/stock-movements/:id/cancel', isAdmin, async (req, res) => {
+  try {
+    const original = await prisma.stockMovement.findUnique({
+      where: { id: req.params.id },
+      include: { product: { select: { name: true } } },
+    });
+
+    if (!original) {
+      return res.status(404).json({ error: 'Mouvement introuvable' });
+    }
+
+    // Bloquer si c'est déjà une annulation
+    if (original.reference?.startsWith('CANCEL:')) {
+      return res.status(400).json({ error: 'Ce mouvement est déjà une annulation' });
+    }
+
+    // Bloquer si ce mouvement a déjà été annulé
+    const alreadyCancelled = await prisma.stockMovement.findFirst({
+      where: { reference: `CANCEL:${original.id}` },
+    });
+    if (alreadyCancelled) {
+      return res.status(400).json({ error: 'Ce mouvement a déjà été annulé' });
+    }
+
+    // Bloquer si plus de 24h
+    const ageHours = (Date.now() - new Date(original.createdAt).getTime()) / 3_600_000;
+    if (ageHours > 24) {
+      return res.status(400).json({
+        error: 'Annulation impossible après 24h — créez un mouvement correctif manuellement',
+      });
+    }
+
+    // Mouvement inverse : entrée → sortie, sortie → entrée
+    const isIncoming = ['IN', 'RETURN_IN', 'ADJUSTMENT'].includes(original.type);
+    const inverseType = isIncoming ? 'OUT_LOSS' : 'IN';
+    const stockDelta  = isIncoming ? -original.quantity : original.quantity;
+
+    const [cancelMovement] = await prisma.$transaction([
+      prisma.stockMovement.create({
+        data: {
+          productId:  original.productId,
+          variantId:  original.variantId  || null,
+          type:       inverseType,
+          quantity:   original.quantity,
+          unitCost:   original.unitCost   || null,
+          totalCost:  original.totalCost  || null,
+          reason:     `Annulation du mouvement #${original.id.slice(-6).toUpperCase()}`,
+          supplierId: original.supplierId || null,
+          reference:  `CANCEL:${original.id}`,
+          createdBy:  req.user.id,
+        },
+      }),
+      original.variantId
+        ? prisma.productVariant.update({
+            where: { id: original.variantId },
+            data:  { stock: { increment: stockDelta } },
+          })
+        : prisma.product.update({
+            where: { id: original.productId },
+            data:  { stock: { increment: stockDelta } },
+          }),
+    ]);
+
+    res.json(cancelMovement);
+  } catch (error) {
+    console.error('[stock-movements/cancel]', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // GET /api/admin/accounting/expenses
 router.get('/expenses', isAdmin, async (req, res) => {
   try {
@@ -320,6 +391,62 @@ router.post('/suppliers', isAdmin, async (req, res) => {
   }
 });
 
+// PUT /api/admin/accounting/suppliers/:id
+router.put('/suppliers/:id', isAdmin, async (req, res) => {
+  try {
+    const { name, email, phone, address } = req.body;
+    const supplier = await prisma.supplier.update({
+      where: { id: req.params.id },
+      data: {
+        ...(name    !== undefined && { name }),
+        ...(email   !== undefined && { email }),
+        ...(phone   !== undefined && { phone }),
+        ...(address !== undefined && { address }),
+      },
+    });
+    res.json(supplier);
+  } catch (error) {
+    if (error.code === 'P2025') return res.status(404).json({ error: 'Fournisseur introuvable' });
+    console.error('[accounting/suppliers PUT]', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// PATCH /api/admin/accounting/suppliers/:id/toggle
+router.patch('/suppliers/:id/toggle', isAdmin, async (req, res) => {
+  try {
+    const existing = await prisma.supplier.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: 'Fournisseur introuvable' });
+
+    const supplier = await prisma.supplier.update({
+      where: { id: req.params.id },
+      data:  { isActive: !existing.isActive },
+    });
+    res.json(supplier);
+  } catch (error) {
+    console.error('[accounting/suppliers PATCH toggle]', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/admin/accounting/suppliers/all
+router.get('/suppliers/all', isAdmin, async (req, res) => {
+  try {
+    const suppliers = await prisma.supplier.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        _count: {
+          select: { stockEntries: true, expenses: true },
+        },
+      },
+    });
+    res.json(suppliers);
+  } catch (error) {
+    console.error('[accounting/suppliers/all GET]', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // GET /api/admin/accounting/product-margins
 router.get('/product-margins', isAdmin, async (req, res) => {
   try {
@@ -365,67 +492,4 @@ router.get('/product-margins', isAdmin, async (req, res) => {
   }
 });
 
-// ============================================================
-// AJOUTS À COLLER À LA FIN DE :
-// backend/src/modules/accounting/accounting.routes.js
-// (juste avant la ligne `module.exports = router;`)
-// ============================================================
-
-// PUT /api/admin/accounting/suppliers/:id
-router.put('/suppliers/:id', isAdmin, async (req, res) => {
-  try {
-    const { name, email, phone, address } = req.body;
-    const supplier = await prisma.supplier.update({
-      where: { id: req.params.id },
-      data: {
-        ...(name    !== undefined && { name }),
-        ...(email   !== undefined && { email }),
-        ...(phone   !== undefined && { phone }),
-        ...(address !== undefined && { address }),
-      },
-    });
-    res.json(supplier);
-  } catch (error) {
-    if (error.code === 'P2025') return res.status(404).json({ error: 'Fournisseur introuvable' });
-    console.error('[accounting/suppliers PUT]', error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
-// PATCH /api/admin/accounting/suppliers/:id/toggle
-// Active ou désactive un fournisseur
-router.patch('/suppliers/:id/toggle', isAdmin, async (req, res) => {
-  try {
-    const existing = await prisma.supplier.findUnique({ where: { id: req.params.id } });
-    if (!existing) return res.status(404).json({ error: 'Fournisseur introuvable' });
-
-    const supplier = await prisma.supplier.update({
-      where: { id: req.params.id },
-      data:  { isActive: !existing.isActive },
-    });
-    res.json(supplier);
-  } catch (error) {
-    console.error('[accounting/suppliers PATCH toggle]', error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
-// GET /api/admin/accounting/suppliers/all
-// Retourne TOUS les fournisseurs (actifs + inactifs) pour la page de gestion
-router.get('/suppliers/all', isAdmin, async (req, res) => {
-  try {
-    const suppliers = await prisma.supplier.findMany({
-      orderBy: { name: 'asc' },
-      include: {
-        _count: {
-          select: { stockEntries: true, expenses: true },
-        },
-      },
-    });
-    res.json(suppliers);
-  } catch (error) {
-    console.error('[accounting/suppliers/all GET]', error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
 module.exports = router;

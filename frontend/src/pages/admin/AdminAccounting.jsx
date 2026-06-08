@@ -1,6 +1,4 @@
 // frontend/src/pages/admin/AdminAccounting.jsx
-// Remplace ENTIÈREMENT ton fichier existant
-// npm install jspdf jspdf-autotable  ← si pas déjà fait
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -43,18 +41,18 @@ const EXPENSE_CATEGORIES = [
 ];
 
 const MOVEMENT_TYPES = [
-  { value: 'IN',         label: 'Entrée stock',        color: 'text-emerald-600' },
-  { value: 'OUT_SALE',   label: 'Vente',               color: 'text-blue-600' },
-  { value: 'OUT_LOSS',   label: 'Perte / casse',        color: 'text-red-500' },
-  { value: 'OUT_RETURN', label: 'Retour fournisseur',   color: 'text-amber-600' },
-  { value: 'ADJUSTMENT', label: 'Ajustement',           color: 'text-violet-600' },
-  { value: 'RETURN_IN',  label: 'Retour client',        color: 'text-teal-600' },
+  { value: 'IN',         label: 'Entrée stock',       color: 'text-emerald-600' },
+  { value: 'OUT_SALE',   label: 'Vente',              color: 'text-blue-600' },
+  { value: 'OUT_LOSS',   label: 'Perte / casse',      color: 'text-red-500' },
+  { value: 'OUT_RETURN', label: 'Retour fournisseur', color: 'text-amber-600' },
+  { value: 'ADJUSTMENT', label: 'Ajustement',         color: 'text-violet-600' },
+  { value: 'RETURN_IN',  label: 'Retour client',      color: 'text-teal-600' },
 ];
 
 const PIE_COLORS = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#8b5cf6','#14b8a6'];
 
 // Types pour lesquels on affiche fournisseur + coût (= entrées stock)
-const IS_INCOMING = (type) => ['IN', 'RETURN_IN'].includes(type);
+const IS_INCOMING = (type) => ['IN', 'RETURN_IN', 'ADJUSTMENT'].includes(type);
 
 // ─── Export PDF ────────────────────────────────────────────────
 const exportPDF = async (dashboard, period, year, month) => {
@@ -239,10 +237,15 @@ export default function AdminAccounting() {
   const [showExpenseModal,  setShowExpenseModal]  = useState(false);
   const [showStockModal,    setShowStockModal]    = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
-  const [editingSupplier,   setEditingSupplier]   = useState(null); // null = création, objet = édition
+  const [editingSupplier,   setEditingSupplier]   = useState(null);
 
-  // État local du formulaire mouvement stock (pour affichage conditionnel)
+  // Formulaire mouvement stock — affichage conditionnel
   const [stockMovementType, setStockMovementType] = useState('IN');
+
+  // Filtres onglet stock
+  const [filterProduct, setFilterProduct] = useState('');
+  const [filterType,    setFilterType]    = useState('');
+  const [filterDate,    setFilterDate]    = useState('');
 
   const qc = useQueryClient();
 
@@ -270,20 +273,17 @@ export default function AdminAccounting() {
     enabled:  tab === 'margins',
   });
 
-  // Fournisseurs actifs → pour les selects dans les modals
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers'],
     queryFn:  () => accountingApi.getSuppliers().then((r) => r.data),
   });
 
-  // Tous les fournisseurs → pour l'onglet gestion fournisseurs
   const { data: allSuppliers, isLoading: suppliersLoading } = useQuery({
     queryKey: ['suppliers-all'],
     queryFn:  () => accountingApi.getAllSuppliers().then((r) => r.data),
     enabled:  tab === 'suppliers',
   });
 
-  // Produits → pour le select dans le modal mouvement stock
   const { data: productsData } = useQuery({
     queryKey: ['admin-products-select'],
     queryFn:  () => accountingApi.getAdminProducts().then((r) => r.data),
@@ -322,6 +322,20 @@ export default function AdminAccounting() {
       setShowStockModal(false);
     },
     onError: () => toast.error("Erreur lors de l'enregistrement"),
+  });
+
+  const cancelStockMutation = useMutation({
+    mutationFn: accountingApi.cancelStockMovement,
+    onSuccess: () => {
+      toast.success('Mouvement annulé — mouvement inverse créé');
+      qc.invalidateQueries({ queryKey: ['accounting-stock'] });
+      qc.invalidateQueries({ queryKey: ['accounting-dashboard'] });
+      qc.invalidateQueries({ queryKey: ['admin-products-select'] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.error || "Erreur lors de l'annulation";
+      toast.error(msg);
+    },
   });
 
   const createSupplierMutation = useMutation({
@@ -570,7 +584,7 @@ export default function AdminAccounting() {
               <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wide">Résumé comptable de la période</h3>
               <div className="space-y-3 text-sm max-w-md">
                 {[
-                  { label: "Chiffre d'affaires (CA)",        value: fmt(dashboard.revenue),    cls: 'text-slate-800' },
+                  { label: "Chiffre d'affaires (CA)",        value: fmt(dashboard.revenue),     cls: 'text-slate-800' },
                   { label: '— Coût des marchandises (CMV)',   value: `- ${fmt(dashboard.cogs)}`, cls: 'text-red-500' },
                   { label: '= Bénéfice brut',                value: fmt(dashboard.grossProfit), cls: 'font-semibold text-slate-800 border-t border-slate-200 pt-3 mt-1' },
                   { label: '— Dépenses opérationnelles',     value: `- ${fmt(dashboard.expenses)}`, cls: 'text-red-500' },
@@ -654,38 +668,119 @@ export default function AdminAccounting() {
               </button>
             }
           />
+
+          {/* ── Filtres ── */}
+          <div className="flex flex-wrap gap-3 mb-4">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+              <option value="">Tous les types</option>
+              {MOVEMENT_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterProduct}
+              onChange={(e) => setFilterProduct(e.target.value)}
+              className="text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none min-w-[180px]">
+              <option value="">Tous les produits</option>
+              {Array.isArray(products) && products.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+            />
+
+            {(filterType || filterProduct || filterDate) && (
+              <button
+                onClick={() => { setFilterType(''); setFilterProduct(''); setFilterDate(''); }}
+                className="text-sm text-slate-400 hover:text-slate-600 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">
+                ✕ Réinitialiser
+              </button>
+            )}
+          </div>
+
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  {['Date', 'Produit', 'Type', 'Quantité', 'Coût unitaire', 'Coût total', 'Fournisseur', 'Référence', 'Motif'].map((h) => (
+                  {['Date','Produit','Type','Quantité','Coût unitaire','Coût total','Fournisseur','Référence','Motif',''].map((h) => (
                     <th key={h} className="px-4 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {stockMovements?.movements?.map((m) => {
-                  const typeInfo = MOVEMENT_TYPES.find((t) => t.value === m.type);
-                  const isIn = IS_INCOMING(m.type);
-                  return (
-                    <tr key={m.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3.5 text-slate-400 text-xs whitespace-nowrap">{new Date(m.createdAt).toLocaleDateString('fr-FR')}</td>
-                      <td className="px-4 py-3.5 text-slate-800 font-medium max-w-[160px] truncate">{m.product?.name}</td>
-                      <td className="px-4 py-3.5 whitespace-nowrap"><span className={`text-xs font-semibold ${typeInfo?.color}`}>{typeInfo?.label}</span></td>
-                      <td className={`px-4 py-3.5 font-bold whitespace-nowrap ${isIn ? 'text-emerald-600' : 'text-red-500'}`}>
-                        {isIn ? '+' : '-'}{m.quantity}
-                      </td>
-                      <td className="px-4 py-3.5 text-slate-500">{m.unitCost ? fmt(m.unitCost) : '—'}</td>
-                      <td className="px-4 py-3.5 text-slate-500">{m.totalCost ? fmt(m.totalCost) : '—'}</td>
-                      <td className="px-4 py-3.5 text-slate-400 text-xs">{m.supplier?.name || '—'}</td>
-                      <td className="px-4 py-3.5 text-slate-300 font-mono text-xs">{m.reference || '—'}</td>
-                      <td className="px-4 py-3.5 text-slate-400 text-xs">{m.reason || '—'}</td>
-                    </tr>
+                {(() => {
+                  const now = Date.now();
+                  const filtered = (stockMovements?.movements ?? []).filter((m) => {
+                    if (filterType    && m.type      !== filterType)    return false;
+                    if (filterProduct && m.productId !== filterProduct) return false;
+                    if (filterDate) {
+                      const mDate = new Date(m.createdAt).toISOString().split('T')[0];
+                      if (mDate !== filterDate) return false;
+                    }
+                    return true;
+                  });
+
+                  if (!filtered.length) return (
+                    <tr><td colSpan={10} className="px-4 py-16 text-center text-slate-400">
+                      {filterType || filterProduct || filterDate
+                        ? 'Aucun mouvement pour ces filtres'
+                        : 'Aucun mouvement enregistré'}
+                    </td></tr>
                   );
-                })}
-                {!stockMovements?.movements?.length && (
-                  <tr><td colSpan={9} className="px-4 py-16 text-center text-slate-400">Aucun mouvement enregistré</td></tr>
-                )}
+
+                  return filtered.map((m) => {
+                    const typeInfo  = MOVEMENT_TYPES.find((t) => t.value === m.type);
+                    const isIn      = IS_INCOMING(m.type);
+                    const ageHours  = (now - new Date(m.createdAt).getTime()) / 3_600_000;
+                    const isCancel  = m.reference?.startsWith('CANCEL:');
+                    const canCancel = !isCancel && ageHours <= 24;
+
+                    return (
+                      <tr key={m.id} className={`hover:bg-slate-50 transition-colors ${isCancel ? 'opacity-50' : ''}`}>
+                        <td className="px-4 py-3.5 text-slate-400 text-xs whitespace-nowrap">
+                          {new Date(m.createdAt).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-800 font-medium max-w-[160px] truncate">{m.product?.name}</td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <span className={`text-xs font-semibold ${typeInfo?.color}`}>
+                            {isCancel ? '↩ ' : ''}{typeInfo?.label}
+                          </span>
+                        </td>
+                        <td className={`px-4 py-3.5 font-bold whitespace-nowrap ${isIn ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {isIn ? '+' : '-'}{m.quantity}
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-500">{m.unitCost  ? fmt(m.unitCost)  : '—'}</td>
+                        <td className="px-4 py-3.5 text-slate-500">{m.totalCost ? fmt(m.totalCost) : '—'}</td>
+                        <td className="px-4 py-3.5 text-slate-400 text-xs">{m.supplier?.name || '—'}</td>
+                        <td className="px-4 py-3.5 text-slate-300 font-mono text-xs">{m.reference || '—'}</td>
+                        <td className="px-4 py-3.5 text-slate-400 text-xs">{m.reason || '—'}</td>
+                        <td className="px-4 py-3.5">
+                          {canCancel && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Annuler ce mouvement ? Un mouvement inverse sera créé automatiquement.`)) {
+                                  cancelStockMutation.mutate(m.id);
+                                }
+                              }}
+                              disabled={cancelStockMutation.isPending}
+                              className="text-xs text-slate-300 hover:text-amber-500 transition-colors font-medium whitespace-nowrap disabled:opacity-50">
+                              ↩ Annuler
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
               </tbody>
             </table>
           </div>
@@ -759,7 +854,6 @@ export default function AdminAccounting() {
               {allSuppliers?.map((s) => (
                 <div key={s.id}
                   className={`bg-white rounded-2xl border shadow-sm p-5 transition-all ${s.isActive ? 'border-slate-200' : 'border-slate-100 opacity-60'}`}>
-                  {/* En-tête */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm">
@@ -775,7 +869,6 @@ export default function AdminAccounting() {
                     </Badge>
                   </div>
 
-                  {/* Coordonnées */}
                   <div className="space-y-1.5 mb-4 text-sm">
                     {s.email && (
                       <div className="flex items-center gap-2 text-slate-500">
@@ -794,7 +887,6 @@ export default function AdminAccounting() {
                     )}
                   </div>
 
-                  {/* Compteurs */}
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     <div className="bg-slate-50 rounded-xl p-3 text-center">
                       <p className="text-2xl font-bold text-slate-800">{s._count?.stockEntries ?? 0}</p>
@@ -806,7 +898,6 @@ export default function AdminAccounting() {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex gap-2">
                     <button
                       onClick={() => { setEditingSupplier(s); setShowSupplierModal(true); }}
@@ -827,7 +918,6 @@ export default function AdminAccounting() {
                 </div>
               ))}
 
-              {/* Card "Ajouter" */}
               <button
                 onClick={() => { setEditingSupplier(null); setShowSupplierModal(true); }}
                 className="border-2 border-dashed border-slate-200 rounded-2xl p-5 flex flex-col items-center justify-center gap-3 text-slate-400 hover:border-indigo-300 hover:text-indigo-500 transition-all min-h-[200px]">
@@ -897,12 +987,9 @@ export default function AdminAccounting() {
 
       {/* ══════════════════════════════════════════
           MODAL: Mouvement de stock
-          — productId = SELECT (plus de saisie manuelle)
-          — fournisseur + coût = affiché seulement si type IN / RETURN_IN
       ══════════════════════════════════════════ */}
       <Modal open={showStockModal} onClose={() => { setShowStockModal(false); setStockMovementType('IN'); }} title="Enregistrer un mouvement de stock">
         <form onSubmit={handleStockSubmit} className="space-y-4">
-          {/* Produit — SELECT depuis la vraie liste */}
           <div>
             <label className={labelCls}>Produit *</label>
             <select name="productId" required className={inputCls}>
@@ -916,7 +1003,6 @@ export default function AdminAccounting() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {/* Type — déclenche l'affichage conditionnel */}
             <div>
               <label className={labelCls}>Type de mouvement *</label>
               <select name="type" required className={inputCls}
@@ -931,7 +1017,6 @@ export default function AdminAccounting() {
             </div>
           </div>
 
-          {/* Champs affichés uniquement pour les entrées stock */}
           {IS_INCOMING(stockMovementType) && (
             <div className="grid grid-cols-2 gap-3">
               <div>

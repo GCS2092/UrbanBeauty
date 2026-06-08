@@ -9,6 +9,16 @@ async function getProducts(req, res, next) {
   }
 }
 
+// ← NOUVEAU : tous les produits pour l'admin (actifs + inactifs)
+async function getAllProductsAdmin(req, res, next) {
+  try {
+    const result = await productsService.getAllProductsAdmin(req.query);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getProductBySlug(req, res, next) {
   try {
     const product = await productsService.getProductBySlug(req.params.slug);
@@ -50,6 +60,7 @@ async function deleteProduct(req, res, next) {
 
 const productsController = {
   getProducts,
+  getAllProductsAdmin,
   getProductBySlug,
   createProduct,
   updateProduct,
