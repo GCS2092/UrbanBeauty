@@ -6,7 +6,21 @@ const { uploadMiddleware } = require('../../middlewares/upload.middleware');
 
 const router = express.Router();
 
-router.post('/image', authenticate, requireAdmin, uploadMiddleware.single('image'), uploadController.uploadImage);
-router.delete('/image/:publicId', authenticate, requireAdmin, uploadController.deleteImage);
+// POST /api/upload/image  — upload 1 image → { url, publicId }
+router.post(
+  '/image',
+  authenticate,
+  requireAdmin,
+  uploadMiddleware.single('image'),
+  uploadController.uploadImage,
+);
+
+// DELETE /api/upload/image/:publicId  — supprime une image Cloudinary
+router.delete(
+  '/image/:publicId',
+  authenticate,
+  requireAdmin,
+  uploadController.deleteImage,
+);
 
 module.exports = router;

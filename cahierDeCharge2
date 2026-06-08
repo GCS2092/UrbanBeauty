@@ -1,6 +1,6 @@
 ================================================================
 PLATEFORME DE GESTION — DOCUMENT COMPLET
-Version 2.0 — Multi-boutiques + Guide utilisateur + Points bloquants
+Version 3.0 — Multi-boutiques + Améliorations intégrées
 ================================================================
 
 LÉGENDE :
@@ -25,49 +25,84 @@ Toute la plateforme doit être pensée autour de cette réalité.
 
 [🆕 NOUVEAU] Chaque boutique doit avoir :
 - Un identifiant unique (nom, code, adresse).
-mais la boutique principale doit rester a meme de generer toutle necessaire poru suivreles autes boutiques aussi
 - Un ou plusieurs utilisateurs rattachés.
-- Des permissions spécifiques (une boutique ne voit pas les données des autres sauf l'administrateur).
+- Des permissions spécifiques (une boutique ne voit pas les données
+  des autres sauf l'administrateur).
 - Ses propres commandes, factures, livraisons et rapports.
 - Accès au stock central commun.
 
-[🚨 BLOQUANT] Si ce cloisonnement n'est pas en place, les utilisateurs d'une
-boutique verront et pourront modifier les données des autres boutiques.
+La boutique principale (siège) peut générer tous les rapports
+nécessaires pour suivre toutes les autres boutiques.
+
+[🚨 BLOQUANT] Si ce cloisonnement n'est pas en place, les utilisateurs
+d'une boutique verront et pourront modifier les données des autres.
 Cela rend la plateforme inutilisable en environnement multi-boutiques.
 
 --------------------------------------------------------------
 0.2 STOCK CENTRAL PARTAGÉ
 --------------------------------------------------------------
 
-[🆕 NOUVEAU] Le stock central est unique et partagé entre toutes les boutiques.
+[🆕 NOUVEAU] Le stock central est unique et partagé entre toutes
+les boutiques.
 
 Règles à respecter :
 - Chaque vente dans n'importe quelle boutique décrémente le stock central.
 - Chaque approvisionnement incrémente le stock central.
-- Les transferts entre boutiques doivent être traçés (bon de transfert).
-- Le stock disponible affiché dans chaque boutique est celui du stock central
-  en temps réel, moins les réservations en cours des autres boutiques.
+- Les transferts entre boutiques doivent être tracés (bon de transfert).
+- Le stock disponible affiché dans chaque boutique est celui du stock
+  central en temps réel, moins les réservations en cours.
 
 [🚨 BLOQUANT] Si deux boutiques vendent simultanément le même produit
 sans gestion des réservations, des ventes en négatif sont possibles.
 Il faut un mécanisme de réservation de stock à la création de commande.
 
 [⚠️ CONSEIL] Définir clairement : est-ce qu'une boutique peut vendre
-un produit dont le stock est à 0 ? (vente en backorder ou blocage automatique ?)
+un produit dont le stock est à 0 ? (vente en backorder ou blocage ?)
 
 --------------------------------------------------------------
-0.3 TRANSFERTS ENTRE BOUTIQUES
+0.3 EXPIRATION DES RÉSERVATIONS DE STOCK
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Règle de gestion des réservations :
+
+- Toute commande en statut "Brouillon" depuis plus de X heures libère
+  automatiquement sa réservation de stock. X est configurable par
+  l'administrateur (recommandé : 24h).
+- Une notification est envoyée à l'administrateur avant l'expiration
+  pour qu'il puisse agir.
+- Si la commande est confirmée après expiration de la réservation,
+  le stock est re-vérifié en temps réel.
+- Si le stock est devenu insuffisant entre-temps, un message d'erreur
+  clair est affiché : "Stock insuffisant — veuillez vérifier la
+  disponibilité avant de confirmer."
+
+[🚨 BLOQUANT] Sans règle d'expiration, une commande en brouillon
+peut bloquer du stock indéfiniment et empêcher d'autres ventes.
+
+--------------------------------------------------------------
+0.4 TRANSFERTS ENTRE BOUTIQUES
 --------------------------------------------------------------
 
 [🆕 NOUVEAU]
 - Créer une demande de transfert depuis une boutique vers une autre.
 - Validation par un administrateur ou le gestionnaire de stock.
 - Génération automatique d'un bon de transfert.
-- Mise à jour du stock central avec traçabilité (sortie boutique A → entrée boutique B).
+- Mise à jour du stock central avec traçabilité
+  (sortie boutique A → entrée boutique B).
 - Historique complet des transferts.
 
+Règle retours inter-boutiques :
+- Un client peut retourner un article dans n'importe quelle boutique,
+  même si l'achat a été effectué dans une boutique différente.
+- Le stock est toujours réintégré dans le stock CENTRAL, pas dans
+  la boutique qui traite le retour.
+- La boutique qui traite le retour est notée dans le bon de retour
+  pour la traçabilité.
+- La boutique d'origine de la commande reste la référence pour
+  la comptabilité et les rapports.
+
 --------------------------------------------------------------
-0.4 RAPPORTS MULTI-BOUTIQUES
+0.5 RAPPORTS MULTI-BOUTIQUES
 --------------------------------------------------------------
 
 [🆕 NOUVEAU] L'administrateur doit pouvoir consulter :
@@ -77,14 +112,49 @@ un produit dont le stock est à 0 ? (vente en backorder ou blocage automatique ?
 - Stock central avec répartition par boutique si applicable.
 
 --------------------------------------------------------------
-0.5 PERMISSIONS ET ISOLATION DES DONNÉES
+0.6 PERMISSIONS ET ISOLATION DES DONNÉES
 --------------------------------------------------------------
 
 [🚨 BLOQUANT] Règle fondamentale :
-- Un utilisateur rattaché à la boutique A ne voit QUE les données de la boutique A.
+- Un utilisateur rattaché à la boutique A ne voit QUE les données
+  de la boutique A.
 - Un gestionnaire peut avoir accès à plusieurs boutiques (configurable).
 - Seul l'administrateur a une vue globale sur toutes les boutiques.
-- Les rapports, commandes, factures et clients sont cloisonnés par boutique.
+- Les rapports, commandes, factures et clients sont cloisonnés
+  par boutique.
+
+--------------------------------------------------------------
+0.7 GESTION DES PRIX PAR BOUTIQUE
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Règle de gestion des prix :
+
+- Le prix de vente de référence est unique et défini au niveau produit
+  (catalogue commun).
+- Chaque boutique peut appliquer une remise ou majoration configurable
+  par l'administrateur (ex : boutique B applique -5% sur tous ses prix).
+- Cette remise par boutique s'applique automatiquement à toutes les
+  commandes de cette boutique.
+- Elle est affichée clairement sur la facture comme "Remise boutique".
+- Elle est tracée dans les rapports comptables pour analyse.
+
+Avantages : pas de double catalogue à maintenir, flexibilité par point
+de vente, traçabilité comptable complète.
+
+[⚠️ CONSEIL] Il est aussi possible d'autoriser des remises ponctuelles
+par commande (voir section 25), qui s'ajoutent à la remise boutique.
+
+--------------------------------------------------------------
+0.8 GESTION DES DEVISES
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] La plateforme fonctionne en FCFA par défaut.
+
+- Un champ "devise" est intégré dès le départ dans la base de données,
+  même si une seule devise est utilisée initialement.
+- Le taux de conversion peut être saisi manuellement par
+  l'administrateur si nécessaire.
+- Cela permet une extension future sans refonte de la base de données.
 
 ================================================================
 SECTION 1 — TABLEAU DE BORD
@@ -97,11 +167,12 @@ GUIDE UTILISATEUR — Comment ça marche
 Le tableau de bord est la première page visible après connexion.
 Il affiche une synthèse de l'activité en temps réel.
 
-Pour l'administrateur : vue globale ou vue par boutique (filtre en haut de page).
+Pour l'administrateur : vue globale ou vue par boutique
+(filtre en haut de page).
 Pour un gestionnaire de boutique : vue limitée à sa boutique.
 
-Les graphiques sont cliquables : cliquer sur une période ouvre le détail
-de cette période (produits vendus, commandes, CA, marges).
+Les graphiques sont cliquables : cliquer sur une période ouvre
+le détail de cette période (produits vendus, commandes, CA, marges).
 
 Les indicateurs se mettent à jour automatiquement à chaque action
 (nouvelle commande, livraison validée, ajustement de stock).
@@ -112,7 +183,8 @@ FONCTIONNALITÉS
 
 [🔧 À COMPLÉTER] Ajouter une description claire sous chaque graphique.
 [🆕 NOUVEAU] Rendre chaque période cliquable pour accéder au détail.
-[🆕 NOUVEAU] Filtre boutique en haut du tableau de bord (vue par boutique ou globale).
+[🆕 NOUVEAU] Filtre boutique en haut du tableau de bord
+             (vue par boutique ou globale).
 
 Détail d'une période sélectionnée :
 [🆕 NOUVEAU] Produits vendus / Quantités / Plus vendus / Moins vendus.
@@ -126,8 +198,7 @@ POINTS BLOQUANTS À ÉVITER
 l'administrateur ne peut pas piloter son activité multi-boutiques.
 
 [🚨 BLOQUANT] Si les statistiques ne se mettent pas à jour en temps réel,
-les chiffres affichés ne reflètent pas la réalité et les décisions
-prises sur leur base sont fausses.
+les chiffres affichés ne reflètent pas la réalité.
 
 ================================================================
 SECTION 2 — GESTION DES COMMANDES
@@ -140,22 +211,27 @@ GUIDE UTILISATEUR — Comment ça marche
 Une commande peut être créée de trois façons :
 1. Automatiquement depuis le site e-commerce (synchronisation).
 2. Manuellement par un administrateur ou commercial depuis le back-office.
-3. Par import (si applicable).
+3. Via le bouton WhatsApp du panier (voir section 11).
 
 Cycle de vie d'une commande :
 Brouillon → Confirmée → En préparation → Expédiée → Livrée → Clôturée
                                                    ↘ Annulée
                                                    ↘ Retour en cours
 
+Cas particulier — Commande WhatsApp :
+En attente de confirmation → Confirmée → (cycle normal)
+                           ↘ Rejetée (supprimée après 24h si sans réponse)
+
 À chaque changement de statut :
 - Le stock est mis à jour.
 - La facture est générée ou mise à jour.
 - La comptabilité est mise à jour.
 - Le livreur est notifié si applicable.
-- Le client est notifié (WhatsApp / SMS).
+- Le client est notifié via lien WhatsApp.
 
 Pour modifier une commande :
-- Seules les commandes en statut "Brouillon" ou "Confirmée" sont modifiables.
+- Seules les commandes en statut "Brouillon" ou "Confirmée" sont
+  modifiables.
 - Au-delà, une modification nécessite une validation administrateur
   et est tracée dans l'historique.
 
@@ -167,14 +243,36 @@ FONCTIONNALITÉS
 
 Création et suivi
 -----------------
-[🔧 À COMPLÉTER] Création manuelle depuis l'espace admin avec sélection de la boutique.
+[🔧 À COMPLÉTER] Création manuelle depuis l'espace admin avec sélection
+                 de la boutique.
 [🔧 À COMPLÉTER] Modification contrôlée selon le statut.
-[🆕 NOUVEAU] Historique complet des changements de statut (qui, quand, pourquoi).
+[🆕 NOUVEAU] Historique complet des changements de statut
+             (qui, quand, pourquoi).
 [🆕 NOUVEAU] Rattachement de chaque commande à une boutique spécifique.
+
+Commandes sans compte client
+-----------------------------
+[🆕 NOUVEAU] Une commande peut être enregistrée sans que le client
+ait un compte sur la plateforme.
+
+Dans ce cas, les informations suivantes sont collectées et enregistrées :
+- Nom complet
+- Numéro de téléphone (obligatoire)
+- Adresse de livraison
+- Mode de paiement choisi
+- Boutique concernée
+
+Ces informations sont visibles dans la fiche commande et dans
+les rapports, exactement comme pour un client avec compte.
+
+[⚠️ CONSEIL] Si le même numéro de téléphone commande à nouveau,
+le système propose de rattacher la commande à un compte existant
+ou de créer un compte pour ce client.
 
 Synchronisation
 ---------------
-[🚨 BLOQUANT] Vérifier impérativement que la validation d'une commande déclenche :
+[🚨 BLOQUANT] Vérifier impérativement que la validation d'une commande
+déclenche :
 - Mise à jour du stock central.
 - Création du mouvement de stock.
 - Génération de la facture.
@@ -197,9 +295,8 @@ POINTS BLOQUANTS À ÉVITER
 [🚨 BLOQUANT] Une commande validée sans mise à jour du stock
 crée des ventes fantômes et fausse tout l'inventaire.
 
-[🚨 BLOQUANT] Sans transaction atomique, une panne en cours de validation
-peut créer une commande confirmée sans facture, ou un stock décrémenté
-sans commande enregistrée.
+[🚨 BLOQUANT] Sans transaction atomique, une panne en cours de
+validation peut créer une commande confirmée sans facture.
 
 [🚨 BLOQUANT] Sans filtre par boutique, un gestionnaire voit et peut
 modifier les commandes de toutes les boutiques.
@@ -212,21 +309,16 @@ SECTION 3 — GESTION DES FACTURES
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-Les factures sont générées automatiquement à la validation d'une commande.
-Elles ne peuvent pas être créées manuellement (sauf cas administratif exceptionnel
-tracé dans le journal d'audit).
+Les factures sont générées automatiquement à la validation d'une
+commande. Elles ne peuvent pas être créées manuellement (sauf cas
+administratif exceptionnel tracé dans le journal d'audit).
 
 Une facture est liée à :
 - Une commande (référence croisée).
-- Un client.
+- Un client (ou aux informations de commande sans compte).
 - Une boutique.
 
-Les statuts d'une facture : Générée → Envoyée → Payée → Annulée → Avoir émis.
-
-Pour accéder à une facture : depuis la commande, depuis la fiche client,
-ou depuis le module factures avec les filtres.
-
-Pour exporter : bouton PDF, Excel ou impression directe depuis la fiche facture.
+Statuts d'une facture : Générée → Envoyée → Payée → Annulée → Avoir émis.
 
 --------------------------------------------------------------
 FONCTIONNALITÉS
@@ -237,17 +329,19 @@ FONCTIONNALITÉS
 Contenu obligatoire de chaque facture
 ---------------------------------------
 [🔧 À COMPLÉTER] Vérifier la présence de :
-Informations entreprise / Informations client / Boutique émettrice /
-Produits / Quantités / Prix unitaires / Sous-total / Remises /
-Taxes / Total / Date / Référence commande / Mode de livraison.
+Informations entreprise / Informations client (ou nom + téléphone pour
+commandes sans compte) / Boutique émettrice / Produits / Quantités /
+Prix unitaires / Remise boutique (si applicable) / Remises ponctuelles /
+Sous-total / Taxes / Total / Date / Référence commande /
+Mode de livraison / Mode de paiement.
 
 Numérotation
 ------------
-[🔧 À COMPLÉTER] Format : FA-2026-0001 (avec année et numéro séquentiel).
-[⚠️ CONSEIL] En multi-boutiques, envisager : FA-BTA-2026-0001 (BTA = boutique A)
-pour distinguer les factures par point de vente.
-[🚨 BLOQUANT] La numérotation ne doit jamais se réinitialiser ni créer de doublons,
-même en cas de suppression ou d'annulation d'une facture.
+[🔧 À COMPLÉTER] Format : FA-BTA-2026-0001
+(BTA = code boutique, séquentiel par boutique, jamais de doublon).
+
+[🚨 BLOQUANT] La numérotation ne doit jamais se réinitialiser ni créer
+de doublons, même en cas de suppression ou d'annulation d'une facture.
 
 Navigation
 ----------
@@ -263,12 +357,11 @@ Exports
 POINTS BLOQUANTS À ÉVITER
 --------------------------------------------------------------
 
-[🚨 BLOQUANT] Une facture avec des informations manquantes (pas de total,
-pas de référence commande, pas d'infos entreprise) n'est pas valide légalement
-et ne peut pas être remise au client.
+[🚨 BLOQUANT] Une facture avec des informations manquantes n'est pas
+valide légalement et ne peut pas être remise au client.
 
-[🚨 BLOQUANT] Des doublons de numéros de factures rendent la comptabilité
-impossible à auditer.
+[🚨 BLOQUANT] Des doublons de numéros de factures rendent la
+comptabilité impossible à auditer.
 
 ================================================================
 SECTION 4 — GÉNÉRATION DE DOCUMENTS ET EXPORTS
@@ -278,9 +371,10 @@ SECTION 4 — GÉNÉRATION DE DOCUMENTS ET EXPORTS
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-Un espace centralisé "Documents & Exports" accessible depuis le menu principal.
-L'utilisateur choisit le type de document, applique les filtres souhaités
-(période, boutique, client, produit, statut) et génère le document.
+Un espace centralisé "Documents & Exports" accessible depuis le menu
+principal. L'utilisateur choisit le type de document, applique les
+filtres souhaités (période, boutique, client, produit, statut) et
+génère le document.
 
 Tous les documents sont horodatés et portent le nom de l'utilisateur
 qui les a générés.
@@ -292,26 +386,42 @@ FONCTIONNALITÉS
 [🆕 NOUVEAU] Espace centralisé de génération de documents.
 
 Documents PDF disponibles :
-Factures / Avoirs / Bons de livraison / Bons de transfert inter-boutiques /
-Rapports de ventes / Rapports de stock / Rapports comptables /
-Historique des opérations / Rapports clients / Rapports livreurs /
-Rapports par boutique / Rapport consolidé multi-boutiques.
+Factures / Avoirs / Bons de livraison / Bons de transfert
+inter-boutiques / Rapports de ventes / Rapports de stock /
+Rapports comptables / Historique des opérations / Rapports clients /
+Rapports livreurs / Rapports par boutique /
+Rapport consolidé multi-boutiques.
 
 Formats d'export :
 PDF / Excel (.xlsx) / CSV.
 
 Filtres disponibles sur tous les exports :
-Date / Période / Boutique / Client / Produit / Livreur / Statut / Utilisateur.
+Date / Période / Boutique / Client / Produit / Livreur / Statut /
+Utilisateur.
+
+Permissions sur les exports
+-----------------------------
+[🆕 NOUVEAU] Les droits d'export sont définis par rôle :
+
+- Livreur : aucun export. Accès uniquement à ses propres missions.
+- Commercial : export de ses commandes et clients uniquement.
+- Comptable : export comptabilité et factures uniquement.
+- Magasinier : export des mouvements de stock de sa boutique.
+- Gestionnaire de boutique : export de toutes les données de sa boutique.
+- Administrateur : export global sans restriction.
+
+Chaque export est tracé dans le journal d'audit avec le nom de
+l'utilisateur, la date et le périmètre exporté.
 
 --------------------------------------------------------------
 ⚠️ CONSEILS TECHNIQUES — EXPORTS
 --------------------------------------------------------------
 
 Avant de développer les exports, vérifier :
-- Que les champs exportés correspondent exactement aux champs en base de données.
+- Que les champs exportés correspondent exactement aux champs en base.
 - Que les libellés des colonnes sont cohérents entre PDF, Excel et CSV.
-- Que les montants indiquent clairement si les taxes sont incluses ou non.
-- Que les dates sont dans un format standard et cohérent (JJ/MM/AAAA).
+- Que les montants indiquent clairement si les taxes sont incluses.
+- Que les dates sont dans un format standard (JJ/MM/AAAA).
 - Que les exports multi-boutiques consolident correctement les données
   sans doublons ni omissions.
 
@@ -333,23 +443,30 @@ SECTION 5 — COMPTABILITÉ
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-Le module comptabilité est alimenté automatiquement par toutes les actions
-de la plateforme. L'utilisateur n'a pas à saisir manuellement les écritures.
+Le module comptabilité est alimenté automatiquement par toutes les
+actions de la plateforme. L'utilisateur n'a pas à saisir manuellement
+les écritures.
 
 Chaque opération génère automatiquement une écriture comptable :
-- Vente → produit comptabilisé, TVA calculée, marge enregistrée.
+- Vente → produit comptabilisé, taxe calculée, marge enregistrée.
 - Retour → avoir comptabilisé, stock réintégré.
 - Paiement reçu → encaissement enregistré.
 - Ajustement de stock → perte ou gain comptabilisé.
 
-Gestion de taxes de chauqe bouique depuis la section admin  peut chosiir la taxe a imposer a chauqe boutqiue et le systeme eniter doit suivre
-La vue comptabilité permet de filtrer par boutique ou d'avoir une vue consolidée.
+Gestion des taxes par boutique :
+L'administrateur peut configurer la taxe applicable à chaque boutique
+depuis le tableau de bord dédié. Le système applique automatiquement
+la bonne taxe à chaque opération selon la boutique concernée.
+
+La vue comptabilité permet de filtrer par boutique ou d'avoir une vue
+consolidée.
 
 --------------------------------------------------------------
 FONCTIONNALITÉS
 --------------------------------------------------------------
 
-[✅ EXISTANT] Module comptabilité en place — vérifier les points ci-dessous.
+[✅ EXISTANT] Module comptabilité en place — vérifier les points
+ci-dessous.
 
 [🔧 À COMPLÉTER] Contrôler la cohérence entre :
 Mouvements de stock / Ventes / Factures / Marges / Rapports financiers.
@@ -359,7 +476,8 @@ Comptabilité / Statistiques / Rapports / Historiques.
 
 [🆕 NOUVEAU] Vue consolidée multi-boutiques.
 [🆕 NOUVEAU] Vue isolée par boutique.
-[🔧 À COMPLÉTER] Historique complet des opérations avec filtrage par période.
+[🔧 À COMPLÉTER] Historique complet des opérations avec filtrage
+                 par période.
 [🆕 NOUVEAU] Export PDF et Excel de l'historique comptable.
 
 --------------------------------------------------------------
@@ -384,11 +502,11 @@ Le stock est CENTRAL et partagé entre toutes les boutiques.
 Il y a un seul inventaire global, mais chaque mouvement est rattaché
 à la boutique qui l'a généré.
 
-Types de mouvements de stock : 
+Types de mouvements de stock :
 - Entrée : réception fournisseur, retour client, ajustement positif.
 - Sortie : vente, transfert vers boutique, perte, ajustement négatif.
-- Transfert : mouvement entre boutiques (compte comme sortie et entrée).
-- Réservation : stock bloqué pour une commande en cours de traitement.
+- Transfert : mouvement entre boutiques (sortie + entrée tracées).
+- Réservation : stock bloqué pour une commande en cours.
 
 Pour consulter l'état du stock : module Stock → liste des produits
 avec quantité disponible, quantité réservée, quantité réelle.
@@ -411,11 +529,13 @@ Stock central
 Contrôle des mouvements
 ------------------------
 [🔧 À COMPLÉTER] Vérifier la cohérence entre :
-Entrées / Sorties / Ventes / Retours / Ajustements / Transferts inter-boutiques.
+Entrées / Sorties / Ventes / Retours / Ajustements /
+Transferts inter-boutiques.
 
 Consultation
 ------------
-[🔧 À COMPLÉTER] Historique complet par produit avec filtrage par boutique.
+[🔧 À COMPLÉTER] Historique complet par produit avec filtrage
+                 par boutique.
 
 Documents associés
 ------------------
@@ -427,22 +547,22 @@ Alertes
 [🆕 NOUVEAU] Alerte stock faible (seuil configurable par produit).
 [🆕 NOUVEAU] Alerte rupture de stock.
 [🆕 NOUVEAU] Alerte surstock.
-[🆕 NOUVEAU] Ces alertes doivent être visibles sur le tableau de bord
-et envoyées par notification à l'administrateur.
+[🆕 NOUVEAU] Ces alertes sont visibles sur le tableau de bord et
+envoyées par notification à l'administrateur.
 
 --------------------------------------------------------------
 POINTS BLOQUANTS À ÉVITER
 --------------------------------------------------------------
 
 [🚨 BLOQUANT] Ventes simultanées dans deux boutiques sans gestion de
-réservation → stock négatif possible. Mettre en place un verrou de stock
-à la création de commande (réservation immédiate).
+réservation → stock négatif possible. Mettre en place un verrou de
+stock à la création de commande (réservation immédiate).
 
 [🚨 BLOQUANT] Un transfert inter-boutiques non tracé crée un écart
 de stock inexpliqué dans les rapports.
 
-[🚨 BLOQUANT] Si les retours ne réintègrent pas le stock automatiquement,
-l'inventaire est systématiquement sous-évalué.
+[🚨 BLOQUANT] Si les retours ne réintègrent pas le stock
+automatiquement, l'inventaire est systématiquement sous-évalué.
 
 ================================================================
 SECTION 7 — GESTION DES PRODUITS
@@ -464,7 +584,7 @@ La marge est calculée automatiquement dès que le prix d'achat
 et le prix de vente sont renseignés.
 
 Pour modifier un produit : cliquer sur le produit → modifier les champs
-souhaités → enregistrer. La modification est tracée dans le journal d'audit.
+→ enregistrer. La modification est tracée dans le journal d'audit.
 
 --------------------------------------------------------------
 FONCTIONNALITÉS
@@ -486,7 +606,8 @@ Marge brute / Rentabilité produit / Rotation du stock.
 Recherche et filtres
 ---------------------
 [🔧 À COMPLÉTER] Filtrage par :
-Nom / Référence / Catégorie / Fournisseur / Prix / Disponibilité / Boutique active.
+Nom / Référence / Catégorie / Fournisseur / Prix /
+Disponibilité / Boutique active.
 
 ================================================================
 SECTION 8 — COHÉRENCE GLOBALE DE LA PLATEFORME
@@ -496,11 +617,12 @@ SECTION 8 — COHÉRENCE GLOBALE DE LA PLATEFORME
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-La plateforme fonctionne comme un organisme unique :
-chaque action dans un module impacte automatiquement tous les autres.
+La plateforme fonctionne comme un organisme unique : chaque action
+dans un module impacte automatiquement tous les autres.
 
-L'utilisateur n'a jamais besoin de "mettre à jour manuellement" un autre module.
-Si une action nécessite une mise à jour manuelle ailleurs, c'est un bug.
+L'utilisateur n'a jamais besoin de "mettre à jour manuellement"
+un autre module. Si une action nécessite une mise à jour manuelle
+ailleurs, c'est un bug.
 
 --------------------------------------------------------------
 RÈGLE FONDAMENTALE
@@ -510,18 +632,22 @@ RÈGLE FONDAMENTALE
 
 Validation d'une commande déclenche automatiquement :
 → Décrément du stock central
+→ Libération de la réservation de stock
 → Création du mouvement de stock (rattaché à la boutique)
 → Génération de la facture (numérotée automatiquement)
+→ Application de la taxe de la boutique concernée
+→ Application de la remise boutique (si configurée)
 → Mise à jour de la comptabilité
 → Mise à jour des statistiques et KPI
 → Affectation du livreur (si configuré)
-→ Envoi notification client (WhatsApp/SMS)
+→ Génération du lien WhatsApp de notification client
 → Notification livreur
 → Mise à jour des rapports
 → Écriture dans le journal d'audit
 
 Si une de ces étapes échoue : TOUT est annulé (transaction atomique).
-L'utilisateur reçoit un message d'erreur clair expliquant ce qui a échoué.
+L'utilisateur reçoit un message d'erreur clair expliquant ce qui
+a échoué — jamais de message technique brut.
 
 ================================================================
 SECTION 9 — IMPORTATION ET EXPORTATION INTELLIGENTE DES PRODUITS
@@ -532,19 +658,22 @@ GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
 Pour importer des produits en masse : module Produits → Importer →
-choisir le fichier (Excel, CSV, PDF exploitable) → l'écran de correspondance
-s'affiche pour associer les colonnes du fichier aux champs de la plateforme.
+choisir le fichier (Excel, CSV, PDF exploitable) → l'écran de
+correspondance s'affiche pour associer les colonnes du fichier
+aux champs de la plateforme.
 
 Étapes d'un import :
 1. Chargement du fichier.
 2. Détection automatique des colonnes.
 3. Correspondance des colonnes (automatique ou manuelle).
 4. Complétion des champs obligatoires manquants.
-5. Prévisualisation (produits à créer, à mettre à jour, doublons, erreurs).
+5. Prévisualisation (produits à créer, à mettre à jour, doublons,
+   erreurs).
 6. Validation et import.
 7. Rapport d'import disponible.
 
-La correspondance des colonnes peut être sauvegardée pour les imports futurs.
+La correspondance des colonnes peut être sauvegardée pour les imports
+futurs.
 
 --------------------------------------------------------------
 FONCTIONNALITÉS
@@ -555,16 +684,17 @@ FONCTIONNALITÉS
 Import depuis : Excel / CSV / PDF (formats exploitables).
 
 Correspondance intelligente des colonnes :
-- Détection automatique des colonnes connues (Nom, Référence, SKU, Prix, etc.).
+- Détection automatique des colonnes connues
+  (Nom, Référence, SKU, Prix, etc.).
 - Association manuelle si la détection automatique est insuffisante.
 - Sauvegarde des correspondances fréquentes.
 
 Gestion des champs manquants :
 - Écran de complétion si des champs obligatoires sont absents.
-- Blocage de l'import si les champs critiques ne peuvent pas être complétés.
+- Blocage de l'import si les champs critiques manquent.
 
 Prévisualisation avant import :
-- Produits à créer / Produits à mettre à jour / Doublons / Erreurs.
+- Produits à créer / à mettre à jour / Doublons / Erreurs.
 
 Rapport d'import :
 - Utilisateur / Date / Produits créés / Modifiés / Erreurs.
@@ -590,10 +720,10 @@ SECTION 10 — GESTION AVANCÉE DES LIVRAISONS
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-Après validation d'une commande, elle entre dans le processus de livraison.
-Un livreur est affecté (manuellement ou automatiquement).
+Après validation d'une commande, elle entre dans le processus de
+livraison. Un livreur est affecté (manuellement ou automatiquement).
 
-Le livreur reçoit une notification (WhatsApp ou SMS) avec le détail
+Le livreur reçoit une notification via lien WhatsApp avec le détail
 de sa mission : adresse, client, produits, instructions.
 
 Une fois la livraison effectuée, le livreur la valide dans son espace
@@ -601,24 +731,28 @@ ou un administrateur la valide manuellement.
 
 La validation de la livraison déclenche automatiquement :
 - Mise à jour du statut de la commande.
-- Envoi de la confirmation au client avec la facture PDF.
+- Génération du lien WhatsApp de confirmation au client avec la
+  facture PDF.
 - Mise à jour des statistiques du livreur.
 - Mise à jour des rapports de la boutique concernée.
 
-En cas d'échec de livraison : le livreur indique le motif,
-la commande repasse dans la file d'attente et l'administrateur est notifié.
+En cas d'échec de livraison : le livreur indique le motif, la commande
+repasse dans la file d'attente et l'administrateur est notifié.
 
 --------------------------------------------------------------
 FONCTIONNALITÉS
 --------------------------------------------------------------
 
-[🆕 NOUVEAU] Module livraisons à développer ou compléter significativement.
+[🆕 NOUVEAU] Module livraisons à développer ou compléter
+             significativement.
 
 Rattachement boutique :
-[🆕 NOUVEAU] Chaque livraison est rattachée à la boutique qui a passé la commande.
+[🆕 NOUVEAU] Chaque livraison est rattachée à la boutique
+             qui a passé la commande.
 
 Gestion des livreurs :
-Fiches livreurs / Affectation des commandes / Suivi / Rapports de performance.
+Fiches livreurs / Affectation des commandes / Suivi /
+Rapports de performance.
 
 Affectation : Manuelle ou automatique selon règles définies.
 
@@ -631,7 +765,8 @@ Quand le client récupère en agence, livraison hors plateforme
 ou correction administrative.
 
 Historique de validation :
-Utilisateur / Date / Ancien statut / Nouveau statut / Motif / Commentaire.
+Utilisateur / Date / Ancien statut / Nouveau statut / Motif /
+Commentaire.
 
 Modes de livraison :
 Standard / Retrait agence / Livraison manuelle /
@@ -646,27 +781,27 @@ POINTS BLOQUANTS À ÉVITER
 --------------------------------------------------------------
 
 [🚨 BLOQUANT] Si la validation d'une livraison ne met pas à jour
-le statut de la commande et n'envoie pas la confirmation au client,
-le client ne sait pas que sa commande est livrée et le service client
-est surchargé d'appels inutiles.
+le statut de la commande, le client ne sait pas que sa commande est
+livrée et le service client est surchargé d'appels inutiles.
 
 [🚨 BLOQUANT] Sans rattachement boutique, les rapports de livraison
 mélangent toutes les boutiques et sont inexploitables.
 
 ================================================================
-SECTION 11 — NOTIFICATIONS ET COMMUNICATION
+SECTION 11 — NOTIFICATIONS ET COMMUNICATION WHATSAPP
 ================================================================
 
 --------------------------------------------------------------
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-Les notifications sont envoyées automatiquement à chaque étape clé.
-L'administrateur peut configurer quelles notifications sont actives
-et personnaliser les messages.
+Toute la communication WhatsApp fonctionne via des liens wa.me
+(gratuit, sans API payante). Ces liens ouvrent WhatsApp sur
+l'appareil du destinataire avec un message déjà rédigé.
+Il suffit d'appuyer sur "Envoyer".
 
-Un bouton WhatsApp direct est disponible sur chaque fiche client,
-commande, facture et espace livreur pour une communication manuelle rapide.
+Un bouton WhatsApp est disponible sur chaque fiche client, commande,
+facture et espace livreur pour une communication manuelle rapide.
 
 --------------------------------------------------------------
 FONCTIONNALITÉS
@@ -674,23 +809,78 @@ FONCTIONNALITÉS
 
 [🆕 NOUVEAU] Module notifications à développer.
 
-Boutons WhatsApp dans :
+Boutons WhatsApp (liens wa.me) disponibles dans :
 Commandes / Factures / Livraisons / Clients / Espace livreur.
 
-Messages automatiques — Création de commande :
-Numéro de commande / Produits / Montant / Boutique.
+Message automatique — Confirmation de commande :
+Exemple de message pré-rempli généré automatiquement :
 
-Messages automatiques — Affectation livreur :
-Nom du livreur / Téléphone / Date prévue.
+  "Bonjour [Prénom], votre commande n°[NUMERO] a bien été confirmée.
+   Détail : [LISTE PRODUITS] — Total : [MONTANT] FCFA.
+   Boutique : [NOM BOUTIQUE].
+   Merci pour votre confiance !"
 
-Messages automatiques — Livraison :
-Confirmation / Facture PDF en pièce jointe / Détail complet.
+Message automatique — Affectation livreur :
+  "Bonjour [Prénom], votre commande n°[NUMERO] est en cours de
+   livraison. Livreur : [NOM LIVREUR] — Tél : [TELEPHONE].
+   Livraison prévue : [DATE]."
+
+Message automatique — Confirmation livraison :
+  "Bonjour [Prénom], votre commande n°[NUMERO] a été livrée.
+   Merci pour votre achat ! Votre facture : [LIEN PDF]."
 
 Notifications livreur :
-Nouvelle mission / Modification / Annulation.
+  "Nouvelle mission — Commande n°[NUMERO].
+   Client : [NOM] — Adresse : [ADRESSE].
+   Produits : [LISTE]. Instructions : [INSTRUCTIONS]."
 
-[⚠️ CONSEIL] Prévoir un mode test pour les notifications avant mise en production
-afin d'éviter l'envoi accidentel de messages aux vrais clients.
+[⚠️ CONSEIL] Prévoir un mode test pour les notifications avant mise
+en production afin d'éviter l'envoi accidentel de messages aux vrais
+clients.
+
+--------------------------------------------------------------
+COMMANDE VIA WHATSAPP DEPUIS LE PANIER (BOUTIQUE EN LIGNE)
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] À la fin du panier, deux boutons sont proposés au client :
+
+BOUTON 1 — "Valider ma commande via WhatsApp"
+- La commande est enregistrée en base de données avec le statut
+  "En attente de confirmation".
+- Le stock est réservé immédiatement (voir section 0.3 pour l'expiration).
+- WhatsApp s'ouvre avec un message complet pré-rempli, par exemple :
+
+  "Bonjour, je souhaite passer la commande suivante :
+   - [PRODUIT 1] x[QUANTITE] — [PRIX] FCFA
+   - [PRODUIT 2] x[QUANTITE] — [PRIX] FCFA
+   Total : [MONTANT TOTAL] FCFA
+   Référence panier : [ID_COMMANDE]
+   Nom : [NOM CLIENT]
+   Téléphone : [TELEPHONE]
+   Adresse : [ADRESSE LIVRAISON]"
+
+  Le client n'a qu'à appuyer sur "Envoyer".
+
+- L'administrateur voit cette commande dans un onglet dédié
+  "En attente de confirmation WhatsApp".
+- Il peut la Valider ou la Rejeter depuis cet onglet.
+- Si aucune action n'est faite dans les 24h, la commande est
+  automatiquement supprimée et le stock libéré.
+
+BOUTON 2 — "Demander des informations via WhatsApp"
+- Aucune commande n'est enregistrée en base de données.
+- WhatsApp s'ouvre avec un message pré-rempli listant le contenu
+  du panier, pour permettre au client de poser des questions.
+- Exemple de message :
+
+  "Bonjour, j'aimerais avoir des informations sur les produits
+   suivants :
+   - [PRODUIT 1] x[QUANTITE]
+   - [PRODUIT 2] x[QUANTITE]
+   Total estimé : [MONTANT] FCFA"
+
+[⚠️ CONSEIL] Les messages pré-remplis doivent être personnalisables
+par l'administrateur depuis les paramètres de la boutique.
 
 ================================================================
 SECTION 12 — RECHERCHE, FILTRES ET NAVIGATION
@@ -701,8 +891,8 @@ GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
 Une barre de recherche globale est accessible depuis toutes les pages.
-Elle permet de retrouver n'importe quel élément (produit, client, commande,
-facture, livraison) en tapant un mot-clé ou un numéro.
+Elle permet de retrouver n'importe quel élément (produit, client,
+commande, facture, livraison) en tapant un mot-clé ou un numéro.
 
 Les filtres avancés sont disponibles sur chaque liste.
 Les filtres peuvent être sauvegardés et réutilisés.
@@ -728,9 +918,8 @@ POINTS BLOQUANTS À ÉVITER
 --------------------------------------------------------------
 
 [🚨 BLOQUANT] Sans filtre boutique, un administrateur ne peut pas
-analyser une boutique spécifique et doit trier manuellement des milliers
-de lignes. La plateforme devient inutilisable dès que le volume de données
-dépasse quelques centaines d'entrées.
+analyser une boutique spécifique. La plateforme devient inutilisable
+dès que le volume de données dépasse quelques centaines d'entrées.
 
 ================================================================
 SECTION 13 — PAGINATION, SAUVEGARDE ET RESTAURATION
@@ -792,6 +981,16 @@ Pour chaque action :
 Utilisateur / Date et heure / Ancienne valeur / Nouvelle valeur /
 Adresse IP / Module concerné / Boutique concernée.
 
+Actions tracées automatiquement (liste non exhaustive) :
+- Toute modification d'une commande, facture ou produit.
+- Tout changement de prix.
+- Tout ajustement de stock.
+- Tout export de données.
+- Toute connexion et déconnexion.
+- Toute création ou suppression d'utilisateur.
+- Toute modification de permissions.
+- Tout import de produits.
+
 --------------------------------------------------------------
 POINTS BLOQUANTS À ÉVITER
 --------------------------------------------------------------
@@ -824,7 +1023,8 @@ FONCTIONNALITÉS
 Profils : Administrateur / Gestionnaire / Comptable /
 Commercial / Magasinier / Livreur.
 
-[🆕 NOUVEAU] Rattachement de chaque utilisateur à une ou plusieurs boutiques.
+[🆕 NOUVEAU] Rattachement de chaque utilisateur à une ou plusieurs
+boutiques.
 
 [🔧 À COMPLÉTER] Permissions granulaires par profil :
 Lecture / Création / Modification / Suppression / Validation / Export.
@@ -832,13 +1032,24 @@ Lecture / Création / Modification / Suppression / Validation / Export.
 [🆕 NOUVEAU] Un administrateur global a accès à toutes les boutiques.
 Un gestionnaire de boutique n'a accès qu'à sa boutique.
 
+Tableau récapitulatif des droits d'export par rôle :
+
+Rôle             | Périmètre d'export autorisé
+-----------------+--------------------------------------------
+Livreur          | Aucun export
+Commercial       | Ses commandes et clients uniquement
+Magasinier       | Mouvements de stock de sa boutique
+Comptable        | Comptabilité et factures uniquement
+Gestionnaire     | Toutes les données de sa boutique
+Administrateur   | Export global sans restriction
+
 --------------------------------------------------------------
 POINTS BLOQUANTS À ÉVITER
 --------------------------------------------------------------
 
 [🚨 BLOQUANT] Sans cloisonnement par boutique au niveau des permissions,
-n'importe quel utilisateur peut accéder aux données de toutes les boutiques.
-C'est une faille de sécurité et de confidentialité critique.
+n'importe quel utilisateur peut accéder aux données de toutes les
+boutiques. C'est une faille de sécurité et de confidentialité critique.
 
 ================================================================
 SECTION 16 — ALERTES INTELLIGENTES
@@ -849,19 +1060,24 @@ GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
 Les alertes apparaissent sur le tableau de bord (icône de notification)
-et peuvent être envoyées par WhatsApp ou email aux personnes concernées.
-
-Chaque alerte est configurable : seuils, destinataires, fréquence.
+et peuvent être envoyées via lien WhatsApp ou email aux personnes
+concernées. Chaque alerte est configurable : seuils, destinataires,
+fréquence.
 
 --------------------------------------------------------------
 FONCTIONNALITÉS
 --------------------------------------------------------------
 
-[🆕 NOUVEAU] Stocks : stock faible / rupture / surstock (par boutique ou global).
-[🆕 NOUVEAU] Finances : factures impayées / échéances / retards de paiement.
-[🆕 NOUVEAU] Opérations : livraison en retard / écart de stock / commande bloquée.
+[🆕 NOUVEAU] Stocks : stock faible / rupture / surstock
+             (par boutique ou global).
+[🆕 NOUVEAU] Finances : factures impayées / échéances /
+             retards de paiement.
+[🆕 NOUVEAU] Opérations : livraison en retard / écart de stock /
+             commande bloquée.
+[🆕 NOUVEAU] Réservations : expiration imminente d'une réservation
+             de stock (commande en brouillon depuis X heures).
 [🆕 NOUVEAU] Multi-boutiques : boutique sans activité depuis X jours /
-transfert en attente de validation.
+             transfert en attente de validation.
 
 ================================================================
 SECTION 17 — INDICATEURS DE PERFORMANCE (KPI)
@@ -871,11 +1087,9 @@ SECTION 17 — INDICATEURS DE PERFORMANCE (KPI)
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-Les KPI sont affichés sur le tableau de bord.
-L'administrateur peut basculer entre la vue globale (toutes boutiques)
-et la vue par boutique individuelle.
-
-Chaque KPI est cliquable pour accéder au détail.
+Les KPI sont affichés sur le tableau de bord. L'administrateur peut
+basculer entre la vue globale (toutes boutiques) et la vue par boutique
+individuelle. Chaque KPI est cliquable pour accéder au détail.
 
 --------------------------------------------------------------
 FONCTIONNALITÉS
@@ -887,14 +1101,16 @@ Marges brutes et nettes / Valeur totale du stock /
 Produits les plus rentables / Produits non rentables /
 Rotation des stocks / Nombre de commandes /
 Taux de livraison réussie / Taux d'annulation /
-Performance par boutique / Comparatif inter-boutiques.
+Performance par boutique / Comparatif inter-boutiques /
+Commandes en attente de confirmation WhatsApp.
 
 ================================================================
 SECTION 18 — INTÉGRATIONS EXTERNES
 ================================================================
 
 [🆕 NOUVEAU] Prévoir les intégrations avec :
-WhatsApp Business API / SMS / Paiements mobiles (Mobile Money, Wave, etc.) /
+WhatsApp (via liens wa.me — gratuit, sans API) /
+SMS / Paiements mobiles (Mobile Money, Wave, etc.) /
 Site e-commerce (synchronisation catalogue et commandes) /
 Marketplaces / Logiciels comptables externes.
 
@@ -902,7 +1118,8 @@ Marketplaces / Logiciels comptables externes.
 Définir clairement :
 - Quel système est maître du catalogue produits ?
 - Quel système est maître du stock ?
-- Comment les commandes e-commerce sont-elles affectées à une boutique ?
+- Comment les commandes e-commerce sont-elles affectées
+  à une boutique ?
 - Quelle boutique traite les commandes en ligne ?
 
 Sans réponse à ces questions, la synchronisation e-commerce
@@ -919,8 +1136,8 @@ GUIDE UTILISATEUR — Comment ça marche
 La session expire automatiquement après une période d'inactivité
 (configurable par l'administrateur, recommandé : 30 minutes).
 
-La double authentification envoie un code par SMS ou application
-à chaque connexion depuis un nouvel appareil.
+La double authentification envoie un code par SMS à chaque connexion
+depuis un nouvel appareil.
 
 --------------------------------------------------------------
 FONCTIONNALITÉS
@@ -932,10 +1149,11 @@ Sécurité :
 [🔧 À COMPLÉTER] Contrôle d'accès strict par rôle et par boutique.
 
 Fiabilité :
-[🚨 BLOQUANT] Transactions atomiques sur toutes les opérations multi-modules.
+[🚨 BLOQUANT] Transactions atomiques sur toutes les opérations
+              multi-modules.
 [🆕 NOUVEAU] Contrôles d'intégrité des données.
-[🆕 NOUVEAU] Messages d'erreur clairs et compréhensibles pour l'utilisateur
-(jamais de message technique brut affiché à l'utilisateur).
+[🆕 NOUVEAU] Messages d'erreur clairs pour l'utilisateur
+             (jamais de message technique brut).
 [🆕 NOUVEAU] Journalisation des incidents techniques.
 
 --------------------------------------------------------------
@@ -943,8 +1161,8 @@ POINTS BLOQUANTS À ÉVITER
 --------------------------------------------------------------
 
 [🚨 BLOQUANT] Une erreur technique affichée en brut à l'utilisateur
-(ex : "SQL error 1062 duplicate entry") bloque l'utilisation et
-génère de la panique. Toujours traduire les erreurs en messages clairs :
+(ex : "SQL error 1062 duplicate entry") bloque l'utilisation.
+Toujours traduire les erreurs en messages clairs :
 "Ce numéro de commande existe déjà. Veuillez réessayer."
 
 ================================================================
@@ -962,6 +1180,7 @@ Aucune double saisie. Aucune incohérence. Aucune mise à jour manuelle.
 En multi-boutiques, chaque action doit en plus :
 → Être rattachée à la boutique qui l'a initiée.
 → Impacter le stock central partagé.
+→ Appliquer la taxe et la remise configurées pour cette boutique.
 → Apparaître dans les rapports de la boutique concernée.
 → Être visible dans la vue consolidée de l'administrateur.
 
@@ -973,14 +1192,15 @@ SECTION 21 — GESTION DES RETOURS ET AVOIRS  [🆕 NOUVEAU MODULE]
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-Un retour est initié depuis une commande livrée.
-L'utilisateur sélectionne les articles retournés et le motif.
+Un retour est initié depuis une commande livrée. L'utilisateur
+sélectionne les articles retournés et le motif.
 
 La validation du retour déclenche automatiquement :
-- Réintégration des produits dans le stock central.
+- Réintégration des produits dans le stock central
+  (quelle que soit la boutique qui traite le retour physiquement).
 - Génération d'un avoir lié à la facture d'origine.
 - Mise à jour de la comptabilité.
-- Notification au client.
+- Notification au client via lien WhatsApp.
 - Écriture dans le journal d'audit.
 
 --------------------------------------------------------------
@@ -989,13 +1209,18 @@ FONCTIONNALITÉS
 
 Processus de retour :
 Sélection des articles retournés / Motif / Quantités concernées /
-Rattachement à la boutique d'origine.
+Boutique qui traite le retour / Boutique d'origine de la commande.
+
+Retours inter-boutiques :
+- Le stock est toujours réintégré dans le stock central.
+- La boutique traitant le retour est notée pour traçabilité.
+- La comptabilité est imputée à la boutique d'origine de la commande.
 
 Impact stock : Réintégration automatique au stock central.
 Mouvement de stock de type "retour" créé et tracé.
 
 Avoirs :
-Génération automatique / Numérotation : AV-2026-0001 /
+Génération automatique / Numérotation : AV-BTA-2026-0001 /
 Remboursement partiel ou total / Mise à jour comptabilité.
 
 Historique :
@@ -1010,12 +1235,16 @@ SECTION 22 — GESTION DES CLIENTS  [🔧 MODULE À ENRICHIR]
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-La fiche client centralise tout l'historique d'un client,
-quelle que soit la boutique dans laquelle il a commandé.
+La fiche client centralise tout l'historique d'un client, quelle que
+soit la boutique dans laquelle il a commandé.
 
 Un client peut passer des commandes dans plusieurs boutiques.
 L'administrateur voit l'historique complet. Un gestionnaire de boutique
 voit uniquement les commandes passées dans sa boutique.
+
+Les commandes passées sans compte (via WhatsApp ou autre) sont
+également visibles et associables à un client si son numéro de
+téléphone correspond.
 
 --------------------------------------------------------------
 FONCTIONNALITÉS
@@ -1027,14 +1256,20 @@ FONCTIONNALITÉS
 Nom / Prénom / Téléphone / Adresse / Email.
 
 [🆕 NOUVEAU] Historique complet :
-Commandes / Factures / Livraisons / Retours / Avoirs /
-CA total client / Boutiques fréquentées.
+Commandes (avec ou sans compte) / Factures / Livraisons /
+Retours / Avoirs / CA total client / Boutiques fréquentées.
 
 [🆕 NOUVEAU] Segmentation :
-Par volume d'achats / Fréquence / Zone géographique / Statut (actif/inactif).
+Par volume d'achats / Fréquence / Zone géographique /
+Statut (actif/inactif).
 
 [🆕 NOUVEAU] Clients en compte (si applicable) :
 Limite de crédit / Encours / Alerte dépassement.
+
+[🆕 NOUVEAU] Suggestion de rattachement :
+Si un numéro de téléphone d'une commande sans compte correspond
+à un client existant, le système propose de rattacher la commande
+à ce client.
 
 ================================================================
 SECTION 23 — GESTION DES FOURNISSEURS ET ACHATS  [🆕 NOUVEAU MODULE]
@@ -1044,13 +1279,16 @@ SECTION 23 — GESTION DES FOURNISSEURS ET ACHATS  [🆕 NOUVEAU MODULE]
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-Le module fournisseurs permet de gérer les approvisionnements
-du stock central. Un bon de commande fournisseur est créé,
-envoyé au fournisseur, puis la réception est validée.
+Le module fournisseurs permet de gérer les approvisionnements du stock
+central. Un bon de commande fournisseur est créé, envoyé au fournisseur,
+puis la réception est validée.
 
-La validation de la réception met automatiquement à jour le stock central
-et enregistre le mouvement d'entrée.
-Mais etant donné que c est l admin qi gere la fournitur de tout il peut mettre les infos fournisseurs a jour depuis l dashboard dedié
+La validation de la réception met automatiquement à jour le stock
+central et enregistre le mouvement d'entrée.
+
+L'administrateur peut mettre à jour les informations fournisseurs
+depuis son tableau de bord dédié, sans passer par un autre module.
+
 --------------------------------------------------------------
 FONCTIONNALITÉS
 --------------------------------------------------------------
@@ -1086,8 +1324,13 @@ correspondante.
 FONCTIONNALITÉS
 --------------------------------------------------------------
 
+Commandes sans compte client :
+Les informations de commande (nom, téléphone, adresse, montant, mode
+de paiement) sont enregistrées et visibles dans le module paiements,
+exactement comme pour les commandes avec compte client.
+
 Modes de paiement :
-Espèces /  Mobile Money /
+Espèces / Mobile Money / Wave /
 Possibilité de combiner plusieurs modes sur une même commande.
 
 Paiements partiels :
@@ -1106,8 +1349,8 @@ POINTS BLOQUANTS À ÉVITER
 --------------------------------------------------------------
 
 [🚨 BLOQUANT] Sans gestion des paiements, il est impossible de savoir
-quelles commandes sont réellement payées et lesquelles sont en attente.
-La trésorerie réelle est inconnue.
+quelles commandes sont réellement payées. La trésorerie réelle est
+inconnue.
 
 ================================================================
 SECTION 25 — GESTION DES PROMOTIONS ET REMISES  [🆕 NOUVEAU MODULE]
@@ -1117,8 +1360,11 @@ SECTION 25 — GESTION DES PROMOTIONS ET REMISES  [🆕 NOUVEAU MODULE]
 GUIDE UTILISATEUR — Comment ça marche
 --------------------------------------------------------------
 
-Les remises peuvent être appliquées manuellement sur une commande
-ou automatiquement via un code promo ou une règle de remise.
+Deux types de remises coexistent sur la plateforme :
+1. Remise boutique : configurée par l'administrateur, appliquée
+   automatiquement à toutes les commandes d'une boutique donnée.
+2. Remise ponctuelle : appliquée manuellement sur une commande
+   spécifique, ou automatiquement via un code promo.
 
 Chaque remise est affichée clairement sur la facture et tracée
 dans les rapports comptables.
@@ -1127,7 +1373,11 @@ dans les rapports comptables.
 FONCTIONNALITÉS
 --------------------------------------------------------------
 
-Remises :
+Remises boutique (voir section 0.7) :
+Configurables par l'administrateur par boutique /
+Appliquées automatiquement / Visibles sur la facture.
+
+Remises ponctuelles :
 Par client / Par volume (paliers) / Par catégorie /
 Configurables par boutique ou globales.
 
@@ -1136,7 +1386,8 @@ Création avec validité limitée / Contrôle du nombre d'utilisations /
 Restriction par client ou produit.
 
 Impact comptable :
-Affichage clair sur la facture / Traçabilité dans les rapports.
+Affichage clair sur la facture (remise boutique + remise ponctuelle
+affichées séparément) / Traçabilité dans les rapports.
 
 ================================================================
 SECTION 26 — PERFORMANCE ET SCALABILITÉ TECHNIQUE  [🆕 NOUVEAU]
@@ -1147,21 +1398,25 @@ FONCTIONNALITÉS
 --------------------------------------------------------------
 
 Performances :
-Temps de chargement cibles : < 2 secondes par page.
+Temps de chargement cibles : < 2 secondes par page pour jusqu'à
+50 utilisateurs simultanés et 100 000 commandes en base.
 Optimisation des requêtes sur les listes volumineuses.
-Mise en cache des données peu modifiées.
+Mise en cache des données peu modifiées (catalogue produits, paramètres
+boutiques).
 
 Scalabilité :
 Prévoir la montée en charge (croissance des commandes et produits).
-Archiver les anciennes données sans les supprimer.
-Tester avec un volume de données réaliste avant mise en production.
+Archiver les données de plus de 2 ans sans les supprimer.
+Tester avec un volume de données réaliste avant mise en production
+(simuler 50 000 commandes sur 5 boutiques).
 
 --------------------------------------------------------------
 POINTS BLOQUANTS À ÉVITER
 --------------------------------------------------------------
 
-[🚨 BLOQUANT] Sans optimisation des requêtes, une liste de 50 000 commandes
-sur 5 boutiques rend la plateforme inutilisable en quelques mois.
+[🚨 BLOQUANT] Sans optimisation des requêtes, une liste de 50 000
+commandes sur 5 boutiques rend la plateforme inutilisable en quelques
+mois.
 
 ================================================================
 SYNTHÈSE DES PRIORITÉS
@@ -1170,58 +1425,521 @@ SYNTHÈSE DES PRIORITÉS
 PRIORITÉ 0 — ARCHITECTURE MULTI-BOUTIQUES (FONDATION) :
 Sans cela, tout le reste est fragile.
 - Cloisonnement des données par boutique.
-- Stock central partagé avec gestion des réservations.
+- Stock central partagé avec gestion des réservations et expiration.
 - Permissions par boutique.
 - Filtre boutique sur tous les modules.
+- Prix unique + remise par boutique configurable.
+- Champ devise en base de données dès le départ.
 
 PRIORITÉ 1 — VÉRIFICATIONS SUR L'EXISTANT :
 - Transactions atomiques (tout ou rien).
 - Synchronisation commande → stock → facture → comptabilité.
 - Conformité des factures générées.
-- Granularité des permissions.
+- Granularité des permissions et droits d'export par rôle.
 
 PRIORITÉ 2 — MODULES CRITIQUES MANQUANTS :
 - Gestion des paiements et encaissements (section 24).
-- Gestion des retours et avoirs (section 21).
+- Gestion des retours et avoirs inter-boutiques (section 21).
 - Journal d'audit (section 14).
-- Alertes intelligentes (section 16).
+- Alertes intelligentes dont expiration réservations (section 16).
+- Commandes sans compte client (section 2).
 
 PRIORITÉ 3 — ENRICHISSEMENT DE L'EXISTANT :
-- Fiche client enrichie (section 22).
+- Fiche client enrichie avec historique sans compte (section 22).
 - KPI et tableau de bord interactif multi-boutiques (sections 1 et 17).
 - Recherche globale et filtres avec filtre boutique (section 12).
-- Exports centralisés par boutique et consolidés (section 4).
+- Exports centralisés par boutique avec droits par rôle (section 4).
 
 PRIORITÉ 4 — NOUVEAUX MODULES À PLANIFIER :
 - Import/export intelligent produits (section 9).
 - Gestion avancée des livraisons multi-boutiques (section 10).
-- Notifications WhatsApp automatiques (section 11).
-- Promotions et remises (section 25).
+- Notifications WhatsApp via liens wa.me (section 11).
+- Boutons commande/info WhatsApp dans le panier (section 11).
+- Promotions, remises ponctuelles et codes promo (section 25).
 - Fournisseurs et achats (section 23).
 
 PRIORITÉ 5 — AMÉLIORATIONS TECHNIQUES :
 - Pagination sur toutes les listes (section 13).
 - Sauvegardes automatiques (section 13).
 - Double authentification (section 19).
-- Performance et scalabilité (section 26).
+- Performance et scalabilité avec cibles chiffrées (section 26).
 - Intégrations externes (section 18).
 
 ================================================================
 RÈGLES D'OR — À NE JAMAIS VIOLER
 ================================================================
 
-1. Une seule saisie → tous les modules mis à jour automatiquement.
-2. Toute opération multi-modules est atomique (tout ou rien).
-3. Chaque donnée est rattachée à une boutique.
-4. Le stock central est toujours la source de vérité unique.
-5. Jamais de message d'erreur technique brut affiché à l'utilisateur.
-6. Chaque action est tracée dans le journal d'audit.
-7. Les permissions cloisonnent strictement les données par boutique.
-8. Les exports reflètent exactement les données en base de données.
-9. La numérotation des factures et avoirs est séquentielle et sans trou.
+1.  Une seule saisie → tous les modules mis à jour automatiquement.
+2.  Toute opération multi-modules est atomique (tout ou rien).
+3.  Chaque donnée est rattachée à une boutique.
+4.  Le stock central est toujours la source de vérité unique.
+5.  Jamais de message d'erreur technique brut affiché à l'utilisateur.
+6.  Chaque action est tracée dans le journal d'audit.
+7.  Les permissions cloisonnent strictement les données par boutique.
+8.  Les exports reflètent exactement les données en base de données.
+9.  La numérotation des factures et avoirs est séquentielle, sans trou,
+    jamais de doublon.
 10. Un utilisateur ne peut jamais accéder aux données d'une boutique
     à laquelle il n'est pas rattaché.
+11. Les droits d'export sont définis par rôle et tracés dans l'audit.
+12. Le stock réservé expire automatiquement après le délai configuré.
+13. Les retours réintègrent toujours le stock central, quelle que soit
+    la boutique qui les traite.
+14. Les notifications WhatsApp ne bloquent jamais une opération en cas
+    d'échec — elles sont indépendantes du flux métier.
+15. Une commande WhatsApp sans confirmation dans les 24h est supprimée
+    automatiquement et son stock libéré.
 
 ================================================================
-FIN DU DOCUMENT
+FIN DU DOCUMENT — Version 3.0
+================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+================================================================
+SECTION COMPLÉMENTAIRE — RÈGLES MÉTIER AVANCÉES
+Version 1.0 — Points non couverts dans le document principal
+================================================================
+
+Ces points complètent le document principal (v3.0).
+Ils doivent être traités avant le développement pour éviter
+des décisions improvisées en cours de route.
+
+================================================================
+C.1 — CYCLE DE VIE COMPLET DU STOCK (ANNULATIONS)
+================================================================
+
+--------------------------------------------------------------
+Problème à résoudre
+--------------------------------------------------------------
+
+Le document principal couvre la réservation à la création de commande
+et la décrémentation à la validation. Mais que se passe-t-il si une
+commande est annulée APRÈS que le stock a déjà été décrémenté ?
+
+--------------------------------------------------------------
+Règle recommandée
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Matrice d'annulation selon le statut de la commande :
+
+Statut au moment de l'annulation | Impact stock
+----------------------------------+------------------------------------------
+Brouillon                         | Réservation libérée. Stock inchangé.
+Confirmée                         | Réservation libérée. Stock inchangé.
+En préparation                    | Stock réintégré automatiquement
+                                  | au stock central. Mouvement "annulation"
+                                  | créé et tracé.
+Expédiée                          | Annulation bloquée automatiquement.
+                                  | Seul un retour peut être initié
+                                  | (voir section 21).
+Livrée                            | Annulation impossible.
+                                  | Passer par le module Retours.
+
+[🚨 BLOQUANT] Qui peut annuler une commande selon son statut :
+- Brouillon / Confirmée : le commercial ou le gestionnaire de boutique.
+- En préparation : le gestionnaire de boutique uniquement.
+- Expédiée ou Livrée : personne — uniquement via le module Retours.
+
+Chaque annulation est tracée dans le journal d'audit avec :
+Utilisateur / Date / Statut précédent / Motif d'annulation obligatoire.
+
+[⚠️ CONSEIL] Prévoir un champ "Motif d'annulation" obligatoire
+à saisir lors de l'annulation — cela permet d'analyser les causes
+les plus fréquentes et d'améliorer le processus.
+
+================================================================
+C.2 — GESTION DES LITIGES DE LIVRAISON
+================================================================
+
+--------------------------------------------------------------
+Problème à résoudre
+--------------------------------------------------------------
+
+Quand une livraison échoue ou est contestée, il n'y a pas de processus
+défini. Sans règle claire, chaque cas devient une décision manuelle,
+une source de conflit entre livreur, gestionnaire et client.
+
+--------------------------------------------------------------
+Règle recommandée
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Processus de gestion des échecs et litiges de livraison :
+
+ÉTAPE 1 — Déclaration de l'échec
+Le livreur déclare l'échec dans son espace avec un motif obligatoire :
+- Client absent
+- Adresse introuvable
+- Client a refusé la livraison
+- Colis endommagé
+- Autre (champ texte libre)
+
+ÉTAPE 2 — Traitement automatique selon le motif
+
+Motif                    | Action automatique
+-------------------------+------------------------------------------
+Client absent            | Commande repassée en file d'attente.
+                         | Notification WhatsApp au client.
+                         | Nouvelle tentative planifiable sous 24h.
+Adresse introuvable      | Alerte administrateur immédiate.
+                         | Commande mise en attente manuelle.
+Client a refusé          | Commande mise en statut "Litige".
+                         | Alerte gestionnaire + administrateur.
+Colis endommagé          | Commande mise en statut "Litige".
+                         | Mouvement de stock "perte" créé.
+                         | Alerte administrateur immédiate.
+
+ÉTAPE 3 — Résolution du litige (action manuelle administrateur)
+
+L'administrateur choisit l'une des options suivantes :
+- Re-livrer : commande repart dans la file d'attente livraison.
+- Rembourser : génération automatique d'un avoir, stock réintégré.
+- Classer sans suite : commande clôturée, stock non réintégré,
+  motif obligatoire tracé dans l'audit.
+
+[⚠️ CONSEIL] Définir un délai maximum de résolution (recommandé : 48h).
+Passé ce délai, une alerte est envoyée à l'administrateur.
+
+Nombre maximum de tentatives de livraison : configurable par
+l'administrateur (recommandé : 2 tentatives avant mise en litige
+automatique).
+
+================================================================
+C.3 — LIVREURS EXTERNES (TRANSPORTEURS TIERS)
+================================================================
+
+--------------------------------------------------------------
+Problème à résoudre
+--------------------------------------------------------------
+
+Le mode "Transporteur externe" est listé mais sans règle de suivi.
+Les livreurs externes n'ont pas de compte sur la plateforme.
+Comment suivre leurs livraisons et mesurer leur performance ?
+
+--------------------------------------------------------------
+Règle recommandée
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Deux types de livreurs à gérer distinctement :
+
+TYPE A — Livreur interne (employé)
+- A un compte sur la plateforme avec le rôle "Livreur".
+- Reçoit ses missions directement via lien WhatsApp.
+- Valide ses livraisons depuis son espace.
+- Sa performance est mesurée automatiquement.
+
+TYPE B — Transporteur externe (prestataire tiers)
+- N'a PAS de compte sur la plateforme.
+- La commande lui est transmise manuellement (WhatsApp, appel, email).
+- Un gestionnaire ou administrateur valide la livraison
+  manuellement dans la plateforme une fois confirmée.
+- Un numéro de suivi externe (si fourni par le transporteur)
+  peut être saisi dans la fiche de livraison.
+- La performance est partiellement mesurable (délais, taux de succès)
+  à partir des validations manuelles.
+
+Fiche transporteur externe :
+Nom de la société / Contact / Zone de couverture /
+Tarif habituel / Historique des livraisons confiées /
+Taux de réussite calculé automatiquement.
+
+[⚠️ CONSEIL] Même pour un transporteur externe, toujours saisir
+le résultat de la livraison dans la plateforme (livré, échoué, litige).
+Sans cette saisie, les statistiques de livraison sont incomplètes
+et le stock peut ne pas être mis à jour correctement.
+
+================================================================
+C.4 — INITIALISATION DU STOCK (INVENTAIRE DE DÉPART)
+================================================================
+
+--------------------------------------------------------------
+Problème à résoudre
+--------------------------------------------------------------
+
+Quand la plateforme est mise en production, un stock physique existe
+déjà. Il faut saisir ce stock initial avant le premier usage.
+Sans cette étape, tous les premiers mouvements seront faux.
+
+--------------------------------------------------------------
+Règle recommandée
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Procédure d'initialisation du stock avant mise en production :
+
+ÉTAPE 1 — Inventaire physique
+Faire un comptage physique complet de tous les produits
+avant d'activer la plateforme. Ce comptage est la source de vérité.
+
+ÉTAPE 2 — Saisie du stock initial
+Un module dédié "Inventaire initial" permet à l'administrateur
+de saisir les quantités de départ pour chaque produit.
+Ce module n'est accessible qu'une seule fois, avant la première
+commande enregistrée.
+
+ÉTAPE 3 — Validation et verrouillage
+L'administrateur valide l'inventaire initial. À partir de ce moment :
+- Le stock de départ est enregistré comme "Entrée initiale" dans
+  l'historique des mouvements.
+- Le module "Inventaire initial" est verrouillé.
+- Toute correction ultérieure passe par le module "Ajustement de stock"
+  (tracé dans le journal d'audit avec motif obligatoire).
+
+ÉTAPE 4 — Inventaires périodiques
+[🆕 NOUVEAU] Après le démarrage, prévoir un module d'inventaire
+périodique permettant de :
+- Comparer le stock théorique (en base) au stock physique réel.
+- Saisir les écarts constatés.
+- Générer automatiquement les ajustements de stock correspondants.
+- Exporter le rapport d'inventaire en PDF et Excel.
+
+[⚠️ CONSEIL] Recommander un inventaire physique au minimum
+une fois par trimestre pour détecter les écarts (vols, casses,
+erreurs de saisie).
+
+[🚨 BLOQUANT] Si l'inventaire initial n'est pas fait correctement,
+toutes les valeurs de stock, marges et rapports financiers
+seront faux dès le premier jour.
+
+================================================================
+C.5 — POLITIQUE DE SUPPRESSION ET D'ARCHIVAGE DES DONNÉES
+================================================================
+
+--------------------------------------------------------------
+Problème à résoudre
+--------------------------------------------------------------
+
+Sans règle explicite, soit tout s'accumule indéfiniment, soit des
+données importantes sont supprimées par erreur. Les deux situations
+sont problématiques.
+
+--------------------------------------------------------------
+Règle recommandée
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Principe fondamental : rien n'est jamais supprimé
+définitivement. Tout est archivé.
+
+Tableau des règles par type de données :
+
+Donnée                   | Action possible        | Qui peut le faire
+-------------------------+------------------------+-------------------
+Commande annulée         | Archivage automatique  | Système
+Facture annulée          | Archivage automatique  | Système
+Produit retiré du vente  | Désactivation          | Administrateur
+Client inactif           | Désactivation          | Gestionnaire
+Utilisateur parti        | Désactivation          | Administrateur
+Mouvement de stock       | Jamais supprimé        | Personne
+Entrée journal d'audit   | Jamais supprimée       | Personne
+Sauvegarde               | Conservée 1 an minimum | Système
+
+Règles de désactivation :
+- Un produit désactivé n'apparaît plus dans le catalogue mais son
+  historique (ventes, mouvements de stock) reste consultable.
+- Un client désactivé ne peut plus passer commande mais sa fiche
+  et son historique restent accessibles à l'administrateur.
+- Un utilisateur désactivé perd immédiatement l'accès à la plateforme.
+  Son nom reste visible dans tout l'historique des actions qu'il a
+  effectuées (commandes créées, validations, etc.).
+
+Archivage automatique :
+- Les données de plus de 2 ans sont archivées automatiquement
+  (toujours accessibles mais dans un espace "Archives").
+- L'archivage n'a aucun impact sur les statistiques et rapports
+  historiques — les chiffres restent exacts.
+
+[🚨 BLOQUANT] Si des factures ou des mouvements de stock peuvent
+être supprimés, la comptabilité devient impossible à auditer
+et les obligations légales ne peuvent pas être respectées.
+
+================================================================
+C.6 — ALERTES SUR LES ÉCHÉANCES FOURNISSEURS
+================================================================
+
+--------------------------------------------------------------
+Problème à résoudre
+--------------------------------------------------------------
+
+Les alertes couvrent les impayés clients mais pas les dettes
+fournisseurs. Or une échéance fournisseur non respectée impacte
+directement la trésorerie et la relation commerciale.
+
+--------------------------------------------------------------
+Règle recommandée
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Intégrer les échéances fournisseurs dans le module
+alertes intelligentes (section 16) :
+
+Alertes fournisseurs :
+- Échéance de paiement fournisseur dans moins de X jours
+  (X configurable, recommandé : 7 jours).
+- Paiement fournisseur en retard (dépassement de l'échéance).
+- Bon de commande fournisseur sans réception depuis X jours
+  (possible problème de livraison fournisseur).
+- Fournisseur unique pour un produit critique en stock faible
+  (risque de rupture sans alternative).
+
+Visibilité :
+- Ces alertes sont visibles uniquement par l'administrateur
+  et le comptable.
+- Elles apparaissent dans le tableau de bord avec les autres alertes.
+- Elles peuvent être envoyées par lien WhatsApp à l'administrateur.
+
+Tableau de bord trésorerie (vue administrateur) :
+[🆕 NOUVEAU] Ajouter un bloc "Trésorerie" sur le tableau de bord
+affichant :
+- Total des encaissements clients attendus (factures non payées).
+- Total des décaissements fournisseurs à venir (échéances proches).
+- Solde prévisionnel de trésorerie à 7 jours et 30 jours.
+
+[⚠️ CONSEIL] Ce bloc trésorerie permet à l'administrateur de
+visualiser d'un coup d'œil si la trésorerie est suffisante pour
+honorer les prochaines échéances fournisseurs.
+
+================================================================
+C.7 — GESTION DES UTILISATEURS INACTIFS ET DÉPARTS
+================================================================
+
+--------------------------------------------------------------
+Problème à résoudre
+--------------------------------------------------------------
+
+Si un employé quitte l'entreprise, son compte doit être désactivé
+immédiatement. Sans procédure claire, des accès actifs peuvent
+rester ouverts indéfiniment, ce qui est une faille de sécurité
+critique.
+
+--------------------------------------------------------------
+Règle recommandée
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Procédure de gestion des départs d'utilisateurs :
+
+DÉSACTIVATION IMMÉDIATE
+L'administrateur désactive le compte depuis le module Utilisateurs.
+La désactivation est immédiate : toutes les sessions actives sont
+terminées instantanément, sans délai.
+
+Ce qui se passe après désactivation :
+- L'utilisateur ne peut plus se connecter.
+- Toutes ses actions passées restent visibles dans le journal d'audit
+  et dans l'historique des commandes, factures, etc.
+  (son nom apparaît comme "Utilisateur désactivé — [Nom]").
+- Ses commandes en cours sont transférées automatiquement au
+  gestionnaire de sa boutique pour prise en charge.
+- Ses livraisons en cours sont mises en statut "À réaffecter"
+  et une alerte est envoyée au gestionnaire.
+
+RÉACTIVATION
+Un compte désactivé peut être réactivé par l'administrateur à tout
+moment (retour d'un employé, erreur de désactivation).
+La réactivation est tracée dans le journal d'audit.
+
+UTILISATEURS INACTIFS (sans départ déclaré)
+[🆕 NOUVEAU] Alerte automatique si un compte actif n'a effectué
+aucune connexion depuis X jours (recommandé : 30 jours).
+L'administrateur reçoit la liste des comptes inactifs et peut
+décider de les désactiver ou de les conserver.
+
+RÈGLE SUR LES MOTS DE PASSE
+- Un mot de passe temporaire est généré par l'administrateur
+  à la création du compte.
+- L'utilisateur est obligé de le changer à sa première connexion.
+- Expiration automatique du mot de passe tous les 90 jours
+  (configurable).
+- Un utilisateur ne peut pas réutiliser ses 5 derniers mots de passe.
+
+[🚨 BLOQUANT] Un compte d'employé parti non désactivé est une faille
+de sécurité majeure. Une personne extérieure à l'entreprise peut
+accéder à toutes les données de la boutique et effectuer des
+opérations frauduleuses.
+
+================================================================
+C.8 — POINTS MINEURS MAIS IMPORTANTS
+================================================================
+
+--------------------------------------------------------------
+C.8.1 — Format des numéros de téléphone
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Standardiser le format des numéros de téléphone
+pour éviter les doublons :
+
+- Le système accepte les numéros avec ou sans indicatif pays.
+- À la saisie, le numéro est automatiquement normalisé :
+  "0771234567" et "+221771234567" sont reconnus comme le même numéro.
+- L'indicatif pays par défaut est configurable par l'administrateur
+  (ex : +221 pour le Sénégal).
+- Si un numéro normalisé existe déjà en base, le système alerte :
+  "Ce numéro de téléphone est déjà associé à un client existant.
+   Voulez-vous rattacher cette commande à ce client ?"
+
+[🚨 BLOQUANT] Sans normalisation, le même client peut exister en
+double dans la base avec deux formats différents, ce qui fausse
+les statistiques clients et le suivi des achats.
+
+--------------------------------------------------------------
+C.8.2 — Définition du seuil de surstock
+--------------------------------------------------------------
+
+[🆕 NOUVEAU] Le seuil de surstock est configurable par produit,
+exactement comme le seuil de stock faible.
+
+Configuration par produit :
+- Seuil stock faible : X unités (alerte si stock <= X).
+- Seuil de rupture : 0 unités (alerte si stock = 0).
+- Seuil de surstock : Y unités (alerte si stock >= Y).
+
+Ces trois seuils sont définis par l'administrateur ou le gestionnaire
+depuis la fiche produit. Des valeurs par défaut globales peuvent
+être configurées et s'appliquent aux produits sans seuil personnalisé.
+
+--------------------------------------------------------------
+C.8.3 — Connexion hors ligne / perte de réseau
+--------------------------------------------------------------
+
+[⚠️ CONSEIL] La plateforme est entièrement en ligne.
+En cas de perte de connexion :
+- Afficher un message clair : "Connexion perdue. Vos données
+  ne sont pas enregistrées. Veuillez vérifier votre connexion."
+- Ne jamais laisser l'utilisateur continuer à saisir des données
+  sans l'avertir qu'elles ne seront pas sauvegardées.
+- À la reconnexion, recharger automatiquement les données
+  depuis le serveur pour éviter toute désynchronisation.
+
+Aucun mode hors ligne n'est prévu pour cette version.
+Si ce besoin émerge, il fera l'objet d'une version ultérieure dédiée.
+
+================================================================
+SYNTHÈSE — PRIORITÉS DE CETTE SECTION COMPLÉMENTAIRE
+================================================================
+
+À traiter AVANT le développement (impacte l'architecture) :
+- C.1 : Matrice d'annulation des commandes et impact stock.
+- C.4 : Procédure d'inventaire initial avant mise en production.
+- C.5 : Politique de suppression / archivage des données.
+- C.8.1 : Normalisation des numéros de téléphone.
+
+À traiter PENDANT le développement (nouvelles fonctionnalités) :
+- C.2 : Processus complet de gestion des litiges de livraison.
+- C.3 : Distinction livreurs internes / transporteurs externes.
+- C.6 : Alertes échéances fournisseurs + bloc trésorerie.
+- C.7 : Procédure de désactivation des utilisateurs.
+- C.8.2 : Seuil de surstock configurable par produit.
+
+À traiter EN DERNIER (améliorations non bloquantes) :
+- C.8.3 : Comportement en cas de perte de connexion.
+
+================================================================
+FIN DE LA SECTION COMPLÉMENTAIRE — Version 1.0
 ================================================================

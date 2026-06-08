@@ -4,8 +4,12 @@ const cloudinary = require('../../config/cloudinary');
 async function uploadImage(file) {
   try {
     const result = await cloudinary.uploader.upload(file.path, {
-      folder: 'boutique-mode',
+      folder: 'urbanbeauty/products',
       resource_type: 'image',
+      // Transformation automatique : qualité optimale, format moderne
+      transformation: [
+        { quality: 'auto:best', fetch_format: 'auto' },
+      ],
     });
 
     return {
@@ -13,17 +17,17 @@ async function uploadImage(file) {
       publicId: result.public_id,
     };
   } finally {
-    if (file.path) {
+    // Supprime le fichier temporaire dans tous les cas
+    if (file?.path) {
       fs.unlink(file.path).catch(() => {});
     }
   }
 }
 
 async function deleteImage(publicId) {
-  await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+  // publicId Cloudinary peut contenir des "/" — on le décode
+  const decoded = decodeURIComponent(publicId);
+  await cloudinary.uploader.destroy(decoded, { resource_type: 'image' });
 }
 
-module.exports = {
-  uploadImage,
-  deleteImage,
-};
+module.exports = { uploadImage, deleteImage };

@@ -1,8 +1,144 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useAuthStore from '../../store/authStore';
 import { API_URL } from '../../utils/constants';
+
 const formatPrice = (p) => `${Number(p).toLocaleString('fr-FR')} FCFA`;
 
+// ─── Composant upload image ────────────────────────────────────────────────
+function ImageUploader({ images, onChange, token }) {
+  const fileRef = useRef();
+  const [uploading, setUploading] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const [tab, setTab] = useState('file');
+
+  const uploadFile = async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const res = await fetch(`${API_URL}/api/upload/image`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Échec upload');
+    return res.json();
+  };
+
+  const handleFiles = async (files) => {
+    setUploading(true);
+    try {
+      const uploaded = await Promise.all(Array.from(files).map(uploadFile));
+      const newImages = uploaded.map((img, i) => ({
+        url: img.url,
+        publicId: img.publicId,
+        isMain: images.length === 0 && i === 0,
+        position: images.length + i,
+      }));
+      onChange([...images, ...newImages]);
+    } catch {
+      alert("Erreur lors de l'upload. Vérifiez le format (JPEG, PNG, WebP, AVIF) et la taille (max 5 Mo).");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
+
+  const addUrl = () => {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    onChange([...images, { url: trimmed, publicId: '', isMain: images.length === 0, position: images.length }]);
+    setUrlInput('');
+  };
+
+  const setMain = (idx) => onChange(images.map((img, i) => ({ ...img, isMain: i === idx })));
+  const remove = (idx) => {
+    const next = images.filter((_, i) => i !== idx).map((img, i) => ({
+      ...img, isMain: i === 0, position: i,
+    }));
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-gray-700">Images du produit</label>
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        <button type="button" onClick={() => setTab('file')}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${tab === 'file' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+          📁 Depuis l'appareil
+        </button>
+        <button type="button" onClick={() => setTab('url')}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${tab === 'url' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+          🔗 Via un lien
+        </button>
+      </div>
+
+      {tab === 'file' && (
+        <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}
+          onClick={() => fileRef.current?.click()}
+          className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-colors">
+          <input ref={fileRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"
+            multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2">
+              <svg className="animate-spin h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              <p className="text-sm text-gray-500">Upload en cours...</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="text-3xl">🖼️</div>
+              <p className="text-sm font-medium text-gray-700">Cliquez ou glissez vos images ici</p>
+              <p className="text-xs text-gray-400">JPEG · PNG · WebP · AVIF — max 5 Mo par image</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'url' && (
+        <div className="flex gap-2">
+          <input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addUrl())}
+            placeholder="https://exemple.com/image.jpg"
+            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20" />
+          <button type="button" onClick={addUrl}
+            className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition-colors font-medium">
+            Ajouter
+          </button>
+        </div>
+      )}
+
+      {images.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-1">
+          {images.map((img, idx) => (
+            <div key={idx} className="relative group">
+              <img src={img.url} alt={`img-${idx}`}
+                className={`h-20 w-20 object-cover rounded-xl border-2 transition-all ${img.isMain ? 'border-black' : 'border-gray-200'}`}
+                onError={(e) => { e.target.src = ''; e.target.parentElement.style.display = 'none'; }} />
+              {img.isMain && (
+                <span className="absolute top-1 left-1 bg-black text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">★ Main</span>
+              )}
+              <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                {!img.isMain && (
+                  <button type="button" onClick={() => setMain(idx)} title="Définir comme principale"
+                    className="bg-white text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-yellow-100">★</button>
+                )}
+                <button type="button" onClick={() => remove(idx)} title="Supprimer"
+                  className="bg-white text-red-500 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-50">✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {images.length > 0 && (
+        <p className="text-xs text-gray-400">{images.length} image{images.length > 1 ? 's' : ''} — cliquez ★ pour définir la principale</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Page principale ───────────────────────────────────────────────────────
 export default function AdminProducts() {
   const { token } = useAuthStore();
   const [products, setProducts] = useState([]);
@@ -14,15 +150,24 @@ export default function AdminProducts() {
   const [selected, setSelected] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});  // ← alertes champs
 
-  const emptyForm = { name: '', slug: '', description: '', price: '', comparePrice: '', stock: '', categoryId: '', isActive: true, isFeatured: false, imageUrl: '' };
+  const emptyForm = {
+    name: '', slug: '', description: '', price: '', comparePrice: '',
+    stock: '', categoryId: '', isActive: true, isFeatured: false, images: [],
+  };
   const [form, setForm] = useState(emptyForm);
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  const showToast = (msg, type = 'success') => { setToast({ message: msg, type }); setTimeout(() => setToast(null), 3500); };
+  const showToast = (msg, type = 'success') => {
+    setToast({ message: msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
-  const slugify = (str) => str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const slugify = (str) =>
+    str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   const fetchAll = async () => {
     setLoading(true); setError(null);
@@ -41,19 +186,19 @@ export default function AdminProducts() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  const openCreate = () => { setForm(emptyForm); setSelected(null); setModal('create'); };
+  const openCreate = () => { setForm(emptyForm); setSelected(null); setFieldErrors({}); setModal('create'); };
   const openEdit = (p) => {
     setForm({
       name: p.name, slug: p.slug, description: p.description || '',
       price: p.price, comparePrice: p.comparePrice || '',
       stock: p.stock, categoryId: p.categoryId || '',
       isActive: p.isActive ?? true, isFeatured: p.isFeatured ?? false,
-      imageUrl: p.images?.find(i => i.isMain)?.url || p.images?.[0]?.url || '',
+      images: p.images || [],
     });
-    setSelected(p); setModal('edit');
+    setSelected(p); setFieldErrors({}); setModal('edit');
   };
   const openDelete = (p) => { setSelected(p); setModal('delete'); };
-  const closeModal = () => { setModal(null); setSelected(null); };
+  const closeModal = () => { setModal(null); setSelected(null); setFieldErrors({}); };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -62,36 +207,60 @@ export default function AdminProducts() {
       [name]: type === 'checkbox' ? checked : value,
       ...(name === 'name' ? { slug: slugify(value) } : {}),
     }));
+    // Efface l'erreur du champ dès que l'utilisateur tape
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: null }));
   };
 
+  // ── Validation frontend ────────────────────────────────────────────────
+  const validate = () => {
+    const errors = {};
+    if (!form.name.trim()) errors.name = 'Le nom est obligatoire';
+    if (!form.price || Number(form.price) < 0) errors.price = 'Prix invalide';
+    if (form.stock === '' || Number(form.stock) < 0) errors.stock = 'Stock invalide';
+    return errors;
+  };
+
+  // ── Body envoyé au backend ─────────────────────────────────────────────
+  // description vide → on n'envoie pas le champ (évite l'erreur notEmpty)
   const buildBody = () => ({
-    name: form.name,
-    slug: form.slug,
-    description: form.description,
+    name: form.name.trim(),
+    slug: form.slug.trim(),
+    ...(form.description.trim() ? { description: form.description.trim() } : {}),
     price: Number(form.price),
     comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
     stock: Number(form.stock),
-    ...(form.categoryId && { categoryId: form.categoryId }), // ✅ omis si vide
+    ...(form.categoryId ? { categoryId: form.categoryId } : {}),
     isActive: form.isActive,
     isFeatured: form.isFeatured,
-    ...(form.imageUrl ? { images: [{ url: form.imageUrl, isMain: true, position: 0 }] } : {}),
+    images: form.images.map((img, i) => ({
+      url: img.url,
+      publicId: img.publicId || '',
+      isMain: img.isMain ?? i === 0,
+      position: i,
+    })),
   });
 
   const handleCreate = async (e) => {
-    e.preventDefault(); setSubmitting(true);
+    e.preventDefault();
+    const errors = validate();
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setSubmitting(true);
     try {
       const res = await fetch(`${API_URL}/api/products`, { method: 'POST', headers, body: JSON.stringify(buildBody()) });
-      if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Erreur'); }
-      await fetchAll(); closeModal(); showToast('Produit créé');
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Erreur serveur'); }
+      await fetchAll(); closeModal(); showToast('Produit créé ✓');
     } catch (e) { showToast(e.message, 'error'); } finally { setSubmitting(false); }
   };
 
   const handleEdit = async (e) => {
-    e.preventDefault(); setSubmitting(true);
+    e.preventDefault();
+    const errors = validate();
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+    setSubmitting(true);
     try {
       const res = await fetch(`${API_URL}/api/products/${selected.id}`, { method: 'PUT', headers, body: JSON.stringify(buildBody()) });
-      if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Erreur'); }
-      await fetchAll(); closeModal(); showToast('Produit modifié');
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Erreur serveur'); }
+      await fetchAll(); closeModal(); showToast('Produit modifié ✓');
     } catch (e) { showToast(e.message, 'error'); } finally { setSubmitting(false); }
   };
 
@@ -109,12 +278,18 @@ export default function AdminProducts() {
     p.slug.toLowerCase().includes(search.toLowerCase())
   );
 
-  const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 transition';
+  // Classes dynamiques selon erreur
+  const inputClass = (field) =>
+    `w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition ${
+      fieldErrors[field]
+        ? 'border-red-400 focus:ring-red-200 bg-red-50'
+        : 'border-gray-200 focus:ring-black/20 focus:border-gray-400'
+    }`;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
+        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
           {toast.message}
         </div>
       )}
@@ -228,6 +403,7 @@ export default function AdminProducts() {
         )}
       </div>
 
+      {/* ── Modal Créer / Modifier ── */}
       {(modal === 'create' || modal === 'edit') && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -235,47 +411,89 @@ export default function AdminProducts() {
               <h2 className="text-lg font-semibold text-gray-900">{modal === 'create' ? 'Nouveau produit' : 'Modifier le produit'}</h2>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
-            <form onSubmit={modal === 'create' ? handleCreate : handleEdit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom <span className="text-red-500">*</span></label>
-                <input name="name" value={form.name} onChange={handleChange} required placeholder="Robe Wax Élégante" className={inputClass} />
+
+            {/* Bandeau erreurs si plusieurs champs invalides */}
+            {Object.keys(fieldErrors).length > 0 && (
+              <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                <p className="text-sm font-medium text-red-700 mb-1">Corrigez les erreurs suivantes :</p>
+                <ul className="text-xs text-red-600 list-disc list-inside space-y-0.5">
+                  {Object.values(fieldErrors).map((msg, i) => <li key={i}>{msg}</li>)}
+                </ul>
               </div>
+            )}
+
+            <form onSubmit={modal === 'create' ? handleCreate : handleEdit} className="p-6 space-y-4">
+
+              {/* Nom */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nom <span className="text-red-500">*</span>
+                </label>
+                <input name="name" value={form.name} onChange={handleChange}
+                  placeholder="Robe Wax Élégante" className={inputClass('name')} />
+                {fieldErrors.name && <p className="text-xs text-red-500 mt-1">{fieldErrors.name}</p>}
+              </div>
+
+              {/* Slug */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
-                <input name="slug" value={form.slug} onChange={handleChange} placeholder="robe-wax-elegante" className={`${inputClass} font-mono`} />
+                <input name="slug" value={form.slug} onChange={handleChange}
+                  placeholder="robe-wax-elegante" className={`${inputClass('slug')} font-mono`} />
               </div>
+
+              {/* Description (optionnelle) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea name="description" value={form.description} onChange={handleChange} rows={3} placeholder="Description du produit..." className={inputClass} />
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description <span className="text-gray-400 text-xs font-normal">(optionnelle)</span>
+                </label>
+                <textarea name="description" value={form.description} onChange={handleChange}
+                  rows={3} placeholder="Description du produit..." className={inputClass('description')} />
               </div>
+
+              {/* Prix */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prix (FCFA) <span className="text-red-500">*</span></label>
-                  <input type="number" name="price" value={form.price} onChange={handleChange} required min="0" placeholder="25000" className={inputClass} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prix (FCFA) <span className="text-red-500">*</span>
+                  </label>
+                  <input type="number" name="price" value={form.price} onChange={handleChange}
+                    min="0" placeholder="25000" className={inputClass('price')} />
+                  {fieldErrors.price && <p className="text-xs text-red-500 mt-1">{fieldErrors.price}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Prix barré (FCFA)</label>
-                  <input type="number" name="comparePrice" value={form.comparePrice} onChange={handleChange} min="0" placeholder="35000" className={inputClass} />
+                  <input type="number" name="comparePrice" value={form.comparePrice} onChange={handleChange}
+                    min="0" placeholder="35000" className={inputClass('comparePrice')} />
                 </div>
               </div>
+
+              {/* Stock + Catégorie */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock <span className="text-red-500">*</span></label>
-                  <input type="number" name="stock" value={form.stock} onChange={handleChange} required min="0" placeholder="20" className={inputClass} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Stock <span className="text-red-500">*</span>
+                  </label>
+                  <input type="number" name="stock" value={form.stock} onChange={handleChange}
+                    min="0" placeholder="20" className={inputClass('stock')} />
+                  {fieldErrors.stock && <p className="text-xs text-red-500 mt-1">{fieldErrors.stock}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
-                  <select name="categoryId" value={form.categoryId} onChange={handleChange} className={inputClass}>
+                  <select name="categoryId" value={form.categoryId} onChange={handleChange} className={inputClass('categoryId')}>
                     <option value="">— Aucune —</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">URL de l'image principale</label>
-                <input type="url" name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="https://example.com/image.jpg" className={inputClass} />
-                {form.imageUrl && <img src={form.imageUrl} alt="preview" className="mt-2 h-16 w-16 rounded-lg object-cover border border-gray-200" onError={e => e.target.style.display = 'none'} />}
-              </div>
+
+              {/* Upload images */}
+              <ImageUploader
+                images={form.images}
+                onChange={(imgs) => setForm(prev => ({ ...prev, images: imgs }))}
+                token={token}
+              />
+
+              {/* Toggles */}
               <div className="flex items-center justify-between py-1">
                 <label className="text-sm font-medium text-gray-700">Produit actif</label>
                 <button type="button" onClick={() => setForm(p => ({ ...p, isActive: !p.isActive }))}
@@ -290,9 +508,14 @@ export default function AdminProducts() {
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.isFeatured ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
               </div>
+
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={closeModal} className="flex-1 border border-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors">Annuler</button>
-                <button type="submit" disabled={submitting} className="flex-1 bg-black text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60">
+                <button type="button" onClick={closeModal}
+                  className="flex-1 border border-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors">
+                  Annuler
+                </button>
+                <button type="submit" disabled={submitting}
+                  className="flex-1 bg-black text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60">
                   {submitting ? 'En cours...' : modal === 'create' ? 'Créer' : 'Enregistrer'}
                 </button>
               </div>
@@ -301,15 +524,22 @@ export default function AdminProducts() {
         </div>
       )}
 
+      {/* ── Modal Supprimer ── */}
       {modal === 'delete' && selected && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🗑️</div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Supprimer le produit ?</h2>
-            <p className="text-sm text-gray-500 mb-6"><span className="font-medium text-gray-700">"{selected.name}"</span> sera supprimé définitivement.</p>
+            <p className="text-sm text-gray-500 mb-6">
+              <span className="font-medium text-gray-700">"{selected.name}"</span> sera supprimé définitivement.
+            </p>
             <div className="flex gap-3">
-              <button onClick={closeModal} className="flex-1 border border-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors">Annuler</button>
-              <button onClick={handleDelete} disabled={submitting} className="flex-1 bg-red-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-60">
+              <button onClick={closeModal}
+                className="flex-1 border border-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors">
+                Annuler
+              </button>
+              <button onClick={handleDelete} disabled={submitting}
+                className="flex-1 bg-red-500 text-white rounded-lg py-2 text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-60">
                 {submitting ? 'Suppression...' : 'Supprimer'}
               </button>
             </div>
