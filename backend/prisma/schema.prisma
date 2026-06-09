@@ -421,6 +421,7 @@ enum Role {
 }
 
 enum OrderStatus {
+  DRAFT
   PENDING
   CONFIRMED
   PROCESSING

@@ -9,6 +9,20 @@ async function createOrder(req, res, next) {
   }
 }
 
+// ── Commande WhatsApp (statut DRAFT) ─────────────────────────
+async function createWhatsappOrder(req, res, next) {
+  try {
+    const order = await ordersService.createOrder(
+      { ...req.body, status: 'DRAFT' },
+      req.user,
+      req.ip,
+    );
+    res.status(201).json(order);
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getUserOrders(req, res, next) {
   try {
     const orders = await ordersService.getUserOrders(req.user.id);
@@ -55,6 +69,7 @@ async function getAllOrders(req, res, next) {
 
 module.exports = {
   createOrder,
+  createWhatsappOrder,
   getUserOrders,
   getOrderByNumber,
   changeOrderStatus,

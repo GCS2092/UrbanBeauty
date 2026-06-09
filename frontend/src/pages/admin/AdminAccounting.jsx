@@ -51,7 +51,6 @@ const MOVEMENT_TYPES = [
 
 const PIE_COLORS = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#8b5cf6','#14b8a6'];
 
-// Types pour lesquels on affiche fournisseur + coût (= entrées stock)
 const IS_INCOMING = (type) => ['IN', 'RETURN_IN', 'ADJUSTMENT'].includes(type);
 
 // ─── Export PDF ────────────────────────────────────────────────
@@ -239,10 +238,8 @@ export default function AdminAccounting() {
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [editingSupplier,   setEditingSupplier]   = useState(null);
 
-  // Formulaire mouvement stock — affichage conditionnel
   const [stockMovementType, setStockMovementType] = useState('IN');
 
-  // Filtres onglet stock
   const [filterProduct, setFilterProduct] = useState('');
   const [filterType,    setFilterType]    = useState('');
   const [filterDate,    setFilterDate]    = useState('');
@@ -617,29 +614,30 @@ export default function AdminAccounting() {
               </button>
             }
           />
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
+          {/* ↓ overflow-x-auto + min-w sur la table */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+            <table className="w-full text-sm min-w-[800px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   {['Date', 'Catégorie', 'Libellé', 'Fournisseur', 'Référence', 'Montant', ''].map((h) => (
-                    <th key={h} className="px-4 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {expenses?.expenses?.map((exp) => (
                   <tr key={exp.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3.5 text-slate-400 text-xs">{new Date(exp.date).toLocaleDateString('fr-FR')}</td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3.5 text-slate-400 text-xs whitespace-nowrap">{new Date(exp.date).toLocaleDateString('fr-FR')}</td>
+                    <td className="px-4 py-3.5 whitespace-nowrap">
                       <Badge color="indigo">{EXPENSE_CATEGORIES.find((c) => c.value === exp.category)?.label}</Badge>
                     </td>
                     <td className="px-4 py-3.5 text-slate-800 font-medium">{exp.label}</td>
-                    <td className="px-4 py-3.5 text-slate-400">{exp.supplier?.name || '—'}</td>
-                    <td className="px-4 py-3.5 text-slate-300 font-mono text-xs">{exp.reference || '—'}</td>
-                    <td className="px-4 py-3.5 font-bold text-red-500">{fmt(exp.amount)}</td>
+                    <td className="px-4 py-3.5 text-slate-400 whitespace-nowrap">{exp.supplier?.name || '—'}</td>
+                    <td className="px-4 py-3.5 text-slate-300 font-mono text-xs whitespace-nowrap">{exp.reference || '—'}</td>
+                    <td className="px-4 py-3.5 font-bold text-red-500 whitespace-nowrap">{fmt(exp.amount)}</td>
                     <td className="px-4 py-3.5">
                       <button onClick={() => deleteExpenseMutation.mutate(exp.id)}
-                        className="text-xs text-slate-300 hover:text-red-500 transition-colors font-medium">
+                        className="text-xs text-slate-300 hover:text-red-500 transition-colors font-medium whitespace-nowrap">
                         Supprimer
                       </button>
                     </td>
@@ -707,8 +705,9 @@ export default function AdminAccounting() {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
+          {/* ↓ overflow-x-auto + min-w sur la table */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+            <table className="w-full text-sm min-w-[1000px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   {['Date','Produit','Type','Quantité','Coût unitaire','Coût total','Fournisseur','Référence','Motif',''].map((h) => (
@@ -758,10 +757,10 @@ export default function AdminAccounting() {
                         <td className={`px-4 py-3.5 font-bold whitespace-nowrap ${isIn ? 'text-emerald-600' : 'text-red-500'}`}>
                           {isIn ? '+' : '-'}{m.quantity}
                         </td>
-                        <td className="px-4 py-3.5 text-slate-500">{m.unitCost  ? fmt(m.unitCost)  : '—'}</td>
-                        <td className="px-4 py-3.5 text-slate-500">{m.totalCost ? fmt(m.totalCost) : '—'}</td>
-                        <td className="px-4 py-3.5 text-slate-400 text-xs">{m.supplier?.name || '—'}</td>
-                        <td className="px-4 py-3.5 text-slate-300 font-mono text-xs">{m.reference || '—'}</td>
+                        <td className="px-4 py-3.5 text-slate-500 whitespace-nowrap">{m.unitCost  ? fmt(m.unitCost)  : '—'}</td>
+                        <td className="px-4 py-3.5 text-slate-500 whitespace-nowrap">{m.totalCost ? fmt(m.totalCost) : '—'}</td>
+                        <td className="px-4 py-3.5 text-slate-400 text-xs whitespace-nowrap">{m.supplier?.name || '—'}</td>
+                        <td className="px-4 py-3.5 text-slate-300 font-mono text-xs whitespace-nowrap">{m.reference || '—'}</td>
                         <td className="px-4 py-3.5 text-slate-400 text-xs">{m.reason || '—'}</td>
                         <td className="px-4 py-3.5">
                           {canCancel && (
@@ -793,12 +792,13 @@ export default function AdminAccounting() {
       {tab === 'margins' && (
         <div>
           <SectionHeader title="Marges par produit" />
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
+          {/* ↓ overflow-x-auto + min-w sur la table */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+            <table className="w-full text-sm min-w-[960px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   {['Produit', 'Catégorie', 'Prix vente', 'Prix achat', 'Stock', 'Valeur stock', 'Vendus', 'CA généré', 'Bén. brut', 'Marge'].map((h) => (
-                    <th key={h} className="px-4 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -806,21 +806,21 @@ export default function AdminAccounting() {
                 {margins?.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3.5 text-slate-800 font-semibold max-w-[160px] truncate">{p.name}</td>
-                    <td className="px-4 py-3.5"><Badge color="indigo">{p.category}</Badge></td>
+                    <td className="px-4 py-3.5 whitespace-nowrap"><Badge color="indigo">{p.category}</Badge></td>
                     <td className="px-4 py-3.5 text-slate-700 font-medium whitespace-nowrap">{fmt(p.price)}</td>
                     <td className="px-4 py-3.5 text-slate-500 whitespace-nowrap">
                       {p.purchasePrice ? fmt(p.purchasePrice) : <span className="text-amber-400 text-xs font-medium">Non défini</span>}
                     </td>
-                    <td className={`px-4 py-3.5 font-bold ${p.stock === 0 ? 'text-red-500' : p.stock <= 5 ? 'text-amber-500' : 'text-slate-700'}`}>
+                    <td className={`px-4 py-3.5 font-bold whitespace-nowrap ${p.stock === 0 ? 'text-red-500' : p.stock <= 5 ? 'text-amber-500' : 'text-slate-700'}`}>
                       {p.stock}
                     </td>
                     <td className="px-4 py-3.5 text-slate-500 whitespace-nowrap">{fmt(p.stockValue)}</td>
-                    <td className="px-4 py-3.5 text-slate-500">{p.totalSold}</td>
+                    <td className="px-4 py-3.5 text-slate-500 whitespace-nowrap">{p.totalSold}</td>
                     <td className="px-4 py-3.5 text-slate-700 font-medium whitespace-nowrap">{fmt(p.totalRevenue)}</td>
                     <td className={`px-4 py-3.5 font-bold whitespace-nowrap ${p.grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                       {fmt(p.grossProfit)}
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3.5 whitespace-nowrap">
                       {p.margin !== null ? (
                         <span className={`text-sm font-extrabold ${p.margin >= 30 ? 'text-emerald-600' : p.margin >= 10 ? 'text-amber-500' : 'text-red-500'}`}>
                           {p.margin}%

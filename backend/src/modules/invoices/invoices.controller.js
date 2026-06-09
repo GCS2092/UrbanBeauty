@@ -7,6 +7,9 @@ const {
   applyDateRangeFilter,
 } = require('../../utils/pagination.utils');
 
+// ---------------------------------------------------------------------------
+// Include commun
+// ---------------------------------------------------------------------------
 const invoiceInclude = {
   order: {
     select: {
@@ -14,12 +17,24 @@ const invoiceInclude = {
       orderNumber: true,
       guestName: true,
       guestEmail: true,
+      guestPhone: true,       // ✅ ajout
+      shippingAddress: true,  // ✅ ajout — contient phone, fullName, street, city
       paymentStatus: true,
-      user: { select: { firstName: true, lastName: true, email: true } },
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,        // ✅ ajout
+        },
+      },
     },
   },
 };
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 function buildInvoicesWhere(query) {
   const where = {};
   if (query.status) where.status = query.status;
@@ -38,6 +53,9 @@ function buildInvoicesWhere(query) {
   return where;
 }
 
+// ---------------------------------------------------------------------------
+// Handlers
+// ---------------------------------------------------------------------------
 async function listInvoices(req, res, next) {
   try {
     const { page, limit, skip } = parsePagination(req.query);
@@ -97,7 +115,9 @@ async function getInvoiceByOrder(req, res, next) {
         order: {
           include: {
             items: true,
-            user: { select: { firstName: true, lastName: true, email: true, phone: true } },
+            user: {
+              select: { firstName: true, lastName: true, email: true, phone: true },
+            },
           },
         },
       },
@@ -121,7 +141,9 @@ async function getInvoiceById(req, res, next) {
         order: {
           include: {
             items: true,
-            user: { select: { firstName: true, lastName: true, email: true, phone: true } },
+            user: {
+              select: { firstName: true, lastName: true, email: true, phone: true },
+            },
           },
         },
       },
@@ -145,7 +167,9 @@ async function downloadInvoicePdf(req, res, next) {
         order: {
           include: {
             items: true,
-            user: { select: { firstName: true, lastName: true, email: true, phone: true } },
+            user: {
+              select: { firstName: true, lastName: true, email: true, phone: true },
+            },
           },
         },
       },

@@ -79,4 +79,52 @@ async function updatePaymentStatus(req, res, next) {
   }
 }
 
-module.exports = { getOrdersAdmin, updatePaymentStatus };
+// ── Confirmer un brouillon WhatsApp → PENDING ─────────────────
+async function confirmDraftOrder(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const existing = await prisma.order.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ message: 'Commande introuvable' });
+    }
+    if (existing.status !== 'DRAFT') {
+      return res.status(400).json({ message: 'La commande n\'est pas un brouillon' });
+    }
+
+    const order = await prisma.order.update({
+      where: { id },
+      data: {
+        status: 'PENDING',
+        statusHistory: {
+          create: {
+            fromStatus: 'DRAFT',
+            toStatus: 'PENDING',
+            message: 'Commande WhatsApp confirmée par l\'admin',
+            changedBy: req.user?.id,
+          },
+        },
+      },
+      include: { user: true, items: true },
+    });
+
+    // Notifier le client s'il a un compte
+    if (order.user) {
+      await prisma.notification.create({
+        data: {
+          userId: order.user.id,
+          type: 'ORDER_CONFIRMED',
+          title: 'Commande confirmée',
+          message: `Votre commande WhatsApp ${order.orderNumber} a été confirmée.`,
+          link: `/orders/${order.orderNumber}`,
+        },
+      });
+    }
+
+    res.json(order);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getOrdersAdmin, updatePaymentStatus, confirmDraftOrder };

@@ -39,6 +39,8 @@ const router = express.Router();
  *         description: Commande créée
  */
 router.post('/', apiLimiter, ordersController.createOrder);
+router.post('/whatsapp', apiLimiter, ordersController.createWhatsappOrder);
+
 
 /**
  * @swagger
