@@ -1,25 +1,28 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download, RefreshCw } from 'lucide-react';
+import { Download, RefreshCw, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminApi } from '../../api/admin.api';
 import api from '../../api/axios';
 import Pagination from '../../components/shared/Pagination';
 import DateRangeFilter from '../../components/admin/DateRangeFilter';
+import StoreFilter from '../../components/admin/StoreFilter';
+import CreateOrderModal from '../../components/admin/CreateOrderModal';
 
 const STATUS_LABELS = {
-  PENDING: { label: 'En attente', color: 'bg-yellow-100 text-yellow-700' },
-  CONFIRMED: { label: 'Confirmée', color: 'bg-blue-100 text-blue-700' },
-  PROCESSING: { label: 'En traitement', color: 'bg-purple-100 text-purple-700' },
-  SHIPPED: { label: 'Expédiée', color: 'bg-indigo-100 text-indigo-700' },
-  DELIVERED: { label: 'Livrée', color: 'bg-emerald-100 text-emerald-700' },
-  CANCELLED: { label: 'Annulée', color: 'bg-red-100 text-red-700' },
+  DRAFT:      { label: 'Brouillon WhatsApp', color: 'bg-orange-100 text-orange-700' },
+  PENDING:    { label: 'En attente',          color: 'bg-yellow-100 text-yellow-700' },
+  CONFIRMED:  { label: 'Confirmée',           color: 'bg-blue-100 text-blue-700' },
+  PROCESSING: { label: 'En traitement',       color: 'bg-purple-100 text-purple-700' },
+  SHIPPED:    { label: 'Expédiée',            color: 'bg-indigo-100 text-indigo-700' },
+  DELIVERED:  { label: 'Livrée',              color: 'bg-emerald-100 text-emerald-700' },
+  CANCELLED:  { label: 'Annulée',             color: 'bg-red-100 text-red-700' },
 };
 
 const PAYMENT_LABELS = {
-  PENDING: 'Paiement en attente',
-  PAID: 'Payé',
-  PARTIAL: 'Partiel',
+  PENDING:  'Paiement en attente',
+  PAID:     'Payé',
+  PARTIAL:  'Partiel',
   REJECTED: 'Rejeté',
 };
 
@@ -33,26 +36,29 @@ const emptyFilters = {
   search: '',
   from: '',
   to: '',
+  storeId: '',
 };
 
 export default function AdminOrders() {
-  const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState(emptyFilters);
-  const [selected, setSelected] = useState(null);
+  const [page, setPage]               = useState(1);
+  const [filters, setFilters]         = useState(emptyFilters);
+  const [selected, setSelected]       = useState(null);
   const [statusModal, setStatusModal] = useState(false);
-  const [newStatus, setNewStatus] = useState('');
+  const [newStatus, setNewStatus]     = useState('');
   const [statusMessage, setStatusMessage] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting]   = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const queryParams = {
     page,
     limit: 20,
-    ...(filters.status && { status: filters.status }),
+    ...(filters.status        && { status: filters.status }),
     ...(filters.paymentStatus && { paymentStatus: filters.paymentStatus }),
     ...(filters.search.trim() && { search: filters.search.trim() }),
-    ...(filters.from && { from: filters.from }),
-    ...(filters.to && { to: filters.to }),
+    ...(filters.from          && { from: filters.from }),
+    ...(filters.to            && { to: filters.to }),
+    ...(filters.storeId       && { storeId: filters.storeId }),
   };
 
   const { data, isLoading, refetch, isFetching, error } = useQuery({
@@ -60,8 +66,8 @@ export default function AdminOrders() {
     queryFn: () => adminApi.getOrders(queryParams).then((r) => r.data),
   });
 
-  const orders = data?.data || [];
-  const total = data?.total ?? 0;
+  const orders     = data?.data       ?? [];
+  const total      = data?.total      ?? 0;
   const totalPages = data?.totalPages ?? 1;
 
   const updateFilter = (key, value) => {
@@ -105,23 +111,63 @@ export default function AdminOrders() {
     }
   };
 
+  const handleConfirmDraft = async (order) => {
+    try {
+      await adminApi.confirmDraftOrder(order.id);
+      await refetch();
+      toast.success('Commande WhatsApp confirmée');
+    } catch (e) {
+      toast.error(e.response?.data?.message || e.message || 'Erreur');
+    }
+  };
+
+  const handleRejectDraft = async (order) => {
+    if (!window.confirm(`Rejeter la commande ${order.orderNumber} ? Le stock sera libéré.`)) return;
+    try {
+      await adminApi.rejectDraftOrder(order.id, { reason: "Rejetée par l'administrateur" });
+      await refetch();
+      toast.success('Commande rejetée — stock libéré');
+    } catch (e) {
+      toast.error(e.response?.data?.message || e.message || 'Erreur');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+
+      {/* Header */}
       <div className="mb-6 pl-12 lg:pl-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Commandes</h1>
-          <p className="text-sm text-gray-500 mt-1">{total} commande{total !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {total} commande{total !== 1 ? 's' : ''}
+          </p>
         </div>
-        <button
-          onClick={() => refetch()}
-          className="flex items-center gap-2 border border-gray-200 bg-white px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
-        >
-          <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} /> Actualiser
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => refetch()}
+            className="flex items-center gap-2 border border-gray-200 bg-white px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
+          >
+            <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+            Actualiser
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-rose-700 transition-colors"
+          >
+            <Plus size={15} />
+            Nouvelle commande
+          </button>
+        </div>
       </div>
 
+      {/* Filtres */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 space-y-3">
         <div className="flex flex-wrap gap-3">
+          <StoreFilter
+            value={filters.storeId}
+            onChange={(v) => updateFilter('storeId', v || '')}
+          />
           <input
             type="search"
             placeholder="N°, client, email, téléphone…"
@@ -158,6 +204,7 @@ export default function AdminOrders() {
         />
       </div>
 
+      {/* Erreur */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-6 text-sm">
           {error.message || 'Erreur chargement'} —{' '}
@@ -165,6 +212,7 @@ export default function AdminOrders() {
         </div>
       )}
 
+      {/* Tableau */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-gray-400">Chargement…</div>
@@ -177,6 +225,7 @@ export default function AdminOrders() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  <th className="px-6 py-3">Boutique</th>
                   <th className="px-6 py-3">N° Commande</th>
                   <th className="px-6 py-3">Client</th>
                   <th className="px-6 py-3">Date</th>
@@ -189,12 +238,15 @@ export default function AdminOrders() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {orders.map((order) => {
-                  const s = STATUS_LABELS[order.status] || {
+                  const s = STATUS_LABELS[order.status] ?? {
                     label: order.status,
                     color: 'bg-gray-100 text-gray-600',
                   };
                   return (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-xs text-gray-600">
+                        {order.store?.code || '—'}
+                      </td>
                       <td className="px-6 py-4">
                         <span className="font-mono text-xs font-semibold text-gray-800">
                           {order.orderNumber}
@@ -242,7 +294,23 @@ export default function AdminOrders() {
                           <span className="text-xs text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right space-x-2">
+                        {order.status === 'DRAFT' && (
+                          <>
+                            <button
+                              onClick={() => handleConfirmDraft(order)}
+                              className="text-xs px-3 py-1.5 rounded-md bg-green-600 text-white hover:bg-green-700 font-medium"
+                            >
+                              Valider WhatsApp
+                            </button>
+                            <button
+                              onClick={() => handleRejectDraft(order)}
+                              className="text-xs px-3 py-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50 font-medium"
+                            >
+                              Rejeter
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => openStatusModal(order)}
                           className="text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium"
@@ -261,6 +329,7 @@ export default function AdminOrders() {
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
+      {/* Modal changement de statut */}
       {statusModal && selected && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
@@ -328,6 +397,15 @@ export default function AdminOrders() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal création de commande */}
+      {showCreateModal && (
+        <CreateOrderModal
+          storeId={filters.storeId || null}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => refetch()}
+        />
       )}
     </div>
   );

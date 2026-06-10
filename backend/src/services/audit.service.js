@@ -2,6 +2,7 @@ const prisma = require('../config/database');
 
 async function logAudit({
   userId = null,
+  storeId = null,
   action,
   module,
   entityId = null,
@@ -15,6 +16,7 @@ async function logAudit({
   return client.auditLog.create({
     data: {
       userId,
+      storeId,
       action,
       module,
       entityId,

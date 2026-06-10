@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import useAuthStore from '../../store/authStore';
 import { adminApi } from '../../api/admin.api';
 import { API_URL } from '../../utils/constants';
+import StoreFilter from '../../components/admin/StoreFilter';
 import {
   TrendingUp, Package, ShoppingBag, Users,
   AlertTriangle, Clock, CheckCircle, XCircle,
@@ -12,6 +13,7 @@ const formatPrice = (p) => `${Number(p || 0).toLocaleString('fr-FR')} FCFA`;
 const formatDate = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 
 const STATUS_CONFIG = {
+  DRAFT:      { label: 'Brouillon WA',  color: 'text-orange-600', bg: 'bg-orange-50 border-orange-200', dot: 'bg-orange-400' },
   PENDING:    { label: 'En attente',    color: 'text-amber-600',  bg: 'bg-amber-50  border-amber-200',  dot: 'bg-amber-400' },
   CONFIRMED:  { label: 'Confirmée',     color: 'text-blue-600',   bg: 'bg-blue-50   border-blue-200',   dot: 'bg-blue-400' },
   PROCESSING: { label: 'En traitement', color: 'text-violet-600', bg: 'bg-violet-50 border-violet-200', dot: 'bg-violet-400' },
@@ -66,6 +68,7 @@ function StatCard({ label, value, sub, icon: Icon, trend, chartData, color, dela
 
 export default function Dashboard() {
   const { token, user } = useAuthStore();
+  const [storeId, setStoreId] = useState('');
   const [data, setData] = useState({ orders: [], products: [], categories: [], users: [] });
   const [loading, setLoading] = useState(true);
 
@@ -75,8 +78,9 @@ export default function Dashboard() {
     const fetchAll = async () => {
       setLoading(true);
       try {
+        const orderParams = { limit: 100, ...(storeId && { storeId }) };
         const [oRes, pRes, cRes, uRes] = await Promise.all([
-          adminApi.getOrders({ limit: 100 }),
+          adminApi.getOrders(orderParams),
           fetch(`${API_URL}/api/products?limit=100`),
           fetch(`${API_URL}/api/categories`),
           fetch(`${API_URL}/api/users`, { headers }),
@@ -94,7 +98,7 @@ export default function Dashboard() {
       finally { setLoading(false); }
     };
     fetchAll();
-  }, []);
+  }, [storeId]);
 
   const totalRevenue = data.orders
     .filter(o => o.status === 'DELIVERED')
@@ -133,17 +137,20 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-stone-50 p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="mb-8 pl-12 lg:pl-0">
-        <div className="flex items-center gap-2 mb-1">
-          <BarChart3 size={18} className="text-rose-500" />
-          <span className="text-xs font-semibold uppercase tracking-widest text-stone-400">Vue d'ensemble</span>
+      <div className="mb-8 pl-12 lg:pl-0 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <BarChart3 size={18} className="text-rose-500" />
+            <span className="text-xs font-semibold uppercase tracking-widest text-stone-400">Vue d'ensemble</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-stone-900">
+            Bonjour{user?.name ? `, ${user.name.split(' ')[0]}` : ''} 👋
+          </h1>
+          <p className="text-stone-500 text-sm mt-1">
+            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-stone-900">
-          Bonjour{user?.name ? `, ${user.name.split(' ')[0]}` : ''} 👋
-        </h1>
-        <p className="text-stone-500 text-sm mt-1">
-          {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
+        <StoreFilter value={storeId} onChange={setStoreId} />
       </div>
 
       {/* Stat cards */}

@@ -99,7 +99,7 @@ async function releaseReservation(tx, items) {
   }
 }
 
-async function fulfillStockSale(tx, items, orderId, createdBy = null) {
+async function fulfillStockSale(tx, items, orderId, createdBy = null, storeId = null) {
   for (const item of items) {
     const product = await tx.product.findUnique({
       where: { id: item.productId },
@@ -119,8 +119,8 @@ async function fulfillStockSale(tx, items, orderId, createdBy = null) {
         },
       });
     } else {
-      const product = await tx.product.findUnique({ where: { id: item.productId } });
-      const reservedRelease = Math.min(item.quantity, product?.reservedStock || 0);
+      const productRow = await tx.product.findUnique({ where: { id: item.productId } });
+      const reservedRelease = Math.min(item.quantity, productRow?.reservedStock || 0);
       await tx.product.update({
         where: { id: item.productId },
         data: {
@@ -141,6 +141,7 @@ async function fulfillStockSale(tx, items, orderId, createdBy = null) {
         reason: `Vente commande`,
         orderId,
         reference: orderId,
+        storeId,
         createdBy,
       },
     });

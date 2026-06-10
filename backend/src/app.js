@@ -28,6 +28,9 @@ const ordersAdminRoutes = require('./modules/orders/orders.admin.routes');
 const accountingRoutes = require('./modules/accounting/accounting.routes');
 const auditRoutes = require('./modules/audit/audit.routes');
 const invoicesRoutes = require('./modules/invoices/invoices.routes');
+const storesRoutes = require('./modules/stores/stores.routes');
+const stockTransfersRoutes = require('./modules/stock-transfers/stock-transfers.routes');
+const creditNotesRoutes = require('./modules/credit-notes/credit-notes.routes');
 const app = express();
 
 /* =======================
@@ -89,6 +92,9 @@ app.use('/api/admin/orders', ordersAdminRoutes);
 app.use('/api/admin/accounting', accountingRoutes);
 app.use('/api/admin/audit', auditRoutes);
 app.use('/api/admin/invoices', invoicesRoutes);
+app.use('/api/admin/stores', storesRoutes);
+app.use('/api/admin/stock-transfers', stockTransfersRoutes);
+app.use('/api/admin/credit-notes', creditNotesRoutes);
 /* =======================
    ERROR HANDLER
 ======================= */

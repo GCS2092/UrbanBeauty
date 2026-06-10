@@ -35,9 +35,20 @@ const invoiceInclude = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function buildInvoicesWhere(query) {
+function buildInvoicesWhere(query, storeIds = null) {
   const where = {};
   if (query.status) where.status = query.status;
+
+  if (query.storeId) {
+    if (storeIds?.length && !storeIds.includes(query.storeId)) {
+      const error = new Error('Accès refusé à cette boutique.');
+      error.status = 403;
+      throw error;
+    }
+    where.storeId = query.storeId;
+  } else if (storeIds?.length) {
+    where.storeId = { in: storeIds };
+  }
 
   if (query.search) {
     const s = String(query.search).trim();
@@ -59,7 +70,7 @@ function buildInvoicesWhere(query) {
 async function listInvoices(req, res, next) {
   try {
     const { page, limit, skip } = parsePagination(req.query);
-    const where = buildInvoicesWhere(req.query);
+    const where = buildInvoicesWhere(req.query, req.storeIds);
 
     const [total, invoices] = await Promise.all([
       prisma.invoice.count({ where }),
@@ -80,7 +91,7 @@ async function listInvoices(req, res, next) {
 
 async function exportInvoicesExcel(req, res, next) {
   try {
-    const where = buildInvoicesWhere(req.query);
+    const where = buildInvoicesWhere(req.query, req.storeIds);
     const invoices = await prisma.invoice.findMany({
       where,
       orderBy: { issuedAt: 'desc' },

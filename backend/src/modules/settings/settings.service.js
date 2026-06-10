@@ -11,7 +11,8 @@ const DEFAULT_SETTINGS = {
   company_name: 'Urban Beauty',
   company_address: '',
   company_phone: '',
-  company_email: '',
+  reservation_expiry_hours: '24',
+  default_country_code: '+221',
 };
 
 async function getSettings() {

@@ -33,15 +33,21 @@ async function createInvoiceForOrder(tx, order) {
   const existing = await tx.invoice.findUnique({ where: { orderId: order.id } });
   if (existing) return existing;
 
-  const invoiceNumber = await nextInvoiceNumber(tx);
+  const store = await tx.store.findUnique({ where: { id: order.storeId } });
+  const invoiceNumber = await nextInvoiceNumber(tx, store);
+  const taxableBase = order.subtotal - order.discount - (order.storeDiscount || 0);
+  const tax = store ? Math.floor(taxableBase * (store.taxRate / 100)) : 0;
+
   return tx.invoice.create({
     data: {
       invoiceNumber,
       orderId: order.id,
+      storeId: order.storeId,
       subtotal: order.subtotal,
       shippingCost: order.shippingCost,
       discount: order.discount,
-      tax: 0,
+      storeDiscount: order.storeDiscount || 0,
+      tax,
       total: order.total,
       status: 'GENERATED',
     },
@@ -73,7 +79,7 @@ async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, 
     }
 
     if (willBePaid && !wasPaid) {
-      await fulfillStockSale(tx, order.items, order.id, adminUser?.id);
+      await fulfillStockSale(tx, order.items, order.id, adminUser?.id, order.storeId);
       await createInvoiceForOrder(tx, order);
     }
 
@@ -160,6 +166,7 @@ async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, 
     await logAudit({
       tx,
       userId: adminUser?.id,
+      storeId: order.storeId,
       action: 'PAYMENT_STATUS_UPDATE',
       module: 'orders',
       entityId: order.id,
@@ -254,6 +261,7 @@ async function changeOrderStatusAtomic(orderId, payload, adminUser, ip) {
     await logAudit({
       tx,
       userId: adminUser?.id,
+      storeId: order.storeId,
       action: 'ORDER_STATUS_UPDATE',
       module: 'orders',
       entityId: order.id,

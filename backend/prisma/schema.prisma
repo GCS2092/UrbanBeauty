@@ -32,8 +32,52 @@ model User {
   wishlist      Wishlist[]
   reviews       Review[]
   notifications Notification[]
+  userStores    UserStore[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+}
+
+// ─────────────────────────────────────────
+// BOUTIQUES (multi-boutiques)
+// ─────────────────────────────────────────
+
+model Store {
+  id             String            @id @default(cuid())
+  code           String            @unique
+  name           String
+  address        String?
+  phone          String?
+  isMain         Boolean           @default(false)
+  isActive       Boolean           @default(true)
+  taxRate        Float             @default(0)
+  discountRate   Float             @default(0)
+  currency       String            @default("XOF")
+  exchangeRate   Float             @default(1)
+  orders         Order[]
+  invoices       Invoice[]
+  stockMovements StockMovement[]
+  expenses       Expense[]
+  auditLogs      AuditLog[]
+  userStores     UserStore[]
+  transfersFrom  StockTransfer[]   @relation("TransferFrom")
+  transfersTo    StockTransfer[]   @relation("TransferTo")
+  invoiceSequences InvoiceSequence[]
+  creditNotes    CreditNote[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model UserStore {
+  id      String        @id @default(cuid())
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  store   Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  storeId String
+  role    StoreStaffRole @default(MANAGER)
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, storeId])
+  @@index([storeId])
 }
 
 model Address {
@@ -79,6 +123,7 @@ model Product {
   isFeatured      Boolean          @default(false)
   purchasePrice   Int?
   lowStockAlert   Int              @default(5)
+  overstockAlert  Int?
   category        Category         @relation(fields: [categoryId], references: [id])
   categoryId      String
   images          ProductImage[]
@@ -88,6 +133,7 @@ model Product {
   wishlist        Wishlist[]
   reviews         Review[]
   stockMovements  StockMovement[]
+  transferItems   StockTransferItem[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 }
@@ -113,6 +159,7 @@ model ProductVariant {
   cartItems      CartItem[]
   orderItems     OrderItem[]
   stockMovements StockMovement[]
+  transferItems  StockTransferItem[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -204,31 +251,38 @@ model Coupon {
 // ─────────────────────────────────────────
 
 model Order {
-  id              String          @id @default(cuid())
-  orderNumber     String          @unique
-  user            User?           @relation(fields: [userId], references: [id])
-  userId          String?
-  guestEmail      String?
-  guestPhone      String?
-  guestName       String?
-  status          OrderStatus     @default(PENDING)
-  paymentMethod   PaymentMethod
-  paymentStatus   PaymentStatus   @default(PENDING)
-  subtotal        Int
-  shippingCost    Int
-  discount        Int             @default(0)
-  total           Int
-  shippingAddress Json
-  notes           String?
-  coupon          Coupon?         @relation(fields: [couponId], references: [id])
-  couponId        String?
-  items           OrderItem[]
-  tracking        OrderTracking[]
-  payments        Payment[]
-  statusHistory   OrderStatusHistory[]
-  invoice         Invoice?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id                   String          @id @default(cuid())
+  orderNumber          String          @unique
+  store                Store           @relation(fields: [storeId], references: [id])
+  storeId              String
+  user                 User?           @relation(fields: [userId], references: [id])
+  userId               String?
+  guestEmail           String?
+  guestPhone           String?
+  guestName            String?
+  status               OrderStatus     @default(PENDING)
+  paymentMethod        PaymentMethod
+  paymentStatus        PaymentStatus   @default(PENDING)
+  subtotal             Int
+  shippingCost         Int
+  discount             Int             @default(0)
+  storeDiscount        Int             @default(0)
+  total                Int
+  shippingAddress      Json
+  notes                String?
+  reservationExpiresAt DateTime?
+  coupon               Coupon?         @relation(fields: [couponId], references: [id])
+  couponId             String?
+  items                OrderItem[]
+  tracking             OrderTracking[]
+  payments             Payment[]
+  statusHistory        OrderStatusHistory[]
+  invoice              Invoice?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([storeId])
+  @@index([status, reservationExpiresAt])
 }
 
 model OrderStatusHistory {
@@ -275,24 +329,50 @@ model OrderTracking {
 // ─────────────────────────────────────────
 
 model Invoice {
-  id            String        @id @default(cuid())
-  invoiceNumber String        @unique
-  order         Order         @relation(fields: [orderId], references: [id])
-  orderId       String        @unique
-  subtotal      Int
-  shippingCost  Int           @default(0)
-  discount      Int           @default(0)
-  tax           Int           @default(0)
-  total         Int
-  status        InvoiceStatus @default(GENERATED)
-  issuedAt      DateTime      @default(now())
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  invoiceNumber   String        @unique
+  store           Store         @relation(fields: [storeId], references: [id])
+  storeId         String
+  order           Order         @relation(fields: [orderId], references: [id])
+  orderId         String        @unique
+  subtotal        Int
+  shippingCost    Int           @default(0)
+  discount        Int           @default(0)
+  storeDiscount   Int           @default(0)
+  tax             Int           @default(0)
+  total           Int
+  status          InvoiceStatus @default(GENERATED)
+  issuedAt        DateTime      @default(now())
+  creditNotes     CreditNote[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([storeId])
 }
 
 model InvoiceSequence {
-  year       Int @id
-  lastNumber Int @default(0)
+  storeId    String
+  year       Int
+  lastNumber Int    @default(0)
+  store      Store  @relation(fields: [storeId], references: [id])
+
+  @@id([storeId, year])
+}
+
+model CreditNote {
+  id               String           @id @default(cuid())
+  creditNoteNumber String           @unique
+  invoice          Invoice          @relation(fields: [invoiceId], references: [id])
+  invoiceId        String
+  store            Store            @relation(fields: [storeId], references: [id])
+  storeId          String
+  amount           Int
+  reason           String?
+  status           CreditNoteStatus @default(ISSUED)
+  createdBy        String?
+  createdAt        DateTime         @default(now())
+
+  @@index([storeId])
 }
 
 // ─────────────────────────────────────────
@@ -302,6 +382,8 @@ model InvoiceSequence {
 model AuditLog {
   id         String   @id @default(cuid())
   userId     String?
+  store      Store?   @relation(fields: [storeId], references: [id])
+  storeId    String?
   action     String
   module     String
   entityId   String?
@@ -313,6 +395,7 @@ model AuditLog {
 
   @@index([module, createdAt])
   @@index([userId])
+  @@index([storeId])
 }
 
 // ─────────────────────────────────────────
@@ -379,6 +462,8 @@ model Supplier {
 
 model StockMovement {
   id         String            @id @default(cuid())
+  store      Store?            @relation(fields: [storeId], references: [id])
+  storeId    String?
   product    Product           @relation(fields: [productId], references: [id])
   productId  String
   variant    ProductVariant?   @relation(fields: [variantId], references: [id])
@@ -392,12 +477,17 @@ model StockMovement {
   supplierId String?
   reference  String?
   orderId    String?
+  transferId String?
   createdBy  String?
   createdAt  DateTime          @default(now())
+
+  @@index([storeId])
 }
 
 model Expense {
   id         String          @id @default(cuid())
+  store      Store?          @relation(fields: [storeId], references: [id])
+  storeId    String?
   category   ExpenseCategory
   label      String
   amount     Int
@@ -409,6 +499,39 @@ model Expense {
   createdBy  String?
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
+
+  @@index([storeId])
+}
+
+model StockTransfer {
+  id             String              @id @default(cuid())
+  transferNumber String              @unique
+  fromStore      Store               @relation("TransferFrom", fields: [fromStoreId], references: [id])
+  fromStoreId    String
+  toStore        Store               @relation("TransferTo", fields: [toStoreId], references: [id])
+  toStoreId      String
+  status         TransferStatus      @default(PENDING)
+  notes          String?
+  items          StockTransferItem[]
+  validatedBy    String?
+  validatedAt    DateTime?
+  createdBy      String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([fromStoreId])
+  @@index([toStoreId])
+}
+
+model StockTransferItem {
+  id         String          @id @default(cuid())
+  transfer   StockTransfer   @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  transferId String
+  product    Product         @relation(fields: [productId], references: [id])
+  productId  String
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
+  variantId  String?
+  quantity   Int
 }
 
 // ─────────────────────────────────────────
@@ -463,6 +586,8 @@ enum StockMovementType {
   OUT_RETURN
   ADJUSTMENT
   RETURN_IN
+  TRANSFER_OUT
+  TRANSFER_IN
 }
 
 enum ExpenseCategory {
@@ -480,5 +605,25 @@ enum InvoiceStatus {
   GENERATED
   SENT
   PAID
+  CANCELLED
+}
+
+enum StoreStaffRole {
+  MANAGER
+  ACCOUNTANT
+  COMMERCIAL
+  WAREHOUSE
+  DELIVERY
+}
+
+enum TransferStatus {
+  PENDING
+  VALIDATED
+  CANCELLED
+}
+
+enum CreditNoteStatus {
+  ISSUED
+  APPLIED
   CANCELLED
 }

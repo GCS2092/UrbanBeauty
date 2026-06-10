@@ -10,6 +10,11 @@ const {
 const { checkStock, reserveStockItems } = require('../products/stock.service');
 const { logAudit } = require('../../services/audit.service');
 const { changeOrderStatusAtomic } = require('./order-fulfillment.service');
+const {
+  resolveStoreForOrder,
+  computeStoreDiscount,
+} = require('../stores/store.service');
+const { getSettings } = require('../settings/settings.service');
 
 async function createOrder(payload, user, ip = null) {
   if (!Array.isArray(payload.items) || payload.items.length === 0) {
@@ -25,12 +30,14 @@ async function createOrder(payload, user, ip = null) {
     throw error;
   }
 
+  const store = await resolveStoreForOrder(payload.storeId);
   const orderNumber = generateOrderNumber();
   const userId = user?.id || null;
   const guestEmail = user?.email || payload.guestEmail;
   const guestName = payload.guestName || payload.shippingAddress?.fullName || 'Client';
   const shippingCost = Number(payload.shippingCost || 0);
   const subtotal = payload.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const storeDiscount = computeStoreDiscount(subtotal, store.discountRate);
 
   let discount = 0;
   let couponId = null;
@@ -48,7 +55,13 @@ async function createOrder(payload, user, ip = null) {
     couponId = coupon.id;
   }
 
-  const total = subtotal + shippingCost - discount;
+  const total = subtotal + shippingCost - discount - storeDiscount;
+  const isDraft = payload.status === 'DRAFT';
+  const initialStatus = isDraft ? 'DRAFT' : 'PENDING';
+
+  const settings = await getSettings();
+  const expiryHours = Number(settings.reservation_expiry_hours || 24);
+  const reservationExpiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
 
   const order = await prisma.$transaction(async (tx) => {
     await reserveStockItems(tx, payload.items);
@@ -63,18 +76,22 @@ async function createOrder(payload, user, ip = null) {
     const created = await tx.order.create({
       data: {
         orderNumber,
+        storeId: store.id,
         userId,
         guestEmail,
         guestPhone: payload.guestPhone,
         guestName,
+        status: initialStatus,
         paymentMethod: payload.paymentMethod,
         subtotal,
         shippingCost,
         discount,
+        storeDiscount,
         couponId,
         total,
         shippingAddress: payload.shippingAddress,
         notes: payload.notes,
+        reservationExpiresAt,
         items: {
           create: payload.items.map((item) => ({
             productId: item.productId,
@@ -88,15 +105,17 @@ async function createOrder(payload, user, ip = null) {
         },
         tracking: {
           create: {
-            status: 'PENDING',
-            message: 'Commande enregistrée et en attente de confirmation.',
+            status: initialStatus,
+            message: isDraft
+              ? 'Commande WhatsApp en attente de confirmation.'
+              : 'Commande enregistrée et en attente de confirmation.',
             location: payload.shippingAddress?.city || null,
           },
         },
         statusHistory: {
           create: {
-            toStatus: 'PENDING',
-            message: 'Commande créée',
+            toStatus: initialStatus,
+            message: isDraft ? 'Commande WhatsApp créée (brouillon)' : 'Commande créée',
             changedBy: userId,
           },
         },
@@ -108,17 +127,18 @@ async function createOrder(payload, user, ip = null) {
           },
         },
       },
-      include: { items: true, tracking: true, payments: true },
+      include: { items: true, tracking: true, payments: true, store: true },
     });
 
     await logAudit({
       tx,
       userId,
+      storeId: store.id,
       action: 'ORDER_CREATE',
       module: 'orders',
       entityId: created.id,
       entityType: 'Order',
-      newValue: { orderNumber, total },
+      newValue: { orderNumber, total, storeId: store.id },
       ip,
     });
 
@@ -197,12 +217,22 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
   return order;
 }
 
-function buildOrdersWhere(query) {
+function buildOrdersWhere(query, storeIds = null) {
   const where = {};
 
   if (query.status) where.status = query.status;
   if (query.paymentStatus) where.paymentStatus = query.paymentStatus;
   if (query.paymentMethod) where.paymentMethod = query.paymentMethod;
+  if (query.storeId) {
+    if (storeIds?.length && !storeIds.includes(query.storeId)) {
+      const error = new Error('Accès refusé à cette boutique.');
+      error.status = 403;
+      throw error;
+    }
+    where.storeId = query.storeId;
+  } else if (storeIds?.length) {
+    where.storeId = { in: storeIds };
+  }
 
   applyDateRangeFilter(where, 'createdAt', query);
 
@@ -222,9 +252,9 @@ function buildOrdersWhere(query) {
   return where;
 }
 
-async function getAllOrders(query) {
+async function getAllOrders(query, storeIds = null) {
   const { page, limit, skip } = parsePagination(query);
-  const where = buildOrdersWhere(query);
+  const where = buildOrdersWhere(query, storeIds);
 
   const [total, orders] = await Promise.all([
     prisma.order.count({ where }),
@@ -238,6 +268,7 @@ async function getAllOrders(query) {
         tracking: true,
         user: true,
         invoice: true,
+        store: { select: { id: true, code: true, name: true } },
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 3 },
       },
     }),

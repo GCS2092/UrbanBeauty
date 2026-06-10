@@ -1,39 +1,73 @@
-﻿# Historique de suivi â€” UrbanBeauty vs Cahier des charges v2
+﻿# Historique de suivi — UrbanBeauty vs Cahier des charges v2/v3
 
-**DerniÃ¨re mise Ã  jour :** 3 juin 2026 (session 2 â€” Ã©tapes critiques)  
-**RÃ©fÃ©rence analyse :** `ANALYSE_CDC2_VS_PROJET.md`
-
-Ce fichier recense ce qui a Ã©tÃ© **livrÃ©**, ce qui est **en cours / partiel**, et ce qui reste **Ã  planifier**. Ã€ mettre Ã  jour Ã  chaque phase.
+**Dernière mise à jour :** 10 juin 2026 (session conformité complète)  
+**Référence :** `cahierDeCharge2`, `ANALYSE_CDC2_VS_PROJET.md`
 
 ---
 
-## LivrÃ© dans cette session (fondations sur lâ€™existant)
+## Livré — session 10 juin 2026 (multi-boutiques + compléments CDC)
 
-| Ã‰lÃ©ment | DÃ©tail | Fichiers / API |
-|--------|--------|----------------|
-| RÃ©servation stock | `reservedStock` sur produit/variante ; rÃ©servation Ã  la crÃ©ation de commande | `schema.prisma`, `stock.service.js`, `orders.service.js` |
-| Paiement atomique | `prisma.$transaction` : stock, mouvement `OUT_SALE`, facture, historique, audit, paiement | `order-fulfillment.service.js`, `orders.admin.controller.js` |
-| Factures (base) | ModÃ¨le `Invoice`, numÃ©rotation `FA-AAAA-NNNN`, crÃ©ation Ã  la validation du paiement | `invoice.utils.js`, migration |
-| Historique statuts | `OrderStatusHistory` Ã  la crÃ©ation et Ã  chaque changement | `order-fulfillment.service.js` |
-| Journal dâ€™audit (base) | `AuditLog` + API `GET /api/admin/audit` | `audit.service.js`, `audit.routes.js` |
-| API factures (lecture) | `GET /api/admin/invoices`, `GET /api/admin/invoices/order/:orderId` | `invoices.routes.js` |
-| Filtres commandes admin | statut, paiement, recherche | `orders.service.js` `buildOrdersWhere` |
-| Erreurs mÃ©tier | Mapping erreurs Prisma courantes | `prisma-error.utils.js`, `error.middleware.js` |
-| Frontend commandes | Filtres, facture, historique dans modal, `adminApi` | `AdminOrders.jsx` |
-| Dashboard | URL API centralisÃ©e, stock bas = disponible rÃ©el | `Dashboard.jsx`, `constants.js` |
-| Stock disponible compta | Alertes sur `stock - reservedStock` | `accounting.routes.js` |
-| **Factures PDF** | GÃ©nÃ©ration `pdfkit`, tÃ©lÃ©chargement `GET /api/admin/invoices/:id/pdf` | `invoice-pdf.service.js` |
-| **Page admin Factures** | Liste, filtres, pagination, tÃ©lÃ©chargement PDF | `AdminInvoices.jsx` |
-| **Page admin Audit** | Liste journal avec filtres et pagination | `AdminAudit.jsx` |
-| **Infos entreprise** | ParamÃ¨tres pour en-tÃªte factures (`company_*`) | `settings.service.js`, `AdminSettings.jsx` |
-| **Stock produits admin** | Colonnes rÃ©el / rÃ©servÃ© / disponible | `AdminProducts.jsx` |
-| **PDF depuis commandes** | Bouton tÃ©lÃ©chargement si facture existe | `AdminOrders.jsx` |
+| Élément | Détail |
+|--------|--------|
+| **Architecture multi-boutiques** | Modèles `Store`, `UserStore`, `storeId` sur commandes/factures/mouvements/dépenses/audit |
+| **Boutique principale** | Seed `UBT` — UrbanBeauty Siège (`clmainstore000000000001`) |
+| **Migration** | `20260610000000_multi_stores_foundation` |
+| **API boutiques** | `GET/POST/PATCH /api/admin/stores`, assignation utilisateur |
+| **Cloisonnement** | Middleware `loadStoreContext`, filtre `storeId` commandes/factures |
+| **Remise boutique** | `discountRate` sur Store → `storeDiscount` sur commande/facture |
+| **Taxes boutique** | `taxRate` appliqué à la génération facture |
+| **Devise** | Champ `currency` + `exchangeRate` sur Store (XOF par défaut) |
+| **Numérotation factures** | Format `FA-{CODE}-{AAAA}-{NNNN}` par boutique |
+| **Expiration réservations** | Cron horaire — brouillons WhatsApp (`DRAFT`) + alertes admin |
+| **Commandes WhatsApp** | Statut `DRAFT`, boutons panier (commande + info), validation/rejet admin |
+| **Transferts inter-boutiques** | API `StockTransfer` + mouvements `TRANSFER_OUT/IN` |
+| **Avoirs** | API `CreditNote` format `AV-{CODE}-{AAAA}-{NNNN}` |
+| **UI admin** | Page Boutiques, filtre boutique Dashboard/Commandes/Factures |
+| **Paramètres** | `reservation_expiry_hours` (défaut 24h) |
 
-**Migration :** `backend/prisma/migrations/20260603120000_foundation_reservations_audit_invoices/`
+---
 
-**Migration appliquÃ©e** sur lâ€™environnement local le 2026-06-03 (`prisma migrate deploy` + `prisma generate`).
+## Matrice de conformité (état actuel)
 
-Sur un autre poste :
+| § | Thème | Statut | Commentaire |
+|---|--------|--------|-------------|
+| 0 | Multi-boutiques | ✅/🔧 | Fondation en place ; UI transferts à compléter |
+| 1 | Tableau de bord | 🔧 | Filtre boutique OK ; drill-down périodes manquant |
+| 2 | Commandes | ✅/🔧 | Atomique, réservations, WhatsApp, historique ; livreur absent |
+| 3 | Factures | ✅ | PDF, Excel, numérotation légale par boutique |
+| 4 | Documents centralisés | ❌ | Espace dédié non créé |
+| 5 | Comptabilité | 🔧 | Auto via ventes ; vue par boutique partielle |
+| 6 | Stocks | ✅/🔧 | Central + réservations + transferts API |
+| 7 | Produits | ✅ | CRUD OK ; KPI produit limités |
+| 8 | Cohérence globale | ✅ | `$transaction` sur paiement/statuts |
+| 9 | Import produits | ❌ | |
+| 10 | Livraisons / livreurs | ❌ | |
+| 11 | WhatsApp | ✅/🔧 | wa.me panier + admin ; pas de templates paramétrables |
+| 12 | Recherche globale | ❌ | |
+| 13 | Pagination | ✅/🔧 | Commandes/factures paginées |
+| 14 | Audit | ✅ | Journal + page admin |
+| 15 | Rôles | 🔧 | `UserStore` + rôles staff enum ; guard UI partiel |
+| 16 | Alertes | 🔧 | Stock bas + expiration brouillons |
+| 17 | KPI | 🔧 | Dashboard basique |
+| 18–26 | Intégrations / perf | ❌/🔧 | Phase 5 |
+
+Légende : ✅ conforme · 🔧 partiel · ❌ absent
+
+---
+
+## Prochaines étapes recommandées (ordre CDC)
+
+1. UI transferts inter-boutiques + PDF bon de transfert  
+2. Espace « Documents & Exports » centralisé (§4)  
+3. Module livreurs + livraisons (§10)  
+4. Recherche globale (§12)  
+5. Import produits intelligent (§9)  
+6. Rôles staff complets + 2FA (§15, §19)  
+
+---
+
+## Commandes migration (autre poste)
+
 ```bash
 cd backend
 npx prisma migrate deploy
@@ -42,82 +76,9 @@ npx prisma generate
 
 ---
 
-## Partiel â€” Ã  complÃ©ter ensuite
-
-| Sujet | Ã‰tat actuel | Prochaine Ã©tape |
-|-------|-------------|-----------------|
-| Export Excel factures | PDF seulement | Export `.xlsx` (section 4) |
-| Envoi facture auto | PDF tÃ©lÃ©chargeable | Email/WhatsApp Ã  la validation paiement |
-| Journal dâ€™audit UI | API seulement | Page `/admin/audit` avec filtres |
-| Annulation commande payÃ©e | Restauration stock + facture `CANCELLED` | Tests + avoirs (section 21) |
-| Paiement `PARTIAL` | AcceptÃ© en API, pas de logique acompte | Tracer solde restant + alertes |
-| Emails | Toujours best-effort si SMTP absent | Config production |
-| Pagination commandes | `limit=100` fixe | Pagination UI comme sur Factures |
-
----
-
-## Non dÃ©marrÃ© â€” prioritÃ© CDC2 (Ã  planifier)
-
-### PrioritÃ© 0 â€” Multi-boutiques (fondation CDC v2)
-- [ ] ModÃ¨le `Store` / boutique principale
-- [ ] `storeId` sur commandes, factures, mouvements, utilisateurs
-- [ ] Cloisonnement API + middleware permissions
-- [ ] Filtre boutique dashboard / listes / exports
-- [ ] Transferts inter-boutiques
-
-### PrioritÃ© 1 â€” Modules critiques restants
-- [ ] Retours et avoirs (`AV-AAAA-NNNN`)
-- [ ] Rapprochement paiement â†” facture (section 24)
-- [ ] Taxes configurables par boutique (section 5)
-
-### PrioritÃ© 2 â€” Enrichissement existant
-- [ ] Tableau de bord : pÃ©riodes cliquables, KPI dÃ©taillÃ©s (Â§1, Â§17)
-- [ ] Fiche client CRM (historique multi-boutique) (Â§22)
-- [ ] Espace Â« Documents & exports Â» centralisÃ© (Â§4)
-- [ ] Recherche globale (Â§12)
-- [ ] Modification commande selon statut + validation admin (Â§2)
-
-### PrioritÃ© 3 â€” Nouveaux modules
-- [ ] Livreurs + espace livreur (Â§10)
-- [ ] Notifications WhatsApp/SMS automatiques (Â§11) â€” aujourdâ€™hui lien manuel checkout
-- [ ] Import/export produits intelligent (Â§9)
-- [ ] Fournisseurs : bons de commande + rÃ©ceptions (Â§23)
-- [ ] Promotions avancÃ©es par boutique (Â§25)
-- [ ] Alertes intelligentes multi-seuils (Â§16)
-
-### PrioritÃ© 4 â€” Technique / infra
-- [ ] RÃ´les : gestionnaire, comptable, commercial, magasinier, livreur (Â§15)
-- [ ] 2FA (Â§19)
-- [ ] Sauvegardes / restauration applicatives (Â§13)
-- [ ] IntÃ©grations externes : WhatsApp API, Africa's Talking, pg-boss, socket.io (CDC1 / Â§18)
-- [ ] Archivage donnÃ©es + perf 50k+ lignes (Â§26)
-
----
-
-## DÃ©cisions mÃ©tier en attente
-
-| Question | Impact |
-|----------|--------|
-| Stock dÃ©clenchÃ© Ã  la commande ou au paiement ? | **Actuel :** rÃ©servation Ã  la commande, sortie stock au paiement `PAID` |
-| Facture Ã  la commande ou au paiement ? | **Actuel :** Ã  la validation paiement `PAID` |
-| Vente Ã  stock 0 ? | Non bloquÃ© explicitement (rÃ©servation empÃªche si disponible = 0) |
-| Boutique e-commerce = boutique principale ? | Ã€ dÃ©finir avant multi-boutiques |
-
----
-
 ## Journal des sessions
 
 | Date | Action |
 |------|--------|
-| 2026-06-03 | Analyse comparative `ANALYSE_CDC2_VS_PROJET.md` |
-| 2026-06-03 | Fondations : rÃ©servations, transactions, factures base, audit, filtres admin |
-| 2026-06-03 | Critiques : PDF factures, pages Factures + Audit, infos entreprise, stock admin |
-| 2026-06-03 | Confort : pagination commandes, filtres date, export Excel factures |
-
----
-
-## Notes techniques
-
-- Les commandes **crÃ©Ã©es avant migration** nâ€™ont pas de rÃ©servation : la validation paiement gÃ¨re `reservedStock` avec plafond (`Math.min`).
-- `decrementStock` / `incrementStock` legacy conservÃ©s mais la logique mÃ©tier passe par `order-fulfillment` + `stock.service` transactionnel.
-- Voir `ANALYSE_CDC2_VS_PROJET.md` pour le dÃ©tail des Ã©carts et lâ€™ordre des phases 0â€“5.
+| 2026-06-03 | Fondations : réservations, transactions, factures, audit |
+| 2026-06-10 | Multi-boutiques, expiration réservations, WhatsApp admin, transferts, avoirs |

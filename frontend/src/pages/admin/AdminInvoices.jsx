@@ -6,6 +6,7 @@ import { adminApi } from '../../api/admin.api';
 import { settingsApi } from '../../api/settings.api';
 import Pagination from '../../components/shared/Pagination';
 import DateRangeFilter from '../../components/admin/DateRangeFilter';
+import StoreFilter from '../../components/admin/StoreFilter';
 
 const formatPrice = (p) => `${Number(p || 0).toLocaleString('fr-FR')} FCFA`;
 const formatDate = (iso) =>
@@ -50,6 +51,7 @@ export default function AdminInvoices() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
+  const [storeId, setStoreId] = useState('');
   const [downloading, setDownloading] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(null);
@@ -61,6 +63,7 @@ export default function AdminInvoices() {
     ...(status && { status }),
     ...(from && { from }),
     ...(to && { to }),
+    ...(storeId && { storeId }),
   };
 
   const { data, isLoading, refetch, isFetching } = useQuery({
@@ -181,6 +184,7 @@ export default function AdminInvoices() {
       {/* Filtres */}
       <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-6 space-y-3">
         <div className="flex flex-wrap gap-3">
+          <StoreFilter value={storeId} onChange={(v) => { setStoreId(v || ''); setPage(1); }} />
           <div className="flex-1 min-w-[200px] relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
