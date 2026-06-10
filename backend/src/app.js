@@ -37,7 +37,10 @@ const app = express();
    SECURITY & CORE MIDDLEWARES
 ======================= */
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
+app.use(cors({
+  origin: process.env.CLIENT_URL || '*',
+  credentials: true
+}));
 
 /* =======================
    BODY PARSERS
