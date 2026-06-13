@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import useAuthStore from '../../store/authStore';
 import { toast } from 'sonner';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const formatDate = (iso) =>
   new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 
