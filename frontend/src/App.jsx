@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import AdminRoute from './components/shared/AdminRoute';
+import AdminOnlyRoute from './components/shared/AdminOnlyRoute';
 import ShopLayout from './components/layout/ShopLayout';
 import AdminLayout from './components/layout/AdminLayout';
 
@@ -73,22 +74,26 @@ export default function App() {
               </Route>
             </Route>
 
-            {/* Admin */}
+            {/* Admin + Staff — accès commun */}
             <Route element={<AdminRoute />}>
               <Route element={<AdminLayout />}>
                 <Route path="/admin" element={<Dashboard />} />
                 <Route path="/admin/products" element={<AdminProducts />} />
                 <Route path="/admin/orders" element={<AdminOrders />} />
                 <Route path="/admin/payments" element={<AdminPayments />} />
-                <Route path="/admin/categories" element={<AdminCategories />} />
-                <Route path="/admin/coupons" element={<AdminCoupons />} />
-                <Route path="/admin/users" element={<AdminUsers />} />
-                <Route path="/admin/settings" element={<AdminSettings />} />
                 <Route path="/admin/accounting" element={<AdminAccounting />} />
                 <Route path="/admin/invoices" element={<AdminInvoices />} />
-                <Route path="/admin/audit" element={<AdminAudit />} />
-                <Route path="/admin/stores" element={<AdminStores />} />
                 <Route path="/admin/stock-transfers" element={<AdminStockTransfers />} />
+                <Route path="/admin/audit" element={<AdminAudit />} />
+                <Route path="/admin/categories" element={<AdminCategories />} />
+
+                {/* Réservé ADMIN uniquement */}
+                <Route element={<AdminOnlyRoute />}>
+                  <Route path="/admin/stores" element={<AdminStores />} />
+                  <Route path="/admin/coupons" element={<AdminCoupons />} />
+                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/settings" element={<AdminSettings />} />
+                </Route>
               </Route>
             </Route>
 

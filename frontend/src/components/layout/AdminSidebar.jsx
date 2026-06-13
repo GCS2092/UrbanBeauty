@@ -7,26 +7,31 @@ import {
   ArrowRightLeft
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import useAuthStore from '../../store/authStore';
 
-const links = [
-  { to: '/admin',              label: 'Dashboard',      icon: LayoutDashboard, end: true },
-  { to: '/admin/products',     label: 'Produits',       icon: Package },
-  { to: '/admin/orders',       label: 'Commandes',      icon: ShoppingBag },
-  { to: '/admin/payments',     label: 'Paiements',      icon: CreditCard },
-  { to: '/admin/accounting',   label: 'Comptabilité',   icon: BookOpen },
-  { to: '/admin/invoices',     label: 'Factures',       icon: FileText },
-  { to: '/admin/stores',       label: 'Boutiques',      icon: Store },
-  { to: '/admin/stock-transfers', label: 'Transferts',  icon: ArrowRightLeft },
-  { to: '/admin/audit',        label: "Journal d'audit",icon: Shield },
-  { to: '/admin/categories',   label: 'Catégories',     icon: Tag },
-  { to: '/admin/coupons',      label: 'Coupons',        icon: Ticket },
-  { to: '/admin/users',        label: 'Utilisateurs',   icon: Users },
-  { to: '/admin/settings',     label: 'Paramètres',     icon: Settings },
+const allLinks = [
+  { to: '/admin',                 label: 'Dashboard',       icon: LayoutDashboard, end: true,  adminOnly: false },
+  { to: '/admin/products',        label: 'Produits',        icon: Package,                     adminOnly: false },
+  { to: '/admin/orders',          label: 'Commandes',       icon: ShoppingBag,                 adminOnly: false },
+  { to: '/admin/payments',        label: 'Paiements',       icon: CreditCard,                  adminOnly: false },
+  { to: '/admin/accounting',      label: 'Comptabilité',    icon: BookOpen,                    adminOnly: false },
+  { to: '/admin/invoices',        label: 'Factures',        icon: FileText,                    adminOnly: false },
+  { to: '/admin/stores',          label: 'Boutiques',       icon: Store,                       adminOnly: true  }, // ← masqué STAFF
+  { to: '/admin/stock-transfers', label: 'Transferts',      icon: ArrowRightLeft,              adminOnly: false },
+  { to: '/admin/audit',           label: "Journal d'audit", icon: Shield,                      adminOnly: false },
+  { to: '/admin/categories',      label: 'Catégories',      icon: Tag,                         adminOnly: false },
+  { to: '/admin/coupons',         label: 'Coupons',         icon: Ticket,                      adminOnly: true  },
+  { to: '/admin/users',           label: 'Utilisateurs',    icon: Users,                       adminOnly: true  },
+  { to: '/admin/settings',        label: 'Paramètres',      icon: Settings,                    adminOnly: true  },
 ];
 
 export default function AdminSidebar() {
   const { logout } = useAuth();
+  const { user } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isAdmin = user?.role === 'ADMIN';
+  const links = allLinks.filter(l => !l.adminOnly || isAdmin);
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">

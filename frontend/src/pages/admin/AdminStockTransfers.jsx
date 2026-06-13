@@ -8,6 +8,7 @@ import {
 import { toast } from 'sonner';
 import api from '../../api/axios';
 import { adminApi } from '../../api/admin.api';
+import useAuthStore from '../../store/authStore';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -15,11 +16,6 @@ const STATUS_CONFIG = {
   PENDING:   { label: 'En attente',  color: 'bg-amber-100 text-amber-700',     icon: Clock },
   VALIDATED: { label: 'Validé',      color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
   CANCELLED: { label: 'Annulé',      color: 'bg-red-100 text-red-700',         icon: XCircle },
-};
-
-const MOVEMENT_TYPE_LABEL = {
-  TRANSFER_OUT: { label: 'Sortie transfert', color: 'text-orange-600 bg-orange-50' },
-  TRANSFER_IN:  { label: 'Entrée transfert', color: 'text-emerald-600 bg-emerald-50' },
 };
 
 function StatusBadge({ status }) {
@@ -42,7 +38,6 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
   const [items, setItems]             = useState([{ productId: '', variantId: '', quantity: 1, _variants: [], _stock: null }]);
   const [productSearch, setProductSearch] = useState('');
 
-  // Produits avec leur stock (admin endpoint qui retourne tout)
   const { data: productsRaw = [] } = useQuery({
     queryKey: ['transfer-products', productSearch],
     queryFn: () =>
@@ -75,7 +70,6 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
       prev.map((item, idx) => (idx === i ? { ...item, [field]: value } : item))
     );
 
-  // Quand on sélectionne un produit : charger ses variantes et son stock
   const handleProductChange = (i, productId) => {
     const product = productsRaw.find((p) => p.id === productId);
     const variants = product?.variants || [];
@@ -89,7 +83,6 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
     );
   };
 
-  // Quand on sélectionne une variante : mettre à jour le stock disponible
   const handleVariantChange = (i, variantId) => {
     const item = items[i];
     const variant = item._variants.find((v) => v.id === variantId);
@@ -108,7 +101,6 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
     const validItems = items.filter((it) => it.productId && it.quantity > 0);
     if (!validItems.length) return toast.error('Ajoutez au moins un produit');
 
-    // Vérification stock côté frontend
     for (const it of validItems) {
       if (it._stock !== null && it.quantity > it._stock) {
         return toast.error(`Quantité demandée (${it.quantity}) > stock disponible (${it._stock})`);
@@ -220,7 +212,6 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
             {items.map((item, i) => (
               <div key={i} className="bg-stone-50 p-4 rounded-xl space-y-3">
                 <div className="flex gap-2 items-start">
-                  {/* Sélecteur produit */}
                   <div className="flex-1">
                     <select
                       value={item.productId}
@@ -239,7 +230,6 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
                     </select>
                   </div>
 
-                  {/* Quantité */}
                   <div className="w-24">
                     <input
                       type="number"
@@ -262,7 +252,6 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
                   )}
                 </div>
 
-                {/* Variante si disponible */}
                 {item.productId && item._variants.length > 0 && (
                   <div>
                     <label className="text-xs text-stone-500 mb-1 block">Variante</label>
@@ -284,7 +273,6 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
                   </div>
                 )}
 
-                {/* Indicateur de stock */}
                 {item.productId && item._stock !== null && (
                   <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
                     item._stock === 0
@@ -317,7 +305,6 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
             />
           </div>
 
-          {/* Info cohérence comptabilité */}
           <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700 flex gap-2">
             <Info size={14} className="shrink-0 mt-0.5" />
             <span>
@@ -327,7 +314,6 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-6 border-t border-stone-100 flex justify-end gap-3">
           <button
             onClick={onClose}
@@ -351,7 +337,7 @@ function CreateTransferModal({ stores, onClose, onCreated }) {
 
 // ── Ligne de transfert (accordéon) ────────────────────────────────────────────
 
-function TransferRow({ transfer }) {
+function TransferRow({ transfer, isAdmin }) {
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
 
@@ -402,7 +388,8 @@ function TransferRow({ transfer }) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {transfer.status === 'PENDING' && (
+          {/* ← Valider/Annuler uniquement pour ADMIN */}
+          {isAdmin && transfer.status === 'PENDING' && (
             <>
               <button
                 onClick={(e) => {
@@ -427,6 +414,12 @@ function TransferRow({ transfer }) {
                 Annuler
               </button>
             </>
+          )}
+          {/* STAFF : message informatif si en attente */}
+          {!isAdmin && transfer.status === 'PENDING' && (
+            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">
+              En attente de validation admin
+            </span>
           )}
           {open
             ? <ChevronUp size={16} className="text-stone-400" />
@@ -461,7 +454,6 @@ function TransferRow({ transfer }) {
             ))}
           </div>
 
-          {/* Info mouvements comptables */}
           {transfer.status === 'VALIDATED' && (
             <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 flex gap-2">
               <CheckCircle size={13} className="shrink-0 mt-0.5" />
@@ -484,6 +476,9 @@ export default function AdminStockTransfers() {
   const [showModal, setShowModal]       = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [storeFilter, setStoreFilter]   = useState('');
+
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'ADMIN';
 
   const { data: transfers = [], isLoading } = useQuery({
     queryKey: ['stock-transfers', { status: statusFilter, storeId: storeFilter }],
@@ -517,6 +512,7 @@ export default function AdminStockTransfers() {
             Mouvements de produits entre boutiques · traçabilité comptable automatique
           </p>
         </div>
+        {/* Créer un transfert — STAFF et ADMIN peuvent créer */}
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white rounded-xl text-sm font-medium hover:bg-rose-600 transition-colors shadow-sm"
@@ -529,10 +525,10 @@ export default function AdminStockTransfers() {
       {/* Compteurs */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Total',    value: transfers.length, color: 'text-stone-700',   bg: 'bg-stone-50' },
-          { label: 'En attente', value: pending,        color: 'text-amber-600',   bg: 'bg-amber-50' },
-          { label: 'Validés',  value: validated,        color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Annulés',  value: cancelled,        color: 'text-red-500',     bg: 'bg-red-50' },
+          { label: 'Total',      value: transfers.length, color: 'text-stone-700',   bg: 'bg-stone-50' },
+          { label: 'En attente', value: pending,          color: 'text-amber-600',   bg: 'bg-amber-50' },
+          { label: 'Validés',    value: validated,        color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Annulés',    value: cancelled,        color: 'text-red-500',     bg: 'bg-red-50' },
         ].map((s) => (
           <div key={s.label} className={`${s.bg} rounded-2xl border border-stone-100 p-4 text-center`}>
             <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
@@ -597,7 +593,7 @@ export default function AdminStockTransfers() {
       ) : (
         <div className="space-y-3">
           {transfers.map((t) => (
-            <TransferRow key={t.id} transfer={t} />
+            <TransferRow key={t.id} transfer={t} isAdmin={isAdmin} />
           ))}
         </div>
       )}
