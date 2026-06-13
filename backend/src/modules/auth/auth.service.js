@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('../../config/database');
 const { signToken } = require('../../utils/jwt.utils');
+const { getAccessibleStoreIds } = require('../stores/store.service');
 
 async function register({ email, password, firstName, lastName, phone }) {
   const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -51,7 +52,24 @@ async function login({ email, password }) {
     data: { userId: user.id },
   });
 
-  const token = signToken({ id: user.id, email: user.email, role: user.role });
+  const storeIds = await getAccessibleStoreIds(user);
+
+  const activeStoreId = user.role === 'ADMIN' ? null : (storeIds[0] || null);
+
+  const token = signToken({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    activeStoreId,
+  });
+
+  let stores = [];
+  if (storeIds.length) {
+    stores = await prisma.store.findMany({
+      where: { id: { in: storeIds } },
+      orderBy: [{ isMain: 'desc' }, { name: 'asc' }],
+    });
+  }
 
   return {
     token,
@@ -62,6 +80,7 @@ async function login({ email, password }) {
       lastName: user.lastName,
       role: user.role,
     },
+    stores,
   };
 }
 

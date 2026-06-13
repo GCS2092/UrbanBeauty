@@ -6,8 +6,8 @@ import useAuthStore from '../../store/authStore';
 export default function ShopLayout() {
   const { user, isAuthenticated } = useAuthStore();
 
-  // ✅ Si admin → redirige vers /admin
-  if (isAuthenticated && user?.role === 'ADMIN') {
+  // ✅ Si admin ou staff → redirige vers /admin
+  if (isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'STAFF')) {
     return <Navigate to="/admin" replace />;
   }
 

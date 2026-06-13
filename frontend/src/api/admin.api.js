@@ -32,30 +32,34 @@ function buildQueryString(params) {
 
 export const adminApi = {
   // ── Commandes ────────────────────────────────────────────────────
-  getOrders: (params) => api.get('/api/admin/orders', { params }),
-  createManualOrder: (data) => api.post('/api/admin/orders', data),
-  updatePayment: (id, data) => api.patch(`/api/admin/orders/${id}/payment`, data),
-  confirmDraftOrder: (id) => api.patch(`/api/admin/orders/${id}/confirm-draft`),
-  rejectDraftOrder: (id, data) => api.patch(`/api/admin/orders/${id}/reject-draft`, data),
+  getOrders:          (params) => api.get('/api/admin/orders', { params }),
+  createManualOrder:  (data)   => api.post('/api/admin/orders', data),
+  updatePayment:      (id, data) => api.patch(`/api/admin/orders/${id}/payment`, data),
+  confirmDraftOrder:  (id)     => api.patch(`/api/admin/orders/${id}/confirm-draft`),
+  rejectDraftOrder:   (id, data) => api.patch(`/api/admin/orders/${id}/reject-draft`, data),
 
   // ── Recherche (pour création manuelle) ───────────────────────────
-  searchUsers: (q) => api.get('/api/admin/orders/search/users', { params: { q } }),
+  searchUsers:    (q)      => api.get('/api/admin/orders/search/users', { params: { q } }),
   searchProducts: (params) => api.get('/api/admin/orders/search/products', { params }),
 
   // ── Factures ─────────────────────────────────────────────────────
-  getInvoices: (params) => api.get('/api/admin/invoices', { params }),
-  getInvoiceByOrder: (orderId) => api.get(`/api/admin/invoices/order/${orderId}`),
-  getInvoiceById: (id) => api.get(`/api/admin/invoices/${id}`),
+  getInvoices:       (params)   => api.get('/api/admin/invoices', { params }),
+  getInvoiceByOrder: (orderId)  => api.get(`/api/admin/invoices/order/${orderId}`),
+  getInvoiceById:    (id)       => api.get(`/api/admin/invoices/${id}`),
+
+  // ── Transferts de stock ───────────────────────────────────────────
+  getStockTransfers:      (params) => api.get('/api/admin/stock-transfers', { params }),
+  createStockTransfer:    (data)   => api.post('/api/admin/stock-transfers', data),
+  validateStockTransfer:  (id)     => api.patch(`/api/admin/stock-transfers/${id}/validate`),
+  cancelStockTransfer:    (id, reason) =>
+    api.patch(`/api/admin/stock-transfers/${id}/cancel`, { reason }),
 
   // ── Autres ───────────────────────────────────────────────────────
   getAuditLogs: (params) => api.get('/api/admin/audit', { params }),
-  getStores: () => api.get('/api/admin/stores'),
-  getCategories: () => api.get('/api/categories'),
-  getStockTransfers: (params) => api.get('/api/admin/stock-transfers', { params }),
-  createStockTransfer: (data) => api.post('/api/admin/stock-transfers', data),
-  validateStockTransfer: (id) => api.patch(`/api/admin/stock-transfers/${id}/validate`),
-  getSettings: () => api.get('/api/settings'),
-  updateSettings: (data) => api.put('/api/settings', data),
+  getStores:    ()       => api.get('/api/admin/stores'),
+  getCategories:()       => api.get('/api/categories'),
+  getSettings:  ()       => api.get('/api/settings'),
+  updateSettings:(data)  => api.put('/api/settings', data),
 
   downloadInvoicePdf(invoiceId, invoiceNumber) {
     return downloadBlob(

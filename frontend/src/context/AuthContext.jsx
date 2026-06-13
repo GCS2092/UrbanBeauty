@@ -27,7 +27,8 @@ export function AuthProvider({ children }) {
       await fetchCart(data.user.id, anonymousId);
       localStorage.removeItem(ANONYMOUS_CART_KEY);
       toast.success(`Bienvenue ${data.user.firstName} !`);
-      navigate(data.user.role === 'ADMIN' ? '/admin' : '/');
+      // ✅ ADMIN et STAFF redirigés vers /admin
+      navigate(data.user.role === 'ADMIN' || data.user.role === 'STAFF' ? '/admin' : '/');
     } catch (err) {
       const message =
         err?.response?.data?.message ||

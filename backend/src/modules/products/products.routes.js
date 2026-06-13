@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const productsController = require('./products.controller');
 const { authenticate } = require('../../middlewares/auth.middleware');
 const requireAdmin = require('../../middlewares/admin.middleware');
+const requireStaff = require('../../middlewares/staff.middleware');
 const { apiLimiter } = require('../../middlewares/rateLimit.middleware');
 const { checkValidation } = require('../../middlewares/validation.middleware');
 
@@ -39,14 +40,15 @@ router.get('/', apiLimiter, productsController.getProducts);
  * @swagger
  * /api/products/admin/all:
  *   get:
- *     summary: Liste tous les produits sans filtre isActive (Admin)
+ *     summary: Liste tous les produits sans filtre isActive (Admin/Staff)
  *     tags: [Produits]
  *     responses:
  *       200:
  *         description: Liste paginée — actifs + inactifs
  */
 // ⚠️ DOIT être avant /:slug pour ne pas être capturé comme slug
-router.get('/admin/all', authenticate, requireAdmin, productsController.getAllProductsAdmin);
+// Lecture — STAFF peut voir, filtré automatiquement par storeIds
+router.get('/admin/all', authenticate, requireStaff, productsController.getAllProductsAdmin);
 
 /**
  * @swagger
@@ -91,6 +93,7 @@ router.get('/:slug', apiLimiter, productsController.getProductBySlug);
  *       201:
  *         description: Produit créé
  */
+// Créer — ADMIN seulement
 router.post('/', authenticate, requireAdmin,
   body('name').notEmpty(),
   body('slug').notEmpty(),
@@ -125,6 +128,7 @@ router.post('/', authenticate, requireAdmin,
  *       200:
  *         description: Produit modifié
  */
+// Modifier — ADMIN seulement
 router.put('/:id', authenticate, requireAdmin,
   body('name').optional().notEmpty(),
   body('description').optional().notEmpty(),
@@ -151,6 +155,7 @@ router.put('/:id', authenticate, requireAdmin,
  *       204:
  *         description: Supprimé
  */
+// Supprimer — ADMIN seulement
 router.delete('/:id', authenticate, requireAdmin, productsController.deleteProduct);
 
 module.exports = router;

@@ -3,23 +3,25 @@ import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag,
   Tag, Ticket, Users, LogOut, Menu, X, Sparkles,
-  CreditCard, Settings, BookOpen, FileText, Shield, Store
+  CreditCard, Settings, BookOpen, FileText, Shield, Store,
+  ArrowRightLeft
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const links = [
-  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/admin/products', label: 'Produits', icon: Package },
-  { to: '/admin/orders', label: 'Commandes', icon: ShoppingBag },
-  { to: '/admin/payments', label: 'Paiements', icon: CreditCard },
-  { to: '/admin/accounting', label: 'Comptabilité', icon: BookOpen },
-  { to: '/admin/invoices', label: 'Factures', icon: FileText },
-  { to: '/admin/stores', label: 'Boutiques', icon: Store },
-  { to: '/admin/audit', label: 'Journal d\'audit', icon: Shield },
-  { to: '/admin/categories', label: 'Catégories', icon: Tag },
-  { to: '/admin/coupons', label: 'Coupons', icon: Ticket },
-  { to: '/admin/users', label: 'Utilisateurs', icon: Users },
-  { to: '/admin/settings', label: 'Paramètres', icon: Settings },
+  { to: '/admin',              label: 'Dashboard',      icon: LayoutDashboard, end: true },
+  { to: '/admin/products',     label: 'Produits',       icon: Package },
+  { to: '/admin/orders',       label: 'Commandes',      icon: ShoppingBag },
+  { to: '/admin/payments',     label: 'Paiements',      icon: CreditCard },
+  { to: '/admin/accounting',   label: 'Comptabilité',   icon: BookOpen },
+  { to: '/admin/invoices',     label: 'Factures',       icon: FileText },
+  { to: '/admin/stores',       label: 'Boutiques',      icon: Store },
+  { to: '/admin/stock-transfers', label: 'Transferts',  icon: ArrowRightLeft },
+  { to: '/admin/audit',        label: "Journal d'audit",icon: Shield },
+  { to: '/admin/categories',   label: 'Catégories',     icon: Tag },
+  { to: '/admin/coupons',      label: 'Coupons',        icon: Ticket },
+  { to: '/admin/users',        label: 'Utilisateurs',   icon: Users },
+  { to: '/admin/settings',     label: 'Paramètres',     icon: Settings },
 ];
 
 export default function AdminSidebar() {

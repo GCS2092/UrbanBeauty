@@ -6,13 +6,16 @@ const {
   listTransfers,
   createTransfer,
   validateTransfer,
+  cancelTransfer,
 } = require('./stock-transfers.controller');
 
 const router = express.Router();
 
 router.use(authenticate, requireAdmin, loadStoreContext);
-router.get('/', listTransfers);
-router.post('/', createTransfer);
-router.patch('/:id/validate', validateTransfer);
+
+router.get('/',                   listTransfers);
+router.post('/',                  createTransfer);
+router.patch('/:id/validate',     validateTransfer);
+router.patch('/:id/cancel',       cancelTransfer);
 
 module.exports = router;

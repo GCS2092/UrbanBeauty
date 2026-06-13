@@ -2,6 +2,7 @@ const express = require('express');
 const ordersController = require('./orders.controller');
 const { authenticate } = require('../../middlewares/auth.middleware');
 const requireAdmin = require('../../middlewares/admin.middleware');
+const requireStaff = require('../../middlewares/staff.middleware');
 const { apiLimiter } = require('../../middlewares/rateLimit.middleware');
 
 const router = express.Router();
@@ -41,12 +42,11 @@ const router = express.Router();
 router.post('/', apiLimiter, ordersController.createOrder);
 router.post('/whatsapp', apiLimiter, ordersController.createWhatsappOrder);
 
-
 /**
  * @swagger
  * /api/orders/admin/all:
  *   get:
- *     summary: Toutes les commandes (Admin)
+ *     summary: Toutes les commandes (Admin/Staff)
  *     tags: [Commandes]
  *     parameters:
  *       - in: query
@@ -59,7 +59,8 @@ router.post('/whatsapp', apiLimiter, ordersController.createWhatsappOrder);
  *       200:
  *         description: Liste paginée
  */
-router.get('/admin/all', authenticate, requireAdmin, ordersController.getAllOrders);
+// Lecture — STAFF peut voir, filtré automatiquement par storeIds
+router.get('/admin/all', authenticate, requireStaff, ordersController.getAllOrders);
 
 /**
  * @swagger
@@ -114,6 +115,7 @@ router.get('/:orderNumber', apiLimiter, ordersController.getOrderByNumber);
  *       200:
  *         description: Statut mis à jour
  */
+// Changer statut — ADMIN seulement
 router.put('/:id/status', authenticate, requireAdmin, ordersController.changeOrderStatus);
 
 module.exports = router;

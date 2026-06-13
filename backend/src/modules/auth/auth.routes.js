@@ -4,6 +4,9 @@ const { authController } = require('./auth.controller');
 const { checkValidation } = require('../../middlewares/validation.middleware');
 const { authLimiter } = require('../../middlewares/rateLimit.middleware');
 const { authenticate } = require('../../middlewares/auth.middleware');
+const prisma = require('../../config/database');
+const { getAccessibleStoreIds } = require('../stores/store.service');
+const { signToken } = require('../../utils/jwt.utils');
 
 const router = express.Router();
 
@@ -89,5 +92,60 @@ router.post('/logout', authenticate, authController.logout);
  *         description: Données utilisateur
  */
 router.get('/me', authenticate, authController.me);
+
+/**
+ * @swagger
+ * /api/auth/switch-store:
+ *   post:
+ *     summary: Changer de boutique active
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             storeId: "clxxxxxxxxxxxxx"
+ *     responses:
+ *       200:
+ *         description: Nouveau token JWT avec la boutique active + infos boutique
+ *       403:
+ *         description: Accès refusé à cette boutique
+ *       404:
+ *         description: Boutique introuvable ou inactive
+ */
+router.post('/switch-store', authenticate, async (req, res, next) => {
+  try {
+    const { storeId } = req.body;
+    if (!storeId) {
+      return res.status(400).json({ message: 'storeId requis' });
+    }
+
+    // Vérifie que l'utilisateur a accès à cette boutique
+    if (req.user.role !== 'ADMIN') {
+      const allowed = await getAccessibleStoreIds(req.user);
+      if (!allowed.includes(storeId)) {
+        return res.status(403).json({ message: 'Accès refusé à cette boutique' });
+      }
+    }
+
+    // Récupère la boutique
+    const store = await prisma.store.findUnique({ where: { id: storeId } });
+    if (!store || !store.isActive) {
+      return res.status(404).json({ message: 'Boutique introuvable ou inactive' });
+    }
+
+    // Nouveau token avec activeStoreId injecté
+    const token = signToken({
+      id:            req.user.id,
+      email:         req.user.email,
+      role:          req.user.role,
+      activeStoreId: storeId,
+    });
+
+    res.json({ token, store });
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;

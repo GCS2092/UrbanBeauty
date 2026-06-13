@@ -160,10 +160,53 @@ async function assignUserToStore(req, res, next) {
   }
 }
 
+async function getUserStores(req, res, next) {
+  try {
+    const { userId } = req.params;
+    const links = await prisma.userStore.findMany({
+      where: { userId },
+      include: { store: { select: { id: true, code: true, name: true, isMain: true } } },
+    });
+    res.json(links);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function removeUserFromStore(req, res, next) {
+  try {
+    const { userId, storeId } = req.body;
+    if (!userId || !storeId) {
+      return res.status(400).json({ message: 'Utilisateur et boutique requis.' });
+    }
+
+    await prisma.userStore.delete({
+      where: { userId_storeId: { userId, storeId } },
+    });
+
+    await logAudit({
+      userId: req.user?.id,
+      storeId,
+      action: 'USER_STORE_REMOVE',
+      module: 'stores',
+      entityId: userId,
+      entityType: 'UserStore',
+      oldValue: { userId, storeId },
+      ip: req.ip,
+    });
+
+    res.json({ message: 'Retiré de la boutique.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getStores,
   getMainStoreHandler,
   createStore,
   updateStore,
   assignUserToStore,
+  getUserStores,
+  removeUserFromStore,
 };
