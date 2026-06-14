@@ -23,7 +23,7 @@ const wishlistRoutes = require('./modules/wishlist/wishlist.routes');
 const reviewsRoutes = require('./modules/reviews/reviews.routes');
 const couponsRoutes = require('./modules/coupons/coupons.routes');
 const notificationsRoutes = require('./modules/notifications/notifications.routes');
-const settingsRoutes = require('./modules/settings/settings.routes'); // ✅ NOUVEAU
+const settingsRoutes = require('./modules/settings/settings.routes');
 const ordersAdminRoutes = require('./modules/orders/orders.admin.routes');
 const accountingRoutes = require('./modules/accounting/accounting.routes');
 const auditRoutes = require('./modules/audit/audit.routes');
@@ -31,7 +31,13 @@ const invoicesRoutes = require('./modules/invoices/invoices.routes');
 const storesRoutes = require('./modules/stores/stores.routes');
 const stockTransfersRoutes = require('./modules/stock-transfers/stock-transfers.routes');
 const creditNotesRoutes = require('./modules/credit-notes/credit-notes.routes');
+
 const app = express();
+
+/* =======================
+   TRUST PROXY (Render / reverse proxy)
+======================= */
+app.set('trust proxy', 1); // ✅ LIGNE AJOUTÉE
 
 /* =======================
    SECURITY & CORE MIDDLEWARES
@@ -70,8 +76,8 @@ app.get('/', (req, res) => {
   res.json({
     message: '🌸 Bienvenue sur l\'API UrbanBeauty',
     version: '1.0.0',
-    docs: 'http://localhost:5000/api/docs',
-    health: 'http://localhost:5000/api/health',
+    docs: '/api/docs',      // ✅ plus de localhost hardcodé
+    health: '/api/health',  // ✅ plus de localhost hardcodé
   });
 });
 
@@ -90,7 +96,7 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewsRoutes);
 app.use('/api/coupons', couponsRoutes);
 app.use('/api/notifications', notificationsRoutes);
-app.use('/api/settings', settingsRoutes); // ✅ NOUVEAU
+app.use('/api/settings', settingsRoutes);
 app.use('/api/admin/orders', ordersAdminRoutes);
 app.use('/api/admin/accounting', accountingRoutes);
 app.use('/api/admin/audit', auditRoutes);
@@ -98,6 +104,7 @@ app.use('/api/admin/invoices', invoicesRoutes);
 app.use('/api/admin/stores', storesRoutes);
 app.use('/api/admin/stock-transfers', stockTransfersRoutes);
 app.use('/api/admin/credit-notes', creditNotesRoutes);
+
 /* =======================
    ERROR HANDLER
 ======================= */
