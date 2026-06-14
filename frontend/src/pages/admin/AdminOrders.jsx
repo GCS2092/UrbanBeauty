@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download, RefreshCw, Plus } from 'lucide-react';
+import { Download, RefreshCw, Plus, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminApi } from '../../api/admin.api';
 import api from '../../api/axios';
@@ -26,6 +26,13 @@ const PAYMENT_LABELS = {
   REJECTED: 'Rejeté',
 };
 
+const PAYMENT_COLORS = {
+  PENDING:  'text-yellow-600',
+  PAID:     'text-emerald-600 font-semibold',
+  PARTIAL:  'text-blue-600',
+  REJECTED: 'text-red-600',
+};
+
 const formatDate = (iso) =>
   new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 const formatPrice = (p) => `${Number(p).toLocaleString('fr-FR')} FCFA`;
@@ -49,6 +56,13 @@ export default function AdminOrders() {
   const [submitting, setSubmitting]   = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // ── Paiement modal ────────────────────────────────────────────────
+  const [paymentModal, setPaymentModal]   = useState(false);
+  const [paymentOrder, setPaymentOrder]   = useState(null);
+  const [paymentNote, setPaymentNote]     = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('PAID');
+  const [submittingPayment, setSubmittingPayment] = useState(false);
 
   const queryParams = {
     page,
@@ -82,6 +96,13 @@ export default function AdminOrders() {
     setStatusModal(true);
   };
 
+  const openPaymentModal = (order) => {
+    setPaymentOrder(order);
+    setPaymentStatus('PAID');
+    setPaymentNote('');
+    setPaymentModal(true);
+  };
+
   const handleDownloadInvoice = async (invoice) => {
     setDownloadingPdf(invoice.id);
     try {
@@ -108,6 +129,28 @@ export default function AdminOrders() {
       toast.error(e.message || 'Erreur mise à jour');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // ── Soumettre le changement de statut de paiement ─────────────────
+  const handlePaymentStatusChange = async () => {
+    setSubmittingPayment(true);
+    try {
+      await api.patch(`/api/admin/orders/${paymentOrder.id}/payment`, {
+        paymentStatus,
+        note: paymentNote || undefined,
+      });
+      await refetch();
+      setPaymentModal(false);
+      toast.success(
+        paymentStatus === 'PAID'
+          ? '✅ Commande marquée comme payée'
+          : 'Statut de paiement mis à jour'
+      );
+    } catch (e) {
+      toast.error(e.response?.data?.message || e.message || 'Erreur');
+    } finally {
+      setSubmittingPayment(false);
     }
   };
 
@@ -242,6 +285,7 @@ export default function AdminOrders() {
                     label: order.status,
                     color: 'bg-gray-100 text-gray-600',
                   };
+                  const isPaid = order.paymentStatus === 'PAID';
                   return (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-xs text-gray-600">
@@ -266,8 +310,10 @@ export default function AdminOrders() {
                       <td className="px-6 py-4 font-semibold text-gray-900">
                         {formatPrice(order.total || 0)}
                       </td>
-                      <td className="px-6 py-4 text-xs text-gray-600">
-                        {PAYMENT_LABELS[order.paymentStatus] || order.paymentStatus}
+                      <td className="px-6 py-4 text-xs">
+                        <span className={PAYMENT_COLORS[order.paymentStatus] || 'text-gray-600'}>
+                          {PAYMENT_LABELS[order.paymentStatus] || order.paymentStatus}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.color}`}>
@@ -311,6 +357,16 @@ export default function AdminOrders() {
                             </button>
                           </>
                         )}
+                        {/* ✅ Bouton paiement — visible si pas encore payé */}
+                        {!isPaid && (
+                          <button
+                            onClick={() => openPaymentModal(order)}
+                            className="text-xs px-3 py-1.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 font-medium inline-flex items-center gap-1"
+                          >
+                            <CreditCard size={12} />
+                            Paiement
+                          </button>
+                        )}
                         <button
                           onClick={() => openStatusModal(order)}
                           className="text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium"
@@ -329,18 +385,13 @@ export default function AdminOrders() {
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-      {/* Modal changement de statut */}
+      {/* ── Modal statut commande ── */}
       {statusModal && selected && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Changer le statut</h2>
-              <button
-                onClick={() => setStatusModal(false)}
-                className="text-gray-400 hover:text-gray-600 text-xl"
-              >
-                ✕
-              </button>
+              <button onClick={() => setStatusModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
             </div>
             <p className="text-sm text-gray-500 mb-4">
               Commande <span className="font-mono font-semibold">{selected.orderNumber}</span>
@@ -381,18 +432,75 @@ export default function AdminOrders() {
               </div>
             )}
             <div className="flex gap-3">
+              <button onClick={() => setStatusModal(false)} className="flex-1 border border-gray-200 rounded-lg py-2 text-sm">Annuler</button>
+              <button onClick={handleStatusChange} disabled={submitting} className="flex-1 bg-black text-white rounded-lg py-2 text-sm disabled:opacity-60">
+                {submitting ? 'En cours…' : 'Confirmer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal statut paiement ✅ ── */}
+      {paymentModal && paymentOrder && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Statut du paiement</h2>
+              <button onClick={() => setPaymentModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+            </div>
+
+            <p className="text-sm text-gray-500 mb-1">
+              Commande <span className="font-mono font-semibold">{paymentOrder.orderNumber}</span>
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              Montant : <span className="font-semibold text-gray-900">{formatPrice(paymentOrder.total)}</span>
+            </p>
+
+            {/* Sélection du statut */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {[
+                { value: 'PAID',     label: '✅ Payé',           color: 'bg-emerald-50 border-emerald-400 text-emerald-700' },
+                { value: 'PARTIAL',  label: '🔸 Partiel',        color: 'bg-blue-50 border-blue-400 text-blue-700' },
+                { value: 'PENDING',  label: '⏳ En attente',     color: 'bg-yellow-50 border-yellow-400 text-yellow-700' },
+                { value: 'REJECTED', label: '❌ Rejeté',         color: 'bg-red-50 border-red-400 text-red-700' },
+              ].map(({ value, label, color }) => (
+                <button
+                  key={value}
+                  onClick={() => setPaymentStatus(value)}
+                  className={`px-3 py-2 rounded-lg border-2 text-xs font-medium transition-all ${
+                    paymentStatus === value
+                      ? color
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Note optionnelle */}
+            <textarea
+              value={paymentNote}
+              onChange={(e) => setPaymentNote(e.target.value)}
+              placeholder="Note optionnelle (ex: reçu Mobile Money #123…)"
+              rows={2}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4"
+            />
+
+            <div className="flex gap-3">
               <button
-                onClick={() => setStatusModal(false)}
+                onClick={() => setPaymentModal(false)}
                 className="flex-1 border border-gray-200 rounded-lg py-2 text-sm"
               >
                 Annuler
               </button>
               <button
-                onClick={handleStatusChange}
-                disabled={submitting}
-                className="flex-1 bg-black text-white rounded-lg py-2 text-sm disabled:opacity-60"
+                onClick={handlePaymentStatusChange}
+                disabled={submittingPayment}
+                className="flex-1 bg-emerald-600 text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-60 hover:bg-emerald-700"
               >
-                {submitting ? 'En cours…' : 'Confirmer'}
+                {submittingPayment ? 'En cours…' : 'Confirmer'}
               </button>
             </div>
           </div>
