@@ -16,6 +16,13 @@ const {
 } = require('../stores/store.service');
 const { getSettings } = require('../settings/settings.service');
 
+// ✅ Fonction utilitaire — envoie en arrière-plan sans bloquer
+function sendEmailAsync(mailOptions) {
+  transporter.sendMail(mailOptions).catch((err) => {
+    console.warn('Email non envoyé (SMTP non configuré) :', err.message);
+  });
+}
+
 async function createOrder(payload, user, ip = null) {
   if (!Array.isArray(payload.items) || payload.items.length === 0) {
     const error = new Error('La commande doit contenir au moins un produit.');
@@ -145,23 +152,36 @@ async function createOrder(payload, user, ip = null) {
     return created;
   });
 
+  // ✅ Email client — en arrière-plan, ne bloque pas la réponse
   if (guestEmail) {
-    try {
-      const emailData = buildOrderConfirmationEmail({
-        orderNumber,
-        guestName,
-        total,
-        clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
-      });
-      await transporter.sendMail({
-        to: guestEmail,
-        from: process.env.SMTP_USER,
-        subject: emailData.subject,
-        html: emailData.html,
-      });
-    } catch (emailErr) {
-      console.warn('Email non envoyé (SMTP non configuré) :', emailErr.message);
-    }
+    const emailData = buildOrderConfirmationEmail({
+      orderNumber,
+      guestName,
+      total,
+      clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+    });
+    sendEmailAsync({
+      to: guestEmail,
+      from: process.env.SMTP_USER,
+      subject: emailData.subject,
+      html: emailData.html,
+    });
+  }
+
+  // ✅ Email admin — en arrière-plan, ne bloque pas la réponse
+  if (process.env.ADMIN_EMAIL) {
+    const emailData = buildOrderConfirmationEmail({
+      orderNumber,
+      guestName,
+      total,
+      clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+    });
+    sendEmailAsync({
+      to: process.env.ADMIN_EMAIL,
+      from: process.env.SMTP_USER,
+      subject: `[Admin] Nouvelle commande ${orderNumber}`,
+      html: emailData.html,
+    });
   }
 
   return order;
@@ -195,23 +215,20 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
     ? `${order.user.firstName} ${order.user.lastName}`
     : order.guestName;
 
+  // ✅ Email statut — en arrière-plan, ne bloque pas la réponse
   if (customerEmail) {
-    try {
-      const emailData = buildOrderStatusEmail({
-        orderNumber: order.orderNumber,
-        customerName,
-        status: order.status,
-        clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
-      });
-      await transporter.sendMail({
-        to: customerEmail,
-        from: process.env.SMTP_USER,
-        subject: emailData.subject,
-        html: emailData.html,
-      });
-    } catch (emailErr) {
-      console.warn('Email non envoyé (SMTP non configuré) :', emailErr.message);
-    }
+    const emailData = buildOrderStatusEmail({
+      orderNumber: order.orderNumber,
+      customerName,
+      status: order.status,
+      clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+    });
+    sendEmailAsync({
+      to: customerEmail,
+      from: process.env.SMTP_USER,
+      subject: emailData.subject,
+      html: emailData.html,
+    });
   }
 
   return order;
