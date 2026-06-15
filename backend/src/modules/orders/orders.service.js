@@ -1,5 +1,5 @@
 const prisma = require('../../config/database');
-const { createTransporter } = require('../../config/email');
+const { sendEmail } = require('../../config/email');
 const { buildOrderConfirmationEmail, buildOrderStatusEmail } = require('../../utils/email.utils');
 const { generateOrderNumber } = require('../../utils/order.utils');
 const {
@@ -18,8 +18,7 @@ const { getSettings } = require('../settings/settings.service');
 
 // ✅ Fonction utilitaire — envoie en arrière-plan sans bloquer
 function sendEmailAsync(mailOptions) {
-  const transporter = createTransporter();
-  transporter.sendMail(mailOptions)
+  sendEmail(mailOptions)
     .then(() => console.log('✅ Email envoyé à :', mailOptions.to))
     .catch((err) => console.error('❌ ERREUR EMAIL :', err.message));
 }

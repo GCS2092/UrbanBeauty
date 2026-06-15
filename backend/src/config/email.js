@@ -1,18 +1,17 @@
-const nodemailer = require('nodemailer');
+const axios = require('axios');
 
-function createTransporter() {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: true,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false,
-    },
+async function sendEmail({ to, from, subject, html }) {
+  await axios.post('https://api.brevo.com/v3/smtp/email', {
+    sender: { email: from || process.env.SMTP_USER, name: 'UrbanBeauty' },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+  }, {
+    headers: {
+      'api-key': process.env.BREVO_API_KEY,
+      'Content-Type': 'application/json',
+    }
   });
 }
 
-module.exports = { createTransporter };
+module.exports = { sendEmail };
