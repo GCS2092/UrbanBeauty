@@ -15,6 +15,7 @@ const {
   computeStoreDiscount,
 } = require('../stores/store.service');
 const { getSettings } = require('../settings/settings.service');
+const { buildInvoicePdf } = require('./invoice-pdf.service'); // ✅ adapte le chemin si besoin
 
 // ✅ Fonction utilitaire — envoie en arrière-plan sans bloquer
 function sendEmailAsync(mailOptions) {
@@ -215,7 +216,6 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
     ? `${order.user.firstName} ${order.user.lastName}`
     : order.guestName;
 
-  // ✅ Email statut — en arrière-plan, ne bloque pas la réponse
   if (customerEmail) {
     const emailData = buildOrderStatusEmail({
       orderNumber: order.orderNumber,
@@ -223,11 +223,28 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
       status: order.status,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
     });
+
+    // ✅ Génération PDF avant sendEmailAsync (await obligatoire)
+    let attachments = [];
+    if (order.invoice) {
+      try {
+        const pdfBuffer = await buildInvoicePdf(order.invoice);
+        attachments = [{
+          filename: `facture-${order.invoice.invoiceNumber}.pdf`,
+          content: pdfBuffer.toString('base64'),
+        }];
+      } catch (err) {
+        // On ne bloque pas l'email si le PDF échoue
+        console.error('❌ Erreur génération PDF facture :', err.message);
+      }
+    }
+
     sendEmailAsync({
       to: customerEmail,
       from: process.env.SMTP_USER,
       subject: emailData.subject,
       html: emailData.html,
+      attachments,
     });
   }
 

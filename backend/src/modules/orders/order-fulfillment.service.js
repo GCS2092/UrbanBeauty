@@ -54,6 +54,15 @@ async function createInvoiceForOrder(tx, order) {
   });
 }
 
+// ─── include réutilisable pour avoir invoice.order.items ───────────────────────
+const invoiceWithOrderInclude = {
+  include: {
+    order: {
+      include: { items: true },
+    },
+  },
+};
+
 async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, ip) {
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
@@ -107,15 +116,13 @@ async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, 
 
     const updated = await tx.order.update({
       where: { id: orderId },
-      data: {
-        paymentStatus,
-        status: newOrderStatus,
-      },
+      data: { paymentStatus, status: newOrderStatus },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true } },
         payments: true,
         items: true,
-        invoice: true,
+        // ✅ invoice avec order.items pour buildInvoicePdf
+        invoice: invoiceWithOrderInclude,
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
     });
@@ -235,7 +242,8 @@ async function changeOrderStatusAtomic(orderId, payload, adminUser, ip) {
         tracking: true,
         user: true,
         items: true,
-        invoice: true,
+        // ✅ invoice avec order.items pour buildInvoicePdf
+        invoice: invoiceWithOrderInclude,
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 10 },
       },
     });
