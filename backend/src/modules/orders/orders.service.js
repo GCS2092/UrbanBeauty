@@ -15,7 +15,7 @@ const {
   computeStoreDiscount,
 } = require('../stores/store.service');
 const { getSettings } = require('../settings/settings.service');
-const { buildInvoicePdf } = require('./invoice-pdf.service'); // ✅ adapte le chemin si besoin
+const { buildInvoicePdf } = require('../invoices/invoice-pdf.service'); // ✅ adapte le chemin si besoin
 
 // ✅ Fonction utilitaire — envoie en arrière-plan sans bloquer
 function sendEmailAsync(mailOptions) {
