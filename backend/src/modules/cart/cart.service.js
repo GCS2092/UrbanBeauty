@@ -79,7 +79,14 @@ async function getCart(query) {
   const cart = await findOrCreateCart(query);
   return prisma.cart.findUnique({
     where: { id: cart.id },
-    include: { items: { include: { product: true, variant: true } } },
+    include: {
+  items: {
+    include: {
+      product: { include: { images: true } },
+      variant: true,
+    },
+  },
+},
   });
 }
 
