@@ -1,5 +1,5 @@
 const prisma = require('../../config/database');
-const transporter = require('../../config/email');
+const { createTransporter } = require('../../config/email');
 const { buildOrderConfirmationEmail, buildOrderStatusEmail } = require('../../utils/email.utils');
 const { generateOrderNumber } = require('../../utils/order.utils');
 const {
@@ -18,9 +18,10 @@ const { getSettings } = require('../settings/settings.service');
 
 // ✅ Fonction utilitaire — envoie en arrière-plan sans bloquer
 function sendEmailAsync(mailOptions) {
-  transporter.sendMail(mailOptions).catch((err) => {
-    console.warn('Email non envoyé (SMTP non configuré) :', err.message);
-  });
+  const transporter = createTransporter();
+  transporter.sendMail(mailOptions)
+    .then(() => console.log('✅ Email envoyé à :', mailOptions.to))
+    .catch((err) => console.error('❌ ERREUR EMAIL :', err.message));
 }
 
 async function createOrder(payload, user, ip = null) {

@@ -1940,6 +1940,48 @@ SYNTHÈSE — PRIORITÉS DE CETTE SECTION COMPLÉMENTAIRE
 À traiter EN DERNIER (améliorations non bloquantes) :
 - C.8.3 : Comportement en cas de perte de connexion.
 
+
+Prendre en compte le fait que la boutique soit aussi masculine donc gerer un peu ce detail aussi pour le desing les couleurs et tout 
+faire que les images s affichent aussi dans le panier genre dans le resumer de commande 
+La Boutique s'appelle SonShop verifer aussi les desing et tout 
+Gerer la responsivité des pages  verifier chacune 
 ================================================================
 FIN DE LA SECTION COMPLÉMENTAIRE — Version 1.0
-================================================================
+==============================================
+==================
+
+
+🟢 Ce qui est solide — ne pas y toucher
+Tu as fait l'essentiel et le plus complexe :
+
+Tous les modules core (commandes, factures, stock, produits, rôles, compta, clients)
+Architecture multi-boutiques avec cloisonnement complet
+Transactions atomiques
+Tous les modules critiques Priorité 2 (journal d'audit, retours, paiements, alertes, réservations...)
+WhatsApp, livraisons, promotions, fournisseurs
+Pagination, recherche globale, inventaire
+
+
+🟡 Ce qui reste à faire — par ordre de priorité
+Priorité haute (bloquant ou presque)
+
+Export centralisé PDF/Excel/CSV avec droits par rôle — sans ça la compta et les rapports sont inutilisables
+Désactivation immédiate d'un utilisateur (couper toutes les sessions) — faille sécurité
+Normalisation des numéros de téléphone — risque de doublons clients
+
+Priorité moyenne
+
+
+5. Distinction livreur interne / transporteur externe
+
+6. Alertes échéances fournisseurs + bloc trésorerie
+Priorité basse (confort et sécurité)
+
+7. Import intelligent produits (Excel, CSV, PDF)
+
+8. Sauvegardes automatiques planifiées
+
+9. Double authentification (2FA)
+Design — sujet à part entière
+
+10. Thème masculin SonShop (couleurs, typographie, images dans le panier, responsivité complète
