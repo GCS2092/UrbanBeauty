@@ -36,13 +36,12 @@ export default function Register() {
 
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <span className="text-3xl">🌸</span>
             <span className="font-bold text-2xl text-stone-800">
-              Urban<span className="text-rose-400">Beauty</span>
+              Son<span className="text-rose-400">Shop</span>
             </span>
           </Link>
           <h1 className="text-2xl font-semibold text-stone-800">Créer un compte</h1>
-          <p className="text-stone-400 text-sm mt-1">Rejoignez la communauté UrbanBeauty</p>
+          <p className="text-stone-400 text-sm mt-1">Rejoignez la communauté SonShop</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-6 space-y-4">

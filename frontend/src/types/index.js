@@ -1,5 +1,5 @@
 /**
- * Shapes des données  basées sur le schema Prisma UrbanBeauty
+ * Shapes des données basées sur le schema Prisma SonShop
  * Utilisé comme référence dans tout le frontend
  */
 

@@ -3,7 +3,7 @@ function buildOrderConfirmationEmail({ orderNumber, guestName, total, clientUrl 
     subject: `Confirmation de commande ${orderNumber}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #c8a96e;">🌸 UrbanBeauty</h2>
+        <h2 style="color: #c8a96e;">SonShop</h2>
         <p>Bonjour <strong>${guestName || 'client'}</strong>,</p>
         <p>Votre commande <strong>${orderNumber}</strong> a bien été prise en compte.</p>
         <p>Montant total : <strong>${total.toLocaleString('fr-FR')} FCFA</strong></p>
@@ -12,7 +12,7 @@ function buildOrderConfirmationEmail({ orderNumber, guestName, total, clientUrl 
           Suivre ma commande
         </a>
         <p style="margin-top:20px;">Merci pour votre confiance.</p>
-        <p><em>L'équipe UrbanBeauty</em></p>
+        <p><em>L'équipe SonShop</em></p>
       </div>
     `,
   };
@@ -31,7 +31,7 @@ function buildOrderStatusEmail({ orderNumber, customerName, status, clientUrl })
     subject: `Commande ${orderNumber} - ${statusLabels[status] || status}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #c8a96e;">🌸 UrbanBeauty</h2>
+        <h2 style="color: #c8a96e;">SonShop</h2>
         <p>Bonjour <strong>${customerName || 'client'}</strong>,</p>
         <p>Votre commande <strong>${orderNumber}</strong> est maintenant <strong>${statusLabels[status] || status}</strong>.</p>
         <a href="${clientUrl}/suivi/${orderNumber}"
@@ -39,7 +39,7 @@ function buildOrderStatusEmail({ orderNumber, customerName, status, clientUrl })
           Voir ma commande
         </a>
         <p style="margin-top:20px;">Merci pour votre confiance.</p>
-        <p><em>L'équipe UrbanBeauty</em></p>
+        <p><em>L'équipe SonShop</em></p>
       </div>
     `,
   };

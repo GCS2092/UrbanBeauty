@@ -8,9 +8,8 @@ export default function Footer() {
 
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">??</span>
               <span className="font-bold text-white text-lg">
-                Urban<span className="text-rose-400">Beauty</span>
+                Son<span className="text-rose-400">Shop</span>
               </span>
             </div>
             <p className="text-sm leading-relaxed">
@@ -38,7 +37,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-stone-800 pt-6 text-xs text-center">
-          © {new Date().getFullYear()} UrbanBeauty  Tous droits réservés
+          © {new Date().getFullYear()} SonShop — Tous droits réservés
         </div>
       </div>
     </footer>
