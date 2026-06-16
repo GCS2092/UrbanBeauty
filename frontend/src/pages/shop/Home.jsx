@@ -33,11 +33,11 @@ export default function Home() {
               <Sparkles size={12} /> SonShop — Nouvelle collection disponible
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-stone-900 leading-tight mb-4">
-              La beaute <br />
-              <span className="text-rose-400">a portee de main</span>
+              Le style <br />
+              <span className="text-rose-400">qui vous ressemble</span>
             </h1>
             <p className="text-stone-500 text-lg mb-8 leading-relaxed">
-              Decouvrez notre selection de produits beaute authentiques,
+              Decouvrez notre selection de vetements et accessoires authentiques,
               livres partout au Senegal et exportes a l'international.
             </p>
             <div className="flex gap-3 flex-wrap">
