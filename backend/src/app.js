@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+const reportRoutes = require('./modules/reports/report.routes');
 
 const apiLimiter = require('./middlewares/rateLimit.middleware').apiLimiter;
 const requestLogger = require('./middlewares/logger.middleware');
@@ -104,7 +105,7 @@ app.use('/api/admin/invoices', invoicesRoutes);
 app.use('/api/admin/stores', storesRoutes);
 app.use('/api/admin/stock-transfers', stockTransfersRoutes);
 app.use('/api/admin/credit-notes', creditNotesRoutes);
-
+app.use('/api/admin/reports', reportRoutes);
 /* =======================
    ERROR HANDLER
 ======================= */

@@ -28,4 +28,12 @@ function isAdmin(req, res, next) {
   });
 }
 
-module.exports = { authenticate, isAdmin };
+function requireAdmin(req, res, next) {
+  authenticate(req, res, () => {
+    if (req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Accès réservé aux admins' });
+    }
+    next();
+  });
+}
+module.exports = { authenticate, isAdmin, requireAdmin };

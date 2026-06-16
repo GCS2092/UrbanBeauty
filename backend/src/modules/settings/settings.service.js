@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   company_phone: '',
   reservation_expiry_hours: '24',
   default_country_code: '+221',
+  company_email: '',
 };
 
 async function getSettings() {
@@ -37,3 +38,4 @@ async function updateSettings(data) {
 }
 
 module.exports = { getSettings, updateSettings };
+

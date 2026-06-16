@@ -3,9 +3,10 @@ import useAuthStore from '../../store/authStore';
 import { adminApi } from '../../api/admin.api';
 import { API_URL } from '../../utils/constants';
 import StoreFilter from '../../components/admin/StoreFilter';
+import { toast } from 'sonner';
 import {
   TrendingUp, Package, ShoppingBag, Users,
-  AlertTriangle, Clock, CheckCircle, XCircle,
+  AlertTriangle, Clock, Download, Mail, FileText,
   ArrowUpRight, BarChart3
 } from 'lucide-react';
 
@@ -22,7 +23,7 @@ const STATUS_CONFIG = {
   CANCELLED:  { label: 'Annulée',       color: 'text-red-600',    bg: 'bg-red-50    border-red-200',    dot: 'bg-red-400' },
 };
 
-// Mini bar chart component
+// ─── Mini bar chart ───────────────────────────────────────────────────────────
 function MiniBarChart({ data, color = 'bg-rose-400' }) {
   const max = Math.max(...data, 1);
   return (
@@ -38,7 +39,7 @@ function MiniBarChart({ data, color = 'bg-rose-400' }) {
   );
 }
 
-// Stat card
+// ─── Stat card ────────────────────────────────────────────────────────────────
 function StatCard({ label, value, sub, icon: Icon, trend, chartData, color, delay = 0 }) {
   return (
     <div
@@ -66,6 +67,117 @@ function StatCard({ label, value, sub, icon: Icon, trend, chartData, color, dela
   );
 }
 
+// ─── Report Downloader ────────────────────────────────────────────────────────
+function ReportDownloader({ storeId, token }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const firstOfMonth = today.slice(0, 8) + '01';
+
+  const [from, setFrom] = useState(firstOfMonth);
+  const [to, setTo]     = useState(today);
+  const [loadingPdf,   setLoadingPdf]   = useState(false);
+  const [loadingEmail, setLoadingEmail] = useState(false);
+
+  const handleDownload = async () => {
+    if (!storeId) return toast.error('Sélectionnez une boutique d\'abord');
+    setLoadingPdf(true);
+    try {
+      const params = new URLSearchParams({ storeId, from, to }).toString();
+      const res = await fetch(`${API_URL}/api/admin/reports/download?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `rapport-${from}-${to}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Rapport PDF téléchargé');
+    } catch {
+      toast.error('Erreur lors de la génération du rapport');
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
+  const handleEmail = async () => {
+    if (!storeId) return toast.error('Sélectionnez une boutique d\'abord');
+    setLoadingEmail(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/reports/send-email`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ storeId, from, to }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success(data.message || 'Rapport envoyé par email');
+    } catch (e) {
+      toast.error(e.message || "Erreur lors de l'envoi");
+    } finally {
+      setLoadingEmail(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-stone-100 flex items-center gap-2">
+        <FileText size={15} className="text-rose-500" />
+        <h2 className="font-semibold text-stone-900 text-sm">Rapport de gestion</h2>
+      </div>
+
+      <div className="px-5 py-4 flex flex-wrap gap-3 items-end">
+        {/* Date range */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">Du</label>
+          <input
+            type="date"
+            value={from}
+            max={to}
+            onChange={e => setFrom(e.target.value)}
+            className="text-sm px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-300"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">Au</label>
+          <input
+            type="date"
+            value={to}
+            min={from}
+            onChange={e => setTo(e.target.value)}
+            className="text-sm px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-300"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 ml-auto">
+          <button
+            onClick={handleDownload}
+            disabled={loadingPdf}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-all"
+          >
+            <Download size={14} />
+            {loadingPdf ? 'Génération…' : 'Télécharger PDF'}
+          </button>
+          <button
+            onClick={handleEmail}
+            disabled={loadingEmail}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-stone-700 text-sm font-medium transition-all"
+          >
+            <Mail size={14} />
+            {loadingEmail ? 'Envoi…' : 'Envoyer par email'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const { token, user } = useAuthStore();
   const [storeId, setStoreId] = useState('');
@@ -89,10 +201,10 @@ export default function Dashboard() {
           pRes.json(), cRes.json(), uRes.json()
         ]);
         setData({
-          orders: oRes.data?.data || [],
-          products: Array.isArray(pData) ? pData : pData.data || [],
+          orders:     oRes.data?.data || [],
+          products:   Array.isArray(pData) ? pData : pData.data || [],
           categories: Array.isArray(cData) ? cData : cData.data || [],
-          users: Array.isArray(uData) ? uData : uData.data || [],
+          users:      Array.isArray(uData) ? uData : uData.data || [],
         });
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
@@ -104,8 +216,8 @@ export default function Dashboard() {
     .filter(o => o.status === 'DELIVERED')
     .reduce((sum, o) => sum + Number(o.total || o.totalAmount || 0), 0);
 
-  const pendingOrders = data.orders.filter(o => o.status === 'PENDING');
-  const lowStockProducts = data.products.filter((p) => {
+  const pendingOrders     = data.orders.filter(o => o.status === 'PENDING');
+  const lowStockProducts  = data.products.filter((p) => {
     const available = (p.stock || 0) - (p.reservedStock || 0);
     return available <= (p.lowStockAlert ?? 5);
   });
@@ -113,11 +225,9 @@ export default function Dashboard() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 6);
 
-  // Fake sparkline data based on real order count
-  const orderChart = [2, 5, 3, 8, 6, 4, 9, 7, 11, data.orders.length];
+  const orderChart   = [2, 5, 3, 8, 6, 4, 9, 7, 11, data.orders.length];
   const revenueChart = [1, 3, 2, 6, 4, 5, 8, 6, 9, Math.min(10, Math.floor(totalRevenue / 10000))];
 
-  // Status breakdown
   const statusBreakdown = Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({
     key, ...cfg,
     count: data.orders.filter(o => o.status === key).length,
@@ -136,6 +246,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-stone-50 p-4 sm:p-6 lg:p-8">
+
       {/* Header */}
       <div className="mb-8 pl-12 lg:pl-0 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
@@ -193,7 +304,14 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Report downloader */}
+      <div className="mb-6">
+        <ReportDownloader storeId={storeId} token={token} />
+      </div>
+
+      {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+
         {/* Recent orders */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
@@ -234,6 +352,7 @@ export default function Dashboard() {
 
         {/* Right column */}
         <div className="flex flex-col gap-4">
+
           {/* Order status breakdown */}
           <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-stone-100">
