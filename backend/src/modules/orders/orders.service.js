@@ -41,7 +41,8 @@ async function createOrder(payload, user, ip = null) {
   const store = await resolveStoreForOrder(payload.storeId);
   const orderNumber = generateOrderNumber();
   const userId = user?.id || null;
-  const guestEmail = user?.email || payload.guestEmail;
+  // ✅ email optionnel — on stocke null plutôt que '' si l'invité ne le renseigne pas
+  const guestEmail = user?.email || payload.guestEmail || null;
   const guestName = payload.guestName || payload.shippingAddress?.fullName || 'Client';
   const shippingCost = Number(payload.shippingCost || 0);
   const subtotal = payload.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -192,7 +193,11 @@ async function getUserOrders(userId) {
   return prisma.order.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
-    include: { items: true, tracking: true, invoice: true },
+    include: {
+      items: true,
+      tracking: { orderBy: { createdAt: 'asc' } },
+      invoice: true,
+    },
   });
 }
 
@@ -201,9 +206,10 @@ async function getOrderByNumber(orderNumber) {
     where: { orderNumber },
     include: {
       items: true,
-      tracking: true,
+      tracking: { orderBy: { createdAt: 'asc' } },
       invoice: true,
       statusHistory: { orderBy: { createdAt: 'desc' } },
+      user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } }, // ✅ ajouté
     },
   });
 }
@@ -299,7 +305,7 @@ async function getAllOrders(query, storeIds = null) {
       orderBy: { createdAt: 'desc' },
       include: {
         items: true,
-        tracking: true,
+        tracking: { orderBy: { createdAt: 'asc' } },
         user: true,
         invoice: true,
         store: { select: { id: true, code: true, name: true } },

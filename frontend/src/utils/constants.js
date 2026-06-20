@@ -6,6 +6,7 @@ export const ROLES = {
 };
 
 export const ORDER_STATUS = {
+  DRAFT: 'DRAFT',
   PENDING: 'PENDING',
   CONFIRMED: 'CONFIRMED',
   PROCESSING: 'PROCESSING',
@@ -15,6 +16,7 @@ export const ORDER_STATUS = {
 };
 
 export const ORDER_STATUS_LABELS = {
+  DRAFT: 'Brouillon',
   PENDING: 'En attente',
   CONFIRMED: 'Confirmée',
   PROCESSING: 'En traitement',
@@ -24,6 +26,7 @@ export const ORDER_STATUS_LABELS = {
 };
 
 export const ORDER_STATUS_COLORS = {
+  DRAFT: 'bg-stone-100 text-stone-500',
   PENDING: 'bg-amber-100 text-amber-700',
   CONFIRMED: 'bg-blue-100 text-blue-700',
   PROCESSING: 'bg-purple-100 text-purple-700',

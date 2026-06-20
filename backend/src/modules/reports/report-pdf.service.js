@@ -37,7 +37,7 @@ function row(doc, label, value, bold = false) {
 
 async function buildReportPdf(data) {
   const settings = await getSettings();
-  const companyName    = settings.company_name    || 'Urban Beauty';
+  const companyName    = settings.company_name    || 'SonShop';
   const companyAddress = settings.company_address || '';
   const companyPhone   = settings.company_phone   || '';
 

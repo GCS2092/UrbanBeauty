@@ -114,23 +114,17 @@ async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, 
           ? 'PENDING'
           : order.status;
 
-    const updated = await tx.order.update({
+    // 1. mise à jour "légère" — pas d'include lourd ici
+    await tx.order.update({
       where: { id: orderId },
       data: { paymentStatus, status: newOrderStatus },
-      include: {
-        user: { select: { id: true, firstName: true, lastName: true, email: true } },
-        payments: true,
-        items: true,
-        // ✅ invoice avec order.items pour buildInvoicePdf
-        invoice: invoiceWithOrderInclude,
-        statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 },
-      },
     });
 
+    // 2. traces, APRÈS la mise à jour du statut
     await tx.orderTracking.create({
       data: {
         orderId: order.id,
-        status: updated.status,
+        status: newOrderStatus,
         message:
           paymentStatus === 'PAID'
             ? 'Paiement validé — commande confirmée.'
@@ -143,12 +137,13 @@ async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, 
     await recordStatusHistory(tx, {
       orderId: order.id,
       fromStatus: order.status,
-      toStatus: updated.status,
+      toStatus: newOrderStatus,
       message: `Paiement : ${order.paymentStatus} → ${paymentStatus}`,
       reason: note || null,
       changedBy: adminUser?.id,
     });
 
+    // 3. paiement — upsert, AVANT le fetch final
     const payment = await tx.payment.findFirst({ where: { orderId } });
     if (payment) {
       await tx.payment.update({
@@ -179,11 +174,22 @@ async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, 
       entityId: order.id,
       entityType: 'Order',
       oldValue: { paymentStatus: order.paymentStatus, status: order.status },
-      newValue: { paymentStatus, status: updated.status },
+      newValue: { paymentStatus, status: newOrderStatus },
       ip,
     });
 
-    return updated;
+    // 4. fetch final, complet et frais — EN DERNIER
+    return tx.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+        payments: true,
+        items: true,
+        tracking: { orderBy: { createdAt: 'asc' } },
+        invoice: invoiceWithOrderInclude,
+        statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 },
+      },
+    });
   });
 }
 
@@ -235,24 +241,18 @@ async function changeOrderStatusAtomic(orderId, payload, adminUser, ip) {
       }
     }
 
-    const updated = await tx.order.update({
+    // 1. on met à jour le statut (sans include lourd)
+    await tx.order.update({
       where: { id: orderId },
       data: { status: payload.status },
-      include: {
-        tracking: true,
-        user: true,
-        items: true,
-        // ✅ invoice avec order.items pour buildInvoicePdf
-        invoice: invoiceWithOrderInclude,
-        statusHistory: { orderBy: { createdAt: 'desc' }, take: 10 },
-      },
     });
 
+    // 2. on crée les traces APRÈS
     await tx.orderTracking.create({
       data: {
         orderId: order.id,
-        status: updated.status,
-        message: payload.message || `Statut changé en ${updated.status}`,
+        status: payload.status,
+        message: payload.message || `Statut changé en ${payload.status}`,
         location: payload.location || null,
       },
     });
@@ -260,7 +260,7 @@ async function changeOrderStatusAtomic(orderId, payload, adminUser, ip) {
     await recordStatusHistory(tx, {
       orderId: order.id,
       fromStatus: order.status,
-      toStatus: updated.status,
+      toStatus: payload.status,
       message: payload.message,
       reason: payload.reason,
       changedBy: adminUser?.id,
@@ -275,11 +275,21 @@ async function changeOrderStatusAtomic(orderId, payload, adminUser, ip) {
       entityId: order.id,
       entityType: 'Order',
       oldValue: { status: order.status },
-      newValue: { status: updated.status },
+      newValue: { status: payload.status },
       ip,
     });
 
-    return updated;
+    // 3. on refetch tout, propre et complet, EN DERNIER
+    return tx.order.findUnique({
+      where: { id: orderId },
+      include: {
+        tracking: { orderBy: { createdAt: 'asc' } },
+        user: true,
+        items: true,
+        invoice: invoiceWithOrderInclude,
+        statusHistory: { orderBy: { createdAt: 'desc' }, take: 10 },
+      },
+    });
   });
 }
 
