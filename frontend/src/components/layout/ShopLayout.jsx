@@ -2,6 +2,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import useAuthStore from '../../store/authStore';
+import PWAInstallBanner from '../PWAInstallBanner';
 
 export default function ShopLayout() {
   const { user, isAuthenticated } = useAuthStore();
@@ -18,6 +19,7 @@ export default function ShopLayout() {
         <Outlet />
       </main>
       <Footer />
+      <PWAInstallBanner />
     </div>
   );
 }
