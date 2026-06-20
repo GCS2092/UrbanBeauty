@@ -99,7 +99,6 @@ async function createOrder(payload, user, ip = null) {
         couponId,
         total,
         shippingAddress: payload.shippingAddress,
-        destination: payload.destination || null,
         notes: payload.notes,
         reservationExpiresAt,
         items: {
@@ -264,8 +263,6 @@ function buildOrdersWhere(query, storeIds = null) {
   if (query.status) where.status = query.status;
   if (query.paymentStatus) where.paymentStatus = query.paymentStatus;
   if (query.paymentMethod) where.paymentMethod = query.paymentMethod;
-  if (query.destination) where.destination = query.destination;
-  
   if (query.storeId) {
     if (storeIds?.length && !storeIds.includes(query.storeId)) {
       const error = new Error('AccÃ¨s refusÃ© Ã  cette boutique.');
@@ -327,4 +324,3 @@ module.exports = {
   getAllOrders,
   buildOrdersWhere,
 };
-

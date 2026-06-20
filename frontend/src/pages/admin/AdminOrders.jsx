@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, RefreshCw, Plus, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,18 +19,18 @@ const WA_ICON = (
 const STATUS_LABELS = {
   DRAFT:      { label: 'Brouillon WhatsApp', color: 'bg-orange-100 text-orange-700' },
   PENDING:    { label: 'En attente',          color: 'bg-yellow-100 text-yellow-700' },
-  CONFIRMED:  { label: 'Confirmée',           color: 'bg-blue-100 text-blue-700' },
+  CONFIRMED:  { label: 'ConfirmÃ©e',           color: 'bg-blue-100 text-blue-700' },
   PROCESSING: { label: 'En traitement',       color: 'bg-purple-100 text-purple-700' },
-  SHIPPED:    { label: 'Expédiée',            color: 'bg-indigo-100 text-indigo-700' },
-  DELIVERED:  { label: 'Livrée',              color: 'bg-emerald-100 text-emerald-700' },
-  CANCELLED:  { label: 'Annulée',             color: 'bg-red-100 text-red-700' },
+  SHIPPED:    { label: 'ExpÃ©diÃ©e',            color: 'bg-indigo-100 text-indigo-700' },
+  DELIVERED:  { label: 'LivrÃ©e',              color: 'bg-emerald-100 text-emerald-700' },
+  CANCELLED:  { label: 'AnnulÃ©e',             color: 'bg-red-100 text-red-700' },
 };
 
 const PAYMENT_LABELS = {
   PENDING:  'Paiement en attente',
-  PAID:     'Payé',
+  PAID:     'PayÃ©',
   PARTIAL:  'Partiel',
-  REJECTED: 'Rejeté',
+  REJECTED: 'RejetÃ©',
 };
 
 const PAYMENT_COLORS = {
@@ -51,6 +51,7 @@ const emptyFilters = {
   from: '',
   to: '',
   storeId: '',
+  destination: '',
 };
 
 export default function AdminOrders() {
@@ -64,7 +65,7 @@ export default function AdminOrders() {
   const [downloadingPdf, setDownloadingPdf] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // ── Paiement modal ────────────────────────────────────────────────
+  // â”€â”€ Paiement modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [paymentModal, setPaymentModal]   = useState(false);
   const [paymentOrder, setPaymentOrder]   = useState(null);
   const [paymentNote, setPaymentNote]     = useState('');
@@ -79,7 +80,8 @@ export default function AdminOrders() {
     ...(filters.search.trim() && { search: filters.search.trim() }),
     ...(filters.from          && { from: filters.from }),
     ...(filters.to            && { to: filters.to }),
-    ...(filters.storeId       && { storeId: filters.storeId }),
+    ...(filters.storeId && { storeId: filters.storeId }),
+    ...(filters.destination && { destination: filters.destination }),
   };
 
   const { data, isLoading, refetch, isFetching, error } = useQuery({
@@ -114,7 +116,7 @@ export default function AdminOrders() {
     setDownloadingPdf(invoice.id);
     try {
       await adminApi.downloadInvoicePdf(invoice.id, invoice.invoiceNumber);
-      toast.success('Facture téléchargée');
+      toast.success('Facture tÃ©lÃ©chargÃ©e');
     } catch (e) {
       toast.error(e.message || 'Erreur');
     } finally {
@@ -131,15 +133,15 @@ export default function AdminOrders() {
       });
       await refetch();
       setStatusModal(false);
-      toast.success('Statut mis à jour');
+      toast.success('Statut mis Ã  jour');
     } catch (e) {
-      toast.error(e.message || 'Erreur mise à jour');
+      toast.error(e.message || 'Erreur mise Ã  jour');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // ── Soumettre le changement de statut de paiement ─────────────────
+  // â”€â”€ Soumettre le changement de statut de paiement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handlePaymentStatusChange = async () => {
     setSubmittingPayment(true);
     try {
@@ -151,8 +153,8 @@ export default function AdminOrders() {
       setPaymentModal(false);
       toast.success(
         paymentStatus === 'PAID'
-          ? '✅ Commande marquée comme payée'
-          : 'Statut de paiement mis à jour'
+          ? 'âœ… Commande marquÃ©e comme payÃ©e'
+          : 'Statut de paiement mis Ã  jour'
       );
     } catch (e) {
       toast.error(e.response?.data?.message || e.message || 'Erreur');
@@ -165,18 +167,18 @@ export default function AdminOrders() {
     try {
       await adminApi.confirmDraftOrder(order.id);
       await refetch();
-      toast.success('Commande WhatsApp confirmée');
+      toast.success('Commande WhatsApp confirmÃ©e');
     } catch (e) {
       toast.error(e.response?.data?.message || e.message || 'Erreur');
     }
   };
 
   const handleRejectDraft = async (order) => {
-    if (!window.confirm(`Rejeter la commande ${order.orderNumber} ? Le stock sera libéré.`)) return;
+    if (!window.confirm(`Rejeter la commande ${order.orderNumber} ? Le stock sera libÃ©rÃ©.`)) return;
     try {
-      await adminApi.rejectDraftOrder(order.id, { reason: "Rejetée par l'administrateur" });
+      await adminApi.rejectDraftOrder(order.id, { reason: "RejetÃ©e par l'administrateur" });
       await refetch();
-      toast.success('Commande rejetée — stock libéré');
+      toast.success('Commande rejetÃ©e â€” stock libÃ©rÃ©');
     } catch (e) {
       toast.error(e.response?.data?.message || e.message || 'Erreur');
     }
@@ -220,7 +222,7 @@ export default function AdminOrders() {
           />
           <input
             type="search"
-            placeholder="N°, client, email, téléphone…"
+            placeholder="NÂ°, client, email, tÃ©lÃ©phoneâ€¦"
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
             className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -252,20 +254,30 @@ export default function AdminOrders() {
           onFromChange={(v) => updateFilter('from', v)}
           onToChange={(v) => updateFilter('to', v)}
         />
+        <select
+          value={filters.destination}
+          onChange={(e) => updateFilter('destination', e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">Toutes destinations</option>
+          <option value="SENEGAL">🇸🇳 Sénégal</option>
+          <option value="CONGO_EXPRESS">🇨🇬 Congo Express</option>
+          <option value="CONGO_GROUPAGE">🇨🇬 Congo Groupage</option>
+        </select>
       </div>
 
       {/* Erreur */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-6 text-sm">
-          {error.message || 'Erreur chargement'} —{' '}
-          <button onClick={() => refetch()} className="underline font-medium">Réessayer</button>
+          {error.message || 'Erreur chargement'} â€”{' '}
+          <button onClick={() => refetch()} className="underline font-medium">RÃ©essayer</button>
         </div>
       )}
 
       {/* Tableau */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         {isLoading ? (
-          <div className="flex items-center justify-center py-20 text-gray-400">Chargement…</div>
+          <div className="flex items-center justify-center py-20 text-gray-400">Chargementâ€¦</div>
         ) : orders.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <p className="font-medium">Aucune commande</p>
@@ -276,7 +288,7 @@ export default function AdminOrders() {
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   <th className="px-6 py-3">Boutique</th>
-                  <th className="px-6 py-3">N° Commande</th>
+                  <th className="px-6 py-3">NÂ° Commande</th>
                   <th className="px-6 py-3">Client</th>
                   <th className="px-6 py-3">Date</th>
                   <th className="px-6 py-3">Total</th>
@@ -298,7 +310,7 @@ export default function AdminOrders() {
                   return (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-xs text-gray-600">
-                        {order.store?.code || '—'}
+                        {order.store?.code || 'â€”'}
                       </td>
                       <td className="px-6 py-4">
                         <span className="font-mono text-xs font-semibold text-gray-800">
@@ -306,18 +318,18 @@ export default function AdminOrders() {
                         </span>
                       </td>
 
-                      {/* ── Colonne Client — avec lien WA rapide ── */}
+                      {/* â”€â”€ Colonne Client â€” avec lien WA rapide â”€â”€ */}
                       <td className="px-6 py-4">
                         <div className="font-medium text-gray-900">
                           {order.user
                             ? `${order.user.firstName} ${order.user.lastName}`
-                            : order.guestName || '—'}
+                            : order.guestName || 'â€”'}
                         </div>
                         <div className="text-xs text-gray-400 flex items-center gap-1.5 flex-wrap mt-0.5">
                           <span>{order.user?.email || order.guestEmail || ''}</span>
                           {waConfirmLink && (
                             <>
-                              <span className="text-gray-300">·</span>
+                              <span className="text-gray-300">Â·</span>
                               <a
                                 href={waConfirmLink}
                                 target="_blank"
@@ -358,13 +370,13 @@ export default function AdminOrders() {
                               onClick={() => handleDownloadInvoice(order.invoice)}
                               disabled={downloadingPdf === order.invoice.id}
                               className="p-1 rounded border border-gray-200 hover:bg-gray-100 disabled:opacity-50"
-                              title="Télécharger PDF"
+                              title="TÃ©lÃ©charger PDF"
                             >
                               <Download size={14} />
                             </button>
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400">—</span>
+                          <span className="text-xs text-gray-400">â€”</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-right space-x-2">
@@ -384,7 +396,7 @@ export default function AdminOrders() {
                             </button>
                           </>
                         )}
-                        {/* ✅ Bouton paiement — visible si pas encore payé */}
+                        {/* âœ… Bouton paiement â€” visible si pas encore payÃ© */}
                         {!isPaid && (
                           <button
                             onClick={() => openPaymentModal(order)}
@@ -412,13 +424,13 @@ export default function AdminOrders() {
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-      {/* ── Modal statut commande ── */}
+      {/* â”€â”€ Modal statut commande â”€â”€ */}
       {statusModal && selected && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Changer le statut</h2>
-              <button onClick={() => setStatusModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+              <button onClick={() => setStatusModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">âœ•</button>
             </div>
             <p className="text-sm text-gray-500 mb-4">
               Commande <span className="font-mono font-semibold">{selected.orderNumber}</span>
@@ -446,11 +458,11 @@ export default function AdminOrders() {
             />
             {selected.statusHistory?.length > 0 && (
               <div className="mb-4 border-t border-gray-100 pt-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Historique récent</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Historique rÃ©cent</p>
                 <ul className="space-y-1 max-h-32 overflow-y-auto">
                   {selected.statusHistory.map((h) => (
                     <li key={h.id} className="text-xs text-gray-600">
-                      {formatDate(h.createdAt)} — {h.fromStatus ? `${h.fromStatus} → ` : ''}
+                      {formatDate(h.createdAt)} â€” {h.fromStatus ? `${h.fromStatus} â†’ ` : ''}
                       {h.toStatus}
                       {h.message && <span className="text-gray-400"> ({h.message})</span>}
                     </li>
@@ -459,7 +471,7 @@ export default function AdminOrders() {
               </div>
             )}
 
-            {/* ── Boutons modal statut — avec WhatsApp ── */}
+            {/* â”€â”€ Boutons modal statut â€” avec WhatsApp â”€â”€ */}
             <div className="flex flex-col gap-2">
               <div className="flex gap-3">
                 <button
@@ -473,7 +485,7 @@ export default function AdminOrders() {
                   disabled={submitting}
                   className="flex-1 bg-black text-white rounded-lg py-2 text-sm disabled:opacity-60"
                 >
-                  {submitting ? 'En cours…' : 'Confirmer'}
+                  {submitting ? 'En coursâ€¦' : 'Confirmer'}
                 </button>
               </div>
               {(() => {
@@ -491,7 +503,7 @@ export default function AdminOrders() {
                   </a>
                 ) : (
                   <p className="text-center text-xs text-gray-400 py-1">
-                    Aucun numéro de téléphone sur cette commande
+                    Aucun numÃ©ro de tÃ©lÃ©phone sur cette commande
                   </p>
                 );
               })()}
@@ -500,13 +512,13 @@ export default function AdminOrders() {
         </div>
       )}
 
-      {/* ── Modal statut paiement ✅ ── */}
+      {/* â”€â”€ Modal statut paiement âœ… â”€â”€ */}
       {paymentModal && paymentOrder && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Statut du paiement</h2>
-              <button onClick={() => setPaymentModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+              <button onClick={() => setPaymentModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">âœ•</button>
             </div>
 
             <p className="text-sm text-gray-500 mb-1">
@@ -516,13 +528,13 @@ export default function AdminOrders() {
               Montant : <span className="font-semibold text-gray-900">{formatPrice(paymentOrder.total)}</span>
             </p>
 
-            {/* Sélection du statut */}
+            {/* SÃ©lection du statut */}
             <div className="grid grid-cols-2 gap-2 mb-4">
               {[
-                { value: 'PAID',     label: '✅ Payé',           color: 'bg-emerald-50 border-emerald-400 text-emerald-700' },
-                { value: 'PARTIAL',  label: '🔸 Partiel',        color: 'bg-blue-50 border-blue-400 text-blue-700' },
-                { value: 'PENDING',  label: '⏳ En attente',     color: 'bg-yellow-50 border-yellow-400 text-yellow-700' },
-                { value: 'REJECTED', label: '❌ Rejeté',         color: 'bg-red-50 border-red-400 text-red-700' },
+                { value: 'PAID',     label: 'âœ… PayÃ©',           color: 'bg-emerald-50 border-emerald-400 text-emerald-700' },
+                { value: 'PARTIAL',  label: 'ðŸ”¸ Partiel',        color: 'bg-blue-50 border-blue-400 text-blue-700' },
+                { value: 'PENDING',  label: 'â³ En attente',     color: 'bg-yellow-50 border-yellow-400 text-yellow-700' },
+                { value: 'REJECTED', label: 'âŒ RejetÃ©',         color: 'bg-red-50 border-red-400 text-red-700' },
               ].map(({ value, label, color }) => (
                 <button
                   key={value}
@@ -542,7 +554,7 @@ export default function AdminOrders() {
             <textarea
               value={paymentNote}
               onChange={(e) => setPaymentNote(e.target.value)}
-              placeholder="Note optionnelle (ex: reçu Mobile Money #123…)"
+              placeholder="Note optionnelle (ex: reÃ§u Mobile Money #123â€¦)"
               rows={2}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4"
             />
@@ -559,14 +571,14 @@ export default function AdminOrders() {
                 disabled={submittingPayment}
                 className="flex-1 bg-emerald-600 text-white rounded-lg py-2 text-sm font-semibold disabled:opacity-60 hover:bg-emerald-700"
               >
-                {submittingPayment ? 'En cours…' : 'Confirmer'}
+                {submittingPayment ? 'En coursâ€¦' : 'Confirmer'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal création de commande */}
+      {/* Modal crÃ©ation de commande */}
       {showCreateModal && (
         <CreateOrderModal
           storeId={filters.storeId || null}
@@ -577,3 +589,4 @@ export default function AdminOrders() {
     </div>
   );
 }
+
