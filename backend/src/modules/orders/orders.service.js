@@ -15,6 +15,7 @@ const {
   computeStoreDiscount,
 } = require('../stores/store.service');
 const { getSettings } = require('../settings/settings.service');
+const { notifyOrderConfirmed, notifyOrderStatus, notifyPaymentReceived } = require('../../services/notification.service');
 const { buildInvoicePdf } = require('../invoices/invoice-pdf.service'); // âœ… adapte le chemin si besoin
 
 // âœ… Fonction utilitaire â€” envoie en arriÃ¨re-plan sans bloquer
@@ -327,4 +328,5 @@ module.exports = {
   getAllOrders,
   buildOrdersWhere,
 };
+
 

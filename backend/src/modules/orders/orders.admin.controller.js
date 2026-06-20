@@ -1,4 +1,5 @@
-const prisma = require('../../config/database');
+﻿const prisma = require('../../config/database');
+const { notifyOrderStatus, notifyPaymentReceived } = require('../../services/notification.service');
 const { fulfillOrderPayment } = require('./order-fulfillment.service');
 const { buildOrdersWhere, createOrder } = require('./orders.service');
 const { parsePagination, buildPaginationResponse } = require('../../utils/pagination.utils');
@@ -55,9 +56,9 @@ async function updatePaymentStatus(req, res, next) {
     if (order.user) {
       const message =
         paymentStatus === 'PAID'
-          ? `Votre paiement pour la commande ${order.orderNumber} a été validé.`
+          ? `Votre paiement pour la commande ${order.orderNumber} a Ã©tÃ© validÃ©.`
           : paymentStatus === 'REJECTED'
-            ? `Votre paiement pour la commande ${order.orderNumber} a été rejeté. ${note || ''}`
+            ? `Votre paiement pour la commande ${order.orderNumber} a Ã©tÃ© rejetÃ©. ${note || ''}`
             : `Votre paiement pour la commande ${order.orderNumber} est en attente.`;
 
       await prisma.notification.create({
@@ -66,9 +67,9 @@ async function updatePaymentStatus(req, res, next) {
           type: paymentStatus === 'PAID' ? 'ORDER_CONFIRMED' : 'ORDER_CANCELLED',
           title:
             paymentStatus === 'PAID'
-              ? 'Paiement validé'
+              ? 'Paiement validÃ©'
               : paymentStatus === 'REJECTED'
-                ? 'Paiement rejeté'
+                ? 'Paiement rejetÃ©'
                 : 'Paiement en attente',
           message,
           link: `/orders/${order.orderNumber}`,
@@ -102,7 +103,7 @@ async function confirmDraftOrder(req, res, next) {
           create: {
             fromStatus: 'DRAFT',
             toStatus: 'PENDING',
-            message: "Commande WhatsApp confirmée par l'admin",
+            message: "Commande WhatsApp confirmÃ©e par l'admin",
             changedBy: req.user?.id,
           },
         },
@@ -115,8 +116,8 @@ async function confirmDraftOrder(req, res, next) {
         data: {
           userId: order.user.id,
           type: 'ORDER_CONFIRMED',
-          title: 'Commande confirmée',
-          message: `Votre commande WhatsApp ${order.orderNumber} a été confirmée.`,
+          title: 'Commande confirmÃ©e',
+          message: `Votre commande WhatsApp ${order.orderNumber} a Ã©tÃ© confirmÃ©e.`,
           link: `/orders/${order.orderNumber}`,
         },
       });
@@ -145,7 +146,7 @@ async function rejectDraftOrder(req, res, next) {
         throw error;
       }
       if (existing.status !== 'DRAFT') {
-        const error = new Error('Seules les commandes brouillon WhatsApp peuvent être rejetées.');
+        const error = new Error('Seules les commandes brouillon WhatsApp peuvent Ãªtre rejetÃ©es.');
         error.status = 400;
         throw error;
       }
@@ -161,7 +162,7 @@ async function rejectDraftOrder(req, res, next) {
             create: {
               fromStatus: 'DRAFT',
               toStatus: 'CANCELLED',
-              message: 'Commande WhatsApp rejetée',
+              message: 'Commande WhatsApp rejetÃ©e',
               reason: reason || null,
               changedBy: req.user?.id,
             },
@@ -191,7 +192,7 @@ async function rejectDraftOrder(req, res, next) {
   }
 }
 
-// ── Nouvelle commande manuelle ─────────────────────────────────────
+// â”€â”€ Nouvelle commande manuelle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function createManualOrder(req, res, next) {
   try {
     const order = await createOrder(req.body, req.user, req.ip);
@@ -201,7 +202,7 @@ async function createManualOrder(req, res, next) {
   }
 }
 
-// ── Recherche clients ──────────────────────────────────────────────
+// â”€â”€ Recherche clients â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function searchUsers(req, res, next) {
   try {
     const { q = '' } = req.query;
@@ -232,7 +233,7 @@ async function searchUsers(req, res, next) {
   }
 }
 
-// ── Recherche produits ─────────────────────────────────────────────
+// â”€â”€ Recherche produits â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function searchProducts(req, res, next) {
   try {
     const { q = '', categoryId, storeId } = req.query;

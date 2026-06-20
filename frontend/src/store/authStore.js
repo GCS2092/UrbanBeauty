@@ -1,6 +1,16 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AUTH_TOKEN_KEY } from '../utils/constants';
+
+async function tagUserInOneSignal(userId) {
+  try {
+    const OneSignal = (await import('react-onesignal')).default;
+    await OneSignal.User.addTag('userId', userId);
+    console.log('✅ OneSignal tag userId:', userId);
+  } catch (e) {
+    console.error('❌ OneSignal tag error:', e);
+  }
+}
 
 const useAuthStore = create(
   persist(
@@ -12,6 +22,7 @@ const useAuthStore = create(
       setAuth: (user, token) => {
         localStorage.setItem(AUTH_TOKEN_KEY, token);
         set({ user, token, isAuthenticated: true });
+        if (user?.id) tagUserInOneSignal(String(user.id));
       },
 
       setToken: (token) => {
@@ -23,6 +34,9 @@ const useAuthStore = create(
 
       logout: () => {
         localStorage.removeItem(AUTH_TOKEN_KEY);
+        import('react-onesignal').then(({ default: OneSignal }) => {
+          OneSignal.User.removeTag('userId').catch(() => {});
+        });
         set({ user: null, token: null, isAuthenticated: false });
       },
     }),
