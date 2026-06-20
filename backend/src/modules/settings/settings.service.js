@@ -8,12 +8,15 @@ const DEFAULT_SETTINGS = {
   delivery_fee: '2000',
   free_delivery_threshold: '50000',
   whatsapp_number: '',
-  company_name: 'Urban Beauty',
+  company_name: 'SonShop',
   company_address: '',
   company_phone: '',
   reservation_expiry_hours: '24',
   default_country_code: '+221',
   company_email: '',
+  congo_express_rate: '15000',
+  congo_groupage_rate: '8000',
+  congo_groupage_gift: 'un cadeau surprise',
 };
 
 async function getSettings() {
@@ -38,4 +41,3 @@ async function updateSettings(data) {
 }
 
 module.exports = { getSettings, updateSettings };
-

@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { ShoppingBag, Heart, Bell, User, Menu, X, Search } from 'lucide-react';
+import { ShoppingBag, Heart, Bell, User, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import useAuthStore from '../../store/authStore';
 import useCartStore from '../../store/cartStore';
@@ -27,7 +27,7 @@ export default function Navbar() {
           <Link to="/" className="flex items-center gap-2">
             <span className="text-2xl">🛍️</span>
             <span className="font-bold text-xl tracking-tight text-stone-800">
-              Urban<span className="text-rose-400">Beauty</span>
+              Son<span className="text-rose-400">Shop</span>
             </span>
           </Link>
 

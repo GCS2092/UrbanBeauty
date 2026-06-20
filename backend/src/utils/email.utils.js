@@ -15,6 +15,7 @@ const C = {
   bg:        '#f0ede8',
   success:   '#2d6a4f',
   danger:    '#c0392b',
+  green:     '#e8f5e9',
 };
 
 // ─── Layout commun ────────────────────────────────────────────────────────────
@@ -35,18 +36,12 @@ function layout(bodyContent, preheader = '') {
         <!-- HEADER -->
         <tr>
           <td style="background:${C.navy};padding:28px 40px;border-radius:12px 12px 0 0;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td>
-                  <div style="font-size:26px;font-weight:900;letter-spacing:4px;font-family:Georgia,serif;">
-                    <span style="color:${C.gold};">SON</span><span style="color:${C.white};">SHOP</span>
-                  </div>
-                  <div style="font-size:9px;color:#aaaaaa;letter-spacing:3px;margin-top:4px;text-transform:uppercase;">
-                    Mode &amp; Style Masculin
-                  </div>
-                </td>
-              </tr>
-            </table>
+            <div style="font-size:26px;font-weight:900;letter-spacing:4px;font-family:Georgia,serif;">
+              <span style="color:${C.gold};">SON</span><span style="color:${C.white};">SHOP</span>
+            </div>
+            <div style="font-size:9px;color:#aaaaaa;letter-spacing:3px;margin-top:4px;text-transform:uppercase;">
+              Mode &amp; Style
+            </div>
           </td>
         </tr>
 
@@ -83,12 +78,13 @@ function layout(bodyContent, preheader = '') {
 // ─── Composants réutilisables ─────────────────────────────────────────────────
 function badge(status) {
   const map = {
-    CONFIRMED:  { label: 'Confirmée',          bg: '#e8f5e9', color: C.success },
-    PROCESSING: { label: 'En préparation',     bg: '#fff3cd', color: '#856404' },
-    SHIPPED:    { label: 'Expédiée',           bg: '#e3f2fd', color: '#0d47a1' },
-    DELIVERED:  { label: 'Livrée ✓',          bg: '#e8f5e9', color: C.success },
-    CANCELLED:  { label: 'Annulée',            bg: '#fce4e4', color: C.danger  },
-    PENDING:    { label: 'En attente',         bg: '#fff3cd', color: '#856404' },
+    CONFIRMED:  { label: 'Confirmée',        bg: '#e8f5e9', color: C.success },
+    PROCESSING: { label: 'En préparation',   bg: '#fff3cd', color: '#856404' },
+    SHIPPED:    { label: 'Expédiée',         bg: '#e3f2fd', color: '#0d47a1' },
+    DELIVERED:  { label: 'Livrée ✓',        bg: '#e8f5e9', color: C.success },
+    CANCELLED:  { label: 'Annulée',          bg: '#fce4e4', color: C.danger  },
+    PENDING:    { label: 'En attente',       bg: '#fff3cd', color: '#856404' },
+    DRAFT:      { label: 'Brouillon',        bg: '#f5f5f5', color: '#555'    },
   };
   const s = map[status] || { label: status, bg: '#f5f5f5', color: '#555' };
   return `<span style="display:inline-block;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700;background:${s.bg};color:${s.color};">${s.label}</span>`;
@@ -101,6 +97,20 @@ function cta(text, url) {
       <td style="background:${C.gold};border-radius:8px;">
         <a href="${url}" style="display:block;padding:14px 36px;color:${C.white};font-weight:700;font-size:13px;text-decoration:none;letter-spacing:1px;text-transform:uppercase;">
           ${text}
+        </a>
+      </td>
+    </tr>
+  </table>`;
+}
+
+function whatsappCta(number, text) {
+  if (!number) return '';
+  return `
+  <table cellpadding="0" cellspacing="0" style="margin:12px auto 0;">
+    <tr>
+      <td style="background:#25D366;border-radius:8px;">
+        <a href="https://wa.me/${number}" style="display:block;padding:12px 28px;color:#ffffff;font-weight:700;font-size:13px;text-decoration:none;letter-spacing:1px;text-transform:uppercase;">
+          💬 Contacter SonShop sur WhatsApp
         </a>
       </td>
     </tr>
@@ -169,10 +179,10 @@ function totalsBlock({ subtotal, shippingCost, discount, storeDiscount, tax, tot
   return `
   <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;border-top:2px solid ${C.navy};padding-top:14px;">
     ${row('Sous-total', `${Number(subtotal || 0).toLocaleString('fr-FR')} FCFA`)}
-    ${Number(shippingCost)   > 0 ? row('Livraison',       `${Number(shippingCost).toLocaleString('fr-FR')} FCFA`) : ''}
-    ${Number(discount)       > 0 ? row('Remise',          `-${Number(discount).toLocaleString('fr-FR')} FCFA`, false, C.success) : ''}
-    ${Number(storeDiscount)  > 0 ? row('Remise boutique', `-${Number(storeDiscount).toLocaleString('fr-FR')} FCFA`, false, C.success) : ''}
-    ${Number(tax)            > 0 ? row('Taxes',           `${Number(tax).toLocaleString('fr-FR')} FCFA`) : ''}
+    ${Number(shippingCost)  > 0 ? row('Livraison', `${Number(shippingCost).toLocaleString('fr-FR')} FCFA`) : row('Livraison', 'À confirmer')}
+    ${Number(discount)      > 0 ? row('Remise', `-${Number(discount).toLocaleString('fr-FR')} FCFA`, false, C.success) : ''}
+    ${Number(storeDiscount) > 0 ? row('Remise boutique', `-${Number(storeDiscount).toLocaleString('fr-FR')} FCFA`, false, C.success) : ''}
+    ${Number(tax)           > 0 ? row('Taxes', `${Number(tax).toLocaleString('fr-FR')} FCFA`) : ''}
     <tr>
       <td colspan="2" style="padding-top:10px;">
         <table width="100%" cellpadding="0" cellspacing="0"
@@ -189,7 +199,6 @@ function totalsBlock({ subtotal, shippingCost, discount, storeDiscount, tax, tot
   </table>`;
 }
 
-// ─── Greeting commun ──────────────────────────────────────────────────────────
 function greeting(name) {
   return `<p style="margin:0 0 20px;font-size:14px;color:${C.text};">
     Bonjour <strong>${name || 'client'}</strong>,
@@ -203,6 +212,32 @@ function signature() {
   </p>`;
 }
 
+// ─── Bandeau info commande sans compte ───────────────────────────────────────
+function guestInfoBanner(whatsappNumber) {
+  return `
+  <table width="100%" cellpadding="0" cellspacing="0"
+    style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;margin:20px 0;">
+    <tr>
+      <td style="padding:14px 18px;">
+        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#856404;">
+          ℹ️ Commande passée sans compte
+        </p>
+        <p style="margin:0;font-size:12px;color:#856404;line-height:1.6;">
+          Vous n'avez pas de compte SonShop. Pour suivre l'évolution de votre commande,
+          contactez-nous directement sur WhatsApp en indiquant votre numéro de commande.
+          Vous recevrez également un email à chaque changement de statut.
+        </p>
+        ${whatsappNumber ? `
+        <p style="margin:10px 0 0;font-size:12px;color:#856404;">
+          👉 <a href="https://wa.me/${whatsappNumber}" style="color:#856404;font-weight:700;">
+            Suivre ma commande sur WhatsApp
+          </a>
+        </p>` : ''}
+      </td>
+    </tr>
+  </table>`;
+}
+
 // ============================================================
 // 1. CONFIRMATION DE COMMANDE
 // ============================================================
@@ -210,6 +245,7 @@ function buildOrderConfirmationEmail({
   orderNumber, guestName, total, clientUrl,
   items = [], shippingCost = 0, discount = 0, storeDiscount = 0,
   tax = 0, subtotal, paymentMethod, shippingAddress,
+  isGuest = false, whatsappNumber = '',
 }) {
   const name = guestName || 'client';
   const sub  = subtotal ?? total;
@@ -228,18 +264,19 @@ function buildOrderConfirmationEmail({
       Commande confirmée 🎉
     </h1>
     <p style="margin:0 0 24px;font-size:14px;color:${C.textLight};">
-      Merci <strong style="color:${C.text};">${name}</strong>, votre commande a bien été reçue.
+      Merci <strong style="color:${C.text};">${name}</strong>, votre commande a bien été reçue et est en cours de traitement.
     </p>
 
     ${infoBox([
-      ['N° commande',  `<strong>${orderNumber}</strong>`],
-      paymentMethod ? ['Paiement', payLabels[paymentMethod] || paymentMethod] : null,
-      addrLine      ? ['Livraison', addrLine] : null,
+      ['N° commande',  `<strong style="font-size:14px;color:${C.navy};">${orderNumber}</strong>`],
+      ['Client',       name],
+      addrLine      ? ['Adresse de livraison', addrLine] : null,
+      paymentMethod ? ['Mode de paiement', payLabels[paymentMethod] || paymentMethod] : null,
     ])}
 
     ${items.length > 0 ? `
     <h3 style="font-size:11px;font-weight:700;color:${C.navy};text-transform:uppercase;letter-spacing:1px;margin:24px 0 4px;">
-      Votre commande
+      Détail de votre commande
     </h3>
     <table width="100%" cellpadding="0" cellspacing="0">
       ${items.map(productRow).join('')}
@@ -247,11 +284,17 @@ function buildOrderConfirmationEmail({
 
     ${totalsBlock({ subtotal: sub, shippingCost, discount, storeDiscount, tax, total })}
 
-    <p style="margin:20px 0 0;font-size:13px;color:${C.textLight};line-height:1.6;">
-      Nous préparons votre commande avec soin. Vous serez notifié dès son expédition.
+    ${divider()}
+
+    <p style="margin:0;font-size:13px;color:${C.text};line-height:1.6;">
+      Nous préparons votre commande avec soin. Vous serez notifié par email à chaque étape de livraison.
     </p>
 
-    ${cta('Suivre ma commande', `${clientUrl}/orders/${orderNumber}`)}
+    ${isGuest
+      ? guestInfoBanner(whatsappNumber)
+      : cta('Suivre ma commande', `${clientUrl}/orders/${orderNumber}`)
+    }
+
     ${signature()}
   `;
 
@@ -264,16 +307,17 @@ function buildOrderConfirmationEmail({
 // ============================================================
 // 2. MISE À JOUR STATUT
 // ============================================================
-function buildOrderStatusEmail({ orderNumber, customerName, status, clientUrl, trackingNote }) {
+function buildOrderStatusEmail({ orderNumber, customerName, status, clientUrl, trackingNote, isGuest = false, whatsappNumber = '' }) {
   const config = {
-    CONFIRMED:  { emoji: '✅', label: 'confirmée',            msg: 'Votre commande a été confirmée et va bientôt être préparée.' },
+    CONFIRMED:  { emoji: '✅', label: 'confirmée',              msg: 'Votre commande a été confirmée et va bientôt être préparée.' },
     PROCESSING: { emoji: '📦', label: 'en cours de préparation', msg: 'Notre équipe prépare votre commande avec soin.' },
-    SHIPPED:    { emoji: '🚚', label: 'expédiée',             msg: 'Votre commande est en route ! Notre livreur vous contactera sous peu.' },
-    DELIVERED:  { emoji: '🎁', label: 'livrée',              msg: 'Votre commande a été livrée avec succès. Merci pour votre confiance !' },
-    CANCELLED:  { emoji: '❌', label: 'annulée',             msg: 'Votre commande a été annulée. Contactez-nous pour plus d\'informations.' },
+    SHIPPED:    { emoji: '🚚', label: 'expédiée',               msg: 'Votre commande est en route ! Notre livreur vous contactera sous peu.' },
+    DELIVERED:  { emoji: '🎁', label: 'livrée',                 msg: 'Votre commande a été livrée avec succès. Merci pour votre confiance !' },
+    CANCELLED:  { emoji: '❌', label: 'annulée',                msg: 'Votre commande a été annulée. Contactez-nous si vous avez des questions.' },
+    PENDING:    { emoji: '⏳', label: 'en attente',             msg: 'Votre commande est en attente de confirmation.' },
   };
 
-  const s = config[status] || { emoji: 'ℹ️', label: status, msg: '' };
+  const s = config[status] || { emoji: '📋', label: status, msg: '' };
 
   const body = `
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${C.navy};">
@@ -283,30 +327,40 @@ function buildOrderStatusEmail({ orderNumber, customerName, status, clientUrl, t
     ${greeting(customerName)}
 
     ${infoBox([
-      ['N° commande', `<strong>${orderNumber}</strong>`],
+      ['N° commande', `<strong style="color:${C.navy};">${orderNumber}</strong>`],
       ['Statut',      badge(status)],
     ])}
 
     <p style="margin:0;font-size:14px;color:${C.text};line-height:1.6;">${s.msg}</p>
 
-    ${trackingNote ? `<p style="margin:12px 0 0;font-size:13px;color:${C.textLight};font-style:italic;">${trackingNote}</p>` : ''}
+    ${trackingNote ? `
+    <div style="background:${C.offWhite};border-left:3px solid ${C.gold};padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0;">
+      <p style="margin:0;font-size:13px;color:${C.textLight};font-style:italic;">${trackingNote}</p>
+    </div>` : ''}
 
-    ${status !== 'CANCELLED'
+    ${divider()}
+
+    ${isGuest ? `
+    <p style="margin:0 0 8px;font-size:13px;color:${C.text};">
+      Pour suivre l'évolution de votre commande, contactez-nous directement en précisant votre numéro de commande : <strong>${orderNumber}</strong>
+    </p>
+    ${whatsappCta(whatsappNumber, 'Suivre ma commande sur WhatsApp')}
+    ` : (status !== 'CANCELLED'
       ? cta('Voir ma commande', `${clientUrl}/orders/${orderNumber}`)
-      : `<p style="margin:20px 0 0;font-size:13px;color:${C.textLight};">Besoin d'aide ? <a href="https://wa.me/221XXXXXXXXX" style="color:${C.gold};text-decoration:none;font-weight:600;">Contactez-nous sur WhatsApp</a></p>`
-    }
+      : whatsappCta(whatsappNumber, 'Nous contacter sur WhatsApp')
+    )}
 
     ${signature()}
   `;
 
   return {
-    subject: `Commande ${orderNumber} — ${s.label} ${s.emoji}`,
+    subject: `Commande ${orderNumber} — ${s.label} ${s.emoji} — SonShop`,
     html: layout(body, `Votre commande ${orderNumber} est ${s.label}.`),
   };
 }
 
 // ============================================================
-// 3. FACTURE PAR EMAIL (avec PDF en pièce jointe)
+// 3. FACTURE PAR EMAIL
 // ============================================================
 function buildInvoiceEmail({ invoiceNumber, orderNumber, customerName, total, clientUrl }) {
   const body = `
@@ -388,9 +442,9 @@ function buildPreorderEmail({ name, productName, orderNumber }) {
     </p>
 
     ${infoBox([
-      ['Produit',     productName],
-      ['Référence',   orderNumber || '—'],
-      ['Statut',      badge('PENDING')],
+      ['Produit',    productName],
+      ['Référence',  orderNumber || '—'],
+      ['Statut',     badge('PENDING')],
     ])}
 
     <p style="margin:20px 0 0;font-size:13px;color:${C.textLight};line-height:1.6;">

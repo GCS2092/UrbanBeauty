@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, MapPin, CreditCard, Truck } from 'lucide-react';
+import { ChevronLeft, MapPin, CreditCard, Truck, Gift } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { addressesApi } from '../../api/addresses.api';
 import { couponsApi } from '../../api/coupons.api';
@@ -19,26 +19,47 @@ import Button from '../../components/ui/Button';
 import PaymentModal from '../../components/checkout/PaymentModal';
 import { toast } from 'sonner';
 
+// ─── Destinations disponibles ────────────────────────────────────────────────
+const DESTINATIONS = [
+  {
+    value: 'SENEGAL',
+    label: 'Sénégal (Dakar)',
+    description: 'Frais communiqués via WhatsApp',
+    shippingFixed: null, // communiqué manuellement
+    flag: '🇸🇳',
+  },
+  {
+    value: 'CONGO_EXPRESS',
+    label: 'Congo – Express',
+    description: 'Livraison rapide, délai réduit',
+    flag: '🇨🇬',
+  },
+  {
+    value: 'CONGO_GROUPAGE',
+    label: 'Congo – Groupage',
+    description: 'Livraison avec les autres commandes + cadeau offert',
+    flag: '🇨🇬',
+    hasGift: true,
+  },
+];
+
 const schema = z.object({
   fullName: z.string().min(2, 'Nom requis'),
-  phone: z.string().min(6, 'Telephone requis'),
+  phone: z.string().min(6, 'Téléphone requis'),
   street: z.string().min(3, 'Adresse requise'),
   city: z.string().min(2, 'Ville requise'),
-  country: z.string().min(2, 'Pays requis'),
+  destination: z.enum(['SENEGAL', 'CONGO_EXPRESS', 'CONGO_GROUPAGE']),
   paymentMethod: z.enum(['CASH_ON_DELIVERY', 'MOBILE_MONEY']),
   notes: z.string().optional(),
   guestEmail: z.string().email('Email invalide').optional().or(z.literal('')),
 });
 
-const SHIPPING_COST = 2000;
-
-// ---------------------------------------------------------------------------
-// Helper — construit le message WhatsApp (sans emojis pour eviter l'encodage)
-// ---------------------------------------------------------------------------
-const buildWhatsAppMessage = ({ cart, formData, subtotal, discount, total, coupon, orderNumber }) => {
+// ─── Helper — message WhatsApp adapté selon destination ──────────────────────
+const buildWhatsAppMessage = ({ cart, formData, subtotal, shippingCost, discount, total, coupon, orderNumber, destination, settings }) => {
   const lines = [];
+  const dest = DESTINATIONS.find((d) => d.value === destination);
 
-  lines.push(`*Nouvelle commande UrbanBeauty*`);
+  lines.push(`*Nouvelle commande SonShop*`);
   lines.push(`Ref: *${orderNumber}*`);
   lines.push('');
   lines.push('*Articles :*');
@@ -51,23 +72,41 @@ const buildWhatsAppMessage = ({ cart, formData, subtotal, discount, total, coupo
   });
 
   lines.push('');
-  lines.push('*Recapitulatif :*');
+  lines.push('*Récapitulatif :*');
   lines.push(`Sous-total : ${formatPrice(subtotal)}`);
-  lines.push(`Livraison : ${formatPrice(SHIPPING_COST)}`);
-  if (discount > 0) {
-    lines.push(`Reduction${coupon ? ` (${coupon.code})` : ''} : -${formatPrice(discount)}`);
+
+  if (destination === 'SENEGAL') {
+    lines.push(`Livraison Sénégal : à confirmer`);
+  } else {
+    lines.push(`Livraison (${dest?.label}) : ${formatPrice(shippingCost)}`);
   }
-  lines.push(`*Total : ${formatPrice(total)}*`);
+
+  if (discount > 0) {
+    lines.push(`Réduction${coupon ? ` (${coupon.code})` : ''} : -${formatPrice(discount)}`);
+  }
+
+  if (destination === 'SENEGAL') {
+    lines.push(`*Total (hors livraison) : ${formatPrice(total - shippingCost)}*`);
+  } else {
+    lines.push(`*Total : ${formatPrice(total)}*`);
+  }
+
+  if (destination === 'CONGO_GROUPAGE') {
+    const gift = settings?.congo_groupage_gift || 'un cadeau surprise';
+    lines.push('');
+    lines.push(`🎁 *Cadeau offert :* ${gift} (pour remercier votre patience)`);
+  }
 
   lines.push('');
   lines.push('*Livraison :*');
+  lines.push(`Destination : ${dest?.label || destination}`);
   lines.push(`Nom : ${formData.fullName}`);
-  lines.push(`Tel : ${formData.phone}`);
-  lines.push(`Adresse : ${formData.street}, ${formData.city}, ${formData.country}`);
+  lines.push(`Tél : ${formData.phone}`);
+  lines.push(`Adresse : ${formData.street}, ${formData.city}`);
 
   lines.push('');
   lines.push(
-    `Paiement : ${formData.paymentMethod === 'MOBILE_MONEY' ? 'Mobile Money' : 'A la livraison'}`
+    `Paiement : ${formData.paymentMethod === 'MOBILE_MONEY' ? 'Mobile Money' : 'À la livraison'}`
   );
 
   if (formData.notes) {
@@ -78,9 +117,7 @@ const buildWhatsAppMessage = ({ cart, formData, subtotal, discount, total, coupo
   return encodeURIComponent(lines.join('\n'));
 };
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+// ─── Composant ───────────────────────────────────────────────────────────────
 export default function Checkout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -115,10 +152,25 @@ export default function Checkout() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { paymentMethod: 'CASH_ON_DELIVERY', country: 'Senegal' },
+    defaultValues: {
+      paymentMethod: 'CASH_ON_DELIVERY',
+      destination: 'SENEGAL',
+    },
   });
 
   const paymentMethod = watch('paymentMethod');
+  const destination = watch('destination');
+
+  // ── Calcul frais de livraison selon destination ───────────────────────────
+  const getShippingCost = () => {
+    if (destination === 'SENEGAL') return 0; // communiqué via WhatsApp
+    if (destination === 'CONGO_EXPRESS') return Number(settings?.congo_express_rate || 15000);
+    if (destination === 'CONGO_GROUPAGE') return Number(settings?.congo_groupage_rate || 8000);
+    return 0;
+  };
+
+  const shippingCost = getShippingCost();
+  const selectedDest = DESTINATIONS.find((d) => d.value === destination);
 
   // ── Totaux ───────────────────────────────────────────────────────────────
   const subtotal = getTotalPrice();
@@ -127,7 +179,7 @@ export default function Checkout() {
       ? Math.round((subtotal * coupon.value) / 100)
       : coupon.value
     : 0;
-  const total = subtotal + SHIPPING_COST - discount;
+  const total = subtotal + shippingCost - discount;
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   const fillFromAddress = (addr) => {
@@ -135,7 +187,6 @@ export default function Checkout() {
     setValue('phone', addr.phone);
     setValue('street', addr.street);
     setValue('city', addr.city);
-    setValue('country', addr.country);
   };
 
   const buildOrderPayload = (formData) => ({
@@ -153,9 +204,9 @@ export default function Checkout() {
       phone: formData.phone,
       street: formData.street,
       city: formData.city,
-      country: formData.country,
+      country: selectedDest?.label || formData.destination,
     },
-    shippingCost: SHIPPING_COST,
+    shippingCost,
     notes: formData.notes,
     couponId: coupon?.id || null,
     guestEmail: !user ? formData.guestEmail : undefined,
@@ -171,7 +222,7 @@ export default function Checkout() {
       const { data } = await couponsApi.validate(couponCode, subtotal);
       setCoupon(data.coupon);
       toast.success(
-        `Coupon applique : -${
+        `Coupon appliqué : -${
           data.coupon.type === 'PERCENTAGE' ? data.coupon.value + '%' : formatPrice(data.discount)
         }`
       );
@@ -183,14 +234,14 @@ export default function Checkout() {
     }
   };
 
-  // ── Mutation — commande normale ──────────────────────────────────────────
+  // ── Mutation commande normale ─────────────────────────────────────────────
   const { mutate: placeOrder, isPending } = useMutation({
     mutationFn: (data) => ordersApi.create(data),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       clearCart(user?.id);
       setShowPaymentModal(false);
-      toast.success('Commande passee avec succes !');
+      toast.success('Commande passée avec succès !');
       navigate(`/orders/${res.data.orderNumber}`);
     },
     onError: (err) => {
@@ -198,7 +249,7 @@ export default function Checkout() {
     },
   });
 
-  // ── Mutation — commande via WhatsApp (DRAFT) ─────────────────────────────
+  // ── Mutation commande WhatsApp (DRAFT) ────────────────────────────────────
   const { mutate: placeDraftOrder, isPending: isDraftPending } = useMutation({
     mutationFn: (data) => ordersApi.create({ ...data, status: 'DRAFT' }),
     onSuccess: (res, variables) => {
@@ -212,52 +263,51 @@ export default function Checkout() {
         cart,
         formData: variables._formData,
         subtotal,
+        shippingCost,
         discount,
         total,
         coupon,
         orderNumber,
+        destination,
+        settings,
       });
 
       window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
       setWhatsappSent(true);
-      toast.success('Commande enregistree ! Envoyez le message WhatsApp pour confirmer.');
+      toast.success('Commande enregistrée ! Envoyez le message WhatsApp pour confirmer.');
     },
     onError: (err) => {
-      toast.error(err.message || 'Erreur lors de la creation de la commande');
+      toast.error(err.message || 'Erreur lors de la création de la commande');
     },
   });
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const onSubmit = (formData) => {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
-
     if (formData.paymentMethod === 'MOBILE_MONEY') {
       setPendingOrderData(buildOrderPayload(formData));
       setShowPaymentModal(true);
       return;
     }
-
     placeOrder(buildOrderPayload(formData));
   };
 
   const onWhatsAppInfo = (formData) => {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
-
     const whatsappNumber = (settings?.whatsapp_number || '').replace(/\D/g, '');
-    if (!whatsappNumber) {
-      toast.error('Numero WhatsApp non configure.');
-      return;
-    }
+    if (!whatsappNumber) { toast.error('Numéro WhatsApp non configuré.'); return; }
 
+    const dest = DESTINATIONS.find((d) => d.value === formData.destination);
     const lines = [
       'Bonjour, j\'aimerais avoir des informations sur les produits suivants :',
       '',
       ...cart.items.map((item) => {
-        const variantLabel = item.variant ? ` (${item.variant.size} - ${item.variant.color})` : '';
-        return `- ${item.product.name}${variantLabel} x${item.quantity}`;
+        const v = item.variant ? ` (${item.variant.size} - ${item.variant.color})` : '';
+        return `- ${item.product.name}${v} x${item.quantity}`;
       }),
       '',
-      `Total estime : ${formatPrice(total)}`,
+      `Destination souhaitée : ${dest?.label || formData.destination}`,
+      `Total estimé (sans livraison) : ${formatPrice(subtotal)}`,
     ];
 
     const message = encodeURIComponent(lines.join('\n'));
@@ -266,13 +316,8 @@ export default function Checkout() {
 
   const onWhatsAppOrder = (formData) => {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
-
-    // Verification AVANT de creer la commande
     const whatsappNumber = (settings?.whatsapp_number || '').replace(/\D/g, '');
-    if (!whatsappNumber) {
-      toast.error('Numero WhatsApp non configure. Veuillez utiliser un autre mode de commande.');
-      return;
-    }
+    if (!whatsappNumber) { toast.error('Numéro WhatsApp non configuré.'); return; }
 
     const payload = buildOrderPayload(formData);
     placeDraftOrder({ ...payload, _formData: formData });
@@ -346,9 +391,68 @@ export default function Checkout() {
             </div>
           )}
 
+          {/* ── Destination ── */}
+          <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-3">
+            <h2 className="font-semibold text-stone-800 flex items-center gap-2">
+              <Truck size={17} className="text-rose-400" /> Destination
+            </h2>
+            <div className="space-y-2">
+              {DESTINATIONS.map((dest) => (
+                <label
+                  key={dest.value}
+                  className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
+                    destination === dest.value
+                      ? 'border-rose-400 bg-rose-50/50'
+                      : 'border-stone-200 hover:border-stone-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    value={dest.value}
+                    {...register('destination')}
+                    className="accent-rose-500 mt-0.5"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{dest.flag}</span>
+                      <span className="text-sm font-semibold text-stone-800">{dest.label}</span>
+                      {dest.hasGift && (
+                        <span className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                          <Gift size={10} /> Cadeau inclus
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-stone-400 mt-0.5">{dest.description}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {dest.value === 'SENEGAL' ? (
+                      <span className="text-xs text-stone-400 italic">Via WhatsApp</span>
+                    ) : (
+                      <span className="text-sm font-semibold text-stone-700">
+                        {formatPrice(Number(settings?.[dest.value === 'CONGO_EXPRESS' ? 'congo_express_rate' : 'congo_groupage_rate'] || (dest.value === 'CONGO_EXPRESS' ? 15000 : 8000)))}
+                      </span>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Bandeau cadeau groupage */}
+            {destination === 'CONGO_GROUPAGE' && (
+              <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <Gift size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  <strong>Cadeau offert !</strong> Pour vous remercier de votre patience,
+                  un {settings?.congo_groupage_gift || 'cadeau surprise'} sera glissé dans votre colis.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Adresse de livraison ── */}
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
             <h2 className="font-semibold text-stone-800 flex items-center gap-2">
-              <Truck size={17} className="text-rose-400" /> Adresse de livraison
+              <MapPin size={17} className="text-rose-400" /> Adresse de livraison
             </h2>
             <div className="grid grid-cols-2 gap-3">
               <Input
@@ -358,7 +462,7 @@ export default function Checkout() {
                 {...register('fullName')}
               />
               <Input
-                label="Telephone"
+                label="Téléphone"
                 placeholder="+221 77 000 00 00"
                 error={errors.phone?.message}
                 {...register('phone')}
@@ -370,20 +474,12 @@ export default function Checkout() {
               error={errors.street?.message}
               {...register('street')}
             />
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Ville"
-                placeholder="Dakar"
-                error={errors.city?.message}
-                {...register('city')}
-              />
-              <Input
-                label="Pays"
-                placeholder="Senegal"
-                error={errors.country?.message}
-                {...register('country')}
-              />
-            </div>
+            <Input
+              label="Ville"
+              placeholder={destination === 'SENEGAL' ? 'Dakar' : 'Brazzaville'}
+              error={errors.city?.message}
+              {...register('city')}
+            />
             <div>
               <label className="text-sm font-medium text-stone-700 block mb-1.5">
                 Notes (optionnel)
@@ -397,6 +493,7 @@ export default function Checkout() {
             </div>
           </div>
 
+          {/* ── Mode de paiement ── */}
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-3">
             <h2 className="font-semibold text-stone-800 flex items-center gap-2">
               <CreditCard size={17} className="text-rose-400" /> Mode de paiement
@@ -422,7 +519,7 @@ export default function Checkout() {
           </div>
         </div>
 
-        {/* ── Recap commande ── */}
+        {/* ── Récap commande ── */}
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
             <h2 className="font-semibold text-stone-800">Votre commande</h2>
@@ -474,15 +571,33 @@ export default function Checkout() {
                 <span>Sous-total</span><span>{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between text-stone-600">
-                <span>Livraison</span><span>{formatPrice(SHIPPING_COST)}</span>
+                <span>Livraison {selectedDest && `(${selectedDest.label})`}</span>
+                <span>
+                  {destination === 'SENEGAL'
+                    ? <span className="text-xs italic text-stone-400">Via WhatsApp</span>
+                    : formatPrice(shippingCost)
+                  }
+                </span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Reduction</span><span>-{formatPrice(discount)}</span>
+                  <span>Réduction</span><span>-{formatPrice(discount)}</span>
+                </div>
+              )}
+              {destination === 'CONGO_GROUPAGE' && (
+                <div className="flex justify-between text-amber-600">
+                  <span className="flex items-center gap-1"><Gift size={12} /> Cadeau offert</span>
+                  <span className="text-xs font-medium">Inclus 🎁</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-stone-900 pt-2 border-t border-stone-100 text-base">
-                <span>Total</span><span>{formatPrice(total)}</span>
+                <span>Total</span>
+                <span>
+                  {destination === 'SENEGAL'
+                    ? `${formatPrice(subtotal - discount)} + livraison`
+                    : formatPrice(total)
+                  }
+                </span>
               </div>
             </div>
 
@@ -496,7 +611,7 @@ export default function Checkout() {
               {paymentMethod === 'MOBILE_MONEY' ? 'Payer par Mobile Money' : 'Confirmer la commande'}
             </Button>
 
-            {/* Separateur */}
+            {/* Séparateur */}
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-stone-100" />
               <span className="text-xs text-stone-400">ou</span>
@@ -508,8 +623,8 @@ export default function Checkout() {
               <div className="w-full rounded-2xl bg-green-50 border border-green-200 p-4 text-center space-y-2">
                 <p className="text-sm font-semibold text-green-700">Message WhatsApp ouvert !</p>
                 <p className="text-xs text-green-600">
-                  Votre commande est enregistree en brouillon. Elle sera confirmee des que vous
-                  aurez envoye le message et que nous l'aurons valide.
+                  Votre commande est enregistrée en brouillon. Elle sera confirmée dès que vous
+                  aurez envoyé le message et que nous l'aurons validé.
                 </p>
               </div>
             ) : (
@@ -540,7 +655,7 @@ export default function Checkout() {
             )}
 
             <p className="text-xs text-stone-400 text-center">
-              La commande sera enregistree et un message pre-rempli s'ouvrira dans WhatsApp.
+              La commande sera enregistrée et un message pré-rempli s'ouvrira dans WhatsApp.
             </p>
           </div>
         </div>

@@ -7,9 +7,9 @@ import ProductGrid from '../../components/shared/ProductGrid';
 import Button from '../../components/ui/Button';
 
 const perks = [
-  { icon: Truck, label: 'Livraison & export', desc: 'Senegal et international' },
-  { icon: ShieldCheck, label: 'Produits authentiques', desc: '100% verifies' },
-  { icon: Sparkles, label: 'Nouveautes chaque semaine', desc: 'Toujours tendance' },
+  { icon: Truck, label: 'Livraison & export', desc: 'Sénégal et international' },
+  { icon: ShieldCheck, label: 'Produits authentiques', desc: '100% vérifiés' },
+  { icon: Sparkles, label: 'Nouveautés chaque semaine', desc: 'Toujours tendance' },
 ];
 
 export default function Home() {
@@ -30,20 +30,20 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-1.5 bg-rose-100 text-rose-600 text-xs font-semibold px-3 py-1 rounded-full mb-4">
-              <Sparkles size={12} /> SonShop — Nouvelle collection disponible
+              <Sparkles size={12} /> SonShop – Nouvelle collection disponible
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-stone-900 leading-tight mb-4">
               Le style <br />
               <span className="text-rose-400">qui vous ressemble</span>
             </h1>
             <p className="text-stone-500 text-lg mb-8 leading-relaxed">
-              Decouvrez notre selection de vetements et accessoires authentiques,
-              livres partout au Senegal et exportes a l'international.
+              Découvrez notre sélection de vêtements et accessoires authentiques,
+              livrés partout au Sénégal et exportés à l'international.
             </p>
             <div className="flex gap-3 flex-wrap">
               <Link to="/products">
                 <Button size="lg">
-                  Decouvrir la boutique <ArrowRight size={18} />
+                  Découvrir la boutique <ArrowRight size={18} />
                 </Button>
               </Link>
               <Link to="/products?featured=true">
@@ -60,7 +60,7 @@ export default function Home() {
         <div className="absolute bottom-0 right-1/3 w-48 h-48 bg-amber-200/30 rounded-full blur-2xl pointer-events-none" />
       </section>
 
-      {/* Perks — une seule ligne, espacement compact */}
+      {/* Perks */}
       <section className="border-y border-stone-100 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6 sm:divide-x sm:divide-stone-100">
@@ -82,7 +82,7 @@ export default function Home() {
       {/* Categories */}
       {categories?.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <h2 className="text-2xl font-bold text-stone-800 mb-6">Categories</h2>
+          <h2 className="text-2xl font-bold text-stone-800 mb-6">Catégories</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {categories.slice(0, 4).map((cat) => (
               <Link
