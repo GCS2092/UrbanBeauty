@@ -28,6 +28,8 @@ export default function AdminSettings() {
     payment_instructions: '',
     delivery_fee: '2000',
     free_delivery_threshold: '50000',
+    congo_express_rate: '15000',
+    congo_groupage_rate: '8000',
     whatsapp_number: '',
     company_name: '',
     company_address: '',
@@ -139,7 +141,7 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        {/* ✅ WhatsApp */}
+        {/* WhatsApp */}
         <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
             <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center">
@@ -179,6 +181,20 @@ export default function AdminSettings() {
             onChange={update('free_delivery_threshold')}
             placeholder="50000"
             hint="Livraison gratuite au-dessus de ce montant. Mettez 0 pour désactiver."
+          />
+          <SettingInput
+            label="Tarif Congo – Express (FCFA)"
+            value={form.congo_express_rate}
+            onChange={update('congo_express_rate')}
+            placeholder="15000"
+            hint="Affiché et appliqué pour la destination Congo Express"
+          />
+          <SettingInput
+            label="Tarif Congo – Groupage (FCFA)"
+            value={form.congo_groupage_rate}
+            onChange={update('congo_groupage_rate')}
+            placeholder="8000"
+            hint="Affiché et appliqué pour la destination Congo Groupage"
           />
         </div>
 
