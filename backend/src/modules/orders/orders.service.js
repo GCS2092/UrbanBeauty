@@ -16,18 +16,47 @@ const {
 } = require('../stores/store.service');
 const { getSettings } = require('../settings/settings.service');
 const { notifyOrderConfirmed, notifyOrderStatus, notifyPaymentReceived } = require('../../services/notification.service');
-const { buildInvoicePdf } = require('../invoices/invoice-pdf.service'); // âœ… adapte le chemin si besoin
+const { buildInvoicePdf } = require('../invoices/invoice-pdf.service');
+const { isValidPhone } = require('../../utils/phone.utils');
 
-// âœ… Fonction utilitaire â€” envoie en arriÃ¨re-plan sans bloquer
+// ─── Destinations locales (paiement à la livraison autorisé) ─────────────────
+const LOCAL_DESTINATIONS = ['SENEGAL'];
+
+// ─── Validation cohérence paiement / destination ──────────────────────────────
+function validatePaymentDestination(paymentMethod, destination) {
+  const isLocal = !destination || LOCAL_DESTINATIONS.includes(destination);
+
+  if (!isLocal && paymentMethod === 'CASH_ON_DELIVERY') {
+    const error = new Error(
+      'Le paiement à la livraison n\'est pas disponible pour les commandes internationales. ' +
+      'Veuillez choisir Mobile Money.'
+    );
+    error.status = 400;
+    throw error;
+  }
+}
+
+// ─── Utilitaire email async ────────────────────────────────────────────────────
 function sendEmailAsync(mailOptions) {
   sendEmail(mailOptions)
-    .then(() => console.log('âœ… Email envoyÃ© Ã  :', mailOptions.to))
-    .catch((err) => console.error('âŒ ERREUR EMAIL :', err.message));
+    .then(() => console.log('✅ Email envoyé à :', mailOptions.to))
+    .catch((err) => console.error('❌ ERREUR EMAIL :', err.message));
 }
 
 async function createOrder(payload, user, ip = null) {
   if (!Array.isArray(payload.items) || payload.items.length === 0) {
     const error = new Error('La commande doit contenir au moins un produit.');
+    error.status = 400;
+    throw error;
+  }
+
+  // ── Validation sécurité paiement/destination ────────────────────────────────
+  validatePaymentDestination(payload.paymentMethod, payload.destination);
+
+  // ── Validation téléphone ─────────────────────────────────────────────────────
+  const phone = user?.phone || payload.guestPhone;
+  if (!isValidPhone(phone)) {
+    const error = new Error('Numéro de téléphone invalide ou manquant.');
     error.status = 400;
     throw error;
   }
@@ -42,7 +71,6 @@ async function createOrder(payload, user, ip = null) {
   const store = await resolveStoreForOrder(payload.storeId);
   const orderNumber = generateOrderNumber();
   const userId = user?.id || null;
-  // âœ… email optionnel â€” on stocke null plutÃ´t que '' si l'invitÃ© ne le renseigne pas
   const guestEmail = user?.email || payload.guestEmail || null;
   const guestName = payload.guestName || payload.shippingAddress?.fullName || 'Client';
   const shippingCost = Number(payload.shippingCost || 0);
@@ -55,7 +83,7 @@ async function createOrder(payload, user, ip = null) {
   if (payload.couponId) {
     const coupon = await prisma.coupon.findUnique({ where: { id: payload.couponId } });
     if (!coupon || !coupon.isActive) {
-      const error = new Error('Code promo invalide ou expirÃ©.');
+      const error = new Error('Code promo invalide ou expiré.');
       error.status = 400;
       throw error;
     }
@@ -119,14 +147,14 @@ async function createOrder(payload, user, ip = null) {
             status: initialStatus,
             message: isDraft
               ? 'Commande WhatsApp en attente de confirmation.'
-              : 'Commande enregistrÃ©e et en attente de confirmation.',
+              : 'Commande enregistrée et en attente de confirmation.',
             location: payload.shippingAddress?.city || null,
           },
         },
         statusHistory: {
           create: {
             toStatus: initialStatus,
-            message: isDraft ? 'Commande WhatsApp crÃ©Ã©e (brouillon)' : 'Commande crÃ©Ã©e',
+            message: isDraft ? 'Commande WhatsApp créée (brouillon)' : 'Commande créée',
             changedBy: userId,
           },
         },
@@ -149,14 +177,14 @@ async function createOrder(payload, user, ip = null) {
       module: 'orders',
       entityId: created.id,
       entityType: 'Order',
-      newValue: { orderNumber, total, storeId: store.id },
+      newValue: { orderNumber, total, storeId: store.id, destination: payload.destination },
       ip,
     });
 
     return created;
   });
 
-  // âœ… Email client â€” en arriÃ¨re-plan, ne bloque pas la rÃ©ponse
+  // ── Emails async ──────────────────────────────────────────────────────────
   if (guestEmail) {
     const emailData = buildOrderConfirmationEmail({
       orderNumber,
@@ -172,7 +200,6 @@ async function createOrder(payload, user, ip = null) {
     });
   }
 
-  // âœ… Email admin â€” en arriÃ¨re-plan, ne bloque pas la rÃ©ponse
   if (process.env.ADMIN_EMAIL) {
     const emailData = buildOrderConfirmationEmail({
       orderNumber,
@@ -211,7 +238,7 @@ async function getOrderByNumber(orderNumber) {
       tracking: { orderBy: { createdAt: 'asc' } },
       invoice: true,
       statusHistory: { orderBy: { createdAt: 'desc' } },
-      user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } }, // âœ… ajoutÃ©
+      user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
     },
   });
 }
@@ -232,7 +259,6 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
     });
 
-    // âœ… GÃ©nÃ©ration PDF avant sendEmailAsync (await obligatoire)
     let attachments = [];
     if (order.invoice) {
       try {
@@ -242,8 +268,7 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
           content: pdfBuffer.toString('base64'),
         }];
       } catch (err) {
-        // On ne bloque pas l'email si le PDF Ã©choue
-        console.error('âŒ Erreur gÃ©nÃ©ration PDF facture :', err.message);
+        console.error('❌ Erreur génération PDF facture :', err.message);
       }
     }
 
@@ -266,10 +291,10 @@ function buildOrdersWhere(query, storeIds = null) {
   if (query.paymentStatus) where.paymentStatus = query.paymentStatus;
   if (query.paymentMethod) where.paymentMethod = query.paymentMethod;
   if (query.destination) where.destination = query.destination;
-  
+
   if (query.storeId) {
     if (storeIds?.length && !storeIds.includes(query.storeId)) {
-      const error = new Error('AccÃ¨s refusÃ© Ã  cette boutique.');
+      const error = new Error('Accès refusé à cette boutique.');
       error.status = 403;
       throw error;
     }
@@ -328,5 +353,3 @@ module.exports = {
   getAllOrders,
   buildOrdersWhere,
 };
-
-

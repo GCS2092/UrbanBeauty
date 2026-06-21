@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download, RefreshCw, Plus, CreditCard } from 'lucide-react';
+import { Download, RefreshCw, Plus, CreditCard, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminApi } from '../../api/admin.api';
 import api from '../../api/axios';
@@ -44,6 +44,17 @@ const formatDate = (iso) =>
   new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 const formatPrice = (p) => `${Number(p).toLocaleString('fr-FR')} FCFA`;
 
+const getUrgency = (expiresAt) => {
+  if (!expiresAt) return null;
+  const diffMs = new Date(expiresAt).getTime() - Date.now();
+  if (diffMs <= 0) return { label: 'Expirée', color: 'bg-red-100 text-red-700' };
+  const hours = diffMs / 3_600_000;
+  if (hours < 1)  return { label: `${Math.round(diffMs / 60000)} min`, color: 'bg-red-100 text-red-700' };
+  if (hours < 6)  return { label: `${Math.round(hours)} h`, color: 'bg-orange-100 text-orange-700' };
+  if (hours < 24) return { label: `${Math.round(hours)} h`, color: 'bg-yellow-100 text-yellow-700' };
+  return { label: `${Math.round(hours / 24)} j`, color: 'bg-gray-100 text-gray-600' };
+};
+
 const emptyFilters = {
   status: '',
   paymentStatus: '',
@@ -64,6 +75,7 @@ export default function AdminOrders() {
   const [submitting, setSubmitting]   = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'todo'
 
   // Paiement modal
   const [paymentModal, setPaymentModal]   = useState(false);
@@ -72,11 +84,17 @@ export default function AdminOrders() {
   const [paymentStatus, setPaymentStatus] = useState('PAID');
   const [submittingPayment, setSubmittingPayment] = useState(false);
 
+  const isTodoView = activeTab === 'todo';
+
   const queryParams = {
     page,
     limit: 20,
-    ...(filters.status        && { status: filters.status }),
-    ...(filters.paymentStatus && { paymentStatus: filters.paymentStatus }),
+    ...(isTodoView
+      ? { view: 'todo' }
+      : {
+          ...(filters.status        && { status: filters.status }),
+          ...(filters.paymentStatus && { paymentStatus: filters.paymentStatus }),
+        }),
     ...(filters.search.trim() && { search: filters.search.trim() }),
     ...(filters.from          && { from: filters.from }),
     ...(filters.to            && { to: filters.to }),
@@ -85,9 +103,20 @@ export default function AdminOrders() {
   };
 
   const { data, isLoading, refetch, isFetching, error } = useQuery({
-    queryKey: ['admin-orders', queryParams],
+    queryKey: ['admin-orders', activeTab, queryParams],
     queryFn: () => adminApi.getOrders(queryParams).then((r) => r.data),
   });
+
+  // Badge "À traiter" toujours à jour, même sur l'onglet "Toutes"
+  const { data: todoData } = useQuery({
+    queryKey: ['admin-orders-todo-count', filters.storeId],
+    queryFn: () =>
+      adminApi
+        .getOrders({ view: 'todo', limit: 1, ...(filters.storeId && { storeId: filters.storeId }) })
+        .then((r) => r.data),
+    refetchInterval: 60_000,
+  });
+  const todoCount = todoData?.total ?? 0;
 
   const orders     = data?.data       ?? [];
   const total      = data?.total      ?? 0;
@@ -95,6 +124,11 @@ export default function AdminOrders() {
 
   const updateFilter = (key, value) => {
     setFilters((f) => ({ ...f, [key]: value }));
+    setPage(1);
+  };
+
+  const switchTab = (tab) => {
+    setActiveTab(tab);
     setPage(1);
   };
 
@@ -212,6 +246,40 @@ export default function AdminOrders() {
         </div>
       </div>
 
+      {/* Onglets */}
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => switchTab('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'all'
+              ? 'bg-gray-900 text-white'
+              : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          Toutes les commandes
+        </button>
+        <button
+          onClick={() => switchTab('todo')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'todo'
+              ? 'bg-orange-600 text-white'
+              : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          <AlertTriangle size={14} />
+          À traiter
+          {todoCount > 0 && (
+            <span
+              className={`text-xs font-bold rounded-full px-1.5 py-0.5 ${
+                activeTab === 'todo' ? 'bg-white/20' : 'bg-orange-100 text-orange-700'
+              }`}
+            >
+              {todoCount}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* Filtres */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 space-y-3">
         <div className="flex flex-wrap gap-3">
@@ -226,26 +294,30 @@ export default function AdminOrders() {
             onChange={(e) => updateFilter('search', e.target.value)}
             className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-2 text-sm"
           />
-          <select
-            value={filters.status}
-            onChange={(e) => updateFilter('status', e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="">Tous les statuts</option>
-            {Object.entries(STATUS_LABELS).map(([val, { label }]) => (
-              <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
-          <select
-            value={filters.paymentStatus}
-            onChange={(e) => updateFilter('paymentStatus', e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="">Tous les paiements</option>
-            {Object.entries(PAYMENT_LABELS).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
+          {!isTodoView && (
+            <>
+              <select
+                value={filters.status}
+                onChange={(e) => updateFilter('status', e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Tous les statuts</option>
+                {Object.entries(STATUS_LABELS).map(([val, { label }]) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
+              <select
+                value={filters.paymentStatus}
+                onChange={(e) => updateFilter('paymentStatus', e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Tous les paiements</option>
+                {Object.entries(PAYMENT_LABELS).map(([val, label]) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
+            </>
+          )}
         </div>
         <DateRangeFilter
           from={filters.from}
@@ -279,13 +351,16 @@ export default function AdminOrders() {
           <div className="flex items-center justify-center py-20 text-gray-400">Chargement…</div>
         ) : orders.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
-            <p className="font-medium">Aucune commande</p>
+            <p className="font-medium">
+              {isTodoView ? 'Rien à traiter pour le moment 🎉' : 'Aucune commande'}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {isTodoView && <th className="px-6 py-3">Urgence</th>}
                   <th className="px-6 py-3">Boutique</th>
                   <th className="px-6 py-3">N° Commande</th>
                   <th className="px-6 py-3">Client</th>
@@ -305,9 +380,22 @@ export default function AdminOrders() {
                   };
                   const isPaid = order.paymentStatus === 'PAID';
                   const waConfirmLink = buildOrderConfirmationWhatsAppLink(order);
+                  const urgency = getUrgency(order.reservationExpiresAt);
 
                   return (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                      {isTodoView && (
+                        <td className="px-6 py-4">
+                          {urgency ? (
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${urgency.color}`}>
+                              <Clock size={11} />
+                              {urgency.label}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-6 py-4 text-xs text-gray-600">
                         {order.store?.code || '—'}
                       </td>

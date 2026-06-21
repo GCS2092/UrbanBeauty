@@ -3,7 +3,7 @@ const ordersController = require('./orders.controller');
 const { authenticate } = require('../../middlewares/auth.middleware');
 const requireAdmin = require('../../middlewares/admin.middleware');
 const requireStaff = require('../../middlewares/staff.middleware');
-const { apiLimiter } = require('../../middlewares/rateLimit.middleware');
+const { apiLimiter, orderCreationLimiter } = require('../../middlewares/rateLimit.middleware');
 
 const router = express.Router();
 
@@ -39,8 +39,8 @@ const router = express.Router();
  *       201:
  *         description: Commande créée
  */
-router.post('/', apiLimiter, ordersController.createOrder);
-router.post('/whatsapp', apiLimiter, ordersController.createWhatsappOrder);
+router.post('/', orderCreationLimiter, ordersController.createOrder);
+router.post('/whatsapp', orderCreationLimiter, ordersController.createWhatsappOrder);
 
 /**
  * @swagger

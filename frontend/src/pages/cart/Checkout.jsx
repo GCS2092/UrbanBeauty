@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, MapPin, CreditCard, Truck, Gift } from 'lucide-react';
+import { ChevronLeft, MapPin, CreditCard, Truck, Gift, AlertCircle, Copy, CheckCircle2, Smartphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { addressesApi } from '../../api/addresses.api';
 import { couponsApi } from '../../api/coupons.api';
@@ -19,20 +19,22 @@ import Button from '../../components/ui/Button';
 import PaymentModal from '../../components/checkout/PaymentModal';
 import { toast } from 'sonner';
 
-// ─── Destinations disponibles ────────────────────────────────────────────────
+// ─── Destinations ─────────────────────────────────────────────────────────────
 const DESTINATIONS = [
   {
     value: 'SENEGAL',
     label: 'Sénégal (Dakar)',
     description: 'Frais communiqués via WhatsApp',
-    shippingFixed: null, // communiqué manuellement
+    shippingFixed: null,
     flag: '🇸🇳',
+    isLocal: true,
   },
   {
     value: 'CONGO_EXPRESS',
     label: 'Congo – Express',
     description: 'Livraison rapide, délai réduit',
     flag: '🇨🇬',
+    isLocal: false,
   },
   {
     value: 'CONGO_GROUPAGE',
@@ -40,21 +42,82 @@ const DESTINATIONS = [
     description: 'Livraison avec les autres commandes + cadeau offert',
     flag: '🇨🇬',
     hasGift: true,
+    isLocal: false,
   },
 ];
 
-const schema = z.object({
-  fullName: z.string().min(2, 'Nom requis'),
-  phone: z.string().min(6, 'Téléphone requis'),
-  street: z.string().min(3, 'Adresse requise'),
-  city: z.string().min(2, 'Ville requise'),
-  destination: z.enum(['SENEGAL', 'CONGO_EXPRESS', 'CONGO_GROUPAGE']),
-  paymentMethod: z.enum(['CASH_ON_DELIVERY', 'MOBILE_MONEY']),
-  notes: z.string().optional(),
-  guestEmail: z.string().email('Email invalide').optional().or(z.literal('')),
-});
+// ─── Modes de paiement selon destination ──────────────────────────────────────
+// Sénégal : COD + Mobile Money
+// Congo/International : Mobile Money uniquement
+function getAvailablePaymentMethods(destination) {
+  const dest = DESTINATIONS.find((d) => d.value === destination);
+  if (dest?.isLocal) {
+    return ['CASH_ON_DELIVERY', 'MOBILE_MONEY'];
+  }
+  return ['MOBILE_MONEY'];
+}
 
-// ─── Helper — message WhatsApp adapté selon destination ──────────────────────
+const PAYMENT_METHOD_INFO = {
+  CASH_ON_DELIVERY: {
+    label: 'Paiement à la livraison',
+    description: 'Payez en espèces à la réception de votre colis',
+    icon: '💵',
+  },
+  MOBILE_MONEY: {
+    label: 'Mobile Money',
+    description: 'Wave, Orange Money, Free Money',
+    icon: '📱',
+  },
+};
+
+// ─── Composant numéros Mobile Money (pour Congo) ──────────────────────────────
+function MobileMoneyNumbers({ settings }) {
+  const [copied, setCopied] = useState(null);
+
+  const numbers = [
+    { key: 'wave_number', label: 'Wave', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+    { key: 'orange_money_number', label: 'Orange Money', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+    { key: 'free_money_number', label: 'Free Money', color: 'bg-green-50 text-green-700 border-green-200' },
+  ].filter((n) => settings?.[n.key]);
+
+  if (!numbers.length) return null;
+
+  const handleCopy = (number, label) => {
+    navigator.clipboard.writeText(number);
+    setCopied(label);
+    toast.success(`Numéro ${label} copié !`);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  return (
+    <div className="mt-3 space-y-2">
+      <p className="text-xs font-medium text-stone-600">Envoyez le paiement à :</p>
+      {numbers.map(({ key, label, color }) => (
+        <div key={key} className={`flex items-center justify-between p-2.5 rounded-xl border ${color}`}>
+          <div>
+            <p className="text-xs font-medium opacity-70">{label}</p>
+            <p className="font-semibold text-sm tracking-wide">{settings[key]}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleCopy(settings[key], label)}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/70 hover:bg-white transition-colors text-xs font-medium"
+          >
+            {copied === label ? <CheckCircle2 size={12} /> : <Copy size={12} />}
+            {copied === label ? 'Copié !' : 'Copier'}
+          </button>
+        </div>
+      ))}
+      {settings?.payment_instructions && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-2.5 leading-relaxed">
+          {settings.payment_instructions}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── WhatsApp message builder ─────────────────────────────────────────────────
 const buildWhatsAppMessage = ({ cart, formData, subtotal, shippingCost, discount, total, coupon, orderNumber, destination, settings }) => {
   const lines = [];
   const dest = DESTINATIONS.find((d) => d.value === destination);
@@ -66,9 +129,7 @@ const buildWhatsAppMessage = ({ cart, formData, subtotal, shippingCost, discount
 
   cart.items.forEach((item) => {
     const variantLabel = item.variant ? ` (${item.variant.size} - ${item.variant.color})` : '';
-    lines.push(
-      `- ${item.product.name}${variantLabel} x${item.quantity} -- ${formatPrice(item.product.price * item.quantity)}`
-    );
+    lines.push(`- ${item.product.name}${variantLabel} x${item.quantity} -- ${formatPrice(item.product.price * item.quantity)}`);
   });
 
   lines.push('');
@@ -103,11 +164,8 @@ const buildWhatsAppMessage = ({ cart, formData, subtotal, shippingCost, discount
   lines.push(`Nom : ${formData.fullName}`);
   lines.push(`Tél : ${formData.phone}`);
   lines.push(`Adresse : ${formData.street}, ${formData.city}`);
-
   lines.push('');
-  lines.push(
-    `Paiement : ${formData.paymentMethod === 'MOBILE_MONEY' ? 'Mobile Money' : 'À la livraison'}`
-  );
+  lines.push(`Paiement : ${formData.paymentMethod === 'MOBILE_MONEY' ? 'Mobile Money' : 'À la livraison'}`);
 
   if (formData.notes) {
     lines.push('');
@@ -117,7 +175,19 @@ const buildWhatsAppMessage = ({ cart, formData, subtotal, shippingCost, discount
   return encodeURIComponent(lines.join('\n'));
 };
 
-// ─── Composant ───────────────────────────────────────────────────────────────
+// ─── Schema ───────────────────────────────────────────────────────────────────
+const schema = z.object({
+  fullName: z.string().min(2, 'Nom requis'),
+  phone: z.string().min(6, 'Téléphone requis'),
+  street: z.string().min(3, 'Adresse requise'),
+  city: z.string().min(2, 'Ville requise'),
+  destination: z.enum(['SENEGAL', 'CONGO_EXPRESS', 'CONGO_GROUPAGE']),
+  paymentMethod: z.enum(['CASH_ON_DELIVERY', 'MOBILE_MONEY']),
+  notes: z.string().optional(),
+  guestEmail: z.string().email('Email invalide').optional().or(z.literal('')),
+});
+
+// ─── Composant principal ──────────────────────────────────────────────────────
 export default function Checkout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -131,7 +201,6 @@ export default function Checkout() {
   const [pendingOrderData, setPendingOrderData] = useState(null);
   const [whatsappSent, setWhatsappSent] = useState(false);
 
-  // ── Queries ──────────────────────────────────────────────────────────────
   const { data: addresses } = useQuery({
     queryKey: ['addresses'],
     queryFn: () => addressesApi.getAll().then((r) => r.data),
@@ -143,7 +212,6 @@ export default function Checkout() {
     queryFn: () => settingsApi.getPublic().then((r) => r.data),
   });
 
-  // ── Form ─────────────────────────────────────────────────────────────────
   const {
     register,
     handleSubmit,
@@ -161,9 +229,21 @@ export default function Checkout() {
   const paymentMethod = watch('paymentMethod');
   const destination = watch('destination');
 
-  // ── Calcul frais de livraison selon destination ───────────────────────────
+  // ── Quand la destination change, forcer Mobile Money si international ────────
+  const handleDestinationChange = (value) => {
+    setValue('destination', value);
+    const availableMethods = getAvailablePaymentMethods(value);
+    if (!availableMethods.includes(paymentMethod)) {
+      setValue('paymentMethod', 'MOBILE_MONEY');
+    }
+  };
+
+  const availablePaymentMethods = getAvailablePaymentMethods(destination);
+  const isInternational = !DESTINATIONS.find((d) => d.value === destination)?.isLocal;
+
+  // ── Frais de livraison ────────────────────────────────────────────────────
   const getShippingCost = () => {
-    if (destination === 'SENEGAL') return 0; // communiqué via WhatsApp
+    if (destination === 'SENEGAL') return 0;
     if (destination === 'CONGO_EXPRESS') return Number(settings?.congo_express_rate || 15000);
     if (destination === 'CONGO_GROUPAGE') return Number(settings?.congo_groupage_rate || 8000);
     return 0;
@@ -171,8 +251,6 @@ export default function Checkout() {
 
   const shippingCost = getShippingCost();
   const selectedDest = DESTINATIONS.find((d) => d.value === destination);
-
-  // ── Totaux ───────────────────────────────────────────────────────────────
   const subtotal = getTotalPrice();
   const discount = coupon
     ? coupon.type === 'PERCENTAGE'
@@ -181,7 +259,17 @@ export default function Checkout() {
     : 0;
   const total = subtotal + shippingCost - discount;
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
+  // ── Logique acompte Sénégal ──────────────────────────────────────────────
+  const depositThreshold = Number(settings?.deposit_threshold || 0);
+  const depositPercent = Number(settings?.deposit_percent || 30);
+  const requiresDeposit =
+    destination === 'SENEGAL' &&
+    paymentMethod === 'CASH_ON_DELIVERY' &&
+    depositThreshold > 0 &&
+    subtotal >= depositThreshold;
+  const depositAmount = requiresDeposit ? Math.ceil((subtotal * depositPercent) / 100) : 0;
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const fillFromAddress = (addr) => {
     setValue('fullName', addr.fullName);
     setValue('phone', addr.phone);
@@ -212,9 +300,10 @@ export default function Checkout() {
     guestEmail: !user ? formData.guestEmail : undefined,
     guestName: !user ? formData.fullName : undefined,
     guestPhone: !user ? formData.phone : undefined,
+    destination: formData.destination,
   });
 
-  // ── Coupon ───────────────────────────────────────────────────────────────
+  // ── Coupon ────────────────────────────────────────────────────────────────
   const handleValidateCoupon = async () => {
     if (!couponCode.trim()) return;
     setValidatingCoupon(true);
@@ -222,9 +311,7 @@ export default function Checkout() {
       const { data } = await couponsApi.validate(couponCode, subtotal);
       setCoupon(data.coupon);
       toast.success(
-        `Coupon appliqué : -${
-          data.coupon.type === 'PERCENTAGE' ? data.coupon.value + '%' : formatPrice(data.discount)
-        }`
+        `Coupon appliqué : -${data.coupon.type === 'PERCENTAGE' ? data.coupon.value + '%' : formatPrice(data.discount)}`
       );
     } catch (err) {
       toast.error(err.message || 'Coupon invalide');
@@ -234,7 +321,7 @@ export default function Checkout() {
     }
   };
 
-  // ── Mutation commande normale ─────────────────────────────────────────────
+  // ── Mutations ─────────────────────────────────────────────────────────────
   const { mutate: placeOrder, isPending } = useMutation({
     mutationFn: (data) => ordersApi.create(data),
     onSuccess: (res) => {
@@ -249,16 +336,13 @@ export default function Checkout() {
     },
   });
 
-  // ── Mutation commande WhatsApp (DRAFT) ────────────────────────────────────
   const { mutate: placeDraftOrder, isPending: isDraftPending } = useMutation({
     mutationFn: (data) => ordersApi.create({ ...data, status: 'DRAFT' }),
     onSuccess: (res, variables) => {
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       clearCart(user?.id);
-
       const orderNumber = res.data.orderNumber;
       const whatsappNumber = (settings?.whatsapp_number || '').replace(/\D/g, '');
-
       const message = buildWhatsAppMessage({
         cart,
         formData: variables._formData,
@@ -271,7 +355,6 @@ export default function Checkout() {
         destination,
         settings,
       });
-
       window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
       setWhatsappSent(true);
       toast.success('Commande enregistrée ! Envoyez le message WhatsApp pour confirmer.');
@@ -281,7 +364,7 @@ export default function Checkout() {
     },
   });
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const onSubmit = (formData) => {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
     if (formData.paymentMethod === 'MOBILE_MONEY') {
@@ -296,10 +379,9 @@ export default function Checkout() {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
     const whatsappNumber = (settings?.whatsapp_number || '').replace(/\D/g, '');
     if (!whatsappNumber) { toast.error('Numéro WhatsApp non configuré.'); return; }
-
     const dest = DESTINATIONS.find((d) => d.value === formData.destination);
     const lines = [
-      'Bonjour, j\'aimerais avoir des informations sur les produits suivants :',
+      "Bonjour, j'aimerais avoir des informations sur les produits suivants :",
       '',
       ...cart.items.map((item) => {
         const v = item.variant ? ` (${item.variant.size} - ${item.variant.color})` : '';
@@ -309,16 +391,13 @@ export default function Checkout() {
       `Destination souhaitée : ${dest?.label || formData.destination}`,
       `Total estimé (sans livraison) : ${formatPrice(subtotal)}`,
     ];
-
-    const message = encodeURIComponent(lines.join('\n'));
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank');
   };
 
   const onWhatsAppOrder = (formData) => {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
     const whatsappNumber = (settings?.whatsapp_number || '').replace(/\D/g, '');
     if (!whatsappNumber) { toast.error('Numéro WhatsApp non configuré.'); return; }
-
     const payload = buildOrderPayload(formData);
     placeDraftOrder({ ...payload, _formData: formData });
   };
@@ -327,7 +406,7 @@ export default function Checkout() {
     if (pendingOrderData) placeOrder(pendingOrderData);
   };
 
-  // ── Render ───────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
@@ -409,7 +488,8 @@ export default function Checkout() {
                   <input
                     type="radio"
                     value={dest.value}
-                    {...register('destination')}
+                    checked={destination === dest.value}
+                    onChange={() => handleDestinationChange(dest.value)}
                     className="accent-rose-500 mt-0.5"
                   />
                   <div className="flex-1 min-w-0">
@@ -437,7 +517,6 @@ export default function Checkout() {
               ))}
             </div>
 
-            {/* Bandeau cadeau groupage */}
             {destination === 'CONGO_GROUPAGE' && (
               <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3">
                 <Gift size={16} className="text-amber-600 mt-0.5 shrink-0" />
@@ -498,24 +577,68 @@ export default function Checkout() {
             <h2 className="font-semibold text-stone-800 flex items-center gap-2">
               <CreditCard size={17} className="text-rose-400" /> Mode de paiement
             </h2>
-            {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-              <label
-                key={value}
-                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                  paymentMethod === value
-                    ? 'border-rose-400 bg-rose-50/50'
-                    : 'border-stone-200 hover:border-stone-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  value={value}
-                  {...register('paymentMethod')}
-                  className="accent-rose-500"
-                />
-                <span className="text-sm font-medium text-stone-700">{label}</span>
-              </label>
-            ))}
+
+            {/* Bandeau informatif pour international */}
+            {isInternational && (
+              <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <AlertCircle size={15} className="text-blue-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Pour les commandes internationales, le <strong>paiement intégral est requis avant expédition</strong>.
+                  Le paiement à la livraison n'est pas disponible.
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {availablePaymentMethods.map((method) => {
+                const info = PAYMENT_METHOD_INFO[method];
+                const isSelected = paymentMethod === method;
+                return (
+                  <label
+                    key={method}
+                    className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'border-rose-400 bg-rose-50/50'
+                        : 'border-stone-200 hover:border-stone-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      value={method}
+                      {...register('paymentMethod')}
+                      className="accent-rose-500 mt-0.5"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span>{info.icon}</span>
+                        <span className="text-sm font-medium text-stone-700">{info.label}</span>
+                      </div>
+                      <p className="text-xs text-stone-400 mt-0.5">{info.description}</p>
+
+                      {/* Numéros Mobile Money pour Congo — affichés directement ici */}
+                      {method === 'MOBILE_MONEY' && isSelected && isInternational && (
+                        <MobileMoneyNumbers settings={settings} />
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            {/* Bandeau acompte Sénégal */}
+            {requiresDeposit && (
+              <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <AlertCircle size={15} className="text-amber-600 mt-0.5 shrink-0" />
+                <div className="text-xs text-amber-700 leading-relaxed space-y-1">
+                  <p>
+                    <strong>Acompte requis pour cette commande.</strong>{' '}
+                    Un acompte de {depositPercent}% ({formatPrice(depositAmount)}) vous sera demandé
+                    par téléphone ou WhatsApp avant l'expédition.
+                  </p>
+                  <p>Le solde ({formatPrice(subtotal - depositAmount)}) sera réglé à la livraison.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -530,10 +653,7 @@ export default function Checkout() {
                   <div className="w-12 h-12 rounded-xl bg-stone-50 overflow-hidden shrink-0">
                     {item.product.images?.[0] ? (
                       <img
-                        src={
-                          item.product.images.find((i) => i.isMain)?.url ||
-                          item.product.images[0].url
-                        }
+                        src={item.product.images.find((i) => i.isMain)?.url || item.product.images[0].url}
                         alt=""
                         className="w-full h-full object-cover"
                       />
@@ -590,6 +710,12 @@ export default function Checkout() {
                   <span className="text-xs font-medium">Inclus 🎁</span>
                 </div>
               )}
+              {requiresDeposit && (
+                <div className="flex justify-between text-amber-600 text-xs">
+                  <span>Acompte ({depositPercent}%)</span>
+                  <span>{formatPrice(depositAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-stone-900 pt-2 border-t border-stone-100 text-base">
                 <span>Total</span>
                 <span>
@@ -601,7 +727,7 @@ export default function Checkout() {
               </div>
             </div>
 
-            {/* Bouton commande normale */}
+            {/* Bouton commande */}
             <Button
               className="w-full"
               size="lg"
@@ -611,14 +737,13 @@ export default function Checkout() {
               {paymentMethod === 'MOBILE_MONEY' ? 'Payer par Mobile Money' : 'Confirmer la commande'}
             </Button>
 
-            {/* Séparateur */}
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-stone-100" />
               <span className="text-xs text-stone-400">ou</span>
               <div className="flex-1 h-px bg-stone-100" />
             </div>
 
-            {/* Bouton WhatsApp */}
+            {/* Boutons WhatsApp */}
             {whatsappSent ? (
               <div className="w-full rounded-2xl bg-green-50 border border-green-200 p-4 text-center space-y-2">
                 <p className="text-sm font-semibold text-green-700">Message WhatsApp ouvert !</p>

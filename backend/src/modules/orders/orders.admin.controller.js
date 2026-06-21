@@ -11,13 +11,36 @@ async function getOrdersAdmin(req, res, next) {
     const { page, limit, skip } = parsePagination(req.query);
     const where = buildOrdersWhere(req.query, req.storeIds);
 
+    const isTodoView = req.query.view === 'todo';
+    let orderBy = { createdAt: 'desc' };
+
+    if (isTodoView) {
+      const todoCondition = {
+        OR: [
+          { status: 'DRAFT' },
+          { status: 'PENDING', paymentStatus: { in: ['PENDING', 'PARTIAL'] } },
+        ],
+      };
+
+      if (where.OR) {
+        // La recherche texte utilise déjà where.OR — on combine proprement
+        where.AND = [...(where.AND || []), { OR: where.OR }, todoCondition];
+        delete where.OR;
+      } else {
+        Object.assign(where, todoCondition);
+      }
+
+      // Le plus urgent (réservation qui expire bientôt) en premier
+      orderBy = [{ reservationExpiresAt: 'asc' }, { createdAt: 'asc' }];
+    }
+
     const [total, orders] = await Promise.all([
       prisma.order.count({ where }),
       prisma.order.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           store: { select: { id: true, code: true, name: true } },
           user: {
@@ -56,9 +79,9 @@ async function updatePaymentStatus(req, res, next) {
     if (order.user) {
       const message =
         paymentStatus === 'PAID'
-          ? `Votre paiement pour la commande ${order.orderNumber} a Ã©tÃ© validÃ©.`
+          ? `Votre paiement pour la commande ${order.orderNumber} a été validé.`
           : paymentStatus === 'REJECTED'
-            ? `Votre paiement pour la commande ${order.orderNumber} a Ã©tÃ© rejetÃ©. ${note || ''}`
+            ? `Votre paiement pour la commande ${order.orderNumber} a été rejeté. ${note || ''}`
             : `Votre paiement pour la commande ${order.orderNumber} est en attente.`;
 
       await prisma.notification.create({
@@ -67,9 +90,9 @@ async function updatePaymentStatus(req, res, next) {
           type: paymentStatus === 'PAID' ? 'ORDER_CONFIRMED' : 'ORDER_CANCELLED',
           title:
             paymentStatus === 'PAID'
-              ? 'Paiement validÃ©'
+              ? 'Paiement validé'
               : paymentStatus === 'REJECTED'
-                ? 'Paiement rejetÃ©'
+                ? 'Paiement rejeté'
                 : 'Paiement en attente',
           message,
           link: `/orders/${order.orderNumber}`,
@@ -103,7 +126,7 @@ async function confirmDraftOrder(req, res, next) {
           create: {
             fromStatus: 'DRAFT',
             toStatus: 'PENDING',
-            message: "Commande WhatsApp confirmÃ©e par l'admin",
+            message: "Commande WhatsApp confirmée par l'admin",
             changedBy: req.user?.id,
           },
         },
@@ -116,8 +139,8 @@ async function confirmDraftOrder(req, res, next) {
         data: {
           userId: order.user.id,
           type: 'ORDER_CONFIRMED',
-          title: 'Commande confirmÃ©e',
-          message: `Votre commande WhatsApp ${order.orderNumber} a Ã©tÃ© confirmÃ©e.`,
+          title: 'Commande confirmée',
+          message: `Votre commande WhatsApp ${order.orderNumber} a été confirmée.`,
           link: `/orders/${order.orderNumber}`,
         },
       });
@@ -146,7 +169,7 @@ async function rejectDraftOrder(req, res, next) {
         throw error;
       }
       if (existing.status !== 'DRAFT') {
-        const error = new Error('Seules les commandes brouillon WhatsApp peuvent Ãªtre rejetÃ©es.');
+        const error = new Error('Seules les commandes brouillon WhatsApp peuvent être rejetées.');
         error.status = 400;
         throw error;
       }
@@ -162,7 +185,7 @@ async function rejectDraftOrder(req, res, next) {
             create: {
               fromStatus: 'DRAFT',
               toStatus: 'CANCELLED',
-              message: 'Commande WhatsApp rejetÃ©e',
+              message: 'Commande WhatsApp rejetée',
               reason: reason || null,
               changedBy: req.user?.id,
             },
@@ -192,7 +215,7 @@ async function rejectDraftOrder(req, res, next) {
   }
 }
 
-// â”€â”€ Nouvelle commande manuelle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Nouvelle commande manuelle ──────────────────────────────────────────────
 async function createManualOrder(req, res, next) {
   try {
     const order = await createOrder(req.body, req.user, req.ip);
@@ -202,7 +225,7 @@ async function createManualOrder(req, res, next) {
   }
 }
 
-// â”€â”€ Recherche clients â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Recherche clients ────────────────────────────────────────────────────────
 async function searchUsers(req, res, next) {
   try {
     const { q = '' } = req.query;
@@ -233,7 +256,7 @@ async function searchUsers(req, res, next) {
   }
 }
 
-// â”€â”€ Recherche produits â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Recherche produits ───────────────────────────────────────────────────────
 async function searchProducts(req, res, next) {
   try {
     const { q = '', categoryId, storeId } = req.query;
