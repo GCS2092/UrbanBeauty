@@ -1,4 +1,4 @@
-﻿import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 
 export default function Contact() {
   const whatsappNumber = '221XXXXXXXXX'; // ← remplace par ton numéro

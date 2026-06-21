@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 
 const DEFAULT_META = {
   title: 'SonShop — Vêtements & accessoires authentiques',

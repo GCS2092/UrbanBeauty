@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Download, Bell, Zap, Package, Tag } from 'lucide-react';
 
 const STORAGE_KEY = 'pwa_banner_dismissed';

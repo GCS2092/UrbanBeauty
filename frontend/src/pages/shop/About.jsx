@@ -1,4 +1,4 @@
-﻿export default function About() {
+export default function About() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
       <h1 className="text-3xl font-bold text-stone-800 mb-2">À propos de SonShop</h1>

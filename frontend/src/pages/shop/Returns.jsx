@@ -1,4 +1,4 @@
-﻿import { RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 export default function Returns() {
   return (

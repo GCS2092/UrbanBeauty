@@ -1,4 +1,4 @@
-﻿export default function CGV() {
+export default function CGV() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
       <h1 className="text-2xl font-bold mb-6">Conditions Générales de Vente</h1>
