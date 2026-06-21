@@ -1,10 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'sonner';
 
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/shared/ProtectedRoute';
+import ScrollToTop from './components/shared/ScrollToTop';
 import AdminRoute from './components/shared/AdminRoute';
 import AdminOnlyRoute from './components/shared/AdminOnlyRoute';
 import ShopLayout from './components/layout/ShopLayout';
@@ -57,6 +58,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <Toaster position="top-right" richColors closeButton />
           <Routes>
@@ -116,3 +118,4 @@ export default function App() {
     </QueryClientProvider>
   );
 }
+
