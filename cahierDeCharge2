@@ -1782,7 +1782,7 @@ alertes intelligentes (section 16) :
 
 Alertes fournisseurs :
 - Échéance de paiement fournisseur dans moins de X jours
-  (X configurable, recommandé : 7 jours).
+  (X configurable, recommandé : 3 jours).
 - Paiement fournisseur en retard (dépassement de l'échéance).
 - Bon de commande fournisseur sans réception depuis X jours
   (possible problème de livraison fournisseur).
@@ -1800,7 +1800,7 @@ Tableau de bord trésorerie (vue administrateur) :
 affichant :
 - Total des encaissements clients attendus (factures non payées).
 - Total des décaissements fournisseurs à venir (échéances proches).
-- Solde prévisionnel de trésorerie à 7 jours et 30 jours.
+- Solde prévisionnel de trésorerie à 3 jours et 30 jours.
 
 [⚠️ CONSEIL] Ce bloc trésorerie permet à l'administrateur de
 visualiser d'un coup d'œil si la trésorerie est suffisante pour

@@ -15,6 +15,10 @@ import Register from './pages/auth/Register';
 import Home from './pages/shop/Home';
 import Products from './pages/shop/Products';
 import ProductDetail from './pages/shop/ProductDetail';
+import About from './pages/shop/About';
+import Contact from './pages/shop/Contact';
+import CGV from './pages/shop/CGV';
+import Returns from './pages/shop/Returns';
 import Cart from './pages/cart/Cart';
 import Checkout from './pages/cart/Checkout';
 import Orders from './pages/orders/Orders';
@@ -46,6 +50,9 @@ const queryClient = new QueryClient({
   },
 });
 
+// Devtools uniquement en développement
+const isDev = import.meta.env.DEV;
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -62,6 +69,10 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/products" element={<Products />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/cgv" element={<CGV />} />
+              <Route path="/returns" element={<Returns />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route element={<ProtectedRoute />}>
@@ -74,7 +85,7 @@ export default function App() {
               </Route>
             </Route>
 
-            {/* Admin + Staff — accès commun */}
+            {/* Admin + Staff */}
             <Route element={<AdminRoute />}>
               <Route element={<AdminLayout />}>
                 <Route path="/admin" element={<Dashboard />} />
@@ -86,8 +97,6 @@ export default function App() {
                 <Route path="/admin/stock-transfers" element={<AdminStockTransfers />} />
                 <Route path="/admin/audit" element={<AdminAudit />} />
                 <Route path="/admin/categories" element={<AdminCategories />} />
-
-                {/* Réservé ADMIN uniquement */}
                 <Route element={<AdminOnlyRoute />}>
                   <Route path="/admin/stores" element={<AdminStores />} />
                   <Route path="/admin/coupons" element={<AdminCoupons />} />
@@ -101,7 +110,9 @@ export default function App() {
           </Routes>
         </AuthProvider>
       </BrowserRouter>
-      <ReactQueryDevtools initialIsOpen={false} />
+
+      {/* Devtools visibles uniquement en développement local */}
+      {isDev && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   );
 }
