@@ -10,7 +10,7 @@ import AdminRoute from './components/shared/AdminRoute';
 import AdminOnlyRoute from './components/shared/AdminOnlyRoute';
 import ShopLayout from './components/layout/ShopLayout';
 import AdminLayout from './components/layout/AdminLayout';
-import AccountLayout from './components/account/AccountLayout';
+import AccountLayout from './pages/account/AccountLayout';
 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
