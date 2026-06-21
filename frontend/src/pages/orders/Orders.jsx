@@ -17,59 +17,92 @@ export default function Orders() {
     refetchOnMount: true,
   });
 
-  if (isLoading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-24">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <h1 className="text-3xl font-bold text-stone-800 mb-8">Mes commandes</h1>
+    <div className="space-y-5">
+
+      {/* Header */}
+      <div>
+        <h1 className="text-xl font-bold text-stone-800">Mes commandes</h1>
+        <p className="text-sm text-stone-400 mt-0.5">
+          {orders?.length
+            ? `${orders.length} commande${orders.length > 1 ? 's' : ''}`
+            : 'Historique de vos achats'}
+        </p>
+      </div>
 
       {!orders?.length ? (
         <EmptyState
           icon="📦"
           title="Aucune commande"
-          description="Vous n'avez pas encore passe de commande"
-          action={<Link to="/products"><Button>Decouvrir la boutique</Button></Link>}
+          description="Vous n'avez pas encore passé de commande"
+          action={
+            <Link to="/products">
+              <Button>Découvrir la boutique</Button>
+            </Link>
+          }
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {orders.map((order) => (
             <Link
               key={order.id}
               to={`/orders/${order.orderNumber}`}
-              className="block bg-white rounded-2xl border border-stone-100 p-5 hover:shadow-md transition-all group"
+              className="block bg-white rounded-2xl border border-stone-100 p-5 hover:border-rose-200 hover:shadow-sm transition-all group"
             >
               <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-rose-50 flex items-center justify-center text-rose-400 shrink-0">
-                    <Package size={20} />
+                {/* Left */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-400 shrink-0">
+                    <Package size={18} />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="font-semibold text-stone-800 text-sm">#{order.orderNumber}</p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-stone-800">
+                        #{order.orderNumber}
+                      </span>
                       <OrderStatusBadge status={order.status} />
                     </div>
-                    <p className="text-xs text-stone-400">
+                    <p className="text-xs text-stone-400 mt-0.5">
                       {order.items?.length} article{order.items?.length > 1 ? 's' : ''} · {formatDate(order.createdAt)}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <p className="font-bold text-stone-900">{formatPrice(order.total)}</p>
-                  <ChevronRight size={16} className="text-stone-300 group-hover:text-stone-500 transition-colors" />
+
+                {/* Right */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <p className="text-sm font-bold text-stone-900">
+                    {formatPrice(order.total)}
+                  </p>
+                  <ChevronRight
+                    size={15}
+                    className="text-stone-300 group-hover:text-rose-400 transition-colors"
+                  />
                 </div>
               </div>
 
+              {/* Article tags */}
               {order.items?.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-stone-50 flex gap-2">
+                <div className="mt-3 pt-3 border-t border-stone-50 flex gap-1.5 flex-wrap">
                   {order.items.slice(0, 4).map((item) => (
-                    <div key={item.id} className="text-xs text-stone-400 bg-stone-50 rounded-lg px-2 py-1 truncate max-w-[120px]">
+                    <span
+                      key={item.id}
+                      className="text-xs text-stone-400 bg-stone-50 rounded-lg px-2 py-1 truncate max-w-[130px]"
+                    >
                       {item.productName}
-                    </div>
+                    </span>
                   ))}
                   {order.items.length > 4 && (
-                    <div className="text-xs text-stone-400 bg-stone-50 rounded-lg px-2 py-1">
+                    <span className="text-xs text-stone-400 bg-stone-50 rounded-lg px-2 py-1">
                       +{order.items.length - 4}
-                    </div>
+                    </span>
                   )}
                 </div>
               )}
@@ -77,6 +110,7 @@ export default function Orders() {
           ))}
         </div>
       )}
+
     </div>
   );
 }
