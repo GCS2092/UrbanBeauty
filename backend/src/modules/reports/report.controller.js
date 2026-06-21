@@ -6,64 +6,117 @@ const { getSettings } = require('../settings/settings.service');
 
 async function downloadReport(req, res) {
   try {
+    console.log('📥 [downloadReport] query =', req.query);
+
     const { storeId, from, to } = req.query;
+
     if (!storeId || !from || !to) {
-      return res.status(400).json({ error: 'storeId, from et to sont requis.' });
+      console.log('❌ [downloadReport] missing params');
+      return res.status(400).json({
+        error: 'storeId, from et to sont requis.'
+      });
     }
+
     const data = await collectReportData(storeId, from, to);
+
+    console.log('📊 [downloadReport] data loaded');
+
     const pdfBuffer = await buildReportPdf(data);
+
+    console.log('📄 [downloadReport] PDF generated');
+
     const filename = `rapport-${storeId}-${from}-${to}.pdf`;
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
     res.send(pdfBuffer);
+
+    console.log('✅ [downloadReport] success');
   } catch (err) {
     console.error('❌ Erreur downloadReport:', err);
-    res.status(500).json({ error: 'Erreur lors de la génération du rapport.' });
+    res.status(500).json({
+      error: 'Erreur lors de la génération du rapport.'
+    });
   }
 }
 
 async function sendReportByEmail(req, res) {
   try {
+    console.log('📨 [sendReportByEmail] query =', req.query);
+    console.log('📨 [sendReportByEmail] body =', req.body);
+    console.log('📨 ADMIN_EMAIL =', process.env.ADMIN_EMAIL);
+
     const { storeId, from, to } = req.query;
+
     if (!storeId || !from || !to) {
-      return res.status(400).json({ error: 'storeId, from et to sont requis.' });
+      console.log('❌ missing query params');
+      return res.status(400).json({
+        error: 'storeId, from et to sont requis.'
+      });
     }
 
     const settings = await getSettings();
     const storeName = settings.company_name || 'UrbanBeauty';
 
     const recipient = req.body?.email || process.env.ADMIN_EMAIL;
+
+    console.log('📧 recipient resolved =', recipient);
+
     if (!recipient) {
-      return res.status(400).json({ error: 'Aucun email destinataire fourni.' });
+      console.log('❌ no recipient found');
+      return res.status(400).json({
+        error: 'Aucun email destinataire fourni.'
+      });
     }
 
     const data = await collectReportData(storeId, from, to);
+
+    console.log('📊 report data loaded');
+
     const pdfBuffer = await buildReportPdf(data);
+
+    console.log('📄 pdf generated');
+
     const pdfBase64 = pdfBuffer.toString('base64');
-    const filename  = `rapport-${storeId}-${from}-${to}.pdf`;
+    const filename = `rapport-${storeId}-${from}-${to}.pdf`;
 
     const emailData = buildReportEmail({
-      period:    data.period,
+      period: data.period,
       financial: data.financial,
-      orders:    data.orders,
-      products:  data.products,
-      stock:     data.stock,
-      expenses:  data.expenses,
+      orders: data.orders,
+      products: data.products,
+      stock: data.stock,
+      expenses: data.expenses,
       storeName,
     });
 
+    console.log('📧 sending email to:', recipient);
+
     await sendEmail({
-      to:          recipient,
-      subject:     emailData.subject,
-      html:        emailData.html,
-      attachments: [{ filename, content: pdfBase64 }],
+      to: recipient,
+      subject: emailData.subject,
+      html: emailData.html,
+      attachments: [
+        {
+          filename,
+          content: pdfBase64,
+        },
+      ],
     });
 
     console.log(`✅ Rapport envoyé à ${recipient} (${from} → ${to})`);
-    res.json({ message: `Rapport envoyé à ${recipient}` });
+
+    res.json({
+      message: `Rapport envoyé à ${recipient}`
+    });
+
   } catch (err) {
     console.error('❌ Erreur sendReportByEmail:', err);
-    res.status(500).json({ error: 'Erreur lors de l\'envoi du rapport.' });
+
+    res.status(500).json({
+      error: "Erreur lors de l'envoi du rapport."
+    });
   }
 }
 
