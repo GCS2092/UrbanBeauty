@@ -1,6 +1,7 @@
 const { collectReportData } = require('./report.service');
 const { buildReportPdf } = require('./report-pdf.service');
 const { sendEmail } = require('../../config/email');
+const { buildReportEmail } = require('../../utils/email.utils');
 const { getSettings } = require('../settings/settings.service');
 
 // GET /api/reports/download?storeId=xxx&from=2024-01-01&to=2024-01-31
@@ -19,48 +20,63 @@ async function downloadReport(req, res) {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdfBuffer);
   } catch (err) {
-    console.error('❌ Erreur rapport PDF :', err);
+    console.error('❌ Erreur downloadReport:', err);
     res.status(500).json({ error: 'Erreur lors de la génération du rapport.' });
   }
 }
 
-// POST /api/reports/send-email
-// body: { storeId, from, to, email? }
-async function sendReportByEmail(req, res) {
+// POST /api/reports/send?storeId=xxx&from=2024-01-01&to=2024-01-31
+// Corps : { email: "destinataire@example.com" } (optionnel, sinon ADMIN_EMAIL)
+async function sendReport(req, res) {
   try {
-    const { storeId, from, to, email } = req.body;
+    const { storeId, from, to } = req.query;
     if (!storeId || !from || !to) {
       return res.status(400).json({ error: 'storeId, from et to sont requis.' });
     }
 
     const settings = await getSettings();
-    const recipient = email || process.env.ADMIN_EMAIL || settings.company_email;
+    const storeName = settings.company_name || 'UrbanBeauty';
+
+    const recipient = req.body?.email || process.env.ADMIN_EMAIL;
     if (!recipient) {
-      return res.status(400).json({ error: 'Aucun email destinataire trouvé.' });
+      return res.status(400).json({ error: 'Aucun email destinataire fourni.' });
     }
 
+    // Collecte des données
     const data = await collectReportData(storeId, from, to);
+
+    // Génération du PDF en pièce jointe
     const pdfBuffer = await buildReportPdf(data);
+    const pdfBase64 = pdfBuffer.toString('base64');
+    const filename  = `rapport-${storeId}-${from}-${to}.pdf`;
+
+    // Génération de l'email HTML enrichi
+    const emailData = buildReportEmail({
+      period:    data.period,
+      financial: data.financial,
+      orders:    data.orders,
+      products:  data.products,
+      stock:     data.stock,
+      expenses:  data.expenses,
+      storeName,
+    });
 
     await sendEmail({
-      to: recipient,
-      subject: `📊 Rapport de gestion — ${from} au ${to}`,
-      html: `
-        <h2>Rapport de gestion</h2>
-        <p>Veuillez trouver en pièce jointe le rapport de gestion pour la période du <strong>${from}</strong> au <strong>${to}</strong>.</p>
-        <p>— Urban Beauty</p>
-      `,
+      to:          recipient,
+      subject:     emailData.subject,
+      html:        emailData.html,
       attachments: [{
-        filename: `rapport-${from}-${to}.pdf`,
-        content: pdfBuffer.toString('base64'),
+        filename: filename,
+        content:  pdfBase64,
       }],
     });
 
-    res.json({ success: true, message: `Rapport envoyé à ${recipient}` });
+    console.log(`✅ Rapport envoyé à ${recipient} (${from} → ${to})`);
+    res.json({ message: `Rapport envoyé à ${recipient}` });
   } catch (err) {
-    console.error('❌ Erreur envoi rapport :', err);
-    res.status(500).json({ error: "Erreur lors de l'envoi du rapport." });
+    console.error('❌ Erreur sendReport:', err);
+    res.status(500).json({ error: 'Erreur lors de l\'envoi du rapport.' });
   }
 }
 
-module.exports = { downloadReport, sendReportByEmail };
+module.exports = { downloadReport, sendReport };

@@ -15,7 +15,7 @@ const {
   computeStoreDiscount,
 } = require('../stores/store.service');
 const { getSettings } = require('../settings/settings.service');
-const { notifyOrderConfirmed, notifyOrderStatus, notifyPaymentReceived } = require('../../services/notification.service');
+const { notifyOrderConfirmed, notifyOrderStatus } = require('../../services/notification.service');
 const { buildInvoicePdf } = require('../invoices/invoice-pdf.service');
 const { isValidPhone } = require('../../utils/phone.utils');
 
@@ -25,7 +25,6 @@ const LOCAL_DESTINATIONS = ['SENEGAL'];
 // ─── Validation cohérence paiement / destination ──────────────────────────────
 function validatePaymentDestination(paymentMethod, destination) {
   const isLocal = !destination || LOCAL_DESTINATIONS.includes(destination);
-
   if (!isLocal && paymentMethod === 'CASH_ON_DELIVERY') {
     const error = new Error(
       'Le paiement à la livraison n\'est pas disponible pour les commandes internationales. ' +
@@ -37,10 +36,14 @@ function validatePaymentDestination(paymentMethod, destination) {
 }
 
 // ─── Utilitaire email async ────────────────────────────────────────────────────
+// ✅ CORRIGÉ : sendEmail utilise Brevo (axios), pas nodemailer.
+// On retire le champ "from" qui n'est pas attendu par l'API Brevo.
 function sendEmailAsync(mailOptions) {
-  sendEmail(mailOptions)
-    .then(() => console.log('✅ Email envoyé à :', mailOptions.to))
-    .catch((err) => console.error('❌ ERREUR EMAIL :', err.message));
+  // Brevo n'accepte pas de champ "from" libre — le sender est défini dans email.js
+  const { from, ...brevoOptions } = mailOptions;
+  sendEmail(brevoOptions)
+    .then(() => console.log('✅ Email envoyé à :', brevoOptions.to))
+    .catch((err) => console.error('❌ ERREUR EMAIL :', err.message, err.response?.data || ''));
 }
 
 async function createOrder(payload, user, ip = null) {
@@ -50,10 +53,8 @@ async function createOrder(payload, user, ip = null) {
     throw error;
   }
 
-  // ── Validation sécurité paiement/destination ────────────────────────────────
   validatePaymentDestination(payload.paymentMethod, payload.destination);
 
-  // ── Validation téléphone ─────────────────────────────────────────────────────
   const phone = user?.phone || payload.guestPhone;
   if (!isValidPhone(phone)) {
     const error = new Error('Numéro de téléphone invalide ou manquant.');
@@ -72,7 +73,7 @@ async function createOrder(payload, user, ip = null) {
   const orderNumber = generateOrderNumber();
   const userId = user?.id || null;
   const guestEmail = user?.email || payload.guestEmail || null;
-  const guestName = payload.guestName || payload.shippingAddress?.fullName || 'Client';
+  const guestName = payload.guestName || payload.shippingAddress?.fullName || 'Cliente';
   const shippingCost = Number(payload.shippingCost || 0);
   const subtotal = payload.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const storeDiscount = computeStoreDiscount(subtotal, store.discountRate);
@@ -184,23 +185,26 @@ async function createOrder(payload, user, ip = null) {
     return created;
   });
 
-  // ── Emails async ──────────────────────────────────────────────────────────
-  if (guestEmail) {
+  // ── Emails async (commandes non-draft uniquement) ──────────────────────────
+  if (!isDraft && guestEmail) {
     const emailData = buildOrderConfirmationEmail({
       orderNumber,
       guestName,
       total,
+      subtotal,
+      shippingCost,
+      discount,
+      storeDiscount,
+      items: payload.items,
+      paymentMethod: payload.paymentMethod,
+      shippingAddress: payload.shippingAddress,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+      isGuest: !userId,
     });
-    sendEmailAsync({
-      to: guestEmail,
-      from: process.env.SMTP_USER,
-      subject: emailData.subject,
-      html: emailData.html,
-    });
+    sendEmailAsync({ to: guestEmail, subject: emailData.subject, html: emailData.html });
   }
 
-  if (process.env.ADMIN_EMAIL) {
+  if (!isDraft && process.env.ADMIN_EMAIL) {
     const emailData = buildOrderConfirmationEmail({
       orderNumber,
       guestName,
@@ -209,10 +213,17 @@ async function createOrder(payload, user, ip = null) {
     });
     sendEmailAsync({
       to: process.env.ADMIN_EMAIL,
-      from: process.env.SMTP_USER,
       subject: `[Admin] Nouvelle commande ${orderNumber}`,
       html: emailData.html,
     });
+  }
+
+  // ── Push OneSignal (uniquement si utilisateur connecté et non-draft) ────────
+  if (!isDraft && userId) {
+    const orderWithUserId = { ...order, userId, orderNumber };
+    notifyOrderConfirmed(orderWithUserId).catch((err) =>
+      console.error('❌ Erreur notif OneSignal createOrder:', err.message)
+    );
   }
 
   return order;
@@ -251,16 +262,18 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
     ? `${order.user.firstName} ${order.user.lastName}`
     : order.guestName;
 
+  // ── Email statut ───────────────────────────────────────────────────────────
   if (customerEmail) {
     const emailData = buildOrderStatusEmail({
       orderNumber: order.orderNumber,
       customerName,
       status: order.status,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+      isGuest: !order.userId,
     });
 
     let attachments = [];
-    if (order.invoice) {
+    if (order.invoice && order.status === 'CONFIRMED') {
       try {
         const pdfBuffer = await buildInvoicePdf(order.invoice);
         attachments = [{
@@ -274,11 +287,17 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
 
     sendEmailAsync({
       to: customerEmail,
-      from: process.env.SMTP_USER,
       subject: emailData.subject,
       html: emailData.html,
       attachments,
     });
+  }
+
+  // ── Push OneSignal statut ──────────────────────────────────────────────────
+  if (order.userId) {
+    notifyOrderStatus(order, order.status).catch((err) =>
+      console.error('❌ Erreur notif OneSignal changeStatus:', err.message)
+    );
   }
 
   return order;

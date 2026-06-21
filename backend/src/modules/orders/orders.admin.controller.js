@@ -1,5 +1,5 @@
 ﻿const prisma = require('../../config/database');
-const { notifyOrderStatus, notifyPaymentReceived } = require('../../services/notification.service');
+const { notifyOrderStatus, notifyPaymentReceived, notifyOrderConfirmed } = require('../../services/notification.service');
 const { fulfillOrderPayment } = require('./order-fulfillment.service');
 const { buildOrdersWhere, createOrder } = require('./orders.service');
 const { parsePagination, buildPaginationResponse } = require('../../utils/pagination.utils');
@@ -23,14 +23,12 @@ async function getOrdersAdmin(req, res, next) {
       };
 
       if (where.OR) {
-        // La recherche texte utilise déjà where.OR — on combine proprement
         where.AND = [...(where.AND || []), { OR: where.OR }, todoCondition];
         delete where.OR;
       } else {
         Object.assign(where, todoCondition);
       }
 
-      // Le plus urgent (réservation qui expire bientôt) en premier
       orderBy = [{ reservationExpiresAt: 'asc' }, { createdAt: 'asc' }];
     }
 
@@ -98,6 +96,13 @@ async function updatePaymentStatus(req, res, next) {
           link: `/orders/${order.orderNumber}`,
         },
       });
+
+      // ✅ Push OneSignal + mail selon le statut de paiement
+      if (paymentStatus === 'PAID') {
+        await notifyPaymentReceived(order);
+      } else {
+        await notifyOrderStatus(order, paymentStatus === 'REJECTED' ? 'CANCELLED' : 'CONFIRMED');
+      }
     }
 
     res.json(order);
@@ -144,6 +149,9 @@ async function confirmDraftOrder(req, res, next) {
           link: `/orders/${order.orderNumber}`,
         },
       });
+
+      // ✅ Push OneSignal + mail de confirmation
+      await notifyOrderConfirmed(order);
     }
 
     res.json(order);
@@ -208,6 +216,9 @@ async function rejectDraftOrder(req, res, next) {
 
       return updated;
     });
+
+    // ✅ Push OneSignal + mail d'annulation (hors transaction pour ne pas bloquer)
+    await notifyOrderStatus(order, 'CANCELLED');
 
     res.json(order);
   } catch (err) {
