@@ -56,10 +56,15 @@ export default function PWAInstallBanner() {
   };
 
   const requestNotifications = async () => {
-    if (!('Notification' in window)) return;
-    const result = await Notification.requestPermission();
-    setNotifStatus(result);
-  };
+  try {
+    const OneSignal = (await import('react-onesignal')).default;
+    await OneSignal.Notifications.requestPermission();
+    const granted = OneSignal.Notifications.permission;
+    setNotifStatus(granted ? 'granted' : 'denied');
+  } catch (e) {
+    console.error('OneSignal error:', e);
+  }
+};
 
   if (!show) return null;
 

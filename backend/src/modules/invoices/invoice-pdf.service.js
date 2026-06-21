@@ -93,7 +93,7 @@ async function buildInvoicePdf(invoice) {
     const H  = doc.page.height;  // 841
     const M  = 45;               // marge intérieure
 
-    // ── HEADER BAND ─────────────────────────────────────────────────────────
+    // ── HEADER BAND ──────────────────────────────────────────────────────────
     doc.rect(0, 0, W, 110).fill(C.navy);
 
     // Nom boutique
@@ -113,13 +113,13 @@ async function buildInvoicePdf(invoice) {
     doc.fontSize(9).font('Helvetica').fillColor('#cccccc')
        .text(invoice.invoiceNumber, 0, 58, { align: 'right', width: W - M });
 
-    // ── BANDE DORÉE FINE ────────────────────────────────────────────────────
+    // ── BANDE DORÉE FINE ─────────────────────────────────────────────────────
     doc.rect(0, 110, W, 4).fill(C.gold);
 
-    // ── BLOC INFO (entreprise + client) ─────────────────────────────────────
+    // ── BLOC INFO (entreprise + client) ──────────────────────────────────────
     const infoTop = 130;
 
-    // Colonne gauche — entreprise
+    // Colonne gauche – entreprise
     doc.fontSize(8).font('Helvetica-Bold').fillColor(C.textLight)
        .text('DE', M, infoTop, { characterSpacing: 1 });
 
@@ -131,7 +131,7 @@ async function buildInvoicePdf(invoice) {
     if (phone)   doc.text(`Tél : ${phone}`, M, doc.y + 2);
     if (email)   doc.text(email, M, doc.y + 2);
 
-    // Colonne droite — client
+    // Colonne droite – client
     const colRight = W / 2 + 10;
     doc.fontSize(8).font('Helvetica-Bold').fillColor(C.textLight)
        .text('FACTURÉ À', colRight, infoTop, { characterSpacing: 1 });
@@ -147,29 +147,36 @@ async function buildInvoicePdf(invoice) {
       doc.text(addrLine, colRight, doc.y + 2, { width: W - colRight - M });
     }
 
-    // ── MÉTADONNÉES (encadré gris) ───────────────────────────────────────────
+    // ── MÉTADONNÉES (encadré gris) ────────────────────────────────────────────
     const metaTop = 255;
-    roundedRect(doc, M, metaTop, W - M * 2, 68, 6, C.offWhite);
-    doc.rect(M, metaTop, W - M * 2, 68).stroke(C.border);
+    // CORRECTION : hauteur augmentée de 68 → 80 pour éviter le débordement
+    roundedRect(doc, M, metaTop, W - M * 2, 80, 6, C.offWhite);
+    doc.rect(M, metaTop, W - M * 2, 80).stroke(C.border);
 
     const metaItems = [
-      ['N° COMMANDE',   order.orderNumber],
-      ['DATE',          dateFr(invoice.issuedAt)],
-      ['STATUT',        statusLabel(invoice.status)],
-      ['PAIEMENT',      paymentMethodLabel(order.paymentMethod)],
+      ['N° COMMANDE',  order.orderNumber],
+      ['DATE',         dateFr(invoice.issuedAt)],
+      ['STATUT',       statusLabel(invoice.status)],
+      ['PAIEMENT',     paymentMethodLabel(order.paymentMethod)],
     ];
 
     const cellW = (W - M * 2) / metaItems.length;
+
+    // CORRECTION : width + ellipsis pour éviter le chevauchement entre colonnes
     metaItems.forEach(([label, value], i) => {
-      const cx = M + i * cellW + 14;
+      const cx   = M + i * cellW + 14;
+      const maxW = cellW - 18;
+
       doc.fontSize(7).font('Helvetica-Bold').fillColor(C.textLight)
-         .text(label, cx, metaTop + 12, { characterSpacing: 0.5 });
-      doc.fontSize(10).font('Helvetica-Bold').fillColor(C.navy)
-         .text(value, cx, metaTop + 26);
+         .text(label, cx, metaTop + 12, { characterSpacing: 0.5, width: maxW, ellipsis: true });
+
+      doc.fontSize(9).font('Helvetica-Bold').fillColor(C.navy)
+         .text(String(value || ''), cx, metaTop + 30, { width: maxW, ellipsis: true });
     });
 
-    // ── TABLEAU PRODUITS ─────────────────────────────────────────────────────
-    const tTop = metaTop + 90;
+    // ── TABLEAU PRODUITS ──────────────────────────────────────────────────────
+    // CORRECTION : tTop ajusté en fonction de la nouvelle hauteur du bloc meta
+    const tTop = metaTop + 102;
     const cols = { product: M, qty: 310, pu: 380, total: 460 };
 
     // En-tête tableau
@@ -210,7 +217,7 @@ async function buildInvoicePdf(invoice) {
       y += rowH;
     });
 
-    // ── TOTAUX ───────────────────────────────────────────────────────────────
+    // ── TOTAUX ────────────────────────────────────────────────────────────────
     y += 12;
     const totalsX = 360;
     const totalsW = W - M - totalsX;
@@ -227,10 +234,10 @@ async function buildInvoicePdf(invoice) {
     }
 
     totalsRow('Sous-total',  fcfa(invoice.subtotal));
-    if (invoice.shippingCost > 0) totalsRow('Livraison', fcfa(invoice.shippingCost));
-    if (invoice.discount     > 0) totalsRow('Remise',   `-${fcfa(invoice.discount)}`,      false, C.success);
-    if (invoice.storeDiscount > 0) totalsRow('Remise boutique', `-${fcfa(invoice.storeDiscount)}`, false, C.success);
-    if (invoice.tax          > 0) totalsRow('Taxes',    fcfa(invoice.tax));
+    if (invoice.shippingCost > 0)  totalsRow('Livraison',        fcfa(invoice.shippingCost));
+    if (invoice.discount     > 0)  totalsRow('Remise',           `-${fcfa(invoice.discount)}`,      false, C.success);
+    if (invoice.storeDiscount > 0) totalsRow('Remise boutique',  `-${fcfa(invoice.storeDiscount)}`, false, C.success);
+    if (invoice.tax          > 0)  totalsRow('Taxes',            fcfa(invoice.tax));
 
     // Ligne séparatrice
     doc.rect(totalsX, y, totalsW, 1).fill(C.gold);
@@ -243,7 +250,7 @@ async function buildInvoicePdf(invoice) {
     doc.fontSize(14).font('Helvetica-Bold').fillColor(C.gold)
        .text(fcfa(invoice.total), totalsX, y + 10, { width: totalsW, align: 'right' });
 
-    // ── NOTE DE BAS (si présente) ────────────────────────────────────────────
+    // ── NOTE DE BAS (si présente) ─────────────────────────────────────────────
     if (order.notes) {
       const noteTop = y + 58;
       roundedRect(doc, M, noteTop, W - M * 2, 40, 6, '#fffef5');
@@ -254,7 +261,7 @@ async function buildInvoicePdf(invoice) {
          .text(order.notes, M + 12, noteTop + 20, { width: W - M * 2 - 20 });
     }
 
-    // ── FOOTER ───────────────────────────────────────────────────────────────
+    // ── FOOTER ────────────────────────────────────────────────────────────────
     doc.rect(0, H - 52, W, 52).fill(C.navy);
     doc.rect(0, H - 52, W, 3).fill(C.gold);
 
