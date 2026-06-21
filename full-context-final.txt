@@ -1,0 +1,1386 @@
+﻿
+========== FILE: frontend\src\components\admin\ReportDownloader.jsx ==========
+
+import { useState } from 'react';
+import { Download, Mail, FileText } from 'lucide-react';
+import { adminApi } from '../../api/admin.api';
+import { API_URL } from '../../utils/constants';
+import useAuthStore from '../../store/authStore';
+import { toast } from 'sonner';
+
+export default function ReportDownloader({ storeId }) {
+  const { token } = useAuthStore();
+  const today = new Date().toISOString().slice(0, 10);
+  const firstOfMonth = today.slice(0, 8) + '01';
+
+  const [from, setFrom] = useState(firstOfMonth);
+  const [to, setTo] = useState(today);
+  const [loadingPdf, setLoadingPdf] = useState(false);
+  const [loadingEmail, setLoadingEmail] = useState(false);
+
+  const params = new URLSearchParams({ storeId, from, to }).toString();
+
+  const handleDownload = async () => {
+    if (!storeId) return toast.error('SÃ©lectionnez une boutique');
+    setLoadingPdf(true);
+    try {
+      const res = await fetch(
+        `${API_URL}/api/admin/reports/download?${params}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rapport-${from}-${to}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Rapport tÃ©lÃ©chargÃ©');
+    } catch {
+      toast.error('Erreur lors de la gÃ©nÃ©ration du rapport');
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
+  const handleEmail = async () => {
+    if (!storeId) return toast.error('SÃ©lectionnez une boutique');
+    setLoadingEmail(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/reports/send-email`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ storeId, from, to }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success(data.message || 'Rapport envoyÃ© par email');
+    } catch (e) {
+      toast.error(e.message || "Erreur lors de l'envoi");
+    } finally {
+      setLoadingEmail(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-stone-100 flex items-center gap-2">
+        <FileText size={15} className="text-rose-500" />
+        <h2 className="font-semibold text-stone-900 text-sm">Rapport de gestion</h2>
+      </div>
+
+      <div className="px-5 py-4 flex flex-wrap gap-3 items-end">
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">Du</label>
+          <input
+            type="date"
+            value={from}
+            onChange={e => setFrom(e.target.value)}
+            className="text-sm px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-300"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">Au</label>
+          <input
+            type="date"
+            value={to}
+            onChange={e => setTo(e.target.value)}
+            className="text-sm px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-300"
+          />
+        </div>
+
+        <div className="flex gap-2 ml-auto">
+          <button
+            onClick={handleDownload}
+            disabled={loadingPdf}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:opacity-60 text-white text-sm font-medium transition-colors"
+          >
+            <Download size={14} />
+            {loadingPdf ? 'GÃ©nÃ©rationâ€¦' : 'TÃ©lÃ©charger PDF'}
+          </button>
+          <button
+            onClick={handleEmail}
+            disabled={loadingEmail}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 disabled:opacity-60 text-stone-700 text-sm font-medium transition-colors"
+          >
+            <Mail size={14} />
+            {loadingEmail ? 'Envoiâ€¦' : 'Envoyer par email'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+========== FILE: frontend\src\components\admin\DateRangeFilter.jsx ==========
+
+export default function DateRangeFilter({ from, to, onFromChange, onToChange, className = '' }) {
+  return (
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+      <label className="text-xs text-stone-500 font-medium">Du</label>
+      <input
+        type="date"
+        value={from}
+        onChange={(e) => onFromChange(e.target.value)}
+        className="border border-stone-200 rounded-lg px-3 py-2 text-sm"
+      />
+      <label className="text-xs text-stone-500 font-medium">Au</label>
+      <input
+        type="date"
+        value={to}
+        onChange={(e) => onToChange(e.target.value)}
+        className="border border-stone-200 rounded-lg px-3 py-2 text-sm"
+      />
+      {(from || to) && (
+        <button
+          type="button"
+          onClick={() => {
+            onFromChange('');
+            onToChange('');
+          }}
+          className="text-xs text-rose-600 hover:text-rose-700 font-medium px-2"
+        >
+          Effacer dates
+        </button>
+      )}
+    </div>
+  );
+}
+
+
+========== FILE: frontend\src\components\admin\StoreFilter.jsx ==========
+
+import { useQuery } from '@tanstack/react-query';
+import api from '../../api/axios';
+
+export default function StoreFilter({ value, onChange, className = '' }) {
+  const { data: stores = [], isLoading } = useQuery({
+    queryKey: ['admin-stores'],
+    queryFn: () => api.get('/api/admin/stores').then((r) => r.data),
+  });
+
+  return (
+    <select
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value || null)}
+      disabled={isLoading}
+      className={`px-3 py-2 rounded-xl border border-stone-200 text-sm bg-white outline-none focus:ring-2 focus:ring-rose-300 ${className}`}
+    >
+      <option value="">Toutes les boutiques</option>
+      {stores.map((store) => (
+        <option key={store.id} value={store.id}>
+          {store.name} ({store.code}){store.isMain ? ' â€” SiÃ¨ge' : ''}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+========== FILE: frontend\src\components\layout\AdminSidebar.jsx ==========
+
+import { useState } from 'react';
+import { NavLink, Link } from 'react-router-dom';
+import {
+  LayoutDashboard, Package, ShoppingBag,
+  Tag, Ticket, Users, LogOut, Menu, X, Sparkles,
+  CreditCard, Settings, BookOpen, FileText, Shield, Store,
+  ArrowRightLeft
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import useAuthStore from '../../store/authStore';
+
+const allLinks = [
+  { to: '/admin',                 label: 'Dashboard',       icon: LayoutDashboard, end: true,  adminOnly: false },
+  { to: '/admin/products',        label: 'Produits',        icon: Package,                     adminOnly: false },
+  { to: '/admin/orders',          label: 'Commandes',       icon: ShoppingBag,                 adminOnly: false },
+  { to: '/admin/payments',        label: 'Paiements',       icon: CreditCard,                  adminOnly: false },
+  { to: '/admin/accounting',      label: 'ComptabilitÃ©',    icon: BookOpen,                    adminOnly: false },
+  { to: '/admin/invoices',        label: 'Factures',        icon: FileText,                    adminOnly: false },
+  { to: '/admin/stores',          label: 'Boutiques',       icon: Store,                       adminOnly: true  }, // â† masquÃ© STAFF
+  { to: '/admin/stock-transfers', label: 'Transferts',      icon: ArrowRightLeft,              adminOnly: false },
+  { to: '/admin/audit',           label: "Journal d'audit", icon: Shield,                      adminOnly: false },
+  { to: '/admin/categories',      label: 'CatÃ©gories',      icon: Tag,                         adminOnly: false },
+  { to: '/admin/coupons',         label: 'Coupons',         icon: Ticket,                      adminOnly: true  },
+  { to: '/admin/users',           label: 'Utilisateurs',    icon: Users,                       adminOnly: true  },
+  { to: '/admin/settings',        label: 'ParamÃ¨tres',      icon: Settings,                    adminOnly: true  },
+];
+
+export default function AdminSidebar() {
+  const { logout } = useAuth();
+  const { user } = useAuthStore();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isAdmin = user?.role === 'ADMIN';
+  const links = allLinks.filter(l => !l.adminOnly || isAdmin);
+
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="px-6 py-5 border-b border-white/10">
+        <Link to="/" className="flex items-center gap-2.5" onClick={() => setMobileOpen(false)}>
+          <div className="w-8 h-8 rounded-lg bg-rose-500 flex items-center justify-center shadow-lg shadow-rose-500/30">
+            <Sparkles size={15} className="text-white" />
+          </div>
+          <span className="font-bold text-white text-lg tracking-tight">
+            Urban<span className="text-rose-400">Beauty</span>
+          </span>
+        </Link>
+        <div className="mt-1 ml-10">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-stone-500">Administration</span>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        {links.map(({ to, label, icon: Icon, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            onClick={() => setMobileOpen(false)}
+            className={({ isActive }) =>
+              `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
+                  : 'text-stone-400 hover:bg-white/5 hover:text-white border border-transparent'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                  isActive ? 'bg-rose-500 shadow-lg shadow-rose-500/30' : 'bg-white/5 group-hover:bg-white/10'
+                }`}>
+                  <Icon size={14} />
+                </div>
+                <span>{label}</span>
+                {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-rose-400" />}
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div className="px-3 py-4 border-t border-white/10">
+        <button
+          onClick={logout}
+          className="group flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm text-stone-400 hover:bg-red-500/10 hover:text-red-400 border border-transparent hover:border-red-500/20 transition-all duration-200"
+        >
+          <div className="w-7 h-7 rounded-lg bg-white/5 group-hover:bg-red-500/20 flex items-center justify-center transition-all">
+            <LogOut size={14} />
+          </div>
+          DÃ©connexion
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-stone-900 rounded-xl flex items-center justify-center text-white shadow-lg border border-white/10"
+      >
+        <Menu size={18} />
+      </button>
+
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <aside className={`lg:hidden fixed top-0 left-0 z-50 h-full w-72 bg-stone-950 border-r border-white/10 transform transition-transform duration-300 ease-in-out ${
+        mobileOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-stone-400 hover:text-white"
+        >
+          <X size={15} />
+        </button>
+        <SidebarContent />
+      </aside>
+
+      <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-stone-950 border-r border-white/10 sticky top-0 shrink-0">
+        <SidebarContent />
+      </aside>
+    </>
+  );
+}
+
+========== FILE: frontend\src\components\layout\AdminLayout.jsx ==========
+
+import { Outlet } from 'react-router-dom';
+import AdminSidebar from './AdminSidebar';
+import StoreSwitcher from './StoreSwitcher';
+
+export default function AdminLayout() {
+  return (
+    <div className="flex min-h-screen bg-stone-950">
+      <AdminSidebar />
+      <main className="flex-1 min-w-0 overflow-auto bg-stone-50 lg:rounded-tl-2xl lg:rounded-bl-2xl">
+        {/* Barre de contexte boutique */}
+        <div className="sticky top-0 z-20 border-b border-stone-100 px-4 sm:px-6 py-2.5 flex justify-end bg-white/90 backdrop-blur-sm">
+          <StoreSwitcher />
+        </div>
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
+========== FILE: frontend\src\App.jsx ==========
+
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { Toaster } from 'sonner';
+
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/shared/ProtectedRoute';
+import ScrollToTop from './components/shared/ScrollToTop';
+import AdminRoute from './components/shared/AdminRoute';
+import AdminOnlyRoute from './components/shared/AdminOnlyRoute';
+import ShopLayout from './components/layout/ShopLayout';
+import AdminLayout from './components/layout/AdminLayout';
+
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import Home from './pages/shop/Home';
+import Products from './pages/shop/Products';
+import ProductDetail from './pages/shop/ProductDetail';
+import About from './pages/shop/About';
+import Contact from './pages/shop/Contact';
+import CGV from './pages/shop/CGV';
+import Returns from './pages/shop/Returns';
+import Cart from './pages/cart/Cart';
+import Checkout from './pages/cart/Checkout';
+import Orders from './pages/orders/Orders';
+import OrderDetail from './pages/orders/OrderDetail';
+import Profile from './pages/account/Profile';
+import Addresses from './pages/account/Addresses';
+import Wishlist from './pages/account/Wishlist';
+import Notifications from './pages/account/Notifications';
+import Dashboard from './pages/admin/Dashboard';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminCoupons from './pages/admin/AdminCoupons';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminPayments from './pages/admin/AdminPayments';
+import AdminSettings from './pages/admin/AdminSettings';
+import AdminAccounting from './pages/admin/AdminAccounting';
+import AdminInvoices from './pages/admin/AdminInvoices';
+import AdminAudit from './pages/admin/AdminAudit';
+import AdminStores from './pages/admin/AdminStores';
+import AdminStockTransfers from './pages/admin/AdminStockTransfers';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 1000 * 60 * 5,
+    },
+  },
+});
+
+// Devtools uniquement en développement
+const isDev = import.meta.env.DEV;
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ScrollToTop />
+        <AuthProvider>
+          <Toaster position="top-right" richColors closeButton />
+          <Routes>
+            {/* Auth */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            {/* Shop */}
+            <Route element={<ShopLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/products/:slug" element={<ProductDetail />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/cgv" element={<CGV />} />
+              <Route path="/returns" element={<Returns />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route element={<ProtectedRoute />}>
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/orders/:orderNumber" element={<OrderDetail />} />
+                <Route path="/account/profile" element={<Profile />} />
+                <Route path="/account/addresses" element={<Addresses />} />
+                <Route path="/account/wishlist" element={<Wishlist />} />
+                <Route path="/account/notifications" element={<Notifications />} />
+              </Route>
+            </Route>
+
+            {/* Admin + Staff */}
+            <Route element={<AdminRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route path="/admin" element={<Dashboard />} />
+                <Route path="/admin/products" element={<AdminProducts />} />
+                <Route path="/admin/orders" element={<AdminOrders />} />
+                <Route path="/admin/payments" element={<AdminPayments />} />
+                <Route path="/admin/accounting" element={<AdminAccounting />} />
+                <Route path="/admin/invoices" element={<AdminInvoices />} />
+                <Route path="/admin/stock-transfers" element={<AdminStockTransfers />} />
+                <Route path="/admin/audit" element={<AdminAudit />} />
+                <Route path="/admin/categories" element={<AdminCategories />} />
+                <Route element={<AdminOnlyRoute />}>
+                  <Route path="/admin/stores" element={<AdminStores />} />
+                  <Route path="/admin/coupons" element={<AdminCoupons />} />
+                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/settings" element={<AdminSettings />} />
+                </Route>
+              </Route>
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+
+      {/* Devtools visibles uniquement en développement local */}
+      {isDev && <ReactQueryDevtools initialIsOpen={false} />}
+    </QueryClientProvider>
+  );
+}
+
+
+
+========== FILE: frontend\src\api\axios.js ==========
+
+import axios from 'axios';
+import { AUTH_TOKEN_KEY } from '../utils/constants';
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 10000,
+});
+
+// Injecte le token JWT automatiquement
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Gestion globale des erreurs
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || 'Une erreur est survenue';
+
+    if (status === 401) {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      window.location.href = '/login';
+    }
+
+    return Promise.reject({ status, message, raw: error });
+  }
+);
+
+export default api;
+
+
+========== FILE: frontend\src\api\admin.api.js ==========
+
+import api from './axios';
+import { API_URL, AUTH_TOKEN_KEY } from '../utils/constants';
+
+async function downloadBlob(url, filename, errorMessage) {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || errorMessage);
+  }
+  const blob = await res.blob();
+  const objectUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = filename;
+  link.click();
+  window.URL.revokeObjectURL(objectUrl);
+}
+
+function buildQueryString(params) {
+  const qs = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      qs.append(key, String(value));
+    }
+  });
+  const str = qs.toString();
+  return str ? `?${str}` : '';
+}
+
+export const adminApi = {
+  // â”€â”€ Commandes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  getOrders:          (params) => api.get('/api/admin/orders', { params }),
+  createManualOrder:  (data)   => api.post('/api/admin/orders', data),
+  updatePayment:      (id, data) => api.patch(`/api/admin/orders/${id}/payment`, data),
+  confirmDraftOrder:  (id)     => api.patch(`/api/admin/orders/${id}/confirm-draft`),
+  rejectDraftOrder:   (id, data) => api.patch(`/api/admin/orders/${id}/reject-draft`, data),
+
+  // â”€â”€ Recherche (pour crÃ©ation manuelle) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  searchUsers:    (q)      => api.get('/api/admin/orders/search/users', { params: { q } }),
+  searchProducts: (params) => api.get('/api/admin/orders/search/products', { params }),
+
+  // â”€â”€ Factures â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  getInvoices:       (params)   => api.get('/api/admin/invoices', { params }),
+  getInvoiceByOrder: (orderId)  => api.get(`/api/admin/invoices/order/${orderId}`),
+  getInvoiceById:    (id)       => api.get(`/api/admin/invoices/${id}`),
+
+  // â”€â”€ Transferts de stock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  getStockTransfers:      (params) => api.get('/api/admin/stock-transfers', { params }),
+  createStockTransfer:    (data)   => api.post('/api/admin/stock-transfers', data),
+  validateStockTransfer:  (id)     => api.patch(`/api/admin/stock-transfers/${id}/validate`),
+  cancelStockTransfer:    (id, reason) =>
+    api.patch(`/api/admin/stock-transfers/${id}/cancel`, { reason }),
+
+  // â”€â”€ Autres â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  getAuditLogs: (params) => api.get('/api/admin/audit', { params }),
+  getStores:    ()       => api.get('/api/admin/stores'),
+  getCategories:()       => api.get('/api/categories'),
+  getSettings:  ()       => api.get('/api/settings'),
+  updateSettings:(data)  => api.put('/api/settings', data),
+
+  downloadInvoicePdf(invoiceId, invoiceNumber) {
+    return downloadBlob(
+      `${API_URL}/api/admin/invoices/${invoiceId}/pdf`,
+      `${invoiceNumber || 'facture'}.pdf`,
+      'Impossible de tÃ©lÃ©charger la facture.',
+    );
+  },
+
+  exportInvoicesExcel(params) {
+    const qs = buildQueryString(params);
+    const datePart = new Date().toISOString().slice(0, 10);
+    return downloadBlob(
+      `${API_URL}/api/admin/invoices/export/excel${qs}`,
+      `factures-${datePart}.xlsx`,
+      "Impossible d'exporter les factures.",
+    );
+  },
+};
+
+========== FILE: frontend\src\pages\admin\AdminSettings.jsx ==========
+
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  Settings, Smartphone, Truck, Save, CheckCircle,
+  MessageCircle, Building2, ShieldAlert, Globe,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { adminApi } from '../../api/admin.api';
+
+function SettingInput({ label, value, onChange, placeholder, hint, type = 'text' }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-stone-700">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-rose-300 transition-shadow"
+      />
+      {hint && <p className="text-xs text-stone-400">{hint}</p>}
+    </div>
+  );
+}
+
+export default function AdminSettings() {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({
+    // Entreprise
+    company_name: '',
+    company_address: '',
+    company_phone: '',
+    company_email: '',
+    // Mobile Money
+    wave_number: '',
+    orange_money_number: '',
+    free_money_number: '',
+    payment_instructions: '',
+    // WhatsApp
+    whatsapp_number: '',
+    // Livraison locale
+    delivery_fee: '2000',
+    free_delivery_threshold: '50000',
+    // Livraison Congo
+    congo_express_rate: '15000',
+    congo_groupage_rate: '8000',
+    congo_groupage_gift: 'un cadeau surprise',
+    // Sénégal — acompte
+    deposit_threshold: '0',
+    deposit_percent: '30',
+  });
+  const [saved, setSaved] = useState(false);
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => adminApi.getSettings().then((r) => r.data),
+  });
+
+  useEffect(() => {
+    if (settings) setForm((prev) => ({ ...prev, ...settings }));
+  }, [settings]);
+
+  const { mutate: saveSettings, isPending } = useMutation({
+    mutationFn: (data) => adminApi.updateSettings(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      toast.success('Paramètres sauvegardés !');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    },
+    onError: () => toast.error('Erreur lors de la sauvegarde'),
+  });
+
+  const update = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-stone-50 p-4 sm:p-6 lg:p-8">
+
+      {/* Header */}
+      <div className="mb-8 pl-12 lg:pl-0">
+        <div className="flex items-center gap-2 mb-1">
+          <Settings size={16} className="text-rose-500" />
+          <span className="text-xs font-semibold uppercase tracking-widest text-stone-400">Configuration</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-stone-900">Paramètres</h1>
+        <p className="text-stone-500 text-sm mt-1">
+          Configurez les paiements, la livraison et les règles commerciales
+        </p>
+      </div>
+
+      <div className="max-w-2xl space-y-5">
+
+        {/* ── Entreprise ── */}
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
+            <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center">
+              <Building2 size={15} className="text-rose-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-stone-900">Entreprise (factures PDF)</h2>
+              <p className="text-xs text-stone-400">Affiché en en-tête des factures</p>
+            </div>
+          </div>
+          <SettingInput label="Nom de l'entreprise" value={form.company_name} onChange={update('company_name')} placeholder="SonShop" />
+          <SettingInput label="Adresse" value={form.company_address} onChange={update('company_address')} placeholder="Dakar, Sénégal" />
+          <SettingInput label="Téléphone" value={form.company_phone} onChange={update('company_phone')} placeholder="+221 77 000 00 00" />
+          <SettingInput label="Email" value={form.company_email} onChange={update('company_email')} placeholder="sonshop221@gmail.com" />
+        </div>
+
+        {/* ── Mobile Money ── */}
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
+            <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
+              <Smartphone size={15} className="text-blue-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-stone-900">Numéros Mobile Money</h2>
+              <p className="text-xs text-stone-400">
+                Affichés aux clients Sénégal (via modal) et Congo (directement dans le checkout)
+              </p>
+            </div>
+          </div>
+
+          <SettingInput
+            label="Numéro Wave"
+            value={form.wave_number}
+            onChange={update('wave_number')}
+            placeholder="+221 77 123 45 67"
+            hint="Laissez vide pour ne pas afficher ce mode"
+          />
+          <SettingInput
+            label="Numéro Orange Money"
+            value={form.orange_money_number}
+            onChange={update('orange_money_number')}
+            placeholder="+221 76 123 45 67"
+          />
+          <SettingInput
+            label="Numéro Free Money"
+            value={form.free_money_number}
+            onChange={update('free_money_number')}
+            placeholder="+221 78 123 45 67"
+          />
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-stone-700">Instructions de paiement</label>
+            <textarea
+              value={form.payment_instructions}
+              onChange={(e) => update('payment_instructions')(e.target.value)}
+              rows={3}
+              placeholder="Envoyez le montant exact puis cliquez sur J'ai payé."
+              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-rose-300 resize-none transition-shadow"
+            />
+            <p className="text-xs text-stone-400">
+              Affiché dans la modal de paiement (Sénégal) et sous les numéros (Congo)
+            </p>
+          </div>
+        </div>
+
+        {/* ── WhatsApp ── */}
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
+            <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center">
+              <MessageCircle size={15} className="text-green-600" />
+            </div>
+            <h2 className="font-semibold text-stone-900">WhatsApp Admin</h2>
+          </div>
+          <SettingInput
+            label="Numéro WhatsApp (avec indicatif pays)"
+            value={form.whatsapp_number}
+            onChange={update('whatsapp_number')}
+            placeholder="221771234567"
+            hint="Sans espaces ni + (ex: 221771234567). Les clients seront redirigés ici."
+          />
+        </div>
+
+        {/* ── Livraison Sénégal ── */}
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
+            <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
+              <Truck size={15} className="text-amber-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-stone-900">Livraison Sénégal</h2>
+              <p className="text-xs text-stone-400">Frais appliqués aux commandes locales</p>
+            </div>
+          </div>
+          <SettingInput
+            label="Frais de livraison (FCFA)"
+            value={form.delivery_fee}
+            onChange={update('delivery_fee')}
+            placeholder="2000"
+            hint="Frais appliqués à chaque commande"
+          />
+          <SettingInput
+            label="Seuil livraison gratuite (FCFA)"
+            value={form.free_delivery_threshold}
+            onChange={update('free_delivery_threshold')}
+            placeholder="50000"
+            hint="Livraison gratuite au-dessus de ce montant. Mettez 0 pour désactiver."
+          />
+        </div>
+
+        {/* ── Règles acompte Sénégal ── */}
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
+            <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center">
+              <ShieldAlert size={15} className="text-rose-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-stone-900">Acompte — Sénégal (paiement à la livraison)</h2>
+              <p className="text-xs text-stone-400">
+                Pour les grosses commandes, demandez un acompte avant expédition
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <p className="text-xs text-amber-700 leading-relaxed">
+              Si le total d'une commande Sénégal avec paiement à la livraison dépasse le seuil,
+              un message d'acompte sera affiché au client dans le checkout.
+              Mettez <strong>0</strong> pour désactiver cette règle.
+            </p>
+          </div>
+
+          <SettingInput
+            label="Seuil d'acompte (FCFA)"
+            value={form.deposit_threshold}
+            onChange={update('deposit_threshold')}
+            placeholder="100000"
+            type="number"
+            hint="Ex: 100000 → acompte demandé pour toute commande ≥ 100 000 FCFA. 0 = désactivé."
+          />
+          <SettingInput
+            label="Pourcentage d'acompte (%)"
+            value={form.deposit_percent}
+            onChange={update('deposit_percent')}
+            placeholder="30"
+            type="number"
+            hint="Ex: 30 → le client paie 30% à l'avance, le reste à la livraison."
+          />
+        </div>
+
+        {/* ── Livraison Congo ── */}
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
+            <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center">
+              <Globe size={15} className="text-purple-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-stone-900">Livraison Congo (International)</h2>
+              <p className="text-xs text-stone-400">
+                Paiement intégral requis avant expédition — COD non disponible
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <p className="text-xs text-blue-700 leading-relaxed">
+              Pour les destinations Congo, seul le <strong>Mobile Money (prépayé)</strong> est accepté.
+              Les numéros configurés ci-dessus (Wave, Orange, Free) seront affichés
+              directement dans le checkout avec bouton copier.
+            </p>
+          </div>
+
+          <SettingInput
+            label="Tarif Congo – Express (FCFA)"
+            value={form.congo_express_rate}
+            onChange={update('congo_express_rate')}
+            placeholder="15000"
+            hint="Affiché et appliqué pour la destination Congo Express"
+          />
+          <SettingInput
+            label="Tarif Congo – Groupage (FCFA)"
+            value={form.congo_groupage_rate}
+            onChange={update('congo_groupage_rate')}
+            placeholder="8000"
+            hint="Affiché et appliqué pour la destination Congo Groupage"
+          />
+          <SettingInput
+            label="Cadeau inclus dans le groupage"
+            value={form.congo_groupage_gift}
+            onChange={update('congo_groupage_gift')}
+            placeholder="un cadeau surprise"
+            hint="Texte affiché au client (ex: un soin hydratant offert)"
+          />
+        </div>
+
+        {/* ── Bouton save ── */}
+        <button
+          onClick={() => saveSettings(form)}
+          disabled={isPending}
+          className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-semibold transition-colors shadow-sm"
+        >
+          {saved
+            ? <><CheckCircle size={18} /> Sauvegardé !</>
+            : isPending
+            ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Sauvegarde...</>
+            : <><Save size={18} /> Sauvegarder les paramètres</>
+          }
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+========== FILE: frontend\src\pages\admin\Dashboard.jsx ==========
+
+import { useState, useEffect } from 'react';
+import useAuthStore from '../../store/authStore';
+import { adminApi } from '../../api/admin.api';
+import { API_URL } from '../../utils/constants';
+import StoreFilter from '../../components/admin/StoreFilter';
+import { toast } from 'sonner';
+import {
+  TrendingUp, Package, ShoppingBag, Users,
+  AlertTriangle, Clock, Download, Mail, FileText,
+  ArrowUpRight, BarChart3
+} from 'lucide-react';
+
+const formatPrice = (p) => `${Number(p || 0).toLocaleString('fr-FR')} FCFA`;
+const formatDate = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+
+const STATUS_CONFIG = {
+  DRAFT:      { label: 'Brouillon WA',  color: 'text-orange-600', bg: 'bg-orange-50 border-orange-200', dot: 'bg-orange-400' },
+  PENDING:    { label: 'En attente',    color: 'text-amber-600',  bg: 'bg-amber-50  border-amber-200',  dot: 'bg-amber-400' },
+  CONFIRMED:  { label: 'ConfirmÃ©e',     color: 'text-blue-600',   bg: 'bg-blue-50   border-blue-200',   dot: 'bg-blue-400' },
+  PROCESSING: { label: 'En traitement', color: 'text-violet-600', bg: 'bg-violet-50 border-violet-200', dot: 'bg-violet-400' },
+  SHIPPED:    { label: 'ExpÃ©diÃ©e',      color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200', dot: 'bg-indigo-400' },
+  DELIVERED:  { label: 'LivrÃ©e',        color: 'text-emerald-600',bg: 'bg-emerald-50 border-emerald-200',dot: 'bg-emerald-400' },
+  CANCELLED:  { label: 'AnnulÃ©e',       color: 'text-red-600',    bg: 'bg-red-50    border-red-200',    dot: 'bg-red-400' },
+};
+
+// â”€â”€â”€ Mini bar chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function MiniBarChart({ data, color = 'bg-rose-400' }) {
+  const max = Math.max(...data, 1);
+  return (
+    <div className="flex items-end gap-0.5 h-8">
+      {data.map((v, i) => (
+        <div
+          key={i}
+          className={`flex-1 rounded-sm ${color} transition-all duration-500`}
+          style={{ height: `${Math.max(8, (v / max) * 100)}%`, opacity: i === data.length - 1 ? 1 : 0.4 + (i / data.length) * 0.5 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// â”€â”€â”€ Stat card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function StatCard({ label, value, sub, icon: Icon, trend, chartData, color, delay = 0 }) {
+  return (
+    <div
+      className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+          <Icon size={18} className="text-white" />
+        </div>
+        {trend !== undefined && (
+          <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${trend >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+            <ArrowUpRight size={10} className={trend < 0 ? 'rotate-180' : ''} />
+            {Math.abs(trend)}%
+          </span>
+        )}
+      </div>
+      <div className="mb-1">
+        <div className="text-2xl font-bold text-stone-900 tabular-nums">{value}</div>
+        <div className="text-xs text-stone-500 mt-0.5">{label}</div>
+      </div>
+      {chartData && <MiniBarChart data={chartData} color={color.replace('bg-', 'bg-').split(' ')[0]} />}
+      {sub && <div className="text-xs text-stone-400 mt-2">{sub}</div>}
+    </div>
+  );
+}
+
+// â”€â”€â”€ Report Downloader â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function ReportDownloader({ storeId, token }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const firstOfMonth = today.slice(0, 8) + '01';
+
+  const [from, setFrom] = useState(firstOfMonth);
+  const [to, setTo]     = useState(today);
+  const [loadingPdf,   setLoadingPdf]   = useState(false);
+  const [loadingEmail, setLoadingEmail] = useState(false);
+
+  const handleDownload = async () => {
+    if (!storeId) return toast.error('SÃ©lectionnez une boutique d\'abord');
+    setLoadingPdf(true);
+    try {
+      const params = new URLSearchParams({ storeId, from, to }).toString();
+      const res = await fetch(`${API_URL}/api/admin/reports/download?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `rapport-${from}-${to}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Rapport PDF tÃ©lÃ©chargÃ©');
+    } catch {
+      toast.error('Erreur lors de la gÃ©nÃ©ration du rapport');
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
+  const handleEmail = async () => {
+    if (!storeId) return toast.error('SÃ©lectionnez une boutique d\'abord');
+    setLoadingEmail(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/reports/send-email`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ storeId, from, to }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success(data.message || 'Rapport envoyÃ© par email');
+    } catch (e) {
+      toast.error(e.message || "Erreur lors de l'envoi");
+    } finally {
+      setLoadingEmail(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-stone-100 flex items-center gap-2">
+        <FileText size={15} className="text-rose-500" />
+        <h2 className="font-semibold text-stone-900 text-sm">Rapport de gestion</h2>
+      </div>
+
+      <div className="px-5 py-4 flex flex-wrap gap-3 items-end">
+        {/* Date range */}
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">Du</label>
+          <input
+            type="date"
+            value={from}
+            max={to}
+            onChange={e => setFrom(e.target.value)}
+            className="text-sm px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-300"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-stone-400">Au</label>
+          <input
+            type="date"
+            value={to}
+            min={from}
+            onChange={e => setTo(e.target.value)}
+            className="text-sm px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-300"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 ml-auto">
+          <button
+            onClick={handleDownload}
+            disabled={loadingPdf}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-all"
+          >
+            <Download size={14} />
+            {loadingPdf ? 'GÃ©nÃ©rationâ€¦' : 'TÃ©lÃ©charger PDF'}
+          </button>
+          <button
+            onClick={handleEmail}
+            disabled={loadingEmail}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-stone-700 text-sm font-medium transition-all"
+          >
+            <Mail size={14} />
+            {loadingEmail ? 'Envoiâ€¦' : 'Envoyer par email'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// â”€â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export default function Dashboard() {
+  const { token, user } = useAuthStore();
+  const [storeId, setStoreId] = useState('');
+  const [data, setData] = useState({ orders: [], products: [], categories: [], users: [] });
+  const [loading, setLoading] = useState(true);
+
+  const headers = { Authorization: `Bearer ${token}` };
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const orderParams = { limit: 100, ...(storeId && { storeId }) };
+        const [oRes, pRes, cRes, uRes] = await Promise.all([
+          adminApi.getOrders(orderParams),
+          fetch(`${API_URL}/api/products?limit=100`),
+          fetch(`${API_URL}/api/categories`),
+          fetch(`${API_URL}/api/users`, { headers }),
+        ]);
+        const [pData, cData, uData] = await Promise.all([
+          pRes.json(), cRes.json(), uRes.json()
+        ]);
+        setData({
+          orders:     oRes.data?.data || [],
+          products:   Array.isArray(pData) ? pData : pData.data || [],
+          categories: Array.isArray(cData) ? cData : cData.data || [],
+          users:      Array.isArray(uData) ? uData : uData.data || [],
+        });
+      } catch (e) { console.error(e); }
+      finally { setLoading(false); }
+    };
+    fetchAll();
+  }, [storeId]);
+
+  const totalRevenue = data.orders
+    .filter(o => o.status === 'DELIVERED')
+    .reduce((sum, o) => sum + Number(o.total || o.totalAmount || 0), 0);
+
+  const pendingOrders     = data.orders.filter(o => o.status === 'PENDING');
+  const lowStockProducts  = data.products.filter((p) => {
+    const available = (p.stock || 0) - (p.reservedStock || 0);
+    return available <= (p.lowStockAlert ?? 5);
+  });
+  const recentOrders = [...data.orders]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 6);
+
+  const orderChart   = [2, 5, 3, 8, 6, 4, 9, 7, 11, data.orders.length];
+  const revenueChart = [1, 3, 2, 6, 4, 5, 8, 6, 9, Math.min(10, Math.floor(totalRevenue / 10000))];
+
+  const statusBreakdown = Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({
+    key, ...cfg,
+    count: data.orders.filter(o => o.status === key).length,
+  })).filter(s => s.count > 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-stone-500">Chargement...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-stone-50 p-4 sm:p-6 lg:p-8">
+
+      {/* Header */}
+      <div className="mb-8 pl-12 lg:pl-0 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <BarChart3 size={18} className="text-rose-500" />
+            <span className="text-xs font-semibold uppercase tracking-widest text-stone-400">Vue d'ensemble</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-stone-900">
+            Bonjour{user?.name ? `, ${user.name.split(' ')[0]}` : ''} ðŸ‘‹
+          </h1>
+          <p className="text-stone-500 text-sm mt-1">
+            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        <StoreFilter value={storeId} onChange={setStoreId} />
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <StatCard label="Revenus livrÃ©s" value={formatPrice(totalRevenue)} icon={TrendingUp}
+          color="bg-rose-500" chartData={revenueChart} trend={12} delay={0} />
+        <StatCard label="Commandes" value={data.orders.length} icon={ShoppingBag}
+          color="bg-violet-500" chartData={orderChart} trend={8} delay={100} />
+        <StatCard label="Produits" value={data.products.length} icon={Package}
+          color="bg-blue-500" sub={`${lowStockProducts.length} en stock faible`} delay={200} />
+        <StatCard label="Clients" value={data.users.length} icon={Users}
+          color="bg-emerald-500" trend={5} delay={300} />
+      </div>
+
+      {/* Alerts */}
+      {(pendingOrders.length > 0 || lowStockProducts.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          {pendingOrders.length > 0 && (
+            <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                <Clock size={16} className="text-amber-600" />
+              </div>
+              <div>
+                <div className="font-semibold text-amber-800 text-sm">{pendingOrders.length} commande{pendingOrders.length > 1 ? 's' : ''} en attente</div>
+                <div className="text-xs text-amber-600">Ã€ traiter rapidement</div>
+              </div>
+            </div>
+          )}
+          {lowStockProducts.length > 0 && (
+            <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-4">
+              <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle size={16} className="text-red-600" />
+              </div>
+              <div>
+                <div className="font-semibold text-red-800 text-sm">{lowStockProducts.length} produit{lowStockProducts.length > 1 ? 's' : ''} en stock faible</div>
+                <div className="text-xs text-red-600">Stock â‰¤ 5 unitÃ©s</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Report downloader */}
+      <div className="mb-6">
+        <ReportDownloader storeId={storeId} token={token} />
+      </div>
+
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+
+        {/* Recent orders */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
+            <h2 className="font-semibold text-stone-900">DerniÃ¨res commandes</h2>
+            <span className="text-xs text-stone-400">{recentOrders.length} rÃ©centes</span>
+          </div>
+          {recentOrders.length === 0 ? (
+            <div className="text-center py-12 text-stone-400 text-sm">Aucune commande</div>
+          ) : (
+            <div className="divide-y divide-stone-50">
+              {recentOrders.map((o) => {
+                const s = STATUS_CONFIG[o.status] || { label: o.status, bg: 'bg-stone-50 border-stone-200', dot: 'bg-stone-400', color: 'text-stone-600' };
+                return (
+                  <div key={o.id} className="px-5 py-3.5 flex items-center gap-3 hover:bg-stone-50/50 transition-colors">
+                    <div className={`w-1.5 h-8 rounded-full ${s.dot}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-stone-800">
+                          {o.orderNumber || o.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold border ${s.bg} ${s.color}`}>
+                          {s.label}
+                        </span>
+                      </div>
+                      <div className="text-xs text-stone-400 mt-0.5 truncate">
+                        {o.user?.name || o.user?.email || 'Client'} Â· {formatDate(o.createdAt)}
+                      </div>
+                    </div>
+                    <div className="text-sm font-bold text-stone-900 shrink-0">
+                      {formatPrice(o.total || o.totalAmount || 0)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Right column */}
+        <div className="flex flex-col gap-4">
+
+          {/* Order status breakdown */}
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-stone-100">
+              <h2 className="font-semibold text-stone-900">Statuts commandes</h2>
+            </div>
+            {statusBreakdown.length === 0 ? (
+              <div className="text-center py-8 text-stone-400 text-sm">Aucune donnÃ©e</div>
+            ) : (
+              <div className="p-4 space-y-2.5">
+                {statusBreakdown.map((s) => {
+                  const pct = data.orders.length > 0 ? Math.round((s.count / data.orders.length) * 100) : 0;
+                  return (
+                    <div key={s.key}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${s.dot}`} />
+                          <span className="text-xs text-stone-600">{s.label}</span>
+                        </div>
+                        <span className="text-xs font-bold text-stone-800">{s.count}</span>
+                      </div>
+                      <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${s.dot} transition-all duration-700`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Categories */}
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-stone-100">
+              <h2 className="font-semibold text-stone-900">CatÃ©gories</h2>
+            </div>
+            <div className="divide-y divide-stone-50">
+              {data.categories.slice(0, 5).map((c) => {
+                const count = data.products.filter(p => p.categoryId === c.id).length;
+                return (
+                  <div key={c.id} className="px-5 py-3 flex items-center gap-3">
+                    {c.imageUrl ? (
+                      <img src={c.imageUrl} alt={c.name} className="w-8 h-8 rounded-lg object-cover border border-stone-100 shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-lg bg-stone-100 shrink-0" />
+                    )}
+                    <span className="text-sm text-stone-700 flex-1 truncate font-medium">{c.name}</span>
+                    <span className="text-xs font-semibold text-stone-400 shrink-0">{count} produits</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+========== FILE: backend\src\middlewares\admin.middleware.js ==========
+
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(403).json({ message: 'AccÃ¨s admin requis' });
+  }
+  next();
+}
+
+module.exports = requireAdmin;
+
+
+========== FILE: backend\src\config\email.js ==========
+
+const axios = require('axios');
+
+async function sendEmail({ to, subject, html, attachments = [] }) {
+  if (!process.env.BREVO_API_KEY) {
+    console.error('âŒ [sendEmail] BREVO_API_KEY manquante dans les variables d\'environnement');
+    throw new Error('Configuration email manquante (BREVO_API_KEY).');
+  }
+
+  const payload = {
+    sender: { email: process.env.FROM_EMAIL || 'sonshop221@gmail.com', name: 'UrbanBeauty' },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+  };
+
+  if (attachments.length > 0) {
+    payload.attachment = attachments.map(({ filename, content }) => ({
+      name: filename,
+      content, // base64 string attendu par Brevo
+    }));
+  }
+
+  try {
+    const response = await axios.post(
+      'https://api.brevo.com/v3/smtp/email',
+      payload,
+      {
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    console.log('âœ… [sendEmail] Brevo OK â€” messageId:', response.data?.messageId);
+    return response.data;
+  } catch (err) {
+    // C'est ICI que se cache la vraie raison de l'Ã©chec.
+    // axios met le detail de l'erreur API dans err.response.data,
+    // pas dans err.message â€” d'oÃ¹ le 500 muet que tu observais.
+    const brevoError = err.response?.data;
+    console.error('âŒ [sendEmail] Echec envoi Brevo');
+    console.error('   Status HTTP :', err.response?.status);
+    console.error('   Detail Brevo:', JSON.stringify(brevoError, null, 2));
+    console.error('   Destinataire:', to);
+
+    // On relance une erreur avec un message exploitable cÃ´tÃ© contrÃ´leur
+    const message = brevoError?.message || brevoError?.code || err.message || 'Erreur inconnue Brevo';
+    throw new Error(`Echec envoi email (Brevo): ${message}`);
+  }
+}
+
+module.exports = { sendEmail };
