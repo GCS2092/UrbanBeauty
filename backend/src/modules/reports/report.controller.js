@@ -45,12 +45,11 @@ async function sendReportByEmail(req, res) {
   try {
     console.log('📨 [sendReportByEmail] query =', req.query);
     console.log('📨 [sendReportByEmail] body =', req.body);
-    console.log('📨 ADMIN_EMAIL =', process.env.ADMIN_EMAIL);
 
-    const { storeId, from, to } = req.query;
+    const { storeId, from, to } = req.body;
 
     if (!storeId || !from || !to) {
-      console.log('❌ missing query params');
+      console.log('❌ missing body params');
       return res.status(400).json({
         error: 'storeId, from et to sont requis.'
       });
