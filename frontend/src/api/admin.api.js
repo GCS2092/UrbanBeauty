@@ -8,7 +8,7 @@ async function downloadBlob(url, filename, errorMessage) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || err.error || errorMessage);
+    throw new Error(err.message || errorMessage);
   }
   const blob = await res.blob();
   const objectUrl = window.URL.createObjectURL(blob);
@@ -31,42 +31,30 @@ function buildQueryString(params) {
 }
 
 export const adminApi = {
-  // ── Commandes ───────────────────────────────────────────────────────────
+  // ── Commandes ────────────────────────────────────────────────────
   getOrders:          (params) => api.get('/api/admin/orders', { params }),
   createManualOrder:  (data)   => api.post('/api/admin/orders', data),
   updatePayment:      (id, data) => api.patch(`/api/admin/orders/${id}/payment`, data),
   confirmDraftOrder:  (id)     => api.patch(`/api/admin/orders/${id}/confirm-draft`),
   rejectDraftOrder:   (id, data) => api.patch(`/api/admin/orders/${id}/reject-draft`, data),
 
-  // ── Recherche (pour création manuelle) ─────────────────────────────────
+  // ── Recherche (pour création manuelle) ───────────────────────────
   searchUsers:    (q)      => api.get('/api/admin/orders/search/users', { params: { q } }),
   searchProducts: (params) => api.get('/api/admin/orders/search/products', { params }),
 
-  // ── Factures ────────────────────────────────────────────────────────────
+  // ── Factures ─────────────────────────────────────────────────────
   getInvoices:       (params)   => api.get('/api/admin/invoices', { params }),
   getInvoiceByOrder: (orderId)  => api.get(`/api/admin/invoices/order/${orderId}`),
   getInvoiceById:    (id)       => api.get(`/api/admin/invoices/${id}`),
 
-  // ── Transferts de stock ─────────────────────────────────────────────────
+  // ── Transferts de stock ───────────────────────────────────────────
   getStockTransfers:      (params) => api.get('/api/admin/stock-transfers', { params }),
   createStockTransfer:    (data)   => api.post('/api/admin/stock-transfers', data),
   validateStockTransfer:  (id)     => api.patch(`/api/admin/stock-transfers/${id}/validate`),
   cancelStockTransfer:    (id, reason) =>
     api.patch(`/api/admin/stock-transfers/${id}/cancel`, { reason }),
 
-  // ── Rapports ────────────────────────────────────────────────────────────
-  downloadReport(params, filename) {
-    const qs = buildQueryString(params); // { storeId, from, to }
-    return downloadBlob(
-      `${API_URL}/api/admin/reports/download${qs}`,
-      filename || `rapport-${params.from}-${params.to}.pdf`,
-      'Impossible de générer le rapport.',
-    );
-  },
-
-  sendReportEmail: (data) => api.post('/api/admin/reports/send-email', data),
-
-  // ── Autres ──────────────────────────────────────────────────────────────
+  // ── Autres ───────────────────────────────────────────────────────
   getAuditLogs: (params) => api.get('/api/admin/audit', { params }),
   getStores:    ()       => api.get('/api/admin/stores'),
   getCategories:()       => api.get('/api/categories'),

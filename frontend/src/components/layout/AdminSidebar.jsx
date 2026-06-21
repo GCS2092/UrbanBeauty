@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Package, ShoppingBag,
   Tag, Ticket, Users, LogOut, Menu, X, Sparkles,
   CreditCard, Settings, BookOpen, FileText, Shield, Store,
-  ArrowRightLeft, FileBarChart
+  ArrowRightLeft
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import useAuthStore from '../../store/authStore';
@@ -16,7 +16,6 @@ const allLinks = [
   { to: '/admin/payments',        label: 'Paiements',       icon: CreditCard,                  adminOnly: false },
   { to: '/admin/accounting',      label: 'Comptabilité',    icon: BookOpen,                    adminOnly: false },
   { to: '/admin/invoices',        label: 'Factures',        icon: FileText,                    adminOnly: false },
-  { to: '/admin/reports',         label: 'Rapports',        icon: FileBarChart,                adminOnly: false },
   { to: '/admin/stores',          label: 'Boutiques',       icon: Store,                       adminOnly: true  }, // ← masqué STAFF
   { to: '/admin/stock-transfers', label: 'Transferts',      icon: ArrowRightLeft,              adminOnly: false },
   { to: '/admin/audit',           label: "Journal d'audit", icon: Shield,                      adminOnly: false },

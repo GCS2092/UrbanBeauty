@@ -41,7 +41,6 @@ import AdminInvoices from './pages/admin/AdminInvoices';
 import AdminAudit from './pages/admin/AdminAudit';
 import AdminStores from './pages/admin/AdminStores';
 import AdminStockTransfers from './pages/admin/AdminStockTransfers';
-import AdminReports from './pages/admin/AdminReports';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -97,7 +96,6 @@ export default function App() {
                 <Route path="/admin/payments" element={<AdminPayments />} />
                 <Route path="/admin/accounting" element={<AdminAccounting />} />
                 <Route path="/admin/invoices" element={<AdminInvoices />} />
-                <Route path="/admin/reports" element={<AdminReports />} />
                 <Route path="/admin/stock-transfers" element={<AdminStockTransfers />} />
                 <Route path="/admin/audit" element={<AdminAudit />} />
                 <Route path="/admin/categories" element={<AdminCategories />} />
@@ -120,3 +118,4 @@ export default function App() {
     </QueryClientProvider>
   );
 }
+

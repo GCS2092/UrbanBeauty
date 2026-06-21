@@ -21,7 +21,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    const message = error.response?.data?.message || error.response?.data?.error || 'Une erreur est survenue';
+    const message = error.response?.data?.message || 'Une erreur est survenue';
 
     if (status === 401) {
       localStorage.removeItem(AUTH_TOKEN_KEY);
