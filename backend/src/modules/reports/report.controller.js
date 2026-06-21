@@ -43,7 +43,6 @@ async function downloadReport(req, res) {
 
 async function sendReportByEmail(req, res) {
   try {
-    console.log('📨 [sendReportByEmail] query =', req.query);
     console.log('📨 [sendReportByEmail] body =', req.body);
 
     const { storeId, from, to } = req.body;
@@ -92,6 +91,9 @@ async function sendReportByEmail(req, res) {
 
     console.log('📧 sending email to:', recipient);
 
+    // sendEmail relance maintenant une erreur explicite si Brevo refuse,
+    // donc on l'attrape ici pour renvoyer un message utile au frontend
+    // au lieu d'un simple 500 muet.
     await sendEmail({
       to: recipient,
       subject: emailData.subject,
@@ -114,7 +116,7 @@ async function sendReportByEmail(req, res) {
     console.error('❌ Erreur sendReportByEmail:', err);
 
     res.status(500).json({
-      error: "Erreur lors de l'envoi du rapport."
+      error: err.message || "Erreur lors de l'envoi du rapport."
     });
   }
 }
