@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { X, Download, Bell, Zap, Package, Tag } from 'lucide-react';
 
 const STORAGE_KEY = 'pwa_banner_dismissed';
@@ -141,7 +141,7 @@ export default function PWAInstallBanner() {
               <span className="text-xl">🛍️</span>
             </div>
             <div>
-              <p className="text-white font-bold text-sm">Installer UrbanBeauty</p>
+              <p className="text-white font-bold text-sm">Installer SonShop</p>
               <p className="text-rose-100 text-xs">Application gratuite</p>
             </div>
           </div>

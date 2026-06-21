@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'UrbanBeauty',
-        short_name: 'UrbanBeauty',
+        name: 'SonShop',
+        short_name: 'SonShop',
         description: 'Vêtements et accessoires authentiques, livraison partout au Sénégal et export international.',
         theme_color: '#e11d48',
         background_color: '#ffffff',

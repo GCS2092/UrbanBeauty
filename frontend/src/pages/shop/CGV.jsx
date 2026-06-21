@@ -7,7 +7,7 @@
         <h2 className="text-lg font-semibold mb-2">1. Objet</h2>
         <p>
           Les présentes Conditions Générales de Vente régissent les relations
-          contractuelles entre UrbanBeauty et ses clients dans le cadre de la
+          contractuelles entre SonShop et ses clients dans le cadre de la
           vente de produits sur le site.
         </p>
       </section>
@@ -46,3 +46,4 @@
     </div>
   );
 }
+

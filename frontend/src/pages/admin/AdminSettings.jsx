@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Settings, Smartphone, Truck, Save, CheckCircle,
@@ -109,10 +109,10 @@ export default function AdminSettings() {
               <p className="text-xs text-stone-400">Affiché en en-tête des factures</p>
             </div>
           </div>
-          <SettingInput label="Nom de l'entreprise" value={form.company_name} onChange={update('company_name')} placeholder="Urban Beauty" />
+          <SettingInput label="Nom de l'entreprise" value={form.company_name} onChange={update('company_name')} placeholder="SonShop" />
           <SettingInput label="Adresse" value={form.company_address} onChange={update('company_address')} placeholder="Dakar, Sénégal" />
           <SettingInput label="Téléphone" value={form.company_phone} onChange={update('company_phone')} placeholder="+221 77 000 00 00" />
-          <SettingInput label="Email" value={form.company_email} onChange={update('company_email')} placeholder="contact@urbanbeauty.sn" />
+          <SettingInput label="Email" value={form.company_email} onChange={update('company_email')} placeholder="sonshop221@gmail.com" />
         </div>
 
         {/* ── Mobile Money ── */}

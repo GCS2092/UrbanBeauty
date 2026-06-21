@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/AdminAccounting.jsx
+﻿// frontend/src/pages/admin/AdminAccounting.jsx
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -69,7 +69,7 @@ const exportPDF = async (dashboard, period, year, month) => {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text('UrbanBeauty - Rapport Comptable', 14, 13);
+    doc.text('SonShop - Rapport Comptable', 14, 13);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(`Periode : ${periodLabel}   -   Genere le ${new Date().toLocaleDateString('fr-FR')}`, 14, 22);

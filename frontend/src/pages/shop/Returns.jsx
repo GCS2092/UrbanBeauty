@@ -1,10 +1,10 @@
-import { RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
+﻿import { RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 export default function Returns() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
       <h1 className="text-3xl font-bold text-stone-800 mb-2">Politique de retour</h1>
-      <p className="text-stone-400 text-sm mb-10">Vos achats sont protégés chez Urban Beauty</p>
+      <p className="text-stone-400 text-sm mb-10">Vos achats sont protégés chez SonShop</p>
 
       {/* Résumé visuel */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">

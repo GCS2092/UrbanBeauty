@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 
 const DEFAULT_META = {
-  title: 'Urban Beauty — Vêtements & accessoires authentiques',
+  title: 'SonShop — Vêtements & accessoires authentiques',
   description:
-    'Découvrez Urban Beauty, votre boutique en ligne de vêtements et accessoires de qualité. Livraison rapide partout au Sénégal et à l\'international.',
+    'Découvrez SonShop, votre boutique en ligne de vêtements et accessoires de qualité. Livraison rapide partout au Sénégal et à l\'international.',
   image: 'https://urban-beauty.vercel.app/icons/icon-512x512.png',
   url: 'https://urban-beauty.vercel.app',
 };
@@ -14,7 +14,7 @@ const DEFAULT_META = {
  */
 export function useMeta({ title, description, image, url } = {}) {
   useEffect(() => {
-    const t = title ? `${title} — Urban Beauty` : DEFAULT_META.title;
+    const t = title ? `${title} — SonShop` : DEFAULT_META.title;
     const d = description || DEFAULT_META.description;
     const img = image || DEFAULT_META.image;
     const u = url || window.location.href;
@@ -44,7 +44,7 @@ export function useMeta({ title, description, image, url } = {}) {
     setMeta('meta[property="og:image"]', img);
     setMeta('meta[property="og:url"]', u);
     setMeta('meta[property="og:type"]', 'website');
-    setMeta('meta[property="og:site_name"]', 'Urban Beauty');
+    setMeta('meta[property="og:site_name"]', 'SonShop');
     setMeta('meta[property="og:locale"]', 'fr_FR');
 
     // Twitter Card

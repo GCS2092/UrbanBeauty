@@ -1,14 +1,14 @@
-export default function About() {
+﻿export default function About() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-      <h1 className="text-3xl font-bold text-stone-800 mb-2">À propos d'Urban Beauty</h1>
+      <h1 className="text-3xl font-bold text-stone-800 mb-2">À propos de SonShop</h1>
       <p className="text-stone-400 text-sm mb-10">Notre histoire, nos valeurs</p>
 
       <div className="space-y-8 text-stone-600 leading-relaxed">
         <div>
           <h2 className="text-xl font-bold text-stone-800 mb-3">Qui sommes-nous ?</h2>
           <p>
-            Urban Beauty est une boutique en ligne spécialisée dans les vêtements et accessoires
+            SonShop est une boutique en ligne spécialisée dans les vêtements et accessoires
             authentiques, fondée au Sénégal avec une vision simple : rendre la mode de qualité
             accessible à tous, avec une livraison rapide partout au Sénégal et à l'international.
           </p>

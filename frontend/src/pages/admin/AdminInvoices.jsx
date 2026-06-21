@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FileText, Download, Search, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
@@ -31,7 +31,7 @@ const STATUS_LABELS = {
 // ---------------------------------------------------------------------------
 const buildInvoiceWhatsAppMessage = ({ inv, clientName }) => {
   const lines = [];
-  lines.push(`*Facture Urban Beauty*`);
+  lines.push(`*Facture SonShop*`);
   lines.push(`N° Facture : *${inv.invoiceNumber}*`);
   lines.push(`Commande : ${inv.order?.orderNumber || '-'}`);
   lines.push('');
