@@ -5,6 +5,7 @@ import { ordersApi } from '../../api/orders.api';
 import { formatPrice } from '../../utils/formatPrice';
 import { formatDateTime } from '../../utils/formatDate';
 import { PAYMENT_METHOD_LABELS, ORDER_STATUS_LABELS } from '../../utils/constants';
+import { getImageUrl } from '../../utils/imageUrl';
 import OrderStatusBadge from '../../components/shared/OrderStatusBadge';
 import Spinner from '../../components/ui/Spinner';
 
@@ -75,28 +76,45 @@ export default function OrderDetail() {
               Articles commandés
             </h2>
 
-            <div className="space-y-3">
-              {order.items?.map((item) => (
-                <div key={item.id} className="flex gap-3 items-center py-1">
-                  <div className="w-11 h-11 rounded-xl bg-rose-50 flex items-center justify-center text-lg shrink-0">
-                    🛍️
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-stone-800 truncate">
-                      {item.productName}
+            <div className="space-y-1">
+              {order.items?.map((item) => {
+                const imgUrl = getImageUrl(item.image?.url || item.productImage);
+                return (
+                  <div key={item.id} className="flex gap-3 items-center py-2.5 border-b border-stone-50 last:border-0">
+                    {/* Image produit */}
+                    <div className="w-11 h-11 rounded-xl bg-stone-50 flex items-center justify-center shrink-0 overflow-hidden">
+                      {imgUrl ? (
+                        <img
+                          src={imgUrl}
+                          alt={item.productName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = '<span class="text-lg">🛍️</span>';
+                          }}
+                        />
+                      ) : (
+                        <span className="text-lg">🛍️</span>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-stone-800 truncate">
+                        {item.productName}
+                      </p>
+                      {item.variantLabel && (
+                        <p className="text-xs text-stone-400">{item.variantLabel}</p>
+                      )}
+                      <p className="text-xs text-stone-400 mt-0.5">
+                        x{item.quantity} · {formatPrice(item.price)} / unité
+                      </p>
+                    </div>
+                    <p className="text-sm font-bold text-stone-800 shrink-0">
+                      {formatPrice(item.subtotal)}
                     </p>
-                    {item.variantLabel && (
-                      <p className="text-xs text-stone-400">{item.variantLabel}</p>
-                    )}
-                    <p className="text-xs text-stone-400 mt-0.5">
-                      x{item.quantity} · {formatPrice(item.price)} / unité
-                    </p>
                   </div>
-                  <p className="text-sm font-bold text-stone-800 shrink-0">
-                    {formatPrice(item.subtotal)}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Totaux */}
@@ -131,10 +149,9 @@ export default function OrderDetail() {
               <div className="space-y-1">
                 {[...order.tracking].reverse().map((track, i, arr) => (
                   <div key={track.id} className="flex gap-3">
-                    {/* Dot + line */}
                     <div className="flex flex-col items-center">
                       <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
                           i === 0
                             ? 'bg-rose-500 text-white'
                             : 'bg-stone-100 text-stone-400'
@@ -146,8 +163,6 @@ export default function OrderDetail() {
                         <div className="w-px h-6 bg-stone-100 my-1" />
                       )}
                     </div>
-
-                    {/* Text */}
                     <div className="pb-3">
                       <p className="text-sm font-semibold text-stone-800 leading-snug">
                         {ORDER_STATUS_LABELS[track.status]}

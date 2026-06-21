@@ -10,6 +10,7 @@ import AdminRoute from './components/shared/AdminRoute';
 import AdminOnlyRoute from './components/shared/AdminOnlyRoute';
 import ShopLayout from './components/layout/ShopLayout';
 import AdminLayout from './components/layout/AdminLayout';
+import AccountLayout from './components/account/AccountLayout';
 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -51,7 +52,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Devtools uniquement en développement
 const isDev = import.meta.env.DEV;
 
 export default function App() {
@@ -77,13 +77,17 @@ export default function App() {
               <Route path="/returns" element={<Returns />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
+
+              {/* Pages protégées avec sidebar compte */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/orders/:orderNumber" element={<OrderDetail />} />
-                <Route path="/account/profile" element={<Profile />} />
-                <Route path="/account/addresses" element={<Addresses />} />
-                <Route path="/account/wishlist" element={<Wishlist />} />
-                <Route path="/account/notifications" element={<Notifications />} />
+                <Route element={<AccountLayout />}>
+                  <Route path="/account/profile" element={<Profile />} />
+                  <Route path="/account/addresses" element={<Addresses />} />
+                  <Route path="/account/wishlist" element={<Wishlist />} />
+                  <Route path="/account/notifications" element={<Notifications />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/orders/:orderNumber" element={<OrderDetail />} />
+                </Route>
               </Route>
             </Route>
 
@@ -113,9 +117,7 @@ export default function App() {
         </AuthProvider>
       </BrowserRouter>
 
-      {/* Devtools visibles uniquement en développement local */}
       {isDev && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   );
 }
-
