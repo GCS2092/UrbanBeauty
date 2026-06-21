@@ -1,7 +1,14 @@
 const prisma = require('../../config/database');
 
 async function collectReportData(storeId, from, to) {
-  const dateFilter = { gte: new Date(from), lte: new Date(to) };
+  // ── Filtre de dates ──────────────────────────────────────────
+  // ⚠️ FIX : new Date('2026-06-21') = 2026-06-21T00:00:00.000Z (minuit pile).
+  // Avec lte sur cette valeur, toute dépense/commande créée après minuit
+  // le dernier jour était exclue. On pousse donc "to" à 23:59:59.999
+  // pour couvrir la journée entière.
+  const toEndOfDay = new Date(to);
+  toEndOfDay.setHours(23, 59, 59, 999);
+  const dateFilter = { gte: new Date(from), lte: toEndOfDay };
 
   // ── Commandes ──────────────────────────────────────────────
   const orders = await prisma.order.findMany({
@@ -83,9 +90,26 @@ async function collectReportData(storeId, from, to) {
   });
 
   // ── Dépenses ───────────────────────────────────────────────
+  // DIAGNOSTIC : on log le storeId utilisé + le nombre de dépenses
+  // trouvées AVANT le filtre storeId, pour vérifier si le storeId
+  // est la cause d'un total à 0 (dépenses existantes mais sur un
+  // storeId différent, ou enregistrées avec storeId null).
+  const allExpensesInPeriod = await prisma.expense.findMany({
+    where: { date: dateFilter },
+    select: { id: true, storeId: true, amount: true, category: true, date: true },
+  });
+  console.log(`💸 [collectReportData] storeId demandé = ${storeId}`);
+  console.log(`💸 [collectReportData] dépenses trouvées (toutes boutiques) sur la période = ${allExpensesInPeriod.length}`);
+  if (allExpensesInPeriod.length > 0) {
+    const storeIdsFound = [...new Set(allExpensesInPeriod.map((e) => e.storeId))];
+    console.log(`💸 [collectReportData] storeId(s) présents dans ces dépenses = ${JSON.stringify(storeIdsFound)}`);
+  }
+
   const expenses = await prisma.expense.findMany({
     where: { storeId, date: dateFilter },
   });
+  console.log(`💸 [collectReportData] dépenses retenues pour storeId=${storeId} = ${expenses.length}`);
+
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const expensesByCategory = expenses.reduce((acc, e) => {
     acc[e.category] = (acc[e.category] || 0) + e.amount;

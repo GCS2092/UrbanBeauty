@@ -50,13 +50,19 @@ function checkPageBreak(doc, neededHeight) {
   return false;
 }
 
-// En-tête de section (titre + petite barre dégradée simulée par 2 rectangles)
-function sectionHeader(doc, emoji, title) {
+// En-tête de section (petit carré couleur + titre + barre dégradée)
+// NOTE : pas d'emoji ici — la police Helvetica de pdfkit ne contient pas
+// ces glyphes Unicode et ça produit des caractères corrompus à l'affichage
+// (ex: "Ø=ÜË"). On utilise un petit carré dessiné à la place.
+function sectionHeader(doc, accentColor, title) {
   checkPageBreak(doc, 40);
   doc.moveDown(0.8);
   const y = doc.y;
+  doc.save();
+  doc.roundedRect(PAGE_MARGIN, y + 1.5, 9, 9, 2).fill(accentColor);
+  doc.restore();
   doc.fillColor(C.navy).font('Helvetica-Bold').fontSize(12)
-    .text(`${emoji}  ${title.toUpperCase()}`, PAGE_MARGIN, y);
+    .text(title.toUpperCase(), PAGE_MARGIN + 16, y);
   doc.moveDown(0.3);
   const lineY = doc.y;
   doc.save();
@@ -127,7 +133,10 @@ function drawKpiCards(doc, kpis) {
 
 async function buildReportPdf(data) {
   const settings = await getSettings();
-  const companyName    = settings.company_name    || 'UrbanBeauty';
+  // ⚠️ FIX : le fallback pointait vers "UrbanBeauty" (mauvais projet/copier-coller).
+  // Ta boutique s'appelle SonShop — c'est le vrai fallback à utiliser si
+  // settings.company_name n'est pas configuré en base.
+  const companyName    = settings.company_name    || 'SonShop';
   const companyAddress = settings.company_address || '';
   const companyPhone   = settings.company_phone   || '';
 
@@ -143,11 +152,13 @@ async function buildReportPdf(data) {
     const headerH = 86;
     doc.rect(0, 0, doc.page.width, headerH).fill(C.navy);
 
-    doc.fillColor(C.primary).font('Helvetica-Bold').fontSize(20)
-      .text('URBAN', PAGE_MARGIN, 26, { continued: true });
-    doc.fillColor(C.white).text('BEAUTY');
+    // ⚠️ FIX : le nom "URBAN"/"BEAUTY" était codé en dur ici, donc le PDF
+    // affichait toujours "UrbanBeauty" peu importe la vraie boutique.
+    // On utilise maintenant companyName dynamiquement (ex: "SonShop").
+    doc.fillColor(C.white).font('Helvetica-Bold').fontSize(20)
+      .text(companyName.toUpperCase(), PAGE_MARGIN, 26);
     doc.fillColor('#aaaaaa').font('Helvetica').fontSize(7.5)
-      .text('MODE & BEAUTÉ', PAGE_MARGIN, 50, { characterSpacing: 1.5 });
+      .text('RAPPORT DE GESTION AUTOMATIQUE', PAGE_MARGIN, 50, { characterSpacing: 1.5 });
 
     doc.fillColor(C.white).font('Helvetica-Bold').fontSize(13)
       .text('RAPPORT DE GESTION', PAGE_MARGIN, 24, { width: CONTENT_W, align: 'right' });
@@ -181,7 +192,7 @@ async function buildReportPdf(data) {
     ]);
 
     // ── ÉQUILIBRE FINANCIER ─────────────────────────────────────────────
-    sectionHeader(doc, '📊', 'Équilibre financier');
+    sectionHeader(doc, C.navy, 'Équilibre financier');
     {
       const ca = data.financial.chiffreAffaires || 1;
       const rows = [
@@ -208,7 +219,7 @@ async function buildReportPdf(data) {
       const beneficeColor = beneficePositif ? C.success : C.danger;
       roundedRect(doc, innerX, cy + 4, innerW, 26, 6, beneficeBg);
       doc.fillColor(beneficeColor).font('Helvetica-Bold').fontSize(9.5)
-        .text(`${beneficePositif ? '📈' : '📉'}  Bénéfice estimé`, innerX + 10, cy + 13);
+        .text('Bénéfice estimé', innerX + 10, cy + 13);
       doc.fontSize(11)
         .text(formatFcfa(data.financial.beneficeEstime), innerX, cy + 12, { width: innerW - 10, align: 'right' });
 
@@ -216,7 +227,7 @@ async function buildReportPdf(data) {
     }
 
     // ── COMMANDES PAR STATUT ────────────────────────────────────────────
-    sectionHeader(doc, '🛍️', 'Commandes par statut');
+    sectionHeader(doc, C.primary, 'Commandes par statut');
     {
       const statusLabels = {
         PENDING: 'En attente', CONFIRMED: 'Confirmées', PROCESSING: 'En préparation',
@@ -255,7 +266,7 @@ async function buildReportPdf(data) {
     }
 
     // ── TOP 5 CLIENTS ─────────────────────────────────────────────────────
-    sectionHeader(doc, '🏆', 'Top 5 clients');
+    sectionHeader(doc, C.gold, 'Top 5 clients');
     {
       const clients = (data.orders.topClients || []).slice(0, 5);
       if (clients.length === 0) {
@@ -293,7 +304,7 @@ async function buildReportPdf(data) {
     }
 
     // ── TOP 5 PRODUITS VENDUS ────────────────────────────────────────────
-    sectionHeader(doc, '💎', 'Top 5 produits vendus');
+    sectionHeader(doc, C.gold, 'Top 5 produits vendus');
     {
       const prods = (data.products.topProducts || []).slice(0, 5);
       if (prods.length === 0) {
@@ -324,7 +335,7 @@ async function buildReportPdf(data) {
     }
 
     // ── STOCK ───────────────────────────────────────────────────────────
-    sectionHeader(doc, '📦', 'Stock');
+    sectionHeader(doc, C.navy, 'Stock');
     {
       const lowStock = data.stock.lowStock || [];
       const baseRows = 4;
@@ -337,8 +348,8 @@ async function buildReportPdf(data) {
 
       kvRow(doc, innerX, cy, innerW, 'Total produits', String(data.stock.totalProducts)); cy += 18;
       kvRow(doc, innerX, cy, innerW, 'Valeur totale du stock', formatFcfa(data.stock.totalStockValue)); cy += 18;
-      kvRow(doc, innerX, cy, innerW, '⚠️ Alertes stock bas', String(data.stock.lowStock.length), { labelColor: C.warning, valueColor: C.warning, bold: true }); cy += 18;
-      kvRow(doc, innerX, cy, innerW, '❌ Produits épuisés', String(data.stock.outOfStock.length), { labelColor: C.danger, valueColor: C.danger, bold: true }); cy += 18;
+      kvRow(doc, innerX, cy, innerW, 'Alertes stock bas', String(data.stock.lowStock.length), { labelColor: C.warning, valueColor: C.warning, bold: true }); cy += 18;
+      kvRow(doc, innerX, cy, innerW, 'Produits épuisés', String(data.stock.outOfStock.length), { labelColor: C.danger, valueColor: C.danger, bold: true }); cy += 18;
 
       if (alertRows > 0) {
         cy += 6;
@@ -350,8 +361,11 @@ async function buildReportPdf(data) {
           .text('PRODUITS EN ALERTE', innerX, cy, { characterSpacing: 0.5 });
         cy += 16;
         lowStock.slice(0, 6).forEach((p) => {
+          doc.save();
+          doc.circle(innerX + 3, cy + 4, 3).fill(C.danger);
+          doc.restore();
           doc.fillColor(C.danger).font('Helvetica').fontSize(8.5)
-            .text(`⚠️  ${p.name}`, innerX, cy, { width: innerW * 0.6 });
+            .text(p.name, innerX + 12, cy, { width: innerW * 0.6 - 12 });
           doc.fillColor(C.textLight).font('Helvetica').fontSize(8)
             .text(`Stock : ${p.stock} / Alerte : ${p.alert}`, innerX + innerW * 0.6, cy, { width: innerW * 0.4, align: 'right' });
           cy += 18;
@@ -362,7 +376,7 @@ async function buildReportPdf(data) {
     }
 
     // ── DÉPENSES ────────────────────────────────────────────────────────
-    sectionHeader(doc, '💸', `Dépenses — ${formatFcfa(data.expenses.total)}`);
+    sectionHeader(doc, C.danger, `Dépenses — ${formatFcfa(data.expenses.total)}`);
     {
       const entries = Object.entries(data.expenses.byCategory || {});
       if (entries.length === 0) {
