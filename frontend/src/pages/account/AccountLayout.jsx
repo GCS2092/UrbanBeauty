@@ -48,10 +48,10 @@ export default function AccountLayout() {
   return (
     <div className="min-h-screen bg-stone-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-6 items-start">
+        <div className="flex flex-col md:flex-row gap-6 items-start">
 
           {/* ── Sidebar ── */}
-          <aside className="w-56 shrink-0 sticky top-8">
+          <aside className="w-full md:w-56 shrink-0 md:sticky md:top-8">
             <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden">
 
               {/* Avatar */}
@@ -121,7 +121,7 @@ export default function AccountLayout() {
           </aside>
 
           {/* ── Main content ── */}
-          <main className="flex-1 min-w-0">
+          <main className="flex-1 min-w-0 w-full">
             <Outlet />
           </main>
 
