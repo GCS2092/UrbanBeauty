@@ -1,5 +1,5 @@
 // ============================================================
-// UrbanBeauty — Templates Emails
+// SonShop — Templates Emails
 // Thème : féminin, rose poudré + doré + blanc cassé
 // ============================================================
 
@@ -26,7 +26,7 @@ function layout(bodyContent, preheader = '') {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UrbanBeauty</title>
+  <title>SonShop</title>
   ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;font-size:1px;">${preheader}</div>` : ''}
 </head>
 <body style="margin:0;padding:0;background-color:${C.bg};font-family:'Segoe UI',Arial,sans-serif;">
@@ -41,7 +41,7 @@ function layout(bodyContent, preheader = '') {
               <tr>
                 <td>
                   <div style="font-size:24px;font-weight:900;letter-spacing:3px;font-family:Georgia,serif;">
-                    <span style="color:${C.primary};">URBAN</span><span style="color:${C.white};">BEAUTY</span>
+                    <span style="color:${C.primary};">SON</span><span style="color:${C.white};">SHOP</span>
                   </div>
                   <div style="font-size:9px;color:#aaaaaa;letter-spacing:3px;margin-top:4px;text-transform:uppercase;">
                     Mode &amp; Beauté
@@ -75,7 +75,7 @@ function layout(bodyContent, preheader = '') {
               <a href="https://wa.me/221XXXXXXXXX" style="color:${C.primary};text-decoration:none;font-weight:600;">WhatsApp</a>
             </p>
             <p style="margin:0 0 8px;font-size:10px;color:#666666;">
-              &copy; ${new Date().getFullYear()} UrbanBeauty &middot; Dakar, Sénégal
+              &copy; ${new Date().getFullYear()} SonShop &middot; Dakar, Sénégal
             </p>
             <table cellpadding="0" cellspacing="0" style="margin:12px auto 0;">
               <tr>
@@ -141,7 +141,7 @@ function whatsappCta(number, text) {
     <tr>
       <td style="background:#25D366;border-radius:8px;">
         <a href="https://wa.me/${number}" style="display:block;padding:12px 28px;color:#ffffff;font-weight:700;font-size:13px;text-decoration:none;letter-spacing:1px;text-transform:uppercase;">
-          💬 Contacter UrbanBeauty sur WhatsApp
+          💬 Contacter SonShop sur WhatsApp
         </a>
       </td>
     </tr>
@@ -231,7 +231,7 @@ function greeting(name) {
 function signature() {
   return `<p style="margin:28px 0 0;font-size:13px;color:${C.textLight};">
     À bientôt,<br/>
-    <strong style="color:${C.text};">L'équipe UrbanBeauty</strong>
+    <strong style="color:${C.text};">L'équipe SonShop</strong>
   </p>`;
 }
 
@@ -245,7 +245,7 @@ function guestInfoBanner(whatsappNumber) {
           ℹ️ Commande passée sans compte
         </p>
         <p style="margin:0;font-size:12px;color:${C.warning};line-height:1.6;">
-          Vous n'avez pas de compte UrbanBeauty. Pour suivre l'évolution de votre commande,
+          Vous n'avez pas de compte SonShop. Pour suivre l'évolution de votre commande,
           contactez-nous directement sur WhatsApp en indiquant votre numéro de commande.
         </p>
         ${whatsappNumber ? `
@@ -360,7 +360,7 @@ function buildOrderConfirmationEmail({
   `;
 
   return {
-    subject: `✅ Commande ${orderNumber} confirmée — UrbanBeauty`,
+    subject: `✅ Commande ${orderNumber} confirmée — SonShop`,
     html: layout(body, `Votre commande ${orderNumber} est confirmée.`),
   };
 }
@@ -414,7 +414,7 @@ function buildOrderStatusEmail({ orderNumber, customerName, status, clientUrl, t
   `;
 
   return {
-    subject: `Commande ${orderNumber} — ${s.label} ${s.emoji} — UrbanBeauty`,
+    subject: `Commande ${orderNumber} — ${s.label} ${s.emoji} — SonShop`,
     html: layout(body, `Votre commande ${orderNumber} est ${s.label}.`),
   };
 }
@@ -446,7 +446,7 @@ function buildInvoiceEmail({ invoiceNumber, orderNumber, customerName, total, cl
   `;
 
   return {
-    subject: `Facture ${invoiceNumber} — UrbanBeauty`,
+    subject: `Facture ${invoiceNumber} — SonShop`,
     html: layout(body, `Votre facture ${invoiceNumber} est disponible.`),
   };
 }
@@ -480,7 +480,7 @@ function buildPasswordResetEmail({ name, resetUrl }) {
   `;
 
   return {
-    subject: 'Réinitialisation de votre mot de passe — UrbanBeauty',
+    subject: 'Réinitialisation de votre mot de passe — SonShop',
     html: layout(body),
   };
 }
@@ -515,7 +515,7 @@ function buildPreorderEmail({ name, productName, orderNumber }) {
   `;
 
   return {
-    subject: `Précommande confirmée — ${productName} — UrbanBeauty`,
+    subject: `Précommande confirmée — ${productName} — SonShop`,
     html: layout(body),
   };
 }
@@ -523,7 +523,7 @@ function buildPreorderEmail({ name, productName, orderNumber }) {
 // ============================================================
 // 6. RAPPORT DE GESTION (EMAIL)
 // ============================================================
-function buildReportEmail({ period, financial, orders, products, stock, expenses, storeName = 'UrbanBeauty' }) {
+function buildReportEmail({ period, financial, orders, products, stock, expenses, storeName = 'SonShop' }) {
   const fmt = (n) => Number(n || 0).toLocaleString('fr-FR');
   const pct = (val, total) => total > 0 ? Math.round((val / total) * 100) : 0;
 

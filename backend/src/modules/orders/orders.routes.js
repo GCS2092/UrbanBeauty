@@ -1,6 +1,6 @@
 const express = require('express');
 const ordersController = require('./orders.controller');
-const { authenticate } = require('../../middlewares/auth.middleware');
+const { authenticate, authenticateOptional } = require('../../middlewares/auth.middleware');
 const requireAdmin = require('../../middlewares/admin.middleware');
 const requireStaff = require('../../middlewares/staff.middleware');
 const { apiLimiter, orderCreationLimiter } = require('../../middlewares/rateLimit.middleware');
@@ -39,8 +39,9 @@ const router = express.Router();
  *       201:
  *         description: Commande créée
  */
-router.post('/', orderCreationLimiter, ordersController.createOrder);
-router.post('/whatsapp', orderCreationLimiter, ordersController.createWhatsappOrder);
+// ✅ authenticateOptional : lie la commande au compte si connecté, sinon invité
+router.post('/', orderCreationLimiter, authenticateOptional, ordersController.createOrder);
+router.post('/whatsapp', orderCreationLimiter, authenticateOptional, ordersController.createWhatsappOrder);
 
 /**
  * @swagger
@@ -59,7 +60,6 @@ router.post('/whatsapp', orderCreationLimiter, ordersController.createWhatsappOr
  *       200:
  *         description: Liste paginée
  */
-// Lecture — STAFF peut voir, filtré automatiquement par storeIds
 router.get('/admin/all', authenticate, requireStaff, ordersController.getAllOrders);
 
 /**
@@ -115,7 +115,6 @@ router.get('/:orderNumber', apiLimiter, ordersController.getOrderByNumber);
  *       200:
  *         description: Statut mis à jour
  */
-// Changer statut — ADMIN seulement
 router.put('/:id/status', authenticate, requireAdmin, ordersController.changeOrderStatus);
 
 module.exports = router;
