@@ -8,9 +8,11 @@ OneSignal.init({
   appId: import.meta.env.VITE_ONESIGNAL_APP_ID,
   notifyButton: { enable: false },
   allowLocalhostAsSecureOrigin: true,
-  // ✅ On dit à OneSignal exactement où se trouve son Service Worker
+  // ✅ Chemin explicite vers notre worker dans public/
   serviceWorkerParam: { scope: '/' },
   serviceWorkerPath: '/OneSignalSDKWorker.js',
+  // ✅ On dit à OneSignal de NE PAS utiliser le sw.js de Vite PWA
+  serviceWorkerUpdaterPath: '/OneSignalSDKWorker.js',
 }).then(() => {
   console.log('OneSignal initialisé ✅')
 }).catch((err) => {

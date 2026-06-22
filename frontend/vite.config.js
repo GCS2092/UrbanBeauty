@@ -34,8 +34,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // ✅ Exclure le worker OneSignal du cache Workbox
+        // ✅ Ne jamais toucher au fichier OneSignal
         globIgnores: ['**/OneSignalSDKWorker.js'],
+        // ✅ Pas de fallback de navigation qui pourrait interférer
+        navigateFallback: null,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.vercel\.app\/api\/.*/i,
