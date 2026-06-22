@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Download, Bell, Zap, Package, Tag } from 'lucide-react';
+import OneSignal from 'react-onesignal';
 
 const STORAGE_KEY = 'pwa_banner_dismissed';
 
@@ -16,26 +17,28 @@ function isInStandaloneMode() {
 
 export default function PWAInstallBanner() {
   const [show, setShow]               = useState(false);
-  const [step, setStep]               = useState('banner'); // 'banner' | 'guide'
+  const [step, setStep]               = useState('banner');
   const [deferredPrompt, setDeferred] = useState(null);
   const [device, setDevice]           = useState('desktop');
-  const [notifStatus, setNotifStatus] = useState('default'); // 'default'|'granted'|'denied'
+  const [notifStatus, setNotifStatus] = useState('default');
 
   useEffect(() => {
-    // Déjà installé ou déjà fermé → on n'affiche pas
     if (isInStandaloneMode()) return;
     if (sessionStorage.getItem(STORAGE_KEY)) return;
 
     setDevice(getDeviceType());
 
-    // Notification permission actuelle
-    if ('Notification' in window) setNotifStatus(Notification.permission);
+    // ✅ Lire le statut permission depuis OneSignal (déjà initialisé dans main.jsx)
+    try {
+      const granted = OneSignal.Notifications.permission;
+      setNotifStatus(granted ? 'granted' : 'default');
+    } catch {
+      if ('Notification' in window) setNotifStatus(Notification.permission);
+    }
 
-    // Prompt natif Android/Chrome
     const handler = (e) => { e.preventDefault(); setDeferred(e); };
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Afficher après 4 secondes
     const t = setTimeout(() => setShow(true), 4000);
     return () => { clearTimeout(t); window.removeEventListener('beforeinstallprompt', handler); };
   }, []);
@@ -51,38 +54,37 @@ export default function PWAInstallBanner() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') { dismiss(); return; }
     }
-    // iOS ou pas de prompt natif → guide manuel
     setStep('guide');
   };
 
+  // ✅ OneSignal déjà initialisé — on appelle directement, pas d'import dynamique
   const requestNotifications = async () => {
-  try {
-    const OneSignal = (await import('react-onesignal')).default;
-    await OneSignal.Notifications.requestPermission();
-    const granted = OneSignal.Notifications.permission;
-    setNotifStatus(granted ? 'granted' : 'denied');
-  } catch (e) {
-    console.error('OneSignal error:', e);
-  }
-};
+    try {
+      await OneSignal.Notifications.requestPermission();
+      const granted = OneSignal.Notifications.permission;
+      setNotifStatus(granted ? 'granted' : 'denied');
+    } catch (e) {
+      console.error('OneSignal requestPermission error:', e);
+    }
+  };
 
   if (!show) return null;
 
-  // ── Guide iOS ──────────────────────────────────────────────────────────
+  // ── Guide ──────────────────────────────────────────────────────────────────
   if (step === 'guide') {
     const iosSteps = [
-      { icon: '⬆️', text: 'Appuyez sur le bouton Partager (rectangle avec flèche vers le haut) en bas de Safari' },
-      { icon: '📲', text: 'Faites défiler et appuyez sur « Sur l\'écran d\'accueil »' },
-      { icon: '✅', text: 'Appuyez sur « Ajouter » en haut à droite' },
+      { icon: '⬆️', text: "Appuyez sur le bouton Partager (rectangle avec flèche vers le haut) en bas de Safari" },
+      { icon: '📲', text: "Faites défiler et appuyez sur « Sur l'écran d'accueil »" },
+      { icon: '✅', text: "Appuyez sur « Ajouter » en haut à droite" },
     ];
     const androidSteps = [
-      { icon: '⋮', text: 'Appuyez sur les 3 points en haut à droite de Chrome' },
-      { icon: '📲', text: 'Appuyez sur « Ajouter à l\'écran d\'accueil »' },
-      { icon: '✅', text: 'Confirmez en appuyant sur « Ajouter »' },
+      { icon: '⋮',  text: "Appuyez sur les 3 points en haut à droite de Chrome" },
+      { icon: '📲', text: "Appuyez sur « Ajouter à l'écran d'accueil »" },
+      { icon: '✅', text: "Confirmez en appuyant sur « Ajouter »" },
     ];
     const desktopSteps = [
-      { icon: '⬇️', text: 'Cliquez sur l\'icône d\'installation dans la barre d\'adresse (Chrome/Edge)' },
-      { icon: '✅', text: 'Cliquez sur « Installer »' },
+      { icon: '⬇️', text: "Cliquez sur l'icône d'installation dans la barre d'adresse (Chrome/Edge)" },
+      { icon: '✅', text: "Cliquez sur « Installer »" },
     ];
     const steps = device === 'ios' ? iosSteps : device === 'android' ? androidSteps : desktopSteps;
 
@@ -103,7 +105,6 @@ export default function PWAInstallBanner() {
             ))}
           </div>
 
-          {/* Notifications */}
           {notifStatus === 'default' && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
               <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
@@ -130,11 +131,10 @@ export default function PWAInstallBanner() {
     );
   }
 
-  // ── Bannière principale ────────────────────────────────────────────────
+  // ── Bannière principale ───────────────────────────────────────────────────
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 sm:left-auto sm:right-4 sm:w-96">
       <div className="bg-white rounded-2xl shadow-2xl border border-stone-100 overflow-hidden">
-        {/* Header */}
         <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
@@ -150,7 +150,6 @@ export default function PWAInstallBanner() {
           </button>
         </div>
 
-        {/* Avantages */}
         <div className="px-4 py-3 space-y-2">
           {[
             { icon: <Zap size={14} className="text-rose-500" />,     text: 'Commandez en 1 clic, sans chercher le lien' },
@@ -165,7 +164,6 @@ export default function PWAInstallBanner() {
           ))}
         </div>
 
-        {/* Boutons */}
         <div className="px-4 pb-4 space-y-2">
           <button
             onClick={handleInstall}

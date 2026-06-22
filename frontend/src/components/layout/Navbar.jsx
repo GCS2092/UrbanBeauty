@@ -52,8 +52,8 @@ export default function Navbar() {
           {/* Actions */}
           <div className="flex items-center gap-3">
 
-            {/* Panier */}
-            <Link to="/cart" className="relative p-2 text-stone-600 hover:text-stone-900 transition-colors">
+            {/* Panier — visible uniquement sur desktop (mobile → BottomNav) */}
+            <Link to="/cart" className="relative p-2 text-stone-600 hover:text-stone-900 transition-colors hidden md:block">
               <ShoppingBag size={20} />
               {getTotalItems() > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
@@ -64,18 +64,18 @@ export default function Navbar() {
 
             {isAuthenticated ? (
               <>
-                {/* Wishlist */}
-                <Link to="/account/wishlist" className="p-2 text-stone-600 hover:text-rose-400 transition-colors hidden sm:block">
+                {/* Wishlist — desktop seulement */}
+                <Link to="/account/wishlist" className="p-2 text-stone-600 hover:text-rose-400 transition-colors hidden md:block">
                   <Heart size={20} />
                 </Link>
 
-                {/* Notifications */}
-                <Link to="/account/notifications" className="p-2 text-stone-600 hover:text-stone-900 transition-colors hidden sm:block">
+                {/* Notifications — desktop seulement */}
+                <Link to="/account/notifications" className="p-2 text-stone-600 hover:text-stone-900 transition-colors hidden md:block">
                   <Bell size={20} />
                 </Link>
 
-                {/* Profil dropdown */}
-                <div className="relative">
+                {/* Profil dropdown — desktop seulement */}
+                <div className="relative hidden md:block">
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
                     className="flex items-center gap-2 p-2 rounded-full hover:bg-stone-100 transition-colors"
@@ -110,12 +110,13 @@ export default function Navbar() {
                 </div>
               </>
             ) : (
-              <Link to="/login" className="hidden sm:flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium px-4 py-2 rounded-full transition-colors">
+              /* Connexion — desktop seulement (mobile → BottomNav) */
+              <Link to="/login" className="hidden md:flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium px-4 py-2 rounded-full transition-colors">
                 <User size={15} /> Connexion
               </Link>
             )}
 
-            {/* Menu mobile */}
+            {/* Menu hamburger mobile — gardé pour les liens Accueil/Boutique */}
             <button
               className="md:hidden p-2 text-stone-600"
               onClick={mobileMenuOpen ? closeMobileMenu : openMobileMenu}
@@ -125,7 +126,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Menu mobile déroulant */}
+        {/* Menu mobile déroulant — uniquement nav links */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-stone-100 py-4 flex flex-col gap-3">
             {navLinks.map((link) => (
@@ -143,11 +144,6 @@ export default function Navbar() {
                 {link.label}
               </NavLink>
             ))}
-            {!isAuthenticated && (
-              <Link to="/login" onClick={closeMobileMenu} className="text-sm font-medium text-rose-500 px-2 py-1">
-                Connexion
-              </Link>
-            )}
           </div>
         )}
       </div>

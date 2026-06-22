@@ -1,0 +1,532 @@
+﻿=== PWAInstallBanner.jsx ===
+import { useState, useEffect } from 'react';
+import { X, Download, Bell, Zap, Package, Tag } from 'lucide-react';
+
+const STORAGE_KEY = 'pwa_banner_dismissed';
+
+function getDeviceType() {
+  const ua = navigator.userAgent;
+  if (/iPad|iPhone|iPod/.test(ua)) return 'ios';
+  if (/android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+
+function isInStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+export default function PWAInstallBanner() {
+  const [show, setShow]               = useState(false);
+  const [step, setStep]               = useState('banner'); // 'banner' | 'guide'
+  const [deferredPrompt, setDeferred] = useState(null);
+  const [device, setDevice]           = useState('desktop');
+  const [notifStatus, setNotifStatus] = useState('default'); // 'default'|'granted'|'denied'
+
+  useEffect(() => {
+    // DÃ©jÃ  installÃ© ou dÃ©jÃ  fermÃ© â†’ on n'affiche pas
+    if (isInStandaloneMode()) return;
+    if (sessionStorage.getItem(STORAGE_KEY)) return;
+
+    setDevice(getDeviceType());
+
+    // Notification permission actuelle
+    if ('Notification' in window) setNotifStatus(Notification.permission);
+
+    // Prompt natif Android/Chrome
+    const handler = (e) => { e.preventDefault(); setDeferred(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+
+    // Afficher aprÃ¨s 4 secondes
+    const t = setTimeout(() => setShow(true), 4000);
+    return () => { clearTimeout(t); window.removeEventListener('beforeinstallprompt', handler); };
+  }, []);
+
+  const dismiss = () => {
+    sessionStorage.setItem(STORAGE_KEY, '1');
+    setShow(false);
+  };
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') { dismiss(); return; }
+    }
+    // iOS ou pas de prompt natif â†’ guide manuel
+    setStep('guide');
+  };
+
+  const requestNotifications = async () => {
+  try {
+    const OneSignal = (await import('react-onesignal')).default;
+    await OneSignal.Notifications.requestPermission();
+    const granted = OneSignal.Notifications.permission;
+    setNotifStatus(granted ? 'granted' : 'denied');
+  } catch (e) {
+    console.error('OneSignal error:', e);
+  }
+};
+
+  if (!show) return null;
+
+  // â”€â”€ Guide iOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  if (step === 'guide') {
+    const iosSteps = [
+      { icon: 'â¬†ï¸', text: 'Appuyez sur le bouton Partager (rectangle avec flÃ¨che vers le haut) en bas de Safari' },
+      { icon: 'ðŸ“²', text: 'Faites dÃ©filer et appuyez sur Â« Sur l\'Ã©cran d\'accueil Â»' },
+      { icon: 'âœ…', text: 'Appuyez sur Â« Ajouter Â» en haut Ã  droite' },
+    ];
+    const androidSteps = [
+      { icon: 'â‹®', text: 'Appuyez sur les 3 points en haut Ã  droite de Chrome' },
+      { icon: 'ðŸ“²', text: 'Appuyez sur Â« Ajouter Ã  l\'Ã©cran d\'accueil Â»' },
+      { icon: 'âœ…', text: 'Confirmez en appuyant sur Â« Ajouter Â»' },
+    ];
+    const desktopSteps = [
+      { icon: 'â¬‡ï¸', text: 'Cliquez sur l\'icÃ´ne d\'installation dans la barre d\'adresse (Chrome/Edge)' },
+      { icon: 'âœ…', text: 'Cliquez sur Â« Installer Â»' },
+    ];
+    const steps = device === 'ios' ? iosSteps : device === 'android' ? androidSteps : desktopSteps;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-stone-900">Comment installer l'app ?</h2>
+            <button onClick={dismiss} className="text-stone-400 hover:text-stone-600"><X size={20} /></button>
+          </div>
+
+          <div className="space-y-4">
+            {steps.map((s, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-lg shrink-0">{s.icon}</div>
+                <p className="text-sm text-stone-700 leading-relaxed pt-1">{s.text}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Notifications */}
+          {notifStatus === 'default' && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+              <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+                <Bell size={13} /> Activer les notifications
+              </p>
+              <p className="text-xs text-amber-700">Recevez vos confirmations de commande et nos promotions exclusives.</p>
+              <button
+                onClick={requestNotifications}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold py-2 rounded-lg transition-colors"
+              >
+                Autoriser les notifications
+              </button>
+            </div>
+          )}
+          {notifStatus === 'granted' && (
+            <p className="text-xs text-emerald-600 font-medium text-center">âœ… Notifications activÃ©es !</p>
+          )}
+
+          <button onClick={dismiss} className="w-full border border-stone-200 text-stone-500 text-sm py-2.5 rounded-xl hover:bg-stone-50">
+            Fermer
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // â”€â”€ BanniÃ¨re principale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  return (
+    <div className="fixed bottom-4 left-4 right-4 z-50 sm:left-auto sm:right-4 sm:w-96">
+      <div className="bg-white rounded-2xl shadow-2xl border border-stone-100 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
+              <span className="text-xl">ðŸ›ï¸</span>
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm">Installer SonShop</p>
+              <p className="text-rose-100 text-xs">Application gratuite</p>
+            </div>
+          </div>
+          <button onClick={dismiss} className="text-white/70 hover:text-white p-1">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Avantages */}
+        <div className="px-4 py-3 space-y-2">
+          {[
+            { icon: <Zap size={14} className="text-rose-500" />,     text: 'Commandez en 1 clic, sans chercher le lien' },
+            { icon: <Bell size={14} className="text-rose-500" />,    text: 'Notifications pour vos commandes et promos' },
+            { icon: <Package size={14} className="text-rose-500" />, text: 'Suivez vos livraisons en temps rÃ©el' },
+            { icon: <Tag size={14} className="text-rose-500" />,     text: 'AccÃ¨s rapide aux offres exclusives' },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-2.5">
+              <div className="w-5 h-5 shrink-0 flex items-center justify-center">{item.icon}</div>
+              <p className="text-xs text-stone-700">{item.text}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Boutons */}
+        <div className="px-4 pb-4 space-y-2">
+          <button
+            onClick={handleInstall}
+            className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm py-3 rounded-xl transition-colors"
+          >
+            <Download size={16} />
+            Installer l'application
+          </button>
+          <button onClick={dismiss} className="w-full text-xs text-stone-400 hover:text-stone-600 py-1">
+            Non merci, continuer sur le navigateur
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+=== notifications.api.js ===
+import api from './axios';
+
+export const notificationsApi = {
+  getAll: () => api.get('/api/notifications'),
+  markAsRead: (id) => api.put(`/api/notifications/${id}/read`),
+  markAllAsRead: () => api.put('/api/notifications/read-all'),
+  delete: (id) => api.delete(`/api/notifications/${id}`),
+};
+
+=== useNotifications.js ===
+=== Notifications.jsx ===
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Bell, Trash2, CheckCheck, Package, Tag, Star, ShoppingBag } from 'lucide-react';
+import { notificationsApi } from '../../api/notifications.api';
+import { formatRelative } from '../../utils/formatDate';
+import EmptyState from '../../components/shared/EmptyState';
+import Button from '../../components/ui/Button';
+import Spinner from '../../components/ui/Spinner';
+import { toast } from 'sonner';
+import { clsx } from 'clsx';
+
+const TYPE_ICONS = {
+  ORDER:      Package,
+  PROMOTION:  Tag,
+  NEW_PRODUCT: Star,
+  DELIVERY:   ShoppingBag,
+  default:    Bell,
+};
+
+function getIcon(type) {
+  return TYPE_ICONS[type] || TYPE_ICONS.default;
+}
+
+export default function Notifications() {
+  const queryClient = useQueryClient();
+
+  const { data: notifications, isLoading } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationsApi.getAll().then((r) => r.data),
+  });
+
+  const invalidate = () => queryClient.invalidateQueries(['notifications']);
+
+  const { mutate: markRead } = useMutation({
+    mutationFn: (id) => notificationsApi.markAsRead(id),
+    onSuccess: invalidate,
+  });
+
+  const { mutate: markAll } = useMutation({
+    mutationFn: () => notificationsApi.markAllAsRead(),
+    onSuccess: () => {
+      invalidate();
+      toast.success('Toutes les notifications sont lues');
+    },
+  });
+
+  const { mutate: del } = useMutation({
+    mutationFn: (id) => notificationsApi.delete(id),
+    onSuccess: () => {
+      invalidate();
+      toast.success('Notification supprimÃ©e');
+    },
+  });
+
+  const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-24">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-stone-800">Notifications</h1>
+          <p className="text-sm text-stone-400 mt-0.5">
+            {unreadCount > 0
+              ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}`
+              : 'Tout est lu'}
+          </p>
+        </div>
+        {unreadCount > 0 && (
+          <Button variant="outline" size="sm" onClick={() => markAll()}>
+            <CheckCheck size={14} /> Tout marquer lu
+          </Button>
+        )}
+      </div>
+
+      {/* List */}
+      {!notifications?.length ? (
+        <EmptyState
+          icon="ðŸ””"
+          title="Aucune notification"
+          description="Vous Ãªtes Ã  jour !"
+        />
+      ) : (
+        <div className="space-y-2">
+          {notifications.map((notif) => {
+            const Icon = getIcon(notif.type);
+            return (
+              <div
+                key={notif.id}
+                onClick={() => !notif.isRead && markRead(notif.id)}
+                className={clsx(
+                  'flex gap-3 p-4 rounded-2xl border transition-all cursor-pointer group',
+                  notif.isRead
+                    ? 'bg-white border-stone-100 hover:border-stone-200'
+                    : 'bg-rose-50/60 border-rose-100 hover:bg-rose-50'
+                )}
+              >
+                {/* Icon */}
+                <div
+                  className={clsx(
+                    'w-9 h-9 rounded-xl flex items-center justify-center shrink-0',
+                    notif.isRead
+                      ? 'bg-stone-100 text-stone-400'
+                      : 'bg-rose-100 text-rose-500'
+                  )}
+                >
+                  <Icon size={16} />
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p
+                      className={clsx(
+                        'text-sm font-semibold leading-snug',
+                        notif.isRead ? 'text-stone-600' : 'text-stone-800'
+                      )}
+                    >
+                      {notif.title}
+                    </p>
+                    {!notif.isRead && (
+                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 mt-1.5" />
+                    )}
+                  </div>
+                  <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">
+                    {notif.message}
+                  </p>
+                  <p className="text-xs text-stone-300 mt-1">
+                    {formatRelative(notif.createdAt)}
+                  </p>
+                </div>
+
+                {/* Delete */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    del(notif.id);
+                  }}
+                  aria-label="Supprimer"
+                  className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 text-stone-300 hover:text-red-400 transition-all shrink-0 self-start mt-0.5"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+    </div>
+  );
+}
+=== index.html ===
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- ✅ SEO de base — ces balises sont écrasées dynamiquement par useMeta() -->
+    <title>SonShop — Vêtements & accessoires authentiques</title>
+    <meta name="description" content="Découvrez SonShop, votre boutique en ligne de vêtements et accessoires de qualité. Livraison rapide partout au Sénégal et à l'international." />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="SonShop" />
+    <meta name="theme-color" content="#e11d48" />
+
+    <!-- ✅ Open Graph (WhatsApp, Facebook, LinkedIn) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SonShop" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content="SonShop — Vêtements & accessoires authentiques" />
+    <meta property="og:description" content="Découvrez SonShop, votre boutique en ligne de vêtements et accessoires de qualité. Livraison rapide partout au Sénégal." />
+    <meta property="og:image" content="https://urban-beauty.vercel.app/icons/icon-512x512.png" />
+    <meta property="og:url" content="https://urban-beauty.vercel.app" />
+
+    <!-- ✅ Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SonShop — Vêtements & accessoires authentiques" />
+    <meta name="twitter:description" content="Boutique en ligne de mode au Sénégal. Livraison rapide, paiement Mobile Money accepté." />
+    <meta name="twitter:image" content="https://urban-beauty.vercel.app/icons/icon-512x512.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+=== vite.config.js ===
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+import { VitePWA } from 'vite-plugin-pwa'
+
+export default defineConfig({
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'icons/*.png'],
+      manifest: {
+        name: 'SonShop',
+        short_name: 'SonShop',
+        description: 'Vêtements et accessoires authentiques, livraison partout au Sénégal et export international.',
+        theme_color: '#e11d48',
+        background_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'portrait',
+        scope: '/',
+        start_url: '/',
+        lang: 'fr',
+        icons: [
+          { src: '/icons/icon-72x72.png',   sizes: '72x72',   type: 'image/png' },
+          { src: '/icons/icon-96x96.png',   sizes: '96x96',   type: 'image/png' },
+          { src: '/icons/icon-128x128.png', sizes: '128x128', type: 'image/png' },
+          { src: '/icons/icon-144x144.png', sizes: '144x144', type: 'image/png' },
+          { src: '/icons/icon-152x152.png', sizes: '152x152', type: 'image/png' },
+          { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+          { src: '/icons/icon-384x384.png', sizes: '384x384', type: 'image/png' },
+          { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+        ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.vercel\.app\/api\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              networkTimeoutSeconds: 10,
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 }
+            }
+          }
+        ]
+      },
+      devOptions: { enabled: true }
+    })
+  ],
+  server: {
+    host: true,
+    port: 5173,
+  },
+})
+
+=== package.json ===
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
+    "@number-flow/react": "^0.6.0",
+    "@radix-ui/react-accordion": "^1.2.12",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-toast": "^1.2.15",
+    "@sentry/react": "^10.54.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-query-devtools": "^5.100.14",
+    "axios": "^1.16.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.3.0",
+    "framer-motion": "^12.40.0",
+    "immer": "^11.1.8",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "jwt-decode": "^4.0.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.16.0",
+    "nprogress": "^0.2.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-hook-form": "^7.76.1",
+    "react-icons": "^5.6.0",
+    "react-lazy-load-image-component": "^1.6.3",
+    "react-leaflet": "^5.0.0",
+    "react-onesignal": "^3.5.5",
+    "react-router-dom": "^6.30.3",
+    "recharts": "^3.8.1",
+    "socket.io-client": "^4.8.3",
+    "sonner": "^2.0.7",
+    "swiper": "^12.1.4",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.0",
+    "uuid": "^14.0.0",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/leaflet": "^1.9.21",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.3",
+    "sharp": "^0.35.2",
+    "vite": "^8.0.12",
+    "vite-plugin-pwa": "^1.3.0"
+  }
+}
+
