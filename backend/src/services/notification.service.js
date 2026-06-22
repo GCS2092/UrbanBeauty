@@ -3,15 +3,18 @@ const prisma = require('../config/database');
 
 const ONESIGNAL_APP_ID  = process.env.ONESIGNAL_APP_ID;
 const ONESIGNAL_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
+const CLIENT_URL        = process.env.CLIENT_URL || 'https://urban-beauty.vercel.app';
 
 // ── Envoyer une notif OneSignal à un user spécifique ──────────────────────
-// ✅ On utilise external_id (OneSignal.login(userId) côté frontend)
-// au lieu des tags — les deux doivent utiliser le même système
 async function sendPushNotification({ userId, title, message, url = '/' }) {
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_API_KEY) {
     console.warn('⚠️ OneSignal non configuré (APP_ID ou REST_API_KEY manquant)');
     return;
   }
+
+  // ✅ Toujours envoyer une URL absolue
+  const fullUrl = url.startsWith('http') ? url : `${CLIENT_URL}${url}`;
+
   try {
     const res = await axios.post(
       'https://onesignal.com/api/v1/notifications',
@@ -20,8 +23,7 @@ async function sendPushNotification({ userId, title, message, url = '/' }) {
         name:     title,
         headings: { en: title, fr: title },
         contents: { en: message, fr: message },
-        url,
-        // ✅ External User ID — correspond à OneSignal.login(String(user.id)) côté frontend
+        url:      fullUrl,
         include_aliases: {
           external_id: [String(userId)],
         },
@@ -43,6 +45,9 @@ async function sendPushNotification({ userId, title, message, url = '/' }) {
 // ── Envoyer notif à tous les abonnés (promos, annonces) ───────────────────
 async function sendPushToAll({ title, message, url = '/' }) {
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_API_KEY) return;
+
+  const fullUrl = url.startsWith('http') ? url : `${CLIENT_URL}${url}`;
+
   try {
     await axios.post(
       'https://onesignal.com/api/v1/notifications',
@@ -51,7 +56,7 @@ async function sendPushToAll({ title, message, url = '/' }) {
         included_segments: ['All'],
         headings:          { en: title, fr: title },
         contents:          { en: message, fr: message },
-        url,
+        url:               fullUrl,
       },
       {
         headers: {
@@ -68,14 +73,12 @@ async function sendPushToAll({ title, message, url = '/' }) {
 
 // ── Notification complète : DB + Push ─────────────────────────────────────
 async function notifyUser({ userId, type, title, message, link = '/', sendPush = true }) {
-  // 1. Sauvegarder en base (notifications in-app)
   if (userId) {
     await prisma.notification.create({
       data: { userId, type, title, message, link },
     }).catch((err) => console.error('❌ Erreur notif DB:', err.message));
   }
 
-  // 2. Push OneSignal
   if (sendPush && userId) {
     await sendPushNotification({ userId, title, message, url: link });
   }
