@@ -47,8 +47,6 @@ const DESTINATIONS = [
 ];
 
 // ─── Modes de paiement selon destination ──────────────────────────────────────
-// Sénégal : COD + Mobile Money
-// Congo/International : Mobile Money uniquement
 function getAvailablePaymentMethods(destination) {
   const dest = DESTINATIONS.find((d) => d.value === destination);
   if (dest?.isLocal) {
@@ -277,6 +275,7 @@ export default function Checkout() {
     setValue('city', addr.city);
   };
 
+  // ✅ CORRECTION : guestPhone toujours envoyé depuis le formulaire
   const buildOrderPayload = (formData) => ({
     items: cart.items.map((item) => ({
       productId: item.product.id,
@@ -299,7 +298,7 @@ export default function Checkout() {
     couponId: coupon?.id || null,
     guestEmail: !user ? formData.guestEmail : undefined,
     guestName: !user ? formData.fullName : undefined,
-    guestPhone: !user ? formData.phone : undefined,
+    guestPhone: formData.phone, // ✅ toujours envoyé, connecté ou non
     destination: formData.destination,
   });
 
@@ -329,6 +328,20 @@ export default function Checkout() {
       clearCart(user?.id);
       setShowPaymentModal(false);
       toast.success('Commande passée avec succès !');
+
+      // ✅ Inviter le client connecté sans numéro à compléter son profil
+      if (user && !user.phone) {
+        setTimeout(() => {
+          toast.info('💡 Enregistrez votre numéro dans vos paramètres pour commander plus vite !', {
+            duration: 6000,
+            action: {
+              label: 'Mes paramètres',
+              onClick: () => navigate('/account/settings'),
+            },
+          });
+        }, 1500);
+      }
+
       navigate(`/orders/${res.data.orderNumber}`);
     },
     onError: (err) => {
@@ -578,7 +591,6 @@ export default function Checkout() {
               <CreditCard size={17} className="text-rose-400" /> Mode de paiement
             </h2>
 
-            {/* Bandeau informatif pour international */}
             {isInternational && (
               <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-xl p-3">
                 <AlertCircle size={15} className="text-blue-500 mt-0.5 shrink-0" />
@@ -615,7 +627,6 @@ export default function Checkout() {
                       </div>
                       <p className="text-xs text-stone-400 mt-0.5">{info.description}</p>
 
-                      {/* Numéros Mobile Money pour Congo — affichés directement ici */}
                       {method === 'MOBILE_MONEY' && isSelected && isInternational && (
                         <MobileMoneyNumbers settings={settings} />
                       )}
@@ -625,7 +636,6 @@ export default function Checkout() {
               })}
             </div>
 
-            {/* Bandeau acompte Sénégal */}
             {requiresDeposit && (
               <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3">
                 <AlertCircle size={15} className="text-amber-600 mt-0.5 shrink-0" />
