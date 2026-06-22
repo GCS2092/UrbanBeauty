@@ -34,7 +34,7 @@ async function sendPushNotification({ userId, title, message, url = '/' }) {
         },
       }
     );
-    console.log('✅ Push OneSignal envoyé à userId:', userId, '| recipients:', res.data?.recipients);
+    console.log('✅ Push OneSignal envoyé à userId:', userId, '| response:', JSON.stringify(res.data));
   } catch (err) {
     console.error('❌ Erreur OneSignal:', err.response?.data || err.message);
   }
