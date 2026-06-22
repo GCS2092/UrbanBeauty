@@ -2,13 +2,25 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AUTH_TOKEN_KEY } from '../utils/constants';
 
-async function tagUserInOneSignal(userId) {
+// ✅ OneSignal.login() associe l'appareil à l'external_id (userId)
+// C'est ce que le backend utilise pour envoyer les notifs (include_aliases.external_id)
+async function loginToOneSignal(userId) {
   try {
     const OneSignal = (await import('react-onesignal')).default;
-    await OneSignal.User.addTag('userId', userId);
-    console.log('✅ OneSignal tag userId:', userId);
+    await OneSignal.login(String(userId));
+    console.log('✅ OneSignal login userId:', userId);
   } catch (e) {
-    console.error('❌ OneSignal tag error:', e);
+    console.error('❌ OneSignal login error:', e);
+  }
+}
+
+async function logoutFromOneSignal() {
+  try {
+    const OneSignal = (await import('react-onesignal')).default;
+    await OneSignal.logout();
+    console.log('✅ OneSignal logout');
+  } catch (e) {
+    console.error('❌ OneSignal logout error:', e);
   }
 }
 
@@ -22,7 +34,7 @@ const useAuthStore = create(
       setAuth: (user, token) => {
         localStorage.setItem(AUTH_TOKEN_KEY, token);
         set({ user, token, isAuthenticated: true });
-        if (user?.id) tagUserInOneSignal(String(user.id));
+        if (user?.id) loginToOneSignal(user.id);
       },
 
       setToken: (token) => {
@@ -34,9 +46,7 @@ const useAuthStore = create(
 
       logout: () => {
         localStorage.removeItem(AUTH_TOKEN_KEY);
-        import('react-onesignal').then(({ default: OneSignal }) => {
-          OneSignal.User.removeTag('userId').catch(() => {});
-        });
+        logoutFromOneSignal();
         set({ user: null, token: null, isAuthenticated: false });
       },
     }),
