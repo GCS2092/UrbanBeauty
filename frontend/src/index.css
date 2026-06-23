@@ -25,9 +25,19 @@ h1, h2, h3 {
   border-radius: 999px;
 }
 
-/* ✅ Fix zoom iOS */
+/* ✅ Fix zoom iOS/Android */
 input, select, textarea {
   font-size: 16px !important;
+}
+
+/* ✅ Indicateur de focus sur les champs (remplace le zoom comme repère visuel) */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #e11d48;
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* ✅ Fix débordement horizontal global */

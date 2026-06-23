@@ -8,7 +8,7 @@ export default function BottomNav() {
   const { getTotalItems } = useCartStore();
   const location = useLocation();
 
-  // N'affiche pas la barre sur checkout et cart (expérience plein écran)
+  // N'affiche pas la barre sur checkout (expérience plein écran)
   const hidden = ['/checkout'].includes(location.pathname);
   if (hidden) return null;
 
@@ -64,15 +64,16 @@ export default function BottomNav() {
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-colors min-w-[52px] ${
-                isActive
-                  ? 'text-rose-500'
-                  : 'text-stone-400 hover:text-stone-600'
+              `flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all min-w-[52px] ${
+                isActive ? 'text-rose-500' : 'text-stone-400 hover:text-stone-600'
               }`
             }
           >
             {({ isActive }) => (
               <>
+                {/* Indicateur actif — petit trait rose au dessus de l'icône */}
+                <span className={`block w-5 h-0.5 rounded-full mb-1 transition-all ${isActive ? 'bg-rose-500' : 'bg-transparent'}`} />
+
                 <span className="relative">
                   <Icon
                     size={22}

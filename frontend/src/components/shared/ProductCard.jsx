@@ -11,6 +11,7 @@ export default function ProductCard({ product }) {
 
   const mainImage = product.images?.find((i) => i.isMain) || product.images?.[0];
   const hasDiscount = product.comparePrice && product.comparePrice > product.price;
+  const isOutOfStock = product.stock === 0;
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
@@ -18,7 +19,7 @@ export default function ProductCard({ product }) {
       await addItem(user?.id, { productId: product.id, quantity: 1 });
       toast.success('Ajouté au panier !');
     } catch {
-      toast.error('Erreur lors de l\'ajout');
+      toast.error("Erreur lors de l'ajout");
     }
   };
 
@@ -35,21 +36,39 @@ export default function ProductCard({ product }) {
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-4xl">???</div>
+            <div className="w-full h-full flex items-center justify-center text-4xl text-stone-300">
+              🛍️
+            </div>
           )}
 
-          {hasDiscount && (
-            <span className="absolute top-2 left-2 bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-              -{Math.round((1 - product.price / product.comparePrice) * 100)}%
-            </span>
-          )}
+          {/* Badges */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1">
+            {hasDiscount && (
+              <span className="bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                -{Math.round((1 - product.price / product.comparePrice) * 100)}%
+              </span>
+            )}
+            {isOutOfStock && (
+              <span className="bg-stone-700 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                Rupture
+              </span>
+            )}
+          </div>
 
-          <button
-            onClick={handleAddToCart}
-            className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm p-2 rounded-xl shadow hover:bg-rose-500 hover:text-white transition-all duration-200 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0"
-          >
-            <ShoppingBag size={16} />
-          </button>
+          {/* Bouton panier :
+              - Mobile : toujours visible (opacity-100)
+              - Desktop : apparaît au hover (md:opacity-0 md:group-hover:opacity-100) */}
+          {!isOutOfStock && (
+            <button
+              onClick={handleAddToCart}
+              className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm p-2.5 rounded-xl shadow
+                         hover:bg-rose-500 hover:text-white transition-all duration-200
+                         opacity-100 md:opacity-0 md:group-hover:opacity-100
+                         translate-y-0 md:translate-y-1 md:group-hover:translate-y-0"
+            >
+              <ShoppingBag size={16} />
+            </button>
+          )}
         </div>
 
         {/* Infos */}

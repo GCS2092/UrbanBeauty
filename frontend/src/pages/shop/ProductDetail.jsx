@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ShoppingBag, Heart, Star, ChevronLeft, Minus, Plus, MessageCircle } from 'lucide-react';
+import { ShoppingBag, Heart, Star, ChevronLeft, Minus, Plus, MessageCircle, ShieldCheck, Truck } from 'lucide-react';
 import { productsApi } from '../../api/products.api';
 import { reviewsApi } from '../../api/reviews.api';
 import { wishlistApi } from '../../api/wishlist.api';
@@ -15,7 +15,7 @@ import ReviewForm from '../../components/shared/ReviewForm';
 import Spinner from '../../components/ui/Spinner';
 import { toast } from 'sonner';
 
-// ─── Bouton précommande WhatsApp ──────────────────────────────────────────────
+// --- Bouton précommande WhatsApp ---
 function PreorderButton({ product, whatsappNumber }) {
   if (!product || product.stock > 0) return null;
 
@@ -52,7 +52,7 @@ function PreorderButton({ product, whatsappNumber }) {
       className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-green-500 hover:bg-green-600 active:scale-95 text-white font-semibold text-sm transition-all duration-200 shadow-sm shadow-green-200"
     >
       <MessageCircle size={18} />
-      Precommander via WhatsApp
+      Précommander via WhatsApp
     </a>
   );
 }
@@ -77,11 +77,9 @@ export default function ProductDetail() {
     enabled: !!product?.id,
   });
 
-  // Recupere le numero WhatsApp depuis les settings
   const { data: settings } = useQuery({
     queryKey: ['settings-public'],
-    queryFn: () =>
-      fetch(`${API_URL}/api/settings`).then((r) => r.json()),
+    queryFn: () => fetch(`${API_URL}/api/settings`).then((r) => r.json()),
     staleTime: 1000 * 60 * 10,
   });
 
@@ -99,9 +97,9 @@ export default function ProductDetail() {
         variantId: selectedVariant?.id || null,
         quantity,
       });
-      toast.success('Ajoute au panier !');
+      toast.success('Ajouté au panier !');
     } catch {
-      toast.error('Erreur lors de l\'ajout');
+      toast.error("Erreur lors de l'ajout");
     } finally {
       setAddingCart(false);
     }
@@ -111,9 +109,9 @@ export default function ProductDetail() {
     if (!isAuthenticated) return toast.error('Connectez-vous pour ajouter aux favoris');
     try {
       await wishlistApi.add(product.id);
-      toast.success('Ajoute aux favoris !');
+      toast.success('Ajouté aux favoris !');
     } catch {
-      toast.error('Deja dans vos favoris');
+      toast.error('Déjà dans vos favoris');
     }
   };
 
@@ -153,14 +151,16 @@ export default function ProductDetail() {
               </div>
             )}
           </div>
+
+          {/* Thumbnails — plus grandes et plus faciles à tapper sur mobile */}
           {images.length > 1 && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               {images.map((img, i) => (
                 <button
                   key={img.id}
                   onClick={() => setMainImg(i)}
-                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${
-                    i === mainImg ? 'border-rose-400' : 'border-transparent'
+                  className={`w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-colors ${
+                    i === mainImg ? 'border-rose-400' : 'border-transparent hover:border-stone-300'
                   }`}
                 >
                   <img src={img.url} alt="" className="w-full h-full object-cover" />
@@ -171,7 +171,7 @@ export default function ProductDetail() {
         </div>
 
         {/* Infos */}
-        <div className="space-y-5">
+        <div className="space-y-5 pb-24 md:pb-0">
           <div>
             <p className="text-sm text-rose-400 font-medium mb-1">{product.category?.name}</p>
             <h1 className="text-3xl font-bold text-stone-900 mb-2">{product.name}</h1>
@@ -190,12 +190,12 @@ export default function ProductDetail() {
           <div className="flex items-center gap-3">
             <span className="text-3xl font-bold text-stone-900">{formatPrice(product.price)}</span>
             {hasDiscount && (
-              <span className="text-lg text-stone-400 line-through">{formatPrice(product.comparePrice)}</span>
-            )}
-            {hasDiscount && (
-              <span className="bg-rose-100 text-rose-600 text-sm font-bold px-2 py-0.5 rounded-full">
-                -{Math.round((1 - product.price / product.comparePrice) * 100)}%
-              </span>
+              <>
+                <span className="text-lg text-stone-400 line-through">{formatPrice(product.comparePrice)}</span>
+                <span className="bg-rose-100 text-rose-600 text-sm font-bold px-2 py-0.5 rounded-full">
+                  -{Math.round((1 - product.price / product.comparePrice) * 100)}%
+                </span>
+              </>
             )}
           </div>
 
@@ -210,7 +210,7 @@ export default function ProductDetail() {
                   <button
                     key={size}
                     onClick={() => setSelectedVariant(product.variants.find((v) => v.size === size))}
-                    className={`px-3 py-1.5 rounded-xl border text-sm font-medium transition-colors ${
+                    className={`px-3 py-1.5 rounded-xl border text-sm font-medium transition-colors min-h-[44px] min-w-[44px] ${
                       selectedVariant?.size === size
                         ? 'bg-stone-900 text-white border-stone-900'
                         : 'border-stone-200 text-stone-600 hover:border-stone-400'
@@ -230,14 +230,14 @@ export default function ProductDetail() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-9 h-9 rounded-xl border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors"
+                  className="w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors"
                 >
                   <Minus size={14} />
                 </button>
                 <span className="w-8 text-center font-semibold text-stone-800">{quantity}</span>
                 <button
                   onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                  className="w-9 h-9 rounded-xl border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors"
+                  className="w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors"
                 >
                   <Plus size={14} />
                 </button>
@@ -246,8 +246,8 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* CTA */}
-          <div className="flex flex-col gap-3 pt-2">
+          {/* CTA desktop — caché sur mobile (remplacé par le sticky) */}
+          <div className="hidden md:flex flex-col gap-3 pt-2">
             <div className="flex gap-3">
               <Button
                 className="flex-1"
@@ -267,7 +267,12 @@ export default function ProductDetail() {
               </button>
             </div>
 
-            {/* Bouton précommande — visible uniquement en rupture */}
+            {/* Rassurance desktop */}
+            <div className="flex items-center justify-center gap-4 text-xs text-stone-400 py-1">
+              <span className="flex items-center gap-1"><ShieldCheck size={12} /> Paiement sécurisé</span>
+              <span className="flex items-center gap-1"><Truck size={12} /> Livraison suivie</span>
+            </div>
+
             {isOutOfStock && (
               <div className="space-y-2">
                 <PreorderButton product={product} whatsappNumber={whatsappNumber} />
@@ -278,6 +283,35 @@ export default function ProductDetail() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* CTA sticky mobile — visible uniquement sur mobile */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 p-4 z-40"
+        style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+      >
+        {isOutOfStock ? (
+          <PreorderButton product={product} whatsappNumber={whatsappNumber} />
+        ) : (
+          <div className="flex gap-3">
+            <button
+              onClick={handleWishlist}
+              className="w-12 h-12 rounded-xl border border-stone-200 flex items-center justify-center text-stone-400 hover:text-rose-500 hover:border-rose-200 transition-colors shrink-0"
+            >
+              <Heart size={20} />
+            </button>
+            <Button
+              className="flex-1"
+              size="lg"
+              loading={addingCart}
+              disabled={isOutOfStock}
+              onClick={handleAddToCart}
+            >
+              <ShoppingBag size={18} />
+              Ajouter — {formatPrice(product.price)}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Avis */}

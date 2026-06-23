@@ -23,9 +23,11 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
-          {/* Logo */}
+          {/* Logo — texte pur, pas d'emoji pour éviter les problèmes d'encoding */}
           <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">🛍️</span>
+            <div className="w-8 h-8 rounded-xl bg-rose-500 flex items-center justify-center shrink-0">
+              <ShoppingBag size={16} className="text-white" />
+            </div>
             <span className="font-bold text-xl tracking-tight text-stone-800">
               Son<span className="text-rose-400">Shop</span>
             </span>
@@ -52,7 +54,7 @@ export default function Navbar() {
           {/* Actions */}
           <div className="flex items-center gap-3">
 
-            {/* Panier — visible uniquement sur desktop (mobile → BottomNav) */}
+            {/* Panier — visible uniquement sur desktop */}
             <Link to="/cart" className="relative p-2 text-stone-600 hover:text-stone-900 transition-colors hidden md:block">
               <ShoppingBag size={20} />
               {getTotalItems() > 0 && (
@@ -110,13 +112,12 @@ export default function Navbar() {
                 </div>
               </>
             ) : (
-              /* Connexion — desktop seulement (mobile → BottomNav) */
               <Link to="/login" className="hidden md:flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium px-4 py-2 rounded-full transition-colors">
                 <User size={15} /> Connexion
               </Link>
             )}
 
-            {/* Menu hamburger mobile — gardé pour les liens Accueil/Boutique */}
+            {/* Menu hamburger mobile */}
             <button
               className="md:hidden p-2 text-stone-600"
               onClick={mobileMenuOpen ? closeMobileMenu : openMobileMenu}
@@ -126,7 +127,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Menu mobile déroulant — uniquement nav links */}
+        {/* Menu mobile déroulant */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-stone-100 py-4 flex flex-col gap-3">
             {navLinks.map((link) => (

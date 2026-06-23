@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, MapPin, CreditCard, Truck, Gift, AlertCircle, Copy, CheckCircle2, Smartphone } from 'lucide-react';
+import { ChevronLeft, MapPin, CreditCard, Truck, Gift, AlertCircle, Copy, CheckCircle2, ShieldCheck, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { addressesApi } from '../../api/addresses.api';
 import { couponsApi } from '../../api/coupons.api';
@@ -13,13 +13,12 @@ import { settingsApi } from '../../api/settings.api';
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
 import { formatPrice } from '../../utils/formatPrice';
-import { PAYMENT_METHOD_LABELS } from '../../utils/constants';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import PaymentModal from '../../components/checkout/PaymentModal';
 import { toast } from 'sonner';
 
-// ─── Destinations ─────────────────────────────────────────────────────────────
+// --- Destinations ---
 const DESTINATIONS = [
   {
     value: 'SENEGAL',
@@ -31,14 +30,14 @@ const DESTINATIONS = [
   },
   {
     value: 'CONGO_EXPRESS',
-    label: 'Congo – Express',
+    label: 'Congo — Express',
     description: 'Livraison rapide, délai réduit',
     flag: '🇨🇬',
     isLocal: false,
   },
   {
     value: 'CONGO_GROUPAGE',
-    label: 'Congo – Groupage',
+    label: 'Congo — Groupage',
     description: 'Livraison avec les autres commandes + cadeau offert',
     flag: '🇨🇬',
     hasGift: true,
@@ -46,7 +45,7 @@ const DESTINATIONS = [
   },
 ];
 
-// ─── Modes de paiement selon destination ──────────────────────────────────────
+// --- Modes de paiement selon destination ---
 function getAvailablePaymentMethods(destination) {
   const dest = DESTINATIONS.find((d) => d.value === destination);
   if (dest?.isLocal) {
@@ -68,7 +67,7 @@ const PAYMENT_METHOD_INFO = {
   },
 };
 
-// ─── Composant numéros Mobile Money (pour Congo) ──────────────────────────────
+// --- Composant numéros Mobile Money ---
 function MobileMoneyNumbers({ settings }) {
   const [copied, setCopied] = useState(null);
 
@@ -115,7 +114,7 @@ function MobileMoneyNumbers({ settings }) {
   );
 }
 
-// ─── WhatsApp message builder ─────────────────────────────────────────────────
+// --- WhatsApp message builder ---
 const buildWhatsAppMessage = ({ cart, formData, subtotal, shippingCost, discount, total, coupon, orderNumber, destination, settings }) => {
   const lines = [];
   const dest = DESTINATIONS.find((d) => d.value === destination);
@@ -173,7 +172,7 @@ const buildWhatsAppMessage = ({ cart, formData, subtotal, shippingCost, discount
   return encodeURIComponent(lines.join('\n'));
 };
 
-// ─── Schema ───────────────────────────────────────────────────────────────────
+// --- Schema ---
 const schema = z.object({
   fullName: z.string().min(2, 'Nom requis'),
   phone: z.string().min(6, 'Téléphone requis'),
@@ -185,7 +184,7 @@ const schema = z.object({
   guestEmail: z.string().email('Email invalide').optional().or(z.literal('')),
 });
 
-// ─── Composant principal ──────────────────────────────────────────────────────
+// --- Composant principal ---
 export default function Checkout() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -227,7 +226,6 @@ export default function Checkout() {
   const paymentMethod = watch('paymentMethod');
   const destination = watch('destination');
 
-  // ── Quand la destination change, forcer Mobile Money si international ────────
   const handleDestinationChange = (value) => {
     setValue('destination', value);
     const availableMethods = getAvailablePaymentMethods(value);
@@ -239,7 +237,6 @@ export default function Checkout() {
   const availablePaymentMethods = getAvailablePaymentMethods(destination);
   const isInternational = !DESTINATIONS.find((d) => d.value === destination)?.isLocal;
 
-  // ── Frais de livraison ────────────────────────────────────────────────────
   const getShippingCost = () => {
     if (destination === 'SENEGAL') return 0;
     if (destination === 'CONGO_EXPRESS') return Number(settings?.congo_express_rate || 15000);
@@ -257,7 +254,6 @@ export default function Checkout() {
     : 0;
   const total = subtotal + shippingCost - discount;
 
-  // ── Logique acompte Sénégal ──────────────────────────────────────────────
   const depositThreshold = Number(settings?.deposit_threshold || 0);
   const depositPercent = Number(settings?.deposit_percent || 30);
   const requiresDeposit =
@@ -267,7 +263,6 @@ export default function Checkout() {
     subtotal >= depositThreshold;
   const depositAmount = requiresDeposit ? Math.ceil((subtotal * depositPercent) / 100) : 0;
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   const fillFromAddress = (addr) => {
     setValue('fullName', addr.fullName);
     setValue('phone', addr.phone);
@@ -275,7 +270,6 @@ export default function Checkout() {
     setValue('city', addr.city);
   };
 
-  // ✅ CORRECTION : guestPhone toujours envoyé depuis le formulaire
   const buildOrderPayload = (formData) => ({
     items: cart.items.map((item) => ({
       productId: item.product.id,
@@ -298,11 +292,10 @@ export default function Checkout() {
     couponId: coupon?.id || null,
     guestEmail: !user ? formData.guestEmail : undefined,
     guestName: !user ? formData.fullName : undefined,
-    guestPhone: formData.phone, // ✅ toujours envoyé, connecté ou non
+    guestPhone: formData.phone,
     destination: formData.destination,
   });
 
-  // ── Coupon ────────────────────────────────────────────────────────────────
   const handleValidateCoupon = async () => {
     if (!couponCode.trim()) return;
     setValidatingCoupon(true);
@@ -320,7 +313,6 @@ export default function Checkout() {
     }
   };
 
-  // ── Mutations ─────────────────────────────────────────────────────────────
   const { mutate: placeOrder, isPending } = useMutation({
     mutationFn: (data) => ordersApi.create(data),
     onSuccess: (res) => {
@@ -329,7 +321,6 @@ export default function Checkout() {
       setShowPaymentModal(false);
       toast.success('Commande passée avec succès !');
 
-      // ✅ Inviter le client connecté sans numéro à compléter son profil
       if (user && !user.phone) {
         setTimeout(() => {
           toast.info('💡 Enregistrez votre numéro dans vos paramètres pour commander plus vite !', {
@@ -377,7 +368,6 @@ export default function Checkout() {
     },
   });
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
   const onSubmit = (formData) => {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
     if (formData.paymentMethod === 'MOBILE_MONEY') {
@@ -419,7 +409,6 @@ export default function Checkout() {
     if (pendingOrderData) placeOrder(pendingOrderData);
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
@@ -440,11 +429,29 @@ export default function Checkout() {
         <ChevronLeft size={16} /> Retour au panier
       </Link>
 
+      {/* Barre de progression */}
+      <div className="flex items-center gap-2 mb-8">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center">1</div>
+          <span className="text-sm font-medium text-stone-700 hidden sm:block">Panier</span>
+        </div>
+        <div className="flex-1 h-px bg-rose-200 max-w-[40px]" />
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center">2</div>
+          <span className="text-sm font-medium text-rose-500 hidden sm:block">Livraison & paiement</span>
+        </div>
+        <div className="flex-1 h-px bg-stone-200 max-w-[40px]" />
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-stone-200 text-stone-400 text-xs font-bold flex items-center justify-center">3</div>
+          <span className="text-sm text-stone-400 hidden sm:block">Confirmation</span>
+        </div>
+      </div>
+
       <h1 className="text-3xl font-bold text-stone-800 mb-8">Finaliser la commande</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        {/* ── Formulaire ── */}
+        {/* Formulaire */}
         <div className="lg:col-span-2 space-y-6">
 
           {addresses?.length > 0 && (
@@ -483,7 +490,7 @@ export default function Checkout() {
             </div>
           )}
 
-          {/* ── Destination ── */}
+          {/* Destination */}
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-3">
             <h2 className="font-semibold text-stone-800 flex items-center gap-2">
               <Truck size={17} className="text-rose-400" /> Destination
@@ -541,7 +548,7 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* ── Adresse de livraison ── */}
+          {/* Adresse de livraison */}
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
             <h2 className="font-semibold text-stone-800 flex items-center gap-2">
               <MapPin size={17} className="text-rose-400" /> Adresse de livraison
@@ -576,16 +583,17 @@ export default function Checkout() {
               <label className="text-sm font-medium text-stone-700 block mb-1.5">
                 Notes (optionnel)
               </label>
+              {/* text-base au lieu de text-sm → évite le zoom iOS */}
               <textarea
                 {...register('notes')}
                 rows={2}
                 placeholder="Instructions de livraison..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-rose-300 resize-none"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-base outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 resize-none transition-all"
               />
             </div>
           </div>
 
-          {/* ── Mode de paiement ── */}
+          {/* Mode de paiement */}
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-3">
             <h2 className="font-semibold text-stone-800 flex items-center gap-2">
               <CreditCard size={17} className="text-rose-400" /> Mode de paiement
@@ -652,7 +660,7 @@ export default function Checkout() {
           </div>
         </div>
 
-        {/* ── Récap commande ── */}
+        {/* Récap commande */}
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
             <h2 className="font-semibold text-stone-800">Votre commande</h2>
@@ -688,7 +696,7 @@ export default function Checkout() {
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                 placeholder="Code promo"
-                className="flex-1 px-3 py-2 rounded-xl border border-stone-200 text-sm outline-none focus:ring-2 focus:ring-rose-300"
+                className="flex-1 px-3 py-2 rounded-xl border border-stone-200 text-base outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all"
               />
               <Button variant="outline" size="sm" loading={validatingCoupon} onClick={handleValidateCoupon}>
                 Appliquer
@@ -737,6 +745,13 @@ export default function Checkout() {
               </div>
             </div>
 
+            {/* Rassurance */}
+            <div className="flex items-center justify-center gap-4 text-xs text-stone-400 py-1 border-t border-stone-100 pt-3">
+              <span className="flex items-center gap-1"><Lock size={11} /> Paiement sécurisé</span>
+              <span className="flex items-center gap-1"><ShieldCheck size={11} /> Données protégées</span>
+              <span className="flex items-center gap-1"><Truck size={11} /> Livraison suivie</span>
+            </div>
+
             {/* Bouton commande */}
             <Button
               className="w-full"
@@ -759,7 +774,7 @@ export default function Checkout() {
                 <p className="text-sm font-semibold text-green-700">Message WhatsApp ouvert !</p>
                 <p className="text-xs text-green-600">
                   Votre commande est enregistrée en brouillon. Elle sera confirmée dès que vous
-                  aurez envoyé le message et que nous l'aurons validé.
+                  aurez envoyé le message et que nous l'aurons validée.
                 </p>
               </div>
             ) : (

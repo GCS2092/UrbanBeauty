@@ -5,6 +5,7 @@ import { productsApi } from '../../api/products.api';
 import { categoriesApi } from '../../api/categories.api';
 import ProductGrid from '../../components/shared/ProductGrid';
 import Button from '../../components/ui/Button';
+import heroImg from '../../assets/hero.png';
 
 const perks = [
   { icon: Truck, label: 'Livraison & export', desc: 'Sénégal et international' },
@@ -27,51 +28,77 @@ export default function Home() {
     <div>
       {/* Hero */}
       <section className="relative bg-gradient-to-br from-rose-50 via-stone-50 to-amber-50 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 bg-rose-100 text-rose-600 text-xs font-semibold px-3 py-1 rounded-full mb-4">
-              <Sparkles size={12} /> SonShop – Nouvelle collection disponible
-            </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-stone-900 leading-tight mb-4">
-              Le style <br />
-              <span className="text-rose-400">qui vous ressemble</span>
-            </h1>
-            <p className="text-stone-500 text-lg mb-8 leading-relaxed">
-              Découvrez notre sélection de vêtements et accessoires authentiques,
-              livrés partout au Sénégal et exportés à l'international.
-            </p>
-            <div className="flex gap-3 flex-wrap">
-              <Link to="/products">
-                <Button size="lg">
-                  Découvrir la boutique <ArrowRight size={18} />
-                </Button>
-              </Link>
-              <Link to="/products?featured=true">
-                <Button size="lg" variant="outline">
-                  Meilleures ventes
-                </Button>
-              </Link>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+
+            {/* Texte */}
+            <div>
+              <span className="inline-flex items-center gap-1.5 bg-rose-100 text-rose-600 text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                <Sparkles size={12} /> SonShop – Nouvelle collection disponible
+              </span>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-stone-900 leading-tight mb-4">
+                Le style <br />
+                <span className="text-rose-400">qui vous ressemble</span>
+              </h1>
+              <p className="text-stone-500 text-lg mb-8 leading-relaxed">
+                Découvrez notre sélection de vêtements et accessoires authentiques,
+                livrés partout au Sénégal et exportés à l'international.
+              </p>
+              <div className="flex gap-3 flex-wrap">
+                <Link to="/products">
+                  <Button size="lg">
+                    Découvrir la boutique <ArrowRight size={18} />
+                  </Button>
+                </Link>
+                <Link to="/products?featured=true">
+                  <Button size="lg" variant="outline">
+                    Meilleures ventes
+                  </Button>
+                </Link>
+              </div>
             </div>
+
+            {/* Image hero — visible desktop uniquement */}
+            <div className="hidden md:block relative">
+              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl shadow-rose-200/50">
+                <img
+                  src={heroImg}
+                  alt="SonShop collection"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Badge flottant */}
+              <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-500">
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-stone-800">100% Authentique</p>
+                  <p className="text-[11px] text-stone-400">Produits vérifiés</p>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        {/* Decorations */}
+        {/* Décorations */}
         <div className="absolute top-10 right-10 w-64 h-64 bg-rose-200/30 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 right-1/3 w-48 h-48 bg-amber-200/30 rounded-full blur-2xl pointer-events-none" />
       </section>
 
       {/* Perks */}
       <section className="border-y border-stone-100 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6 sm:divide-x sm:divide-stone-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 sm:divide-x sm:divide-stone-100">
             {perks.map(({ icon: Icon, label, desc }, i) => (
-              <div key={label} className={`flex items-center gap-2.5 ${i > 0 ? 'sm:pl-6' : ''} flex-1 min-w-0`}>
-                <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-400 shrink-0">
-                  <Icon size={16} />
+              <div key={label} className={`flex items-center gap-3 ${i > 0 ? 'sm:pl-6' : ''} flex-1 min-w-0`}>
+                <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-400 shrink-0">
+                  <Icon size={18} />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-stone-800 text-xs truncate">{label}</p>
-                  <p className="text-[11px] text-stone-400 truncate">{desc}</p>
+                  <p className="font-semibold text-stone-800 text-sm truncate">{label}</p>
+                  <p className="text-xs text-stone-400 truncate">{desc}</p>
                 </div>
               </div>
             ))}
@@ -79,7 +106,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories */}
+      {/* Catégories */}
       {categories?.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h2 className="text-2xl font-bold text-stone-800 mb-6">Catégories</h2>
@@ -91,7 +118,11 @@ export default function Home() {
                 className="group relative bg-stone-100 rounded-2xl overflow-hidden aspect-square hover:shadow-md transition-all"
               >
                 {cat.imageUrl ? (
-                  <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img
+                    src={cat.imageUrl}
+                    alt={cat.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-stone-300">
                     <Tag size={32} />
@@ -113,7 +144,24 @@ export default function Home() {
             Voir tout <ArrowRight size={14} />
           </Link>
         </div>
-        <ProductGrid products={productsData?.data || productsData} loading={loadingProducts} />
+
+        {/* Skeleton loader pendant le chargement */}
+        {loadingProducts ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-stone-100">
+                <div className="aspect-square bg-stone-100 animate-pulse" />
+                <div className="p-3 space-y-2">
+                  <div className="h-3 bg-stone-100 rounded-full animate-pulse w-1/2" />
+                  <div className="h-4 bg-stone-100 rounded-full animate-pulse w-3/4" />
+                  <div className="h-4 bg-stone-100 rounded-full animate-pulse w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ProductGrid products={productsData?.data || productsData} loading={false} />
+        )}
       </section>
     </div>
   );
