@@ -136,6 +136,7 @@ model Product {
   transferItems   StockTransferItem[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+  variantDisplayMode  VariantDisplayMode  @default(SIZE_FIRST)
 }
 
 model ProductImage {
@@ -146,6 +147,7 @@ model ProductImage {
   publicId  String
   position  Int     @default(0)
   isMain    Boolean @default(false)
+  color     String?   // ← NOUVEAU
 }
 
 model ProductVariant {
@@ -629,4 +631,7 @@ enum CreditNoteStatus {
   APPLIED
   CANCELLED
 }
-
+enum VariantDisplayMode {
+  SIZE_FIRST
+  COLOR_FIRST
+}

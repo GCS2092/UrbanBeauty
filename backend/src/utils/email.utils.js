@@ -4,9 +4,9 @@
 // ============================================================
 
 const C = {
-  primary:   '#C8748A',   // rose poudré principal
-  gold:      '#C8A96E',   // doré accent
-  navy:      '#2C2C3E',   // fond sombre
+  primary:   '#C8748A',
+  gold:      '#C8A96E',
+  navy:      '#2C2C3E',
   white:     '#FFFFFF',
   offWhite:  '#FDF8F5',
   cream:     '#FAF3EE',
@@ -19,7 +19,7 @@ const C = {
   warning:   '#856404',
 };
 
-// ── Layout commun ────────────────────────────────────────────────────────────
+// ── Layout commun ─────────────────────────────────────────────────────────────
 function layout(bodyContent, preheader = '') {
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -101,21 +101,21 @@ function layout(bodyContent, preheader = '') {
 </html>`;
 }
 
-// ── Composants réutilisables ─────────────────────────────────────────────────
+// ── Composants réutilisables ──────────────────────────────────────────────────
 
 function badge(status) {
   const map = {
-    CONFIRMED:  { label: 'Confirmée',        bg: '#e8f5e9', color: C.success },
-    PROCESSING: { label: 'En préparation',   bg: '#fff3cd', color: C.warning },
-    SHIPPED:    { label: 'Expédiée',         bg: '#e3f2fd', color: '#0d47a1' },
-    DELIVERED:  { label: 'Livrée ✓',        bg: '#e8f5e9', color: C.success },
-    CANCELLED:  { label: 'Annulée',          bg: '#fce4e4', color: C.danger  },
-    PENDING:    { label: 'En attente',       bg: '#fff3cd', color: C.warning },
-    DRAFT:      { label: 'Brouillon',        bg: '#f5f5f5', color: '#555'  },
-    PAID:       { label: 'Payé',             bg: '#e8f5e9', color: C.success },
-    REJECTED:   { label: 'Rejeté',           bg: '#fce4e4', color: C.danger  },
-    PARTIAL:    { label: 'Partiel',          bg: '#fff3cd', color: C.warning },
-    GENERATED:  { label: 'Générée',          bg: '#e3f2fd', color: '#0d47a1' },
+    CONFIRMED:  { label: 'Confirmée',       bg: '#e8f5e9', color: C.success },
+    PROCESSING: { label: 'En préparation',  bg: '#fff3cd', color: C.warning },
+    SHIPPED:    { label: 'Expédiée',        bg: '#e3f2fd', color: '#0d47a1' },
+    DELIVERED:  { label: 'Livrée ✓',       bg: '#e8f5e9', color: C.success },
+    CANCELLED:  { label: 'Annulée',         bg: '#fce4e4', color: C.danger  },
+    PENDING:    { label: 'En attente',      bg: '#fff3cd', color: C.warning },
+    DRAFT:      { label: 'Brouillon',       bg: '#f5f5f5', color: '#555'    },
+    PAID:       { label: 'Payé',            bg: '#e8f5e9', color: C.success },
+    REJECTED:   { label: 'Rejeté',          bg: '#fce4e4', color: C.danger  },
+    PARTIAL:    { label: 'Partiel',         bg: '#fff3cd', color: C.warning },
+    GENERATED:  { label: 'Générée',         bg: '#e3f2fd', color: '#0d47a1' },
   };
   const s = map[status] || { label: status, bg: '#f5f5f5', color: '#555' };
   return `<span style="display:inline-block;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700;background:${s.bg};color:${s.color};">${s.label}</span>`;
@@ -170,27 +170,102 @@ function infoBox(rows) {
   </table>`;
 }
 
+// ── Ligne produit enrichie avec image + variante détaillée ───────────────────
 function productRow(item) {
-  const label = item.variantLabel
-    ? `${item.productName} <span style="color:${C.textLight};font-size:11px;">(${item.variantLabel})</span>`
-    : item.productName;
+  const variantParts = [];
+  if (item.variantLabel) {
+    variantParts.push(item.variantLabel);
+  }
+
+  const imageUrl = item.imageUrl
+    || item.product?.images?.find(i => i.isMain)?.url
+    || item.product?.images?.[0]?.url
+    || null;
+
   return `
   <tr>
-    <td style="padding:12px 0;border-bottom:1px solid ${C.border};">
+    <td style="padding:14px 0;border-bottom:1px solid ${C.border};">
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td style="vertical-align:top;padding-right:12px;">
-            <div style="font-size:13px;font-weight:600;color:${C.text};">${label}</div>
-            <div style="font-size:11px;color:${C.textLight};margin-top:3px;">Qté : ${item.quantity}</div>
+          ${imageUrl ? `
+          <td style="width:64px;vertical-align:top;padding-right:14px;">
+            <img src="${imageUrl}" alt="${item.productName}"
+              style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid ${C.border};display:block;" />
+          </td>` : ''}
+          <td style="vertical-align:top;">
+            <div style="font-size:13px;font-weight:700;color:${C.text};margin-bottom:4px;">
+              ${item.productName}
+            </div>
+            ${variantParts.length > 0 ? `
+            <div style="margin-bottom:4px;">
+              <span style="display:inline-block;background:${C.offWhite};border:1px solid ${C.border};border-radius:4px;padding:2px 8px;font-size:11px;color:${C.textLight};">
+                ${variantParts.join(' · ')}
+              </span>
+            </div>` : ''}
+            <div style="font-size:11px;color:${C.textLight};">
+              Quantité : <strong style="color:${C.text};">${item.quantity}</strong>
+              &nbsp;·&nbsp;
+              <span style="color:${C.textLight};">${Number(item.price).toLocaleString('fr-FR')} FCFA / unité</span>
+            </div>
           </td>
-          <td style="vertical-align:top;text-align:right;white-space:nowrap;">
-            <div style="font-size:13px;font-weight:700;color:${C.text};">${Number(item.subtotal || item.price * item.quantity).toLocaleString('fr-FR')} FCFA</div>
-            <div style="font-size:11px;color:${C.textLight};">${Number(item.price).toLocaleString('fr-FR')} FCFA / unité</div>
+          <td style="vertical-align:top;text-align:right;white-space:nowrap;padding-left:12px;">
+            <div style="font-size:14px;font-weight:800;color:${C.navy};">
+              ${Number(item.subtotal || item.price * item.quantity).toLocaleString('fr-FR')} FCFA
+            </div>
           </td>
         </tr>
       </table>
     </td>
   </tr>`;
+}
+
+// ── Bloc articles compact (pour email statut) ─────────────────────────────────
+function productRowCompact(item) {
+  const imageUrl = item.imageUrl
+    || item.product?.images?.find(i => i.isMain)?.url
+    || item.product?.images?.[0]?.url
+    || null;
+
+  return `
+  <tr>
+    <td style="padding:10px 0;border-bottom:1px solid ${C.border};">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          ${imageUrl ? `
+          <td style="width:48px;vertical-align:middle;padding-right:12px;">
+            <img src="${imageUrl}" alt="${item.productName}"
+              style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid ${C.border};display:block;" />
+          </td>` : ''}
+          <td style="vertical-align:middle;">
+            <div style="font-size:12px;font-weight:700;color:${C.text};">${item.productName}</div>
+            ${item.variantLabel ? `<div style="font-size:10px;color:${C.textLight};margin-top:2px;">${item.variantLabel}</div>` : ''}
+            <div style="font-size:10px;color:${C.textLight};margin-top:1px;">Qté : ${item.quantity}</div>
+          </td>
+          <td style="vertical-align:middle;text-align:right;white-space:nowrap;">
+            <div style="font-size:12px;font-weight:700;color:${C.navy};">
+              ${Number(item.subtotal || item.price * item.quantity).toLocaleString('fr-FR')} FCFA
+            </div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+}
+
+// ── Bloc récapitulatif articles ───────────────────────────────────────────────
+function itemsSummaryBlock(items = [], compact = false) {
+  if (!items.length) return '';
+  const rows = items.map(compact ? productRowCompact : productRow).join('');
+  return `
+  <div style="margin:20px 0;">
+    <div style="font-size:11px;font-weight:700;color:${C.navy};text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+      🛍️ Article${items.length > 1 ? 's' : ''} commandé${items.length > 1 ? 's' : ''} (${items.length})
+    </div>
+    <table width="100%" cellpadding="0" cellspacing="0"
+      style="background:${C.offWhite};border-radius:8px;border:1px solid ${C.border};padding:0 16px;overflow:hidden;">
+      ${rows}
+    </table>
+  </div>`;
 }
 
 function totalsBlock({ subtotal, shippingCost, discount, storeDiscount, tax, total }) {
@@ -257,7 +332,6 @@ function guestInfoBanner(whatsappNumber) {
   </table>`;
 }
 
-// ── Bloc KPI pour le rapport ─────────────────────────────────────────────────
 function kpiCard(emoji, label, value, subValue = '', color = C.primary) {
   return `
   <td style="width:25%;padding:8px;" valign="top">
@@ -308,9 +382,8 @@ function buildOrderConfirmationEmail({
   tax = 0, subtotal, paymentMethod, shippingAddress,
   isGuest = false, whatsappNumber = '',
 }) {
-  const name = guestName || 'chère cliente';
-  const sub  = subtotal ?? total;
-
+  const name   = guestName || 'chère cliente';
+  const sub    = subtotal ?? total;
   const addrLine = shippingAddress
     ? [shippingAddress.street, shippingAddress.city, shippingAddress.country].filter(Boolean).join(', ')
     : null;
@@ -319,6 +392,10 @@ function buildOrderConfirmationEmail({
     CASH_ON_DELIVERY: 'Paiement à la livraison',
     MOBILE_MONEY:     'Mobile Money',
   };
+
+  const itemsSummary = items.length > 0
+    ? items.map(i => `${i.productName}${i.variantLabel ? ` (${i.variantLabel})` : ''} ×${i.quantity}`).join(', ')
+    : null;
 
   const body = `
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${C.navy};">
@@ -329,19 +406,14 @@ function buildOrderConfirmationEmail({
     </p>
 
     ${infoBox([
-      ['N° commande',  `<strong style="font-size:14px;color:${C.primary};">${orderNumber}</strong>`],
-      ['Cliente',      name],
-      addrLine      ? ['Adresse de livraison', addrLine] : null,
-      paymentMethod ? ['Mode de paiement', payLabels[paymentMethod] || paymentMethod] : null,
+      ['N° commande',   `<strong style="font-size:14px;color:${C.primary};">${orderNumber}</strong>`],
+      ['Cliente',       name],
+      addrLine        ? ['Adresse de livraison', addrLine] : null,
+      paymentMethod   ? ['Mode de paiement', payLabels[paymentMethod] || paymentMethod] : null,
+      itemsSummary    ? ['Résumé', `<span style="font-size:11px;color:${C.textLight};">${itemsSummary}</span>`] : null,
     ])}
 
-    ${items.length > 0 ? `
-    <h3 style="font-size:11px;font-weight:700;color:${C.navy};text-transform:uppercase;letter-spacing:1px;margin:24px 0 4px;">
-      Détail de votre commande
-    </h3>
-    <table width="100%" cellpadding="0" cellspacing="0">
-      ${items.map(productRow).join('')}
-    </table>` : ''}
+    ${itemsSummaryBlock(items, false)}
 
     ${totalsBlock({ subtotal: sub, shippingCost, discount, storeDiscount, tax, total })}
 
@@ -366,18 +438,27 @@ function buildOrderConfirmationEmail({
 }
 
 // ============================================================
-// 2. MISE À JOUR STATUT
+// 2. MISE À JOUR STATUT — avec récap articles
 // ============================================================
-function buildOrderStatusEmail({ orderNumber, customerName, status, clientUrl, trackingNote, isGuest = false, whatsappNumber = '' }) {
+function buildOrderStatusEmail({
+  orderNumber, customerName, status, clientUrl,
+  trackingNote, isGuest = false, whatsappNumber = '',
+  items = [], total, shippingAddress,
+}) {
   const config = {
-    CONFIRMED:  { emoji: '✅', label: 'confirmée',              msg: 'Votre commande a été confirmée et va bientôt être préparée.' },
+    CONFIRMED:  { emoji: '✅', label: 'confirmée',               msg: 'Votre commande a été confirmée et va bientôt être préparée.' },
     PROCESSING: { emoji: '📦', label: 'en cours de préparation', msg: 'Notre équipe prépare votre commande avec soin.' },
-    SHIPPED:    { emoji: '🚚', label: 'expédiée',               msg: 'Votre commande est en route ! Notre livreur vous contactera sous peu.' },
-    DELIVERED:  { emoji: '🎁', label: 'livrée',                 msg: 'Votre commande a été livrée avec succès. Merci pour votre confiance !' },
-    CANCELLED:  { emoji: '⏳', label: 'en attente',             msg: 'Votre commande est en attente de confirmation.' },
+    SHIPPED:    { emoji: '🚚', label: 'expédiée',                msg: 'Votre commande est en route ! Notre livreur vous contactera sous peu.' },
+    DELIVERED:  { emoji: '🎁', label: 'livrée',                  msg: 'Votre commande a été livrée avec succès. Merci pour votre confiance !' },
+    CANCELLED:  { emoji: '❌', label: 'annulée',                 msg: 'Votre commande a été annulée. Contactez-nous si vous avez des questions.' },
+    PENDING:    { emoji: '⏳', label: 'en attente',              msg: 'Votre commande est en attente de confirmation.' },
   };
 
   const s = config[status] || { emoji: '📋', label: status, msg: '' };
+
+  const addrLine = shippingAddress
+    ? [shippingAddress.street, shippingAddress.city, shippingAddress.country].filter(Boolean).join(', ')
+    : null;
 
   const body = `
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${C.navy};">
@@ -389,14 +470,18 @@ function buildOrderStatusEmail({ orderNumber, customerName, status, clientUrl, t
     ${infoBox([
       ['N° commande', `<strong style="color:${C.primary};">${orderNumber}</strong>`],
       ['Statut',      badge(status)],
+      addrLine      ? ['Livraison', addrLine] : null,
+      total != null ? ['Total', `<strong style="color:${C.navy};">${Number(total).toLocaleString('fr-FR')} FCFA</strong>`] : null,
     ])}
 
-    <p style="margin:0;font-size:14px;color:${C.text};line-height:1.6;">${s.msg}</p>
+    <p style="margin:0 0 16px;font-size:14px;color:${C.text};line-height:1.6;">${s.msg}</p>
 
     ${trackingNote ? `
-    <div style="background:${C.offWhite};border-left:3px solid ${C.primary};padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0;">
+    <div style="background:${C.offWhite};border-left:3px solid ${C.primary};padding:12px 16px;margin:0 0 16px;border-radius:0 8px 8px 0;">
       <p style="margin:0;font-size:13px;color:${C.textLight};font-style:italic;">${trackingNote}</p>
     </div>` : ''}
+
+    ${items.length > 0 ? itemsSummaryBlock(items, true) : ''}
 
     ${divider()}
 
@@ -521,7 +606,7 @@ function buildPreorderEmail({ name, productName, orderNumber }) {
 }
 
 // ============================================================
-// 6. RAPPORT DE GESTION (EMAIL)
+// 6. RAPPORT DE GESTION
 // ============================================================
 function buildReportEmail({ period, financial, orders, products, stock, expenses, storeName = 'SonShop' }) {
   const fmt = (n) => Number(n || 0).toLocaleString('fr-FR');
@@ -531,7 +616,6 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
   const beneficeColor   = beneficePositif ? C.success : C.danger;
   const beneficeEmoji   = beneficePositif ? '📈' : '📉';
 
-  // ── Section KPI ────────────────────────────────────────────
   const kpiSection = `
   <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
     <tr>
@@ -542,7 +626,6 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
     </tr>
   </table>`;
 
-  // ── Section Commandes par statut ───────────────────────────
   const statusLabels = {
     PENDING: 'En attente', CONFIRMED: 'Confirmées', PROCESSING: 'En préparation',
     SHIPPED: 'Expédiées', DELIVERED: 'Livrées', CANCELLED: 'Annulées', DRAFT: 'Brouillons',
@@ -575,7 +658,6 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
     </tr>`;
   }).join('');
 
-  // ── Top clients ────────────────────────────────────────────
   const topCA = (orders.topClients || [])[0]?.total || 1;
   const topClientsRows = (orders.topClients || []).slice(0, 5).map((c, i) => {
     const pctVal = pct(c.total, topCA);
@@ -606,7 +688,6 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
     </tr>`;
   }).join('');
 
-  // ── Top produits ───────────────────────────────────────────
   const topRevenue = (products.topProducts || [])[0]?.revenue || 1;
   const topProduitsRows = (products.topProducts || []).slice(0, 5).map((p, i) => `
     <tr>
@@ -631,21 +712,18 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
       </td>
     </tr>`).join('');
 
-  // ── Stock ──────────────────────────────────────────────────
   const stockAlertRows = (stock.lowStock || []).slice(0, 5).map(p => `
     <tr>
       <td style="padding:4px 0;font-size:12px;color:${C.danger};">⚠️ ${p.name}</td>
       <td style="padding:4px 0;font-size:11px;color:${C.textLight};text-align:right;">Stock : ${p.stock} / Alerte : ${p.alert}</td>
     </tr>`).join('');
 
-  // ── Dépenses ───────────────────────────────────────────────
   const topDepense = Math.max(...Object.values(expenses.byCategory || {}), 1);
   const depenseRows = Object.entries(expenses.byCategory || {}).map(([cat, amount]) =>
     progressBar(cat, amount, topDepense, C.navy)
   ).join('');
 
   const body = `
-    <!-- En-tête rapport -->
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td>
@@ -661,10 +739,8 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
       </tr>
     </table>
 
-    <!-- KPI Cards -->
     ${kpiSection}
 
-    <!-- Équilibre financier -->
     <div style="background:${C.offWhite};border:1px solid ${C.border};border-radius:10px;padding:16px;margin:0 0 20px;">
       <div style="font-size:11px;font-weight:700;color:${C.navy};text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">📊 Équilibre financier</div>
       <table width="100%" cellpadding="0" cellspacing="0">
@@ -672,7 +748,7 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
         ${progressBar('Coût des ventes (COGS)', financial.cogs, financial.chiffreAffaires, C.navy)}
         ${progressBar('Dépenses', financial.totalExpenses, financial.chiffreAffaires, C.danger)}
       </table>
-      <div style="margin-top:12px;padding:10px 14px;background:${beneficePositif ? '#e8f5e9' : '#fce4e4'};border-radius:8px;display:flex;justify-content:space-between;">
+      <div style="margin-top:12px;padding:10px 14px;background:${beneficePositif ? '#e8f5e9' : '#fce4e4'};border-radius:8px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="font-size:13px;font-weight:700;color:${beneficeColor};">${beneficeEmoji} Bénéfice estimé</td>
@@ -682,7 +758,6 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
       </div>
     </div>
 
-    <!-- Commandes & Top clients (2 colonnes) -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
       <tr valign="top">
         <td width="48%" style="padding-right:8px;">
@@ -701,13 +776,11 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
       </tr>
     </table>
 
-    <!-- Top produits -->
     <div style="background:${C.offWhite};border:1px solid ${C.border};border-radius:10px;padding:16px;margin-bottom:20px;">
       <div style="font-size:11px;font-weight:700;color:${C.navy};text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">💎 Top 5 produits vendus</div>
       <table width="100%" cellpadding="0" cellspacing="0">${topProduitsRows || '<tr><td style="font-size:12px;color:#aaa;">Aucune vente livrée sur la période</td></tr>'}</table>
     </div>
 
-    <!-- Stock & Dépenses (2 colonnes) -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
       <tr valign="top">
         <td width="48%" style="padding-right:8px;">
@@ -719,8 +792,7 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
               <tr><td style="font-size:12px;color:${C.warning};padding:4px 0;">⚠️ Alertes stock bas</td><td style="font-size:12px;font-weight:700;color:${C.warning};text-align:right;">${stock.lowStock?.length || 0}</td></tr>
               <tr><td style="font-size:12px;color:${C.danger};padding:4px 0;">❌ Épuisés</td><td style="font-size:12px;font-weight:700;color:${C.danger};text-align:right;">${stock.outOfStock?.length || 0}</td></tr>
             </table>
-            ${stockAlertRows ? `
-            ${divider()}
+            ${stockAlertRows ? `${divider()}
             <div style="font-size:10px;font-weight:700;color:${C.danger};text-transform:uppercase;margin-bottom:6px;">Alertes</div>
             <table width="100%" cellpadding="0" cellspacing="0">${stockAlertRows}</table>` : ''}
           </div>

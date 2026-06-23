@@ -5,7 +5,7 @@ import { API_URL } from '../../utils/constants';
 const formatPrice = (p) => `${Number(p).toLocaleString('fr-FR')} FCFA`;
 
 // ─── Composant upload image ────────────────────────────────────────────────
-function ImageUploader({ images, onChange, token }) {
+function ImageUploader({ images, onChange, token, variantColors = [] }) {
   const fileRef = useRef();
   const [uploading, setUploading] = useState(false);
   const [urlInput, setUrlInput] = useState('');
@@ -32,6 +32,7 @@ function ImageUploader({ images, onChange, token }) {
         publicId: img.publicId,
         isMain: images.length === 0 && i === 0,
         position: images.length + i,
+        color: null,
       }));
       onChange([...images, ...newImages]);
     } catch {
@@ -46,16 +47,21 @@ function ImageUploader({ images, onChange, token }) {
   const addUrl = () => {
     const trimmed = urlInput.trim();
     if (!trimmed) return;
-    onChange([...images, { url: trimmed, publicId: '', isMain: images.length === 0, position: images.length }]);
+    onChange([...images, { url: trimmed, publicId: '', isMain: images.length === 0, position: images.length, color: null }]);
     setUrlInput('');
   };
 
   const setMain = (idx) => onChange(images.map((img, i) => ({ ...img, isMain: i === idx })));
+
   const remove = (idx) => {
     const next = images.filter((_, i) => i !== idx).map((img, i) => ({
       ...img, isMain: i === 0, position: i,
     }));
     onChange(next);
+  };
+
+  const setColor = (idx, color) => {
+    onChange(images.map((img, i) => i === idx ? { ...img, color: color || null } : img));
   };
 
   return (
@@ -110,29 +116,176 @@ function ImageUploader({ images, onChange, token }) {
       )}
 
       {images.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-1">
+        <div className="space-y-2 mt-1">
           {images.map((img, idx) => (
-            <div key={idx} className="relative group">
-              <img src={img.url} alt={`img-${idx}`}
-                className={`h-20 w-20 object-cover rounded-xl border-2 transition-all ${img.isMain ? 'border-black' : 'border-gray-200'}`}
-                onError={(e) => { e.target.src = ''; e.target.parentElement.style.display = 'none'; }} />
-              {img.isMain && (
-                <span className="absolute top-1 left-1 bg-black text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">★ Main</span>
-              )}
-              <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                {!img.isMain && (
-                  <button type="button" onClick={() => setMain(idx)} title="Définir comme principale"
-                    className="bg-white text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-yellow-100">★</button>
+            <div key={idx} className="flex items-center gap-3 p-2 border border-gray-100 rounded-xl bg-gray-50">
+              {/* Miniature */}
+              <div className="relative shrink-0">
+                <img
+                  src={img.url}
+                  alt={`img-${idx}`}
+                  className={`h-16 w-16 object-cover rounded-lg border-2 transition-all ${img.isMain ? 'border-black' : 'border-gray-200'}`}
+                  onError={(e) => { e.target.src = ''; e.target.parentElement.style.display = 'none'; }}
+                />
+                {img.isMain && (
+                  <span className="absolute top-0.5 left-0.5 bg-black text-white text-[9px] font-bold px-1 py-0.5 rounded-full">★</span>
                 )}
-                <button type="button" onClick={() => remove(idx)} title="Supprimer"
-                  className="bg-white text-red-500 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-50">✕</button>
+              </div>
+
+              {/* Couleur associée */}
+              <div className="flex-1 min-w-0">
+                <label className="block text-[10px] font-medium text-gray-500 mb-1">
+                  Couleur associée
+                  {variantColors.length > 0 && <span className="text-gray-400 font-normal"> — cliquez pour assigner</span>}
+                </label>
+                {variantColors.length > 0 ? (
+                  <div className="flex gap-1 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setColor(idx, null)}
+                      className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                        !img.color ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                      }`}
+                    >
+                      Toutes
+                    </button>
+                    {variantColors.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setColor(idx, c)}
+                        className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                          img.color === c ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={img.color || ''}
+                    onChange={(e) => setColor(idx, e.target.value)}
+                    placeholder="ex : Rouge (vide = toutes les couleurs)"
+                    className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-black/20"
+                  />
+                )}
+                {img.color && (
+                  <p className="text-[10px] text-gray-400 mt-0.5">📎 Assignée à : <span className="font-medium text-gray-600">{img.color}</span></p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col gap-1 shrink-0">
+                {!img.isMain && (
+                  <button type="button" onClick={() => setMain(idx)}
+                    className="bg-white border border-gray-200 text-gray-600 rounded-lg w-7 h-7 flex items-center justify-center text-xs hover:bg-yellow-50 hover:border-yellow-300"
+                    title="Image principale">★</button>
+                )}
+                <button type="button" onClick={() => remove(idx)}
+                  className="bg-white border border-red-200 text-red-400 rounded-lg w-7 h-7 flex items-center justify-center text-xs hover:bg-red-50"
+                  title="Supprimer">✕</button>
               </div>
             </div>
           ))}
+          <p className="text-xs text-gray-400">{images.length} image{images.length > 1 ? 's' : ''} — ★ pour définir la principale</p>
         </div>
       )}
-      {images.length > 0 && (
-        <p className="text-xs text-gray-400">{images.length} image{images.length > 1 ? 's' : ''} — cliquez ★ pour définir la principale</p>
+    </div>
+  );
+}
+
+// ─── Composant gestion variantes ───────────────────────────────────────────
+function VariantsEditor({ variants, onChange }) {
+  const emptyVariant = { size: '', color: '', stock: '' };
+  const addVariant = () => onChange([...variants, { ...emptyVariant }]);
+  const updateVariant = (idx, field, value) => {
+    onChange(variants.map((v, i) => i === idx ? { ...v, [field]: value } : v));
+  };
+  const removeVariant = (idx) => onChange(variants.filter((_, i) => i !== idx));
+
+  const sizeSuggestions = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Unique'];
+  const colorSuggestions = ['Noir', 'Blanc', 'Rouge', 'Bleu', 'Vert', 'Jaune', 'Rose', 'Gris', 'Beige', 'Marron'];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Variantes (taille / couleur)</label>
+          <p className="text-xs text-gray-400 mt-0.5">Chaque combinaison taille + couleur a son propre stock</p>
+        </div>
+        <button type="button" onClick={addVariant}
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors">
+          <span className="text-base leading-none">+</span> Ajouter
+        </button>
+      </div>
+
+      {variants.length === 0 && (
+        <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center text-gray-400 text-sm">
+          Aucune variante — le produit a un stock unique.<br />
+          <span className="text-xs">Cliquez "+ Ajouter" pour créer des variantes taille/couleur.</span>
+        </div>
+      )}
+
+      {variants.length > 0 && (
+        <div className="space-y-2">
+          <div className="grid grid-cols-[1fr_1fr_80px_32px] gap-2 px-1">
+            <span className="text-xs font-medium text-gray-500">Taille</span>
+            <span className="text-xs font-medium text-gray-500">Couleur</span>
+            <span className="text-xs font-medium text-gray-500">Stock</span>
+            <span />
+          </div>
+
+          {variants.map((v, idx) => (
+            <div key={idx} className="grid grid-cols-[1fr_1fr_80px_32px] gap-2 items-start">
+              <div className="space-y-1">
+                <input type="text" value={v.size}
+                  onChange={(e) => updateVariant(idx, 'size', e.target.value)}
+                  placeholder="ex : M"
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/20" />
+                <div className="flex gap-1 flex-wrap">
+                  {sizeSuggestions.map((s) => (
+                    <button key={s} type="button" onClick={() => updateVariant(idx, 'size', s)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                        v.size === s ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                      }`}>{s}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <input type="text" value={v.color}
+                  onChange={(e) => updateVariant(idx, 'color', e.target.value)}
+                  placeholder="ex : Rouge"
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/20" />
+                <div className="flex gap-1 flex-wrap">
+                  {colorSuggestions.map((c) => (
+                    <button key={c} type="button" onClick={() => updateVariant(idx, 'color', c)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                        v.color === c ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                      }`}>{c}</button>
+                  ))}
+                </div>
+              </div>
+
+              <input type="number" value={v.stock}
+                onChange={(e) => updateVariant(idx, 'stock', e.target.value)}
+                min="0" placeholder="0"
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/20" />
+
+              <button type="button" onClick={() => removeVariant(idx)}
+                className="w-8 h-8 mt-0.5 flex items-center justify-center rounded-lg border border-red-200 text-red-400 hover:bg-red-50 transition-colors text-xs font-bold">✕</button>
+            </div>
+          ))}
+
+          <div className="bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-500 flex items-center justify-between">
+            <span>{variants.length} variante{variants.length > 1 ? 's' : ''}</span>
+            <span className="font-medium text-gray-700">
+              Stock total : {variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)}
+            </span>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -154,8 +307,10 @@ export default function AdminProducts() {
 
   const emptyForm = {
     name: '', slug: '', description: '', price: '', comparePrice: '',
-    purchasePrice: '',  // ← NOUVEAU
-    stock: '', categoryId: '', isActive: true, isFeatured: false, images: [],
+    purchasePrice: '', stock: '', categoryId: '',
+    isActive: true, isFeatured: false,
+    variantDisplayMode: 'SIZE_FIRST',
+    images: [], variants: [],
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -174,7 +329,9 @@ export default function AdminProducts() {
     setLoading(true); setError(null);
     try {
       const [pRes, cRes] = await Promise.all([
-        fetch(`${API_URL}/api/products?limit=100`),
+        fetch(`${API_URL}/api/products/admin/all`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
         fetch(`${API_URL}/api/categories`),
       ]);
       const pData = await pRes.json();
@@ -187,18 +344,29 @@ export default function AdminProducts() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  const openCreate = () => { setForm(emptyForm); setSelected(null); setFieldErrors({}); setModal('create'); };
+  const openCreate = () => {
+    setForm(emptyForm); setSelected(null); setFieldErrors({}); setModal('create');
+  };
+
   const openEdit = (p) => {
     setForm({
       name: p.name, slug: p.slug, description: p.description || '',
       price: p.price, comparePrice: p.comparePrice || '',
-      purchasePrice: p.purchasePrice || '',  // ← NOUVEAU
+      purchasePrice: p.purchasePrice || '',
       stock: p.stock, categoryId: p.categoryId || '',
       isActive: p.isActive ?? true, isFeatured: p.isFeatured ?? false,
-      images: p.images || [],
+      variantDisplayMode: p.variantDisplayMode || 'SIZE_FIRST',
+      images: (p.images || []).map((img) => ({
+        ...img,
+        color: img.color || null,
+      })),
+      variants: (p.variants || []).map((v) => ({
+        id: v.id, size: v.size || '', color: v.color || '', stock: v.stock ?? 0,
+      })),
     });
     setSelected(p); setFieldErrors({}); setModal('edit');
   };
+
   const openDelete = (p) => { setSelected(p); setModal('delete'); };
   const closeModal = () => { setModal(null); setSelected(null); setFieldErrors({}); };
 
@@ -216,30 +384,55 @@ export default function AdminProducts() {
     const errors = {};
     if (!form.name.trim()) errors.name = 'Le nom est obligatoire';
     if (!form.price || Number(form.price) < 0) errors.price = 'Prix invalide';
-    if (form.stock === '' || Number(form.stock) < 0) errors.stock = 'Stock invalide';
-    // ← Validation optionnelle prix achat
+    if (form.variants.length === 0 && (form.stock === '' || Number(form.stock) < 0)) {
+      errors.stock = 'Stock invalide';
+    }
     if (form.purchasePrice !== '' && Number(form.purchasePrice) < 0) errors.purchasePrice = 'Prix achat invalide';
+    form.variants.forEach((v, i) => {
+      if (!v.size.trim() && !v.color.trim()) errors[`variant_${i}`] = `Variante ${i + 1} : taille ou couleur requise`;
+      if (v.stock === '' || Number(v.stock) < 0) errors[`variant_stock_${i}`] = `Variante ${i + 1} : stock invalide`;
+    });
     return errors;
   };
 
-  const buildBody = () => ({
-    name: form.name.trim(),
-    slug: form.slug.trim(),
-    ...(form.description.trim() ? { description: form.description.trim() } : {}),
-    price: Number(form.price),
-    comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
-    purchasePrice: form.purchasePrice !== '' ? Number(form.purchasePrice) : null,  // ← NOUVEAU
-    stock: Number(form.stock),
-    ...(form.categoryId ? { categoryId: form.categoryId } : {}),
-    isActive: form.isActive,
-    isFeatured: form.isFeatured,
-    images: form.images.map((img, i) => ({
-      url: img.url,
-      publicId: img.publicId || '',
-      isMain: img.isMain ?? i === 0,
-      position: i,
-    })),
-  });
+  // Couleurs uniques extraites des variantes (pour l'ImageUploader)
+  const variantColors = [...new Set(
+    form.variants.map((v) => v.color).filter(Boolean)
+  )];
+
+  const buildBody = () => {
+    const hasVariants = form.variants.length > 0;
+    const totalVariantStock = hasVariants
+      ? form.variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)
+      : Number(form.stock);
+
+    return {
+      name: form.name.trim(),
+      slug: form.slug.trim(),
+      ...(form.description.trim() ? { description: form.description.trim() } : {}),
+      price: Number(form.price),
+      comparePrice: form.comparePrice ? Number(form.comparePrice) : null,
+      purchasePrice: form.purchasePrice !== '' ? Number(form.purchasePrice) : null,
+      stock: totalVariantStock,
+      ...(form.categoryId ? { categoryId: form.categoryId } : {}),
+      isActive: form.isActive,
+      isFeatured: form.isFeatured,
+      variantDisplayMode: form.variantDisplayMode || 'SIZE_FIRST',
+      images: form.images.map((img, i) => ({
+        url: img.url,
+        publicId: img.publicId || '',
+        isMain: img.isMain ?? i === 0,
+        position: i,
+        color: img.color || null,
+      })),
+      variants: form.variants.map((v) => ({
+        ...(v.id ? { id: v.id } : {}),
+        size: v.size.trim(),
+        color: v.color.trim(),
+        stock: Number(v.stock) || 0,
+      })),
+    };
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -247,7 +440,9 @@ export default function AdminProducts() {
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/api/products`, { method: 'POST', headers, body: JSON.stringify(buildBody()) });
+      const res = await fetch(`${API_URL}/api/products`, {
+        method: 'POST', headers, body: JSON.stringify(buildBody()),
+      });
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Erreur serveur'); }
       await fetchAll(); closeModal(); showToast('Produit créé ✓');
     } catch (e) { showToast(e.message, 'error'); } finally { setSubmitting(false); }
@@ -259,7 +454,9 @@ export default function AdminProducts() {
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/api/products/${selected.id}`, { method: 'PUT', headers, body: JSON.stringify(buildBody()) });
+      const res = await fetch(`${API_URL}/api/products/${selected.id}`, {
+        method: 'PUT', headers, body: JSON.stringify(buildBody()),
+      });
       if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Erreur serveur'); }
       await fetchAll(); closeModal(); showToast('Produit modifié ✓');
     } catch (e) { showToast(e.message, 'error'); } finally { setSubmitting(false); }
@@ -286,6 +483,10 @@ export default function AdminProducts() {
         : 'border-gray-200 focus:ring-black/20 focus:border-gray-400'
     }`;
 
+  const variantErrors = Object.entries(fieldErrors)
+    .filter(([k]) => k.startsWith('variant_'))
+    .map(([, v]) => v);
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {toast && (
@@ -299,13 +500,15 @@ export default function AdminProducts() {
           <h1 className="text-2xl font-bold text-gray-900">Produits</h1>
           <p className="text-sm text-gray-500 mt-1">{filtered.length} produit{filtered.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
+        <button onClick={openCreate}
+          className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
           <span className="text-lg leading-none">+</span> Nouveau produit
         </button>
       </div>
 
       <div className="mb-4">
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher un produit..."
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Rechercher un produit..."
           className="w-full max-w-sm border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20 bg-white" />
       </div>
 
@@ -341,6 +544,8 @@ export default function AdminProducts() {
                   <th className="px-6 py-3">Stock réel</th>
                   <th className="px-6 py-3">Réservé</th>
                   <th className="px-6 py-3">Disponible</th>
+                  <th className="px-6 py-3">Variantes</th>
+                  <th className="px-6 py-3">Affichage</th>
                   <th className="px-6 py-3">Statut</th>
                   <th className="px-6 py-3 text-right">Actions</th>
                 </tr>
@@ -354,7 +559,8 @@ export default function AdminProducts() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {mainImage ? (
-                            <img src={mainImage} alt={p.name} className="h-10 w-10 rounded-lg object-cover border border-gray-200 flex-shrink-0" />
+                            <img src={mainImage} alt={p.name}
+                              className="h-10 w-10 rounded-lg object-cover border border-gray-200 flex-shrink-0" />
                           ) : (
                             <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-xs flex-shrink-0">N/A</div>
                           )}
@@ -369,12 +575,10 @@ export default function AdminProducts() {
                         <div className="font-semibold text-gray-900">{formatPrice(p.price)}</div>
                         {p.comparePrice && <div className="text-xs text-gray-400 line-through">{formatPrice(p.comparePrice)}</div>}
                       </td>
-                      {/* ← NOUVELLE COLONNE prix achat */}
                       <td className="px-6 py-4">
                         {p.purchasePrice
                           ? <span className="text-gray-700">{formatPrice(p.purchasePrice)}</span>
-                          : <span className="text-gray-300 text-xs italic">Non défini</span>
-                        }
+                          : <span className="text-gray-300 text-xs italic">Non défini</span>}
                       </td>
                       <td className="px-6 py-4 font-medium text-gray-900">{p.stock ?? 0}</td>
                       <td className="px-6 py-4 text-amber-700">{p.reservedStock ?? 0}</td>
@@ -389,6 +593,22 @@ export default function AdminProducts() {
                         })()}
                       </td>
                       <td className="px-6 py-4">
+                        {p.variants?.length > 0
+                          ? <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full font-medium">{p.variants.length} variante{p.variants.length > 1 ? 's' : ''}</span>
+                          : <span className="text-xs text-gray-300">—</span>}
+                      </td>
+                      <td className="px-6 py-4">
+                        {p.variants?.length > 0 ? (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            p.variantDisplayMode === 'COLOR_FIRST'
+                              ? 'bg-rose-50 text-rose-600'
+                              : 'bg-blue-50 text-blue-600'
+                          }`}>
+                            {p.variantDisplayMode === 'COLOR_FIRST' ? '🎨 Couleur' : '📐 Taille'}
+                          </span>
+                        ) : <span className="text-xs text-gray-300">—</span>}
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium w-fit ${p.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                             {p.isActive ? 'Actif' : 'Inactif'}
@@ -398,8 +618,10 @@ export default function AdminProducts() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => openEdit(p)} className="text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors font-medium">Modifier</button>
-                          <button onClick={() => openDelete(p)} className="text-xs px-3 py-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50 transition-colors font-medium">Supprimer</button>
+                          <button onClick={() => openEdit(p)}
+                            className="text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors font-medium">Modifier</button>
+                          <button onClick={() => openDelete(p)}
+                            className="text-xs px-3 py-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50 transition-colors font-medium">Supprimer</button>
                         </div>
                       </td>
                     </tr>
@@ -416,7 +638,9 @@ export default function AdminProducts() {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">{modal === 'create' ? 'Nouveau produit' : 'Modifier le produit'}</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {modal === 'create' ? 'Nouveau produit' : 'Modifier le produit'}
+              </h2>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
 
@@ -474,47 +698,51 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              {/* ← NOUVEAU : Prix achat (ligne séparée pour mettre en valeur l'info) */}
+              {/* Prix achat */}
               <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 space-y-1">
                 <label className="block text-sm font-medium text-amber-800 mb-1">
                   💰 Prix d'achat (FCFA) <span className="text-amber-500 text-xs font-normal">(optionnel — utilisé pour les marges)</span>
                 </label>
-                <input
-                  type="number"
-                  name="purchasePrice"
-                  value={form.purchasePrice}
-                  onChange={handleChange}
-                  min="0"
-                  placeholder="ex : 15000"
+                <input type="number" name="purchasePrice" value={form.purchasePrice} onChange={handleChange}
+                  min="0" placeholder="ex : 15000"
                   className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition ${
                     fieldErrors.purchasePrice
                       ? 'border-red-400 focus:ring-red-200 bg-red-50'
                       : 'border-amber-200 focus:ring-amber-300 bg-white'
-                  }`}
-                />
+                  }`} />
                 {fieldErrors.purchasePrice && <p className="text-xs text-red-500 mt-1">{fieldErrors.purchasePrice}</p>}
-                {/* Aperçu marge en temps réel */}
                 {form.price && form.purchasePrice && Number(form.purchasePrice) > 0 && (
                   <p className="text-xs text-amber-700 mt-1">
                     Marge estimée :{' '}
-                    <span className="font-semibold">
-                      {formatPrice(Number(form.price) - Number(form.purchasePrice))}
-                    </span>{' '}
+                    <span className="font-semibold">{formatPrice(Number(form.price) - Number(form.purchasePrice))}</span>{' '}
                     ({Math.round(((Number(form.price) - Number(form.purchasePrice)) / Number(form.price)) * 100)}%)
                   </p>
                 )}
               </div>
 
-              {/* Stock + Catégorie */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Stock <span className="text-red-500">*</span>
-                  </label>
-                  <input type="number" name="stock" value={form.stock} onChange={handleChange}
-                    min="0" placeholder="20" className={inputClass('stock')} />
-                  {fieldErrors.stock && <p className="text-xs text-red-500 mt-1">{fieldErrors.stock}</p>}
+              {/* Stock global — masqué si variantes */}
+              {form.variants.length === 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Stock <span className="text-red-500">*</span>
+                    </label>
+                    <input type="number" name="stock" value={form.stock} onChange={handleChange}
+                      min="0" placeholder="20" className={inputClass('stock')} />
+                    {fieldErrors.stock && <p className="text-xs text-red-500 mt-1">{fieldErrors.stock}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+                    <select name="categoryId" value={form.categoryId} onChange={handleChange} className={inputClass('categoryId')}>
+                      <option value="">— Aucune —</option>
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
                 </div>
+              )}
+
+              {/* Catégorie seule si variantes */}
+              {form.variants.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
                   <select name="categoryId" value={form.categoryId} onChange={handleChange} className={inputClass('categoryId')}>
@@ -522,14 +750,64 @@ export default function AdminProducts() {
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
+              )}
+
+              {/* Variantes */}
+              <div className="border-t border-gray-100 pt-4">
+                <VariantsEditor
+                  variants={form.variants}
+                  onChange={(variants) => setForm(prev => ({ ...prev, variants }))}
+                />
+                {variantErrors.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {variantErrors.map((msg, i) => <p key={i} className="text-xs text-red-500">{msg}</p>)}
+                  </div>
+                )}
               </div>
 
+              {/* Mode d'affichage — visible seulement si variantes */}
+              {form.variants.length > 0 && (
+                <div className="border border-gray-100 rounded-xl p-3 space-y-2 bg-gray-50">
+                  <label className="block text-sm font-medium text-gray-700">
+                    🎨 Mode d'affichage des variantes
+                  </label>
+                  <p className="text-xs text-gray-400">Définit ce que le client choisit en premier côté boutique</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, variantDisplayMode: 'SIZE_FIRST' }))}
+                      className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                        (form.variantDisplayMode || 'SIZE_FIRST') === 'SIZE_FIRST'
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-400 bg-white'
+                      }`}
+                    >
+                      📐 Taille d'abord
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, variantDisplayMode: 'COLOR_FIRST' }))}
+                      className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                        form.variantDisplayMode === 'COLOR_FIRST'
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-400 bg-white'
+                      }`}
+                    >
+                      🎨 Couleur d'abord
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Upload images */}
-              <ImageUploader
-                images={form.images}
-                onChange={(imgs) => setForm(prev => ({ ...prev, images: imgs }))}
-                token={token}
-              />
+              <div className="border-t border-gray-100 pt-4">
+                <ImageUploader
+                  images={form.images}
+                  onChange={(imgs) => setForm(prev => ({ ...prev, images: imgs }))}
+                  token={token}
+                  variantColors={variantColors}
+                />
+              </div>
 
               {/* Toggles */}
               <div className="flex items-center justify-between py-1">
