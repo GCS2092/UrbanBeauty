@@ -12,7 +12,6 @@ async function sendPushNotification({ userId, title, message, url = '/' }) {
     return;
   }
 
-  // ✅ Toujours envoyer une URL absolue
   const fullUrl = url.startsWith('http') ? url : `${CLIENT_URL}${url}`;
 
   try {
@@ -81,6 +80,32 @@ async function notifyUser({ userId, type, title, message, link = '/', sendPush =
 
   if (sendPush && userId) {
     await sendPushNotification({ userId, title, message, url: link });
+  }
+}
+
+// ── Notifier tous les admins/staff ────────────────────────────────────────
+async function notifyAdmins({ type, title, message, link = '/admin' }) {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { role: { in: ['ADMIN', 'STAFF'] } },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      admins.map(admin =>
+        notifyUser({
+          userId: admin.id,
+          type,
+          title,
+          message,
+          link,
+          sendPush: true,
+        })
+      )
+    );
+    console.log(`✅ Notif admin envoyée à ${admins.length} admin(s)/staff`);
+  } catch (err) {
+    console.error('❌ Erreur notifyAdmins:', err.message);
   }
 }
 
@@ -155,6 +180,7 @@ async function notifyPromo({ title, message, url = '/' }) {
 
 module.exports = {
   notifyUser,
+  notifyAdmins,
   notifyOrderConfirmed,
   notifyOrderStatus,
   notifyPaymentReceived,

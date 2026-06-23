@@ -15,7 +15,7 @@ const {
   computeStoreDiscount,
 } = require('../stores/store.service');
 const { getSettings } = require('../settings/settings.service');
-const { notifyOrderConfirmed, notifyOrderStatus } = require('../../services/notification.service');
+const { notifyOrderConfirmed, notifyOrderStatus, notifyAdmins } = require('../../services/notification.service');
 const { buildInvoicePdf } = require('../invoices/invoice-pdf.service');
 const { isValidPhone } = require('../../utils/phone.utils');
 
@@ -36,10 +36,7 @@ function validatePaymentDestination(paymentMethod, destination) {
 }
 
 // ─── Utilitaire email async ────────────────────────────────────────────────────
-// ✅ CORRIGÉ : sendEmail utilise Brevo (axios), pas nodemailer.
-// On retire le champ "from" qui n'est pas attendu par l'API Brevo.
 function sendEmailAsync(mailOptions) {
-  // Brevo n'accepte pas de champ "from" libre — le sender est défini dans email.js
   const { from, ...brevoOptions } = mailOptions;
   sendEmail(brevoOptions)
     .then(() => console.log('✅ Email envoyé à :', brevoOptions.to))
@@ -218,12 +215,22 @@ async function createOrder(payload, user, ip = null) {
     });
   }
 
-  // ── Push OneSignal (uniquement si utilisateur connecté et non-draft) ────────
+  // ── Push OneSignal client (uniquement si utilisateur connecté et non-draft) ──
   if (!isDraft && userId) {
     const orderWithUserId = { ...order, userId, orderNumber };
     notifyOrderConfirmed(orderWithUserId).catch((err) =>
       console.error('❌ Erreur notif OneSignal createOrder:', err.message)
     );
+  }
+
+  // ✅ Push OneSignal admins/staff pour toute nouvelle commande non-draft
+  if (!isDraft) {
+    notifyAdmins({
+      type:    'NEW_ORDER',
+      title:   '🛍️ Nouvelle commande !',
+      message: `Commande ${orderNumber} reçue — à traiter.`,
+      link:    '/admin/orders',
+    }).catch(err => console.error('❌ Erreur notif admin nouvelle commande:', err.message));
   }
 
   return order;
@@ -293,7 +300,7 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
     });
   }
 
-  // ── Push OneSignal statut ──────────────────────────────────────────────────
+  // ── Push OneSignal statut client ───────────────────────────────────────────
   if (order.userId) {
     notifyOrderStatus(order, order.status).catch((err) =>
       console.error('❌ Erreur notif OneSignal changeStatus:', err.message)
