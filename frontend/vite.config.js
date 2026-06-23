@@ -34,9 +34,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // ✅ Ne jamais toucher au fichier OneSignal
         globIgnores: ['**/OneSignalSDKWorker.js'],
-        // ✅ Pas de fallback de navigation qui pourrait interférer
         navigateFallback: null,
         runtimeCaching: [
           {
@@ -65,4 +63,17 @@ export default defineConfig({
     host: true,
     port: 5173,
   },
+  // ✅ Optimisation du build
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['lucide-react', 'sonner'],
+          query: ['@tanstack/react-query'],
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+        }
+      }
+    }
+  }
 })
