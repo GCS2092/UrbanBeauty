@@ -8,7 +8,6 @@ import PWAInstallBanner from '../PWAInstallBanner';
 export default function ShopLayout() {
   const { user, isAuthenticated } = useAuthStore();
 
-  // ✅ Si admin ou staff → redirige vers /admin
   if (isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'STAFF')) {
     return <Navigate to="/admin" replace />;
   }
@@ -16,8 +15,11 @@ export default function ShopLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
       <Navbar />
-      {/* pb-20 sur mobile pour ne pas que le contenu passe sous la BottomNav */}
-      <main className="flex-1 pb-24 md:pb-0">
+      {/*
+        pb-20 = hauteur BottomNav seule (pages normales)
+        Sur ProductDetail, le composant lui-même gère pb-36 pour le CTA sticky
+      */}
+      <main className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
       <Footer />

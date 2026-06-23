@@ -37,8 +37,12 @@ function PreorderButton({ product, whatsappNumber }) {
   ].filter(l => l !== null).join('\n');
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer"
-      className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-green-500 hover:bg-green-600 active:scale-95 text-white font-semibold text-sm transition-all duration-200 shadow-sm shadow-green-200">
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-green-500 hover:bg-green-600 active:scale-95 text-white font-semibold text-sm transition-all duration-200 shadow-sm shadow-green-200"
+    >
       <MessageCircle size={18} />
       Précommander via WhatsApp
     </a>
@@ -81,18 +85,14 @@ export default function ProductDetail() {
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
     : null;
 
-  // ── Images filtrées par couleur sélectionnée ──────────────────────────
   const allImages = product?.images?.sort((a, b) => a.position - b.position) || [];
 
   const displayImages = (() => {
     if (!selectedColor) return allImages;
-    // Images liées à cette couleur
     const colorImgs = allImages.filter((img) => img.color === selectedColor);
-    // Si aucune image taguée pour cette couleur, on affiche toutes
     return colorImgs.length > 0 ? colorImgs : allImages;
   })();
 
-  // ── Logique variantes ──────────────────────────────────────────────────
   const displayMode = product?.variantDisplayMode || 'SIZE_FIRST';
   const sizes = [...new Set((product?.variants || []).map((v) => v.size).filter(Boolean))];
   const colors = [...new Set((product?.variants || []).map((v) => v.color).filter(Boolean))];
@@ -124,7 +124,6 @@ export default function ProductDetail() {
       (v) => v.size === size && v.color === newColor
     );
     setSelectedVariant(variant || null);
-    // Switcher les images si une couleur est déduite
     if (newColor) jumpToColorImage(newColor);
   };
 
@@ -149,11 +148,9 @@ export default function ProductDetail() {
     jumpToColorImage(color);
   };
 
-  // Sauter au premier slide de la couleur sélectionnée
   const jumpToColorImage = (color) => {
     const colorImgs = allImages.filter((img) => img.color === color);
-    if (colorImgs.length === 0) return; // pas d'images taguées, on ne bouge pas
-    // Dans displayImages, trouver l'index du premier de cette couleur
+    if (colorImgs.length === 0) return;
     setTimeout(() => {
       if (mainSwiperRef.current) {
         mainSwiperRef.current.slideTo(0);
@@ -196,7 +193,6 @@ export default function ProductDetail() {
   const hasDiscount = product.comparePrice && product.comparePrice > product.price;
   const hasVariants = product.variants && product.variants.length > 0;
 
-  // Sections couleur et taille selon le mode
   const ColorSection = ({ showLabel = true }) => {
     const list = displayMode === 'SIZE_FIRST' ? colorsForSize : colors;
     if (list.length === 0) return null;
@@ -204,12 +200,11 @@ export default function ProductDetail() {
       <div>
         {showLabel && (
           <p className="text-sm font-medium text-stone-700 mb-2">
-            Couleur{selectedColor && <span className="ml-2 text-rose-400 font-semibold">{selectedColor}</span>}
+            Couleur{selectedColor && <span className="ml-2 text-stone-600 font-semibold">{selectedColor}</span>}
           </p>
         )}
         <div className="flex gap-2 flex-wrap">
           {list.map((color) => {
-            // Trouver l'image taguée pour cette couleur pour afficher un aperçu
             const previewImg = allImages.find((img) => img.color === color);
             const colorHasStock = (product.variants || []).some(
               (v) => v.color === color &&
@@ -225,7 +220,6 @@ export default function ProductDetail() {
                 className={`relative flex flex-col items-center gap-1 transition-all ${!colorHasStock ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
                 {previewImg ? (
-                  // Aperçu image
                   <span className={`block w-12 h-12 rounded-xl overflow-hidden border-2 transition-all ${
                     selectedColor === color ? 'border-stone-900 scale-105 shadow-md' : 'border-stone-200 hover:border-stone-400'
                   }`}>
@@ -237,7 +231,6 @@ export default function ProductDetail() {
                     )}
                   </span>
                 ) : (
-                  // Badge texte
                   <span className={`px-3 py-1.5 rounded-xl border text-sm font-medium min-h-[44px] flex items-center ${
                     selectedColor === color
                       ? 'bg-stone-900 text-white border-stone-900'
@@ -261,7 +254,7 @@ export default function ProductDetail() {
     return (
       <div>
         <p className="text-sm font-medium text-stone-700 mb-2">
-          Taille{selectedSize && <span className="ml-2 text-rose-400 font-semibold">{selectedSize}</span>}
+          Taille{selectedSize && <span className="ml-2 text-stone-600 font-semibold">{selectedSize}</span>}
         </p>
         <div className="flex gap-2 flex-wrap">
           {list.map((size) => {
@@ -294,31 +287,36 @@ export default function ProductDetail() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Link to="/products"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-rose-400 hover:text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-colors mb-6">
+      <Link
+        to="/products"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-stone-800 hover:bg-stone-100 px-3 py-1.5 rounded-lg transition-colors mb-6"
+      >
         <ChevronLeft size={16} />
         Retour à la boutique
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-12">
 
-        {/* ── Images — réactives à la couleur ── */}
+        {/* Images */}
         <div className="space-y-3">
           <Swiper
-            key={selectedColor || 'default'}  // force re-mount quand couleur change
+            key={selectedColor || 'default'}
             modules={[Navigation, Thumbs]}
             thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
             navigation
             loop={displayImages.length > 1}
             onSwiper={(s) => { mainSwiperRef.current = s; }}
             onSlideChange={(s) => setMainImg(s.realIndex)}
-            className="aspect-square bg-stone-50 rounded-2xl overflow-hidden relative"
+            className="aspect-square bg-stone-100 rounded-2xl overflow-hidden relative"
           >
             {displayImages.length ? displayImages.map((img, i) => (
               <SwiperSlide key={img.id || i}>
-                <img src={img.url} alt={product.name}
+                <img
+                  src={img.url}
+                  alt={product.name}
                   className="w-full h-full object-cover"
-                  loading={i === 0 ? 'eager' : 'lazy'} />
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                />
               </SwiperSlide>
             )) : (
               <SwiperSlide>
@@ -345,7 +343,7 @@ export default function ProductDetail() {
               {displayImages.map((img, i) => (
                 <SwiperSlide key={img.id || i}>
                   <button className={`w-full aspect-square rounded-xl overflow-hidden border-2 transition-colors ${
-                    i === mainImg ? 'border-rose-400' : 'border-transparent hover:border-stone-300'
+                    i === mainImg ? 'border-stone-800' : 'border-transparent hover:border-stone-300'
                   }`}>
                     <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
                   </button>
@@ -355,10 +353,11 @@ export default function ProductDetail() {
           )}
         </div>
 
-        {/* ── Infos produit ── */}
-        <div className="space-y-5 pb-24 md:pb-0">
+        {/* Infos produit */}
+        {/* pb-36 sur mobile pour laisser de la place au CTA sticky */}
+        <div className="space-y-5 pb-36 md:pb-0">
           <div>
-            <p className="text-sm text-rose-400 font-medium mb-1">{product.category?.name}</p>
+            <p className="text-sm text-stone-500 font-medium mb-1">{product.category?.name}</p>
             <h1 className="text-3xl font-bold text-stone-900 mb-2">{product.name}</h1>
             {avgRating && (
               <div className="flex items-center gap-2">
@@ -377,7 +376,7 @@ export default function ProductDetail() {
             {hasDiscount && (
               <>
                 <span className="text-lg text-stone-400 line-through">{formatPrice(product.comparePrice)}</span>
-                <span className="bg-rose-100 text-rose-600 text-sm font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-stone-800 text-white text-sm font-bold px-2 py-0.5 rounded-full">
                   -{Math.round((1 - product.price / product.comparePrice) * 100)}%
                 </span>
               </>
@@ -386,7 +385,7 @@ export default function ProductDetail() {
 
           <p className="text-stone-500 leading-relaxed">{product.description}</p>
 
-          {/* ── Variantes selon le mode ── */}
+          {/* Variantes */}
           {hasVariants && (
             <div className="space-y-4">
               {displayMode === 'COLOR_FIRST' ? (
@@ -400,7 +399,6 @@ export default function ProductDetail() {
                   {(selectedSize || sizes.length === 0) && <ColorSection />}
                 </>
               )}
-
               {selectedVariant && (
                 <p className="text-xs text-stone-400">
                   {selectedVariant.stock > 0
@@ -411,17 +409,22 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {/* Quantité — visible sur tous les écrans */}
           {!isOutOfStock && (
             <div>
               <p className="text-sm font-medium text-stone-700 mb-2">Quantité</p>
               <div className="flex items-center gap-3">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors"
+                >
                   <Minus size={14} />
                 </button>
                 <span className="w-8 text-center font-semibold text-stone-800">{quantity}</span>
-                <button onClick={() => setQuantity(Math.min(effectiveStock, quantity + 1))}
-                  className="w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors">
+                <button
+                  onClick={() => setQuantity(Math.min(effectiveStock, quantity + 1))}
+                  className="w-11 h-11 rounded-xl border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors"
+                >
                   <Plus size={14} />
                 </button>
                 <span className="text-xs text-stone-400 ml-1">{effectiveStock} en stock</span>
@@ -429,15 +432,23 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {/* CTA desktop uniquement */}
           <div className="hidden md:flex flex-col gap-3 pt-2">
             <div className="flex gap-3">
-              <Button className="flex-1" size="lg" loading={addingCart}
-                disabled={isOutOfStock} onClick={handleAddToCart}>
+              <Button
+                className="flex-1"
+                size="lg"
+                loading={addingCart}
+                disabled={isOutOfStock}
+                onClick={handleAddToCart}
+              >
                 <ShoppingBag size={18} />
                 {isOutOfStock ? 'Rupture de stock' : 'Ajouter au panier'}
               </Button>
-              <button onClick={handleWishlist}
-                className="w-12 h-12 rounded-xl border border-stone-200 flex items-center justify-center text-stone-400 hover:text-rose-500 hover:border-rose-200 transition-colors">
+              <button
+                onClick={handleWishlist}
+                className="w-12 h-12 rounded-xl border border-stone-200 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:border-stone-400 transition-colors"
+              >
                 <Heart size={20} />
               </button>
             </div>
@@ -457,21 +468,35 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* CTA sticky mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 p-4 z-40"
-        style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+      {/* ── CTA sticky mobile ── */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 shadow-lg z-40"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)', paddingTop: '0.75rem', paddingLeft: '1rem', paddingRight: '1rem' }}
+      >
         {isOutOfStock ? (
-          <PreorderButton product={product} whatsappNumber={whatsappNumber} />
+          <div className="space-y-2">
+            <PreorderButton product={product} whatsappNumber={whatsappNumber} />
+            <p className="text-xs text-center text-stone-400">
+              Nous vous préviendrons dès la remise en stock.
+            </p>
+          </div>
         ) : (
           <div className="flex gap-3">
-            <button onClick={handleWishlist}
-              className="w-12 h-12 rounded-xl border border-stone-200 flex items-center justify-center text-stone-400 hover:text-rose-500 hover:border-rose-200 transition-colors shrink-0">
+            <button
+              onClick={handleWishlist}
+              className="w-12 h-12 rounded-xl border border-stone-200 flex items-center justify-center text-stone-400 hover:text-stone-700 transition-colors shrink-0"
+            >
               <Heart size={20} />
             </button>
-            <Button className="flex-1" size="lg" loading={addingCart}
-              disabled={isOutOfStock} onClick={handleAddToCart}>
+            <Button
+              className="flex-1"
+              size="lg"
+              loading={addingCart}
+              disabled={isOutOfStock}
+              onClick={handleAddToCart}
+            >
               <ShoppingBag size={18} />
-              Ajouter — {formatPrice(product.price)}
+              <span>Ajouter — {formatPrice(product.price)}</span>
             </Button>
           </div>
         )}

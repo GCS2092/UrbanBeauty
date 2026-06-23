@@ -8,7 +8,7 @@ export default function BottomNav() {
   const { getTotalItems } = useCartStore();
   const location = useLocation();
 
-  // N'affiche pas la barre sur checkout (expérience plein écran)
+  // Masquer sur checkout
   const hidden = ['/checkout'].includes(location.pathname);
   if (hidden) return null;
 
@@ -52,9 +52,11 @@ export default function BottomNav() {
         ]),
   ];
 
+  // Hauteur totale de la BottomNav = pt-2 + pb-3 + icône ~22px + label ~12px + indicateur 6px ≈ 64px
+  // On utilise z-30 (sous le CTA sticky de ProductDetail qui est z-40)
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-200"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-stone-200"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-center justify-around px-1 pt-2 pb-3">
@@ -65,27 +67,31 @@ export default function BottomNav() {
             end={end}
             className={({ isActive }) =>
               `flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all min-w-[52px] ${
-                isActive ? 'text-rose-500' : 'text-stone-400 hover:text-stone-600'
+                isActive ? 'text-stone-900' : 'text-stone-400 hover:text-stone-600'
               }`
             }
           >
             {({ isActive }) => (
               <>
-                {/* Indicateur actif — petit trait rose au dessus de l'icône */}
-                <span className={`block w-5 h-0.5 rounded-full mb-1 transition-all ${isActive ? 'bg-rose-500' : 'bg-transparent'}`} />
-
+                {/* Indicateur actif */}
+                <span
+                  className={`block w-5 h-0.5 rounded-full mb-1 transition-all ${
+                    isActive ? 'bg-stone-900' : 'bg-transparent'
+                  }`}
+                />
                 <span className="relative">
-                  <Icon
-                    size={22}
-                    strokeWidth={isActive ? 2.2 : 1.8}
-                  />
+                  <Icon size={22} strokeWidth={isActive ? 2.2 : 1.8} />
                   {badge && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[9px] font-bold rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-0.5 leading-none">
+                    <span className="absolute -top-1.5 -right-1.5 bg-stone-800 text-white text-[9px] font-bold rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-0.5 leading-none">
                       {badge > 99 ? '99+' : badge}
                     </span>
                   )}
                 </span>
-                <span className={`text-[10px] font-medium leading-none ${isActive ? 'text-rose-500' : 'text-stone-400'}`}>
+                <span
+                  className={`text-[10px] font-medium leading-none ${
+                    isActive ? 'text-stone-900' : 'text-stone-400'
+                  }`}
+                >
                   {label}
                 </span>
               </>

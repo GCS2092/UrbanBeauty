@@ -19,17 +19,17 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-stone-100">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
-          {/* Logo — texte pur, pas d'emoji pour éviter les problèmes d'encoding */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-rose-500 flex items-center justify-center shrink-0">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-stone-900 flex items-center justify-center">
               <ShoppingBag size={16} className="text-white" />
             </div>
-            <span className="font-bold text-xl tracking-tight text-stone-800">
-              Son<span className="text-rose-400">Shop</span>
+            <span className="font-bold text-xl tracking-tight text-stone-900">
+              Son<span className="text-stone-500">Shop</span>
             </span>
           </Link>
 
@@ -42,7 +42,7 @@ export default function Navbar() {
                 end={link.to === '/'}
                 className={({ isActive }) =>
                   `text-sm font-medium transition-colors ${
-                    isActive ? 'text-rose-500' : 'text-stone-600 hover:text-stone-900'
+                    isActive ? 'text-stone-900' : 'text-stone-500 hover:text-stone-900'
                   }`
                 }
               >
@@ -52,13 +52,16 @@ export default function Navbar() {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
 
-            {/* Panier — visible uniquement sur desktop */}
-            <Link to="/cart" className="relative p-2 text-stone-600 hover:text-stone-900 transition-colors hidden md:block">
+            {/* Panier — desktop seulement */}
+            <Link
+              to="/cart"
+              className="relative p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors hidden md:block"
+            >
               <ShoppingBag size={20} />
               {getTotalItems() > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 bg-stone-900 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                   {getTotalItems()}
                 </span>
               )}
@@ -66,61 +69,95 @@ export default function Navbar() {
 
             {isAuthenticated ? (
               <>
-                {/* Wishlist — desktop seulement */}
-                <Link to="/account/wishlist" className="p-2 text-stone-600 hover:text-rose-400 transition-colors hidden md:block">
+                {/* Wishlist — desktop */}
+                <Link
+                  to="/account/wishlist"
+                  className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors hidden md:block"
+                >
                   <Heart size={20} />
                 </Link>
 
-                {/* Notifications — desktop seulement */}
-                <Link to="/account/notifications" className="p-2 text-stone-600 hover:text-stone-900 transition-colors hidden md:block">
+                {/* Notifications — desktop */}
+                <Link
+                  to="/account/notifications"
+                  className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors hidden md:block"
+                >
                   <Bell size={20} />
                 </Link>
 
-                {/* Profil dropdown — desktop seulement */}
+                {/* Profil dropdown — desktop */}
                 <div className="relative hidden md:block">
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
-                    className="flex items-center gap-2 p-2 rounded-full hover:bg-stone-100 transition-colors"
+                    className="flex items-center gap-2 p-1.5 rounded-full hover:bg-stone-100 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-semibold text-sm">
+                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center text-white font-semibold text-sm">
                       {user?.firstName?.[0]?.toUpperCase()}
                     </div>
                   </button>
 
                   {profileOpen && (
-                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-lg border border-stone-100 py-2 z-50">
-                      <div className="px-4 py-2 border-b border-stone-100">
-                        <p className="font-semibold text-stone-800 text-sm">{user?.firstName} {user?.lastName}</p>
-                        <p className="text-xs text-stone-400">{user?.email}</p>
-                      </div>
-                      <Link to="/account/profile" onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors">
-                        <User size={15} /> Mon profil
-                      </Link>
-                      <Link to="/orders" onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors">
-                        <ShoppingBag size={15} /> Mes commandes
-                      </Link>
-                      {user?.role === 'ADMIN' && (
-                        <Link to="/admin" onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm text-rose-500 hover:bg-rose-50 transition-colors">
-                          Dashboard Admin
+                    <>
+                      {/* Overlay pour fermer */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setProfileOpen(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-stone-100 py-2 z-50">
+                        <div className="px-4 py-2 border-b border-stone-100">
+                          <p className="font-semibold text-stone-800 text-sm">
+                            {user?.firstName} {user?.lastName}
+                          </p>
+                          <p className="text-xs text-stone-400">{user?.email}</p>
+                        </div>
+                        <Link
+                          to="/account/profile"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors"
+                        >
+                          <User size={15} /> Mon profil
                         </Link>
-                      )}
-                      <button onClick={() => { setProfileOpen(false); logout(); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors">
-                        Déconnexion
-                      </button>
-                    </div>
+                        <Link
+                          to="/orders"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors"
+                        >
+                          <ShoppingBag size={15} /> Mes commandes
+                        </Link>
+                        {user?.role === 'ADMIN' && (
+                          <Link
+                            to="/admin"
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-stone-900 font-medium hover:bg-stone-50 transition-colors"
+                          >
+                            Dashboard Admin
+                          </Link>
+                        )}
+                        <button
+                          onClick={() => { setProfileOpen(false); logout(); }}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors"
+                        >
+                          Déconnexion
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               </>
             ) : (
-              <Link to="/login" className="hidden md:flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium px-4 py-2 rounded-full transition-colors">
+              <Link
+                to="/login"
+                className="hidden md:flex items-center gap-1.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+              >
                 <User size={15} /> Connexion
               </Link>
             )}
 
-            {/* Menu hamburger mobile */}
+            {/* Hamburger mobile */}
             <button
-              className="md:hidden p-2 text-stone-600"
+              className="md:hidden p-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
               onClick={mobileMenuOpen ? closeMobileMenu : openMobileMenu}
+              aria-label="Menu"
             >
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -129,7 +166,7 @@ export default function Navbar() {
 
         {/* Menu mobile déroulant */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-stone-100 py-4 flex flex-col gap-3">
+          <div className="md:hidden border-t border-stone-100 py-4 flex flex-col gap-1">
             {navLinks.map((link) => (
               <NavLink
                 key={link.to}
@@ -137,14 +174,37 @@ export default function Navbar() {
                 end={link.to === '/'}
                 onClick={closeMobileMenu}
                 className={({ isActive }) =>
-                  `text-sm font-medium px-2 py-1 transition-colors ${
-                    isActive ? 'text-rose-500' : 'text-stone-600'
+                  `text-sm font-medium px-3 py-2.5 rounded-xl transition-colors ${
+                    isActive
+                      ? 'text-stone-900 bg-stone-100'
+                      : 'text-stone-600 hover:bg-stone-50'
                   }`
                 }
               >
                 {link.label}
               </NavLink>
             ))}
+            {isAuthenticated && (
+              <>
+                <NavLink
+                  to="/account/profile"
+                  onClick={closeMobileMenu}
+                  className={({ isActive }) =>
+                    `text-sm font-medium px-3 py-2.5 rounded-xl transition-colors ${
+                      isActive ? 'text-stone-900 bg-stone-100' : 'text-stone-600 hover:bg-stone-50'
+                    }`
+                  }
+                >
+                  Mon profil
+                </NavLink>
+                <button
+                  onClick={() => { closeMobileMenu(); logout(); }}
+                  className="text-left text-sm font-medium px-3 py-2.5 rounded-xl text-stone-600 hover:bg-stone-50 transition-colors"
+                >
+                  Déconnexion
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
