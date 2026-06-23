@@ -2,17 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AUTH_TOKEN_KEY } from '../utils/constants';
 
-// ✅ OneSignal.login() associe l'appareil à l'external_id (userId)
-// C'est ce que le backend utilise pour envoyer les notifs (include_aliases.external_id)
-async function loginToOneSignal(userId) {
-  try {
-    const OneSignal = (await import('react-onesignal')).default;
-    await OneSignal.login(String(userId));
-    console.log('✅ OneSignal login userId:', userId);
-  } catch (e) {
-    console.error('❌ OneSignal login error:', e);
-  }
-}
+// ✅ Le login OneSignal est géré par useNotifications (AuthContext)
+// On garde uniquement le logout pour dissocier l'appareil proprement
 
 async function logoutFromOneSignal() {
   try {
@@ -34,7 +25,7 @@ const useAuthStore = create(
       setAuth: (user, token) => {
         localStorage.setItem(AUTH_TOKEN_KEY, token);
         set({ user, token, isAuthenticated: true });
-        if (user?.id) loginToOneSignal(user.id);
+        // ❌ Plus de loginToOneSignal ici → c'est useNotifications qui s'en charge
       },
 
       setToken: (token) => {
@@ -46,13 +37,17 @@ const useAuthStore = create(
 
       logout: () => {
         localStorage.removeItem(AUTH_TOKEN_KEY);
-        logoutFromOneSignal();
+        logoutFromOneSignal(); // ✅ On garde le logout OneSignal
         set({ user: null, token: null, isAuthenticated: false });
       },
     }),
     {
       name: 'urban-auth',
-      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 );

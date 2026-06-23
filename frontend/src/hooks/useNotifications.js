@@ -11,32 +11,43 @@ export function useNotifications() {
   const { user, isAuthenticated } = useAuthStore();
   const asked = useRef(false);
 
+  // ✅ Reset si déconnexion ou changement d'utilisateur
   useEffect(() => {
-    // On ne fait rien si pas connecté ou déjà demandé cette session
+    if (!isAuthenticated) asked.current = false;
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     if (!isAuthenticated || !user?.id || asked.current) return;
 
     async function setup() {
       try {
-        asked.current = true;
+        // 1️⃣ Attendre que OneSignal soit vraiment prêt
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // 1️⃣ Demande la permission si pas encore accordée
-        const already = OneSignal.Notifications.permission;
-        if (!already) {
+        // 2️⃣ Demande la permission si pas encore accordée
+        const permission = OneSignal.Notifications.permission;
+        if (!permission) {
           await OneSignal.Notifications.requestPermission();
         }
 
-        // 2️⃣ Associe l'utilisateur connecté à OneSignal
-        // Comme ça on peut cibler "envoyer notif à userId X" depuis le backend
+        // 3️⃣ Vérifier que la permission est bien accordée
+        const granted = OneSignal.Notifications.permission;
+        if (!granted) {
+          console.warn('OneSignal: permission refusée, pas de login');
+          return; // asked.current reste false → réessai possible
+        }
+
+        // 4️⃣ Associer l'utilisateur
         await OneSignal.login(String(user.id));
 
-        console.log('OneSignal: utilisateur associé ✅', user.id);
+        asked.current = true; // ✅ Seulement si tout a réussi
+        console.log('✅ OneSignal: utilisateur associé', user.id);
       } catch (err) {
         console.error('OneSignal setup error:', err);
+        // asked.current reste false → réessai au prochain render
       }
     }
 
-    // Petit délai pour laisser le temps à OneSignal de finir son init
-    const t = setTimeout(setup, 1500);
-    return () => clearTimeout(t);
+    setup();
   }, [isAuthenticated, user?.id]);
 }
