@@ -197,6 +197,8 @@ async function createOrder(payload, user, ip = null) {
       shippingAddress: payload.shippingAddress,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
       isGuest: !userId,
+      storeName: store.name,
+      storeCode: store.code,
     });
     sendEmailAsync({ to: guestEmail, subject: emailData.subject, html: emailData.html });
   }
@@ -207,10 +209,12 @@ async function createOrder(payload, user, ip = null) {
       guestName,
       total,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+      storeName: store.name,
+      storeCode: store.code,
     });
     sendEmailAsync({
       to: process.env.ADMIN_EMAIL,
-      subject: `[Admin] Nouvelle commande ${orderNumber}`,
+      subject: `[Admin] Nouvelle commande ${orderNumber} — ${store.name}`,
       html: emailData.html,
     });
   }
@@ -223,11 +227,11 @@ async function createOrder(payload, user, ip = null) {
     );
   }
 
-  // ✅ Push OneSignal admins/staff pour toute nouvelle commande non-draft
+  // ── Push OneSignal admins/staff pour toute nouvelle commande non-draft ──────
   if (!isDraft) {
     notifyAdmins({
       type:    'NEW_ORDER',
-      title:   '🛍️ Nouvelle commande !',
+      title:   `🛍️ Nouvelle commande — ${store.name}`,
       message: `Commande ${orderNumber} reçue — à traiter.`,
       link:    '/admin/orders',
     }).catch(err => console.error('❌ Erreur notif admin nouvelle commande:', err.message));
@@ -257,6 +261,7 @@ async function getOrderByNumber(orderNumber) {
       invoice: true,
       statusHistory: { orderBy: { createdAt: 'desc' } },
       user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+      store: { select: { id: true, code: true, name: true } },
     },
   });
 }
@@ -277,6 +282,8 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
       status: order.status,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
       isGuest: !order.userId,
+      storeName: order.store?.name || 'SonShop',
+      storeCode: order.store?.code || 'SONSHOP',
     });
 
     let attachments = [];

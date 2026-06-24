@@ -65,6 +65,8 @@ model Store {
   creditNotes    CreditNote[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
+  products  Product[]   // ← ajouter
+  coupons   Coupon[]    // ← ajouter
 }
 
 model UserStore {
@@ -137,6 +139,8 @@ model Product {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   variantDisplayMode  VariantDisplayMode  @default(SIZE_FIRST)
+    store     Store?   @relation(fields: [storeId], references: [id])
+  storeId   String?  // nullable = visible sur les deux boutiques
 }
 
 model ProductImage {
@@ -246,6 +250,8 @@ model Coupon {
   orders         Order[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  store     Store?   @relation(fields: [storeId], references: [id])
+  storeId   String?  // null = valable partout
 }
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

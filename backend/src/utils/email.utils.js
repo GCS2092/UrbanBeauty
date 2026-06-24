@@ -1,9 +1,10 @@
 // ============================================================
-// SonShop — Templates Emails
-// Thème : féminin, rose poudré + doré + blanc cassé
+// SonShop + SonTech — Templates Emails
+// Thème dynamique selon storeCode
 // ============================================================
 
-const C = {
+// ── Thème SonShop (défaut) ────────────────────────────────────────────────────
+const C_SONSHOP = {
   primary:   '#C8748A',
   gold:      '#C8A96E',
   navy:      '#2C2C3E',
@@ -17,16 +18,45 @@ const C = {
   success:   '#2D6A4F',
   danger:    '#C0392B',
   warning:   '#856404',
+  subtitle:  'Mode & Beauté',
 };
 
+// ── Thème SonTech ─────────────────────────────────────────────────────────────
+const C_SONTECH = {
+  primary:   '#2563EB',
+  gold:      '#60A5FA',
+  navy:      '#1E293B',
+  white:     '#FFFFFF',
+  offWhite:  '#F0F9FF',
+  cream:     '#EFF6FF',
+  text:      '#1E293B',
+  textLight: '#64748B',
+  border:    '#BFDBFE',
+  bg:        '#EFF6FF',
+  success:   '#2D6A4F',
+  danger:    '#C0392B',
+  warning:   '#856404',
+  subtitle:  'Électronique & Tech',
+};
+
+function getTheme(storeCode) {
+  return storeCode === 'SONTECH' ? C_SONTECH : C_SONSHOP;
+}
+
 // ── Layout commun ─────────────────────────────────────────────────────────────
-function layout(bodyContent, preheader = '') {
+function layout(bodyContent, preheader = '', storeName = 'SonShop', storeCode = 'SONSHOP') {
+  const C = getTheme(storeCode);
+  const displayName = storeName.toUpperCase();
+  const [part1, part2] = displayName.startsWith('SON')
+    ? ['SON', displayName.slice(3)]
+    : [displayName, ''];
+
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SonShop</title>
+  <title>${storeName}</title>
   ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;font-size:1px;">${preheader}</div>` : ''}
 </head>
 <body style="margin:0;padding:0;background-color:${C.bg};font-family:'Segoe UI',Arial,sans-serif;">
@@ -41,10 +71,10 @@ function layout(bodyContent, preheader = '') {
               <tr>
                 <td>
                   <div style="font-size:24px;font-weight:900;letter-spacing:3px;font-family:Georgia,serif;">
-                    <span style="color:${C.primary};">SON</span><span style="color:${C.white};">SHOP</span>
+                    <span style="color:${C.primary};">${part1}</span><span style="color:${C.white};">${part2}</span>
                   </div>
                   <div style="font-size:9px;color:#aaaaaa;letter-spacing:3px;margin-top:4px;text-transform:uppercase;">
-                    Mode &amp; Beauté
+                    ${C.subtitle}
                   </div>
                 </td>
                 <td style="text-align:right;">
@@ -57,7 +87,7 @@ function layout(bodyContent, preheader = '') {
           </td>
         </tr>
 
-        <!-- BANDE ROSE -->
+        <!-- BANDE COULEUR -->
         <tr><td style="background:linear-gradient(90deg,${C.primary},${C.gold});height:3px;font-size:0;">&nbsp;</td></tr>
 
         <!-- CORPS -->
@@ -75,7 +105,7 @@ function layout(bodyContent, preheader = '') {
               <a href="https://wa.me/221XXXXXXXXX" style="color:${C.primary};text-decoration:none;font-weight:600;">WhatsApp</a>
             </p>
             <p style="margin:0 0 8px;font-size:10px;color:#666666;">
-              &copy; ${new Date().getFullYear()} SonShop &middot; Dakar, Sénégal
+              &copy; ${new Date().getFullYear()} ${storeName} &middot; Dakar, Sénégal
             </p>
             <table cellpadding="0" cellspacing="0" style="margin:12px auto 0;">
               <tr>
@@ -105,28 +135,28 @@ function layout(bodyContent, preheader = '') {
 
 function badge(status) {
   const map = {
-    CONFIRMED:  { label: 'Confirmée',       bg: '#e8f5e9', color: C.success },
-    PROCESSING: { label: 'En préparation',  bg: '#fff3cd', color: C.warning },
+    CONFIRMED:  { label: 'Confirmée',       bg: '#e8f5e9', color: '#2D6A4F' },
+    PROCESSING: { label: 'En préparation',  bg: '#fff3cd', color: '#856404' },
     SHIPPED:    { label: 'Expédiée',        bg: '#e3f2fd', color: '#0d47a1' },
-    DELIVERED:  { label: 'Livrée ✓',       bg: '#e8f5e9', color: C.success },
-    CANCELLED:  { label: 'Annulée',         bg: '#fce4e4', color: C.danger  },
-    PENDING:    { label: 'En attente',      bg: '#fff3cd', color: C.warning },
+    DELIVERED:  { label: 'Livrée ✓',       bg: '#e8f5e9', color: '#2D6A4F' },
+    CANCELLED:  { label: 'Annulée',         bg: '#fce4e4', color: '#C0392B' },
+    PENDING:    { label: 'En attente',      bg: '#fff3cd', color: '#856404' },
     DRAFT:      { label: 'Brouillon',       bg: '#f5f5f5', color: '#555'    },
-    PAID:       { label: 'Payé',            bg: '#e8f5e9', color: C.success },
-    REJECTED:   { label: 'Rejeté',          bg: '#fce4e4', color: C.danger  },
-    PARTIAL:    { label: 'Partiel',         bg: '#fff3cd', color: C.warning },
+    PAID:       { label: 'Payé',            bg: '#e8f5e9', color: '#2D6A4F' },
+    REJECTED:   { label: 'Rejeté',          bg: '#fce4e4', color: '#C0392B' },
+    PARTIAL:    { label: 'Partiel',         bg: '#fff3cd', color: '#856404' },
     GENERATED:  { label: 'Générée',         bg: '#e3f2fd', color: '#0d47a1' },
   };
   const s = map[status] || { label: status, bg: '#f5f5f5', color: '#555' };
   return `<span style="display:inline-block;padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700;background:${s.bg};color:${s.color};">${s.label}</span>`;
 }
 
-function cta(text, url) {
+function cta(text, url, primaryColor = '#C8748A') {
   return `
   <table cellpadding="0" cellspacing="0" style="margin:28px auto 0;">
     <tr>
-      <td style="background:${C.primary};border-radius:8px;box-shadow:0 2px 8px rgba(200,116,138,0.3);">
-        <a href="${url}" style="display:block;padding:14px 36px;color:${C.white};font-weight:700;font-size:13px;text-decoration:none;letter-spacing:1px;text-transform:uppercase;">
+      <td style="background:${primaryColor};border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+        <a href="${url}" style="display:block;padding:14px 36px;color:#ffffff;font-weight:700;font-size:13px;text-decoration:none;letter-spacing:1px;text-transform:uppercase;">
           ${text}
         </a>
       </td>
@@ -134,25 +164,25 @@ function cta(text, url) {
   </table>`;
 }
 
-function whatsappCta(number, text) {
+function whatsappCta(number, storeName = 'SonShop') {
   if (!number) return '';
   return `
   <table cellpadding="0" cellspacing="0" style="margin:12px auto 0;">
     <tr>
       <td style="background:#25D366;border-radius:8px;">
         <a href="https://wa.me/${number}" style="display:block;padding:12px 28px;color:#ffffff;font-weight:700;font-size:13px;text-decoration:none;letter-spacing:1px;text-transform:uppercase;">
-          💬 Contacter SonShop sur WhatsApp
+          💬 Contacter ${storeName} sur WhatsApp
         </a>
       </td>
     </tr>
   </table>`;
 }
 
-function divider() {
-  return `<div style="border-top:1px solid ${C.border};margin:24px 0;"></div>`;
+function divider(borderColor = '#EDE4DC') {
+  return `<div style="border-top:1px solid ${borderColor};margin:24px 0;"></div>`;
 }
 
-function infoRow(label, value) {
+function infoRow(label, value, C) {
   return `
   <tr>
     <td style="padding:8px 16px;font-size:12px;color:${C.textLight};width:38%;border-bottom:1px solid ${C.border};">${label}</td>
@@ -160,22 +190,19 @@ function infoRow(label, value) {
   </tr>`;
 }
 
-function infoBox(rows) {
+function infoBox(rows, C) {
   const filtered = rows.filter(Boolean);
   if (!filtered.length) return '';
   return `
   <table width="100%" cellpadding="0" cellspacing="0"
     style="background:${C.offWhite};border-radius:8px;border:1px solid ${C.border};margin:20px 0;overflow:hidden;">
-    ${filtered.map(([l, v]) => infoRow(l, v)).join('')}
+    ${filtered.map(([l, v]) => infoRow(l, v, C)).join('')}
   </table>`;
 }
 
-// ── Ligne produit enrichie avec image + variante détaillée ───────────────────
-function productRow(item) {
+function productRow(item, C) {
   const variantParts = [];
-  if (item.variantLabel) {
-    variantParts.push(item.variantLabel);
-  }
+  if (item.variantLabel) variantParts.push(item.variantLabel);
 
   const imageUrl = item.imageUrl
     || item.product?.images?.find(i => i.isMain)?.url
@@ -219,8 +246,7 @@ function productRow(item) {
   </tr>`;
 }
 
-// ── Bloc articles compact (pour email statut) ─────────────────────────────────
-function productRowCompact(item) {
+function productRowCompact(item, C) {
   const imageUrl = item.imageUrl
     || item.product?.images?.find(i => i.isMain)?.url
     || item.product?.images?.[0]?.url
@@ -252,10 +278,9 @@ function productRowCompact(item) {
   </tr>`;
 }
 
-// ── Bloc récapitulatif articles ───────────────────────────────────────────────
-function itemsSummaryBlock(items = [], compact = false) {
+function itemsSummaryBlock(items = [], compact = false, C) {
   if (!items.length) return '';
-  const rows = items.map(compact ? productRowCompact : productRow).join('');
+  const rows = items.map(item => compact ? productRowCompact(item, C) : productRow(item, C)).join('');
   return `
   <div style="margin:20px 0;">
     <div style="font-size:11px;font-weight:700;color:${C.navy};text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
@@ -268,7 +293,7 @@ function itemsSummaryBlock(items = [], compact = false) {
   </div>`;
 }
 
-function totalsBlock({ subtotal, shippingCost, discount, storeDiscount, tax, total }) {
+function totalsBlock({ subtotal, shippingCost, discount, storeDiscount, tax, total }, C) {
   function row(label, value, bold = false, color = C.textLight) {
     return `
     <tr>
@@ -288,7 +313,7 @@ function totalsBlock({ subtotal, shippingCost, discount, storeDiscount, tax, tot
         <table width="100%" cellpadding="0" cellspacing="0"
           style="background:${C.navy};border-radius:8px;padding:14px 20px;">
           <tr>
-            <td style="font-size:13px;font-weight:700;color:${C.white};">TOTAL</td>
+            <td style="font-size:13px;font-weight:700;color:#ffffff;">TOTAL</td>
             <td style="font-size:18px;font-weight:900;color:${C.gold};text-align:right;">${Number(total || 0).toLocaleString('fr-FR')} FCFA</td>
           </tr>
         </table>
@@ -297,20 +322,20 @@ function totalsBlock({ subtotal, shippingCost, discount, storeDiscount, tax, tot
   </table>`;
 }
 
-function greeting(name) {
+function greeting(name, C) {
   return `<p style="margin:0 0 20px;font-size:14px;color:${C.text};">
-    Bonjour <strong>${name || 'chère cliente'}</strong>,
+    Bonjour <strong>${name || 'cher(e) client(e)'}</strong>,
   </p>`;
 }
 
-function signature() {
+function signature(storeName = 'SonShop', C) {
   return `<p style="margin:28px 0 0;font-size:13px;color:${C.textLight};">
     À bientôt,<br/>
-    <strong style="color:${C.text};">L'équipe SonShop</strong>
+    <strong style="color:${C.text};">L'équipe ${storeName}</strong>
   </p>`;
 }
 
-function guestInfoBanner(whatsappNumber) {
+function guestInfoBanner(whatsappNumber, C) {
   return `
   <table width="100%" cellpadding="0" cellspacing="0"
     style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;margin:20px 0;">
@@ -320,7 +345,7 @@ function guestInfoBanner(whatsappNumber) {
           ℹ️ Commande passée sans compte
         </p>
         <p style="margin:0;font-size:12px;color:${C.warning};line-height:1.6;">
-          Vous n'avez pas de compte SonShop. Pour suivre l'évolution de votre commande,
+          Vous n'avez pas de compte. Pour suivre l'évolution de votre commande,
           contactez-nous directement sur WhatsApp en indiquant votre numéro de commande.
         </p>
         ${whatsappNumber ? `
@@ -332,7 +357,8 @@ function guestInfoBanner(whatsappNumber) {
   </table>`;
 }
 
-function kpiCard(emoji, label, value, subValue = '', color = C.primary) {
+function kpiCard(emoji, label, value, subValue = '', color = '#C8748A') {
+  const C = C_SONSHOP; // kpiCard utilisé uniquement dans le rapport
   return `
   <td style="width:25%;padding:8px;" valign="top">
     <table width="100%" cellpadding="0" cellspacing="0"
@@ -353,7 +379,8 @@ function kpiCard(emoji, label, value, subValue = '', color = C.primary) {
   </td>`;
 }
 
-function progressBar(label, value, max, color = C.primary) {
+function progressBar(label, value, max, color = '#C8748A') {
+  const C = C_SONSHOP;
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return `
   <tr>
@@ -381,8 +408,10 @@ function buildOrderConfirmationEmail({
   items = [], shippingCost = 0, discount = 0, storeDiscount = 0,
   tax = 0, subtotal, paymentMethod, shippingAddress,
   isGuest = false, whatsappNumber = '',
+  storeName = 'SonShop', storeCode = 'SONSHOP',
 }) {
-  const name   = guestName || 'chère cliente';
+  const C = getTheme(storeCode);
+  const name   = guestName || 'cher(e) client(e)';
   const sub    = subtotal ?? total;
   const addrLine = shippingAddress
     ? [shippingAddress.street, shippingAddress.city, shippingAddress.country].filter(Boolean).join(', ')
@@ -407,44 +436,47 @@ function buildOrderConfirmationEmail({
 
     ${infoBox([
       ['N° commande',   `<strong style="font-size:14px;color:${C.primary};">${orderNumber}</strong>`],
-      ['Cliente',       name],
+      ['Client(e)',     name],
       addrLine        ? ['Adresse de livraison', addrLine] : null,
       paymentMethod   ? ['Mode de paiement', payLabels[paymentMethod] || paymentMethod] : null,
       itemsSummary    ? ['Résumé', `<span style="font-size:11px;color:${C.textLight};">${itemsSummary}</span>`] : null,
-    ])}
+    ], C)}
 
-    ${itemsSummaryBlock(items, false)}
+    ${itemsSummaryBlock(items, false, C)}
 
-    ${totalsBlock({ subtotal: sub, shippingCost, discount, storeDiscount, tax, total })}
+    ${totalsBlock({ subtotal: sub, shippingCost, discount, storeDiscount, tax, total }, C)}
 
-    ${divider()}
+    ${divider(C.border)}
 
     <p style="margin:0;font-size:13px;color:${C.text};line-height:1.6;">
-      Nous préparons votre commande avec soin. Vous serez notifiée par email à chaque étape de livraison.
+      Nous préparons votre commande avec soin. Vous serez notifié(e) par email à chaque étape de livraison.
     </p>
 
     ${isGuest
-      ? guestInfoBanner(whatsappNumber)
-      : cta('Suivre ma commande', `${clientUrl}/orders/${orderNumber}`)
+      ? guestInfoBanner(whatsappNumber, C)
+      : cta('Suivre ma commande', `${clientUrl}/orders/${orderNumber}`, C.primary)
     }
 
-    ${signature()}
+    ${signature(storeName, C)}
   `;
 
   return {
-    subject: `✅ Commande ${orderNumber} confirmée — SonShop`,
-    html: layout(body, `Votre commande ${orderNumber} est confirmée.`),
+    subject: `✅ Commande ${orderNumber} confirmée — ${storeName}`,
+    html: layout(body, `Votre commande ${orderNumber} est confirmée.`, storeName, storeCode),
   };
 }
 
 // ============================================================
-// 2. MISE À JOUR STATUT — avec récap articles
+// 2. MISE À JOUR STATUT
 // ============================================================
 function buildOrderStatusEmail({
   orderNumber, customerName, status, clientUrl,
   trackingNote, isGuest = false, whatsappNumber = '',
   items = [], total, shippingAddress,
+  storeName = 'SonShop', storeCode = 'SONSHOP',
 }) {
+  const C = getTheme(storeCode);
+
   const config = {
     CONFIRMED:  { emoji: '✅', label: 'confirmée',               msg: 'Votre commande a été confirmée et va bientôt être préparée.' },
     PROCESSING: { emoji: '📦', label: 'en cours de préparation', msg: 'Notre équipe prépare votre commande avec soin.' },
@@ -465,14 +497,14 @@ function buildOrderStatusEmail({
       ${s.emoji} Commande ${s.label}
     </h1>
 
-    ${greeting(customerName)}
+    ${greeting(customerName, C)}
 
     ${infoBox([
       ['N° commande', `<strong style="color:${C.primary};">${orderNumber}</strong>`],
       ['Statut',      badge(status)],
       addrLine      ? ['Livraison', addrLine] : null,
       total != null ? ['Total', `<strong style="color:${C.navy};">${Number(total).toLocaleString('fr-FR')} FCFA</strong>`] : null,
-    ])}
+    ], C)}
 
     <p style="margin:0 0 16px;font-size:14px;color:${C.text};line-height:1.6;">${s.msg}</p>
 
@@ -481,39 +513,44 @@ function buildOrderStatusEmail({
       <p style="margin:0;font-size:13px;color:${C.textLight};font-style:italic;">${trackingNote}</p>
     </div>` : ''}
 
-    ${items.length > 0 ? itemsSummaryBlock(items, true) : ''}
+    ${items.length > 0 ? itemsSummaryBlock(items, true, C) : ''}
 
-    ${divider()}
+    ${divider(C.border)}
 
     ${isGuest ? `
     <p style="margin:0 0 8px;font-size:13px;color:${C.text};">
       Pour suivre votre commande, contactez-nous en précisant le numéro : <strong>${orderNumber}</strong>
     </p>
-    ${whatsappCta(whatsappNumber, 'Suivre ma commande sur WhatsApp')}
+    ${whatsappCta(whatsappNumber, storeName)}
     ` : (status !== 'CANCELLED'
-      ? cta('Voir ma commande', `${clientUrl}/orders/${orderNumber}`)
-      : whatsappCta(whatsappNumber, 'Nous contacter sur WhatsApp')
+      ? cta('Voir ma commande', `${clientUrl}/orders/${orderNumber}`, C.primary)
+      : whatsappCta(whatsappNumber, storeName)
     )}
 
-    ${signature()}
+    ${signature(storeName, C)}
   `;
 
   return {
-    subject: `Commande ${orderNumber} — ${s.label} ${s.emoji} — SonShop`,
-    html: layout(body, `Votre commande ${orderNumber} est ${s.label}.`),
+    subject: `Commande ${orderNumber} — ${s.label} ${s.emoji} — ${storeName}`,
+    html: layout(body, `Votre commande ${orderNumber} est ${s.label}.`, storeName, storeCode),
   };
 }
 
 // ============================================================
 // 3. FACTURE PAR EMAIL
 // ============================================================
-function buildInvoiceEmail({ invoiceNumber, orderNumber, customerName, total, clientUrl }) {
+function buildInvoiceEmail({
+  invoiceNumber, orderNumber, customerName, total, clientUrl,
+  storeName = 'SonShop', storeCode = 'SONSHOP',
+}) {
+  const C = getTheme(storeCode);
+
   const body = `
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${C.navy};">
       Votre facture est disponible
     </h1>
 
-    ${greeting(customerName)}
+    ${greeting(customerName, C)}
 
     <p style="margin:0 0 20px;font-size:14px;color:${C.text};line-height:1.6;">
       Veuillez trouver en pièce jointe la facture <strong>${invoiceNumber}</strong>
@@ -524,62 +561,66 @@ function buildInvoiceEmail({ invoiceNumber, orderNumber, customerName, total, cl
       ['N° facture',  invoiceNumber],
       ['N° commande', orderNumber],
       ['Montant',     `<strong style="color:${C.primary};">${Number(total || 0).toLocaleString('fr-FR')} FCFA</strong>`],
-    ])}
+    ], C)}
 
-    ${cta('Télécharger ma facture', `${clientUrl}/invoices/${invoiceNumber}/pdf`)}
-    ${signature()}
+    ${cta('Télécharger ma facture', `${clientUrl}/invoices/${invoiceNumber}/pdf`, C.primary)}
+    ${signature(storeName, C)}
   `;
 
   return {
-    subject: `Facture ${invoiceNumber} — SonShop`,
-    html: layout(body, `Votre facture ${invoiceNumber} est disponible.`),
+    subject: `Facture ${invoiceNumber} — ${storeName}`,
+    html: layout(body, `Votre facture ${invoiceNumber} est disponible.`, storeName, storeCode),
   };
 }
 
 // ============================================================
 // 4. RÉINITIALISATION MOT DE PASSE
 // ============================================================
-function buildPasswordResetEmail({ name, resetUrl }) {
+function buildPasswordResetEmail({ name, resetUrl, storeName = 'SonShop', storeCode = 'SONSHOP' }) {
+  const C = getTheme(storeCode);
+
   const body = `
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${C.navy};">
       Réinitialisation du mot de passe
     </h1>
 
-    ${greeting(name)}
+    ${greeting(name, C)}
 
     <p style="margin:0 0 20px;font-size:14px;color:${C.text};line-height:1.6;">
       Nous avons reçu une demande de réinitialisation de votre mot de passe.
       Cliquez sur le bouton ci-dessous pour en définir un nouveau.
     </p>
 
-    ${cta('Réinitialiser mon mot de passe', resetUrl)}
+    ${cta('Réinitialiser mon mot de passe', resetUrl, C.primary)}
 
-    ${divider()}
+    ${divider(C.border)}
 
     <p style="margin:0;font-size:12px;color:${C.textLight};line-height:1.6;">
       Ce lien expire dans <strong>1 heure</strong>. Si vous n'avez pas demandé
       cette réinitialisation, ignorez simplement cet email.
     </p>
 
-    ${signature()}
+    ${signature(storeName, C)}
   `;
 
   return {
-    subject: 'Réinitialisation de votre mot de passe — SonShop',
-    html: layout(body),
+    subject: `Réinitialisation de votre mot de passe — ${storeName}`,
+    html: layout(body, '', storeName, storeCode),
   };
 }
 
 // ============================================================
 // 5. PRÉCOMMANDE (article en rupture)
 // ============================================================
-function buildPreorderEmail({ name, productName, orderNumber }) {
+function buildPreorderEmail({ name, productName, orderNumber, storeName = 'SonShop', storeCode = 'SONSHOP' }) {
+  const C = getTheme(storeCode);
+
   const body = `
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${C.navy};">
       Précommande enregistrée
     </h1>
 
-    ${greeting(name)}
+    ${greeting(name, C)}
 
     <p style="margin:0 0 20px;font-size:14px;color:${C.text};line-height:1.6;">
       Votre demande de précommande pour <strong>${productName}</strong> a bien été prise en compte.
@@ -590,25 +631,26 @@ function buildPreorderEmail({ name, productName, orderNumber }) {
       ['Produit',   productName],
       ['Référence', orderNumber || '—'],
       ['Statut',    badge('PENDING')],
-    ])}
+    ], C)}
 
     <p style="margin:20px 0 0;font-size:13px;color:${C.textLight};line-height:1.6;">
       Pour toute question, n'hésitez pas à nous contacter via WhatsApp.
     </p>
 
-    ${signature()}
+    ${signature(storeName, C)}
   `;
 
   return {
-    subject: `Précommande confirmée — ${productName} — SonShop`,
-    html: layout(body),
+    subject: `Précommande confirmée — ${productName} — ${storeName}`,
+    html: layout(body, '', storeName, storeCode),
   };
 }
 
 // ============================================================
 // 6. RAPPORT DE GESTION
 // ============================================================
-function buildReportEmail({ period, financial, orders, products, stock, expenses, storeName = 'SonShop' }) {
+function buildReportEmail({ period, financial, orders, products, stock, expenses, storeName = 'SonShop', storeCode = 'SONSHOP' }) {
+  const C = getTheme(storeCode);
   const fmt = (n) => Number(n || 0).toLocaleString('fr-FR');
   const pct = (val, total) => total > 0 ? Math.round((val / total) * 100) : 0;
 
@@ -689,7 +731,7 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
   }).join('');
 
   const topRevenue = (products.topProducts || [])[0]?.revenue || 1;
-  const topProduitsRows = (products.topProducts || []).slice(0, 5).map((p, i) => `
+  const topProduitsRows = (products.topProducts || []).slice(0, 5).map((p) => `
     <tr>
       <td style="padding:5px 0;">
         <table width="100%" cellpadding="0" cellspacing="0">
@@ -792,7 +834,8 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
               <tr><td style="font-size:12px;color:${C.warning};padding:4px 0;">⚠️ Alertes stock bas</td><td style="font-size:12px;font-weight:700;color:${C.warning};text-align:right;">${stock.lowStock?.length || 0}</td></tr>
               <tr><td style="font-size:12px;color:${C.danger};padding:4px 0;">❌ Épuisés</td><td style="font-size:12px;font-weight:700;color:${C.danger};text-align:right;">${stock.outOfStock?.length || 0}</td></tr>
             </table>
-            ${stockAlertRows ? `${divider()}
+            ${stockAlertRows ? `
+            <div style="border-top:1px solid ${C.border};margin:24px 0;"></div>
             <div style="font-size:10px;font-weight:700;color:${C.danger};text-transform:uppercase;margin-bottom:6px;">Alertes</div>
             <table width="100%" cellpadding="0" cellspacing="0">${stockAlertRows}</table>` : ''}
           </div>
@@ -807,7 +850,7 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
       </tr>
     </table>
 
-    ${divider()}
+    <div style="border-top:1px solid ${C.border};margin:24px 0;"></div>
     <p style="margin:0;font-size:11px;color:${C.textLight};text-align:center;line-height:1.6;">
       Rapport généré automatiquement le ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
     </p>
@@ -815,7 +858,7 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
 
   return {
     subject: `📊 Rapport de gestion — ${period.from} au ${period.to} — ${storeName}`,
-    html: layout(body, `Rapport de gestion du ${period.from} au ${period.to}`),
+    html: layout(body, `Rapport de gestion du ${period.from} au ${period.to}`, storeName, storeCode),
   };
 }
 

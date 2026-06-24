@@ -240,7 +240,7 @@ export default function Navbar() {
             ))}
             {/* Lien SonTech — mobile */}
             <a
-              href="https://urban-tech.vercel.app"
+              href="https://son-tech.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-medium px-3 py-2.5 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors"
