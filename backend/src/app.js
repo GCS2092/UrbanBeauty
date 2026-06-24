@@ -35,56 +35,44 @@ const creditNotesRoutes = require('./modules/credit-notes/credit-notes.routes');
 
 const app = express();
 
-/* =======================
-   TRUST PROXY (Render / reverse proxy)
-======================= */
-app.set('trust proxy', 1); // ✅ LIGNE AJOUTÉE
+app.set('trust proxy', 1);
 
-/* =======================
-   SECURITY & CORE MIDDLEWARES
-======================= */
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map(o => o.trim())
+  : ['https://urban-beauty.vercel.app', 'https://son-tech.vercel.app', 'http://localhost:5173', 'http://localhost:5174'];
+
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
 }));
 
-/* =======================
-   BODY PARSERS
-======================= */
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false }));
-
-/* =======================
-   CUSTOM MIDDLEWARES
-======================= */
 app.use(requestLogger);
 app.use(apiLimiter);
 
-/* =======================
-   DOCS
-======================= */
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-/* =======================
-   PUBLIC ROUTES
-======================= */
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.get('/', (req, res) => {
   res.json({
-    message: '🌸 Bienvenue sur l\'API UrbanBeauty',
+    message: 'Bienvenue sur l API UrbanBeauty',
     version: '1.0.0',
-    docs: '/api/docs',      // ✅ plus de localhost hardcodé
-    health: '/api/health',  // ✅ plus de localhost hardcodé
+    docs: '/api/docs',
+    health: '/api/health',
   });
 });
 
-/* =======================
-   API ROUTES
-======================= */
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/products', productsRoutes);
@@ -106,9 +94,7 @@ app.use('/api/admin/stores', storesRoutes);
 app.use('/api/admin/stock-transfers', stockTransfersRoutes);
 app.use('/api/admin/credit-notes', creditNotesRoutes);
 app.use('/api/admin/reports', reportRoutes);
-/* =======================
-   ERROR HANDLER
-======================= */
+
 app.use(errorHandler);
 
 module.exports = app;
