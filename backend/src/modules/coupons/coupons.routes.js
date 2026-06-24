@@ -9,6 +9,19 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /api/coupons/public/active:
+ *   get:
+ *     summary: Coupons actifs affichés sur le site (public)
+ *     tags: [Coupons]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Liste des coupons publics actifs
+ */
+router.get('/public/active', couponsController.getPublicCoupons);
+
+/**
+ * @swagger
  * /api/coupons/validate:
  *   post:
  *     summary: Valider un code promo

@@ -35,4 +35,12 @@ async function deleteCoupon(req, res, next) {
   } catch (error) { next(error); }
 }
 
-module.exports = { validateCoupon, getCoupons, createCoupon, updateCoupon, deleteCoupon };
+// NOUVEAU - route publique sans auth
+async function getPublicCoupons(req, res, next) {
+  try {
+    const coupons = await couponsService.getPublicCoupons();
+    res.json(coupons);
+  } catch (error) { next(error); }
+}
+
+module.exports = { validateCoupon, getCoupons, createCoupon, updateCoupon, deleteCoupon, getPublicCoupons };

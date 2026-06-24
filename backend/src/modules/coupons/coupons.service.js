@@ -46,4 +46,27 @@ async function deleteCoupon(id) {
   return prisma.coupon.delete({ where: { id } });
 }
 
-module.exports = { validateCoupon, getCoupons, createCoupon, updateCoupon, deleteCoupon };
+async function getPublicCoupons() {
+  const all = await prisma.coupon.findMany({
+    where: {
+      isActive: true,
+      OR: [
+        { expiresAt: null },
+        { expiresAt: { gt: new Date() } }
+      ],
+    },
+    select: {
+      code: true,
+      type: true,
+      value: true,
+      expiresAt: true,
+      minOrderAmount: true,
+      maxUses: true,
+      usedCount: true,
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  return all.filter(c => c.maxUses === null || c.usedCount < c.maxUses);
+}
+
+module.exports = { validateCoupon, getCoupons, createCoupon, updateCoupon, deleteCoupon, getPublicCoupons };

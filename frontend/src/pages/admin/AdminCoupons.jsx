@@ -5,6 +5,14 @@ const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR') : '�
 const formatDiscount = (type, value) =>
   type === 'PERCENTAGE' ? `${value}%` : `${Number(value).toLocaleString('fr-FR')} FCFA`;
 
+// Génère un code aléatoire style "URBAN-A3X9K"
+const generateCode = () => {
+  const prefix = ['URBAN', 'PROMO', 'BEAUTY', 'VIP', 'SPECIAL'][Math.floor(Math.random() * 5)];
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const suffix = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return `${prefix}-${suffix}`;
+};
+
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +77,7 @@ export default function AdminCoupons() {
   };
 
   const buildBody = () => ({
-    code: form.code,
+    code: form.code.toUpperCase(),
     type: form.type,
     value: Number(form.value),
     minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : undefined,
@@ -85,7 +93,7 @@ export default function AdminCoupons() {
       await couponsApi.create(buildBody());
       await fetchCoupons();
       closeModal();
-      showToast('Coupon créé');
+      showToast('Coupon créé ✓');
     } catch (e) {
       showToast(e.message || 'Erreur création', 'error');
     } finally {
@@ -100,7 +108,7 @@ export default function AdminCoupons() {
       await couponsApi.update(selected.id, buildBody());
       await fetchCoupons();
       closeModal();
-      showToast('Coupon modifié');
+      showToast('Coupon modifié ✓');
     } catch (e) {
       showToast(e.message || 'Erreur modification', 'error');
     } finally {
@@ -114,7 +122,7 @@ export default function AdminCoupons() {
       await couponsApi.delete(selected.id);
       await fetchCoupons();
       closeModal();
-      showToast('Coupon supprimé');
+      showToast('Coupon supprimé ✓');
     } catch (e) {
       showToast(e.message || 'Erreur suppression', 'error');
     } finally {
@@ -122,7 +130,25 @@ export default function AdminCoupons() {
     }
   };
 
+  // Toggle rapide actif/inactif depuis le tableau
+  const handleToggleActive = async (c) => {
+    try {
+      await couponsApi.update(c.id, { isActive: !c.isActive });
+      await fetchCoupons();
+      showToast(c.isActive ? 'Coupon désactivé' : 'Coupon activé ✓');
+    } catch (e) {
+      showToast('Erreur mise à jour', 'error');
+    }
+  };
+
   const inputClass = 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 transition';
+
+  // Coupons visibles sur le site = actifs + non expirés + non épuisés
+  const visibleOnSite = coupons.filter(c =>
+    c.isActive &&
+    (!c.expiresAt || new Date(c.expiresAt) > new Date()) &&
+    (c.maxUses === null || c.maxUses === undefined || c.usedCount < c.maxUses)
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -132,7 +158,7 @@ export default function AdminCoupons() {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Coupons</h1>
           <p className="text-sm text-gray-500 mt-1">{coupons.length} coupon{coupons.length !== 1 ? 's' : ''}</p>
@@ -141,6 +167,17 @@ export default function AdminCoupons() {
           <span className="text-lg leading-none">+</span> Nouveau coupon
         </button>
       </div>
+
+      {/* Indicateur coupons visibles sur le site */}
+      {visibleOnSite.length > 0 && (
+        <div className="mb-6 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 flex items-center gap-3">
+          <span className="text-rose-500 text-lg">🔴</span>
+          <p className="text-sm text-rose-700 font-medium">
+            {visibleOnSite.length} coupon{visibleOnSite.length > 1 ? 's' : ''} actuellement affiché{visibleOnSite.length > 1 ? 's' : ''} dans la bannière du site :
+            {' '}{visibleOnSite.map(c => <span key={c.id} className="font-mono bg-rose-100 px-1.5 py-0.5 rounded mx-0.5">{c.code}</span>)}
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-6 text-sm">
@@ -172,33 +209,51 @@ export default function AdminCoupons() {
                   <th className="px-6 py-3">Min. commande</th>
                   <th className="px-6 py-3">Utilisations</th>
                   <th className="px-6 py-3">Expiration</th>
-                  <th className="px-6 py-3">Statut</th>
+                  <th className="px-6 py-3">Statut / Site</th>
                   <th className="px-6 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {coupons.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <span className="font-mono font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">{c.code}</span>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">{formatDiscount(c.type, c.value)}</td>
-                    <td className="px-6 py-4 text-gray-600">{c.minOrderAmount ? `${Number(c.minOrderAmount).toLocaleString('fr-FR')} FCFA` : '—'}</td>
-                    <td className="px-6 py-4 text-gray-600">{c.usedCount ?? 0}{c.maxUses ? ` / ${c.maxUses}` : ''}</td>
-                    <td className="px-6 py-4 text-gray-600">{formatDate(c.expiresAt)}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${c.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {c.isActive ? 'Actif' : 'Inactif'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEdit(c)} className="text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors font-medium">Modifier</button>
-                        <button onClick={() => openDelete(c)} className="text-xs px-3 py-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50 transition-colors font-medium">Supprimer</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {coupons.map((c) => {
+                  const shownOnSite = c.isActive &&
+                    (!c.expiresAt || new Date(c.expiresAt) > new Date()) &&
+                    (c.maxUses == null || c.usedCount < c.maxUses);
+                  return (
+                    <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <span className="font-mono font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">{c.code}</span>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-900">{formatDiscount(c.type, c.value)}</td>
+                      <td className="px-6 py-4 text-gray-600">{c.minOrderAmount ? `${Number(c.minOrderAmount).toLocaleString('fr-FR')} FCFA` : '—'}</td>
+                      <td className="px-6 py-4 text-gray-600">{c.usedCount ?? 0}{c.maxUses ? ` / ${c.maxUses}` : ''}</td>
+                      <td className="px-6 py-4 text-gray-600">{formatDate(c.expiresAt)}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          {/* Toggle actif/inactif rapide */}
+                          <button
+                            onClick={() => handleToggleActive(c)}
+                            className={`px-2 py-1 rounded-full text-xs font-medium w-fit transition-colors ${c.isActive ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                          >
+                            {c.isActive ? 'Actif' : 'Inactif'}
+                          </button>
+                          {/* Indicateur visible sur le site */}
+                          {shownOnSite && (
+                            <span className="text-[10px] text-rose-500 font-medium flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 bg-rose-500 rounded-full inline-block animate-pulse" />
+                              Affiché sur le site
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => openEdit(c)} className="text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors font-medium">Modifier</button>
+                          <button onClick={() => openDelete(c)} className="text-xs px-3 py-1.5 rounded-md border border-red-200 text-red-600 hover:bg-red-50 transition-colors font-medium">Supprimer</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -215,7 +270,27 @@ export default function AdminCoupons() {
             <form onSubmit={modal === 'create' ? handleCreate : handleEdit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Code <span className="text-red-500">*</span></label>
-                <input name="code" value={form.code} onChange={handleChange} required placeholder="EX: PROMO20" className={inputClass} style={{ textTransform: 'uppercase' }} />
+                <div className="flex gap-2">
+                  <input
+                    name="code"
+                    value={form.code}
+                    onChange={handleChange}
+                    required
+                    placeholder="EX: PROMO20"
+                    className={inputClass}
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                  {/* NOUVEAU : bouton génération automatique */}
+                  <button
+                    type="button"
+                    onClick={() => setForm(p => ({ ...p, code: generateCode() }))}
+                    className="shrink-0 px-3 py-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors whitespace-nowrap"
+                    title="Générer un code aléatoire"
+                  >
+                    🎲 Auto
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Saisis un code manuellement ou clique sur Auto pour en générer un.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -245,7 +320,10 @@ export default function AdminCoupons() {
                 <input type="date" name="expiresAt" value={form.expiresAt} onChange={handleChange} className={inputClass} />
               </div>
               <div className="flex items-center justify-between py-1">
-                <label className="text-sm font-medium text-gray-700">Coupon actif</label>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Coupon actif</label>
+                  <p className="text-xs text-gray-400">S'affiche dans la bannière du site si actif</p>
+                </div>
                 <button type="button" onClick={() => setForm(p => ({ ...p, isActive: !p.isActive }))}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.isActive ? 'bg-emerald-500' : 'bg-gray-200'}`}>
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
