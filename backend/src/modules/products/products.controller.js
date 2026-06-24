@@ -9,7 +9,6 @@ async function getProducts(req, res, next) {
   }
 }
 
-// ← NOUVEAU : tous les produits pour l'admin (actifs + inactifs)
 async function getAllProductsAdmin(req, res, next) {
   try {
     const result = await productsService.getAllProductsAdmin(req.query);
@@ -22,9 +21,7 @@ async function getAllProductsAdmin(req, res, next) {
 async function getProductBySlug(req, res, next) {
   try {
     const product = await productsService.getProductBySlug(req.params.slug);
-    if (!product) {
-      return res.status(404).json({ message: 'Produit introuvable' });
-    }
+    if (!product) return res.status(404).json({ message: 'Produit introuvable' });
     res.json(product);
   } catch (error) {
     next(error);
@@ -52,13 +49,13 @@ async function updateProduct(req, res, next) {
 async function deleteProduct(req, res, next) {
   try {
     await productsService.deleteProduct(req.params.id);
-    res.status(204).end();
+    res.status(204).send();
   } catch (error) {
     next(error);
   }
 }
 
-const productsController = {
+module.exports = {
   getProducts,
   getAllProductsAdmin,
   getProductBySlug,
@@ -66,5 +63,3 @@ const productsController = {
   updateProduct,
   deleteProduct,
 };
-
-module.exports = productsController;

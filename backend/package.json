@@ -50,6 +50,8 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "@types/bcryptjs": "^2.4.6",
+    "nodemon": "^3.0.1",
+    "ts-node": "^10.9.2"
   }
 }
