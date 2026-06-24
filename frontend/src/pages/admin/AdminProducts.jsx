@@ -335,7 +335,7 @@ export default function AdminProducts() {
           headers: { Authorization: `Bearer ${token}` }
         }),
         fetch(`${API_URL}/api/categories`),
-        fetch(`${API_URL}/api/stores`, {  // ← NOUVEAU
+        fetch(`${API_URL}/api/admin/stores`, {  // ← NOUVEAU
           headers: { Authorization: `Bearer ${token}` }
         }),
       ]);
