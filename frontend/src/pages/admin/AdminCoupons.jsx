@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { couponsApi } from '../../api/coupons.api';
+import { API_URL } from '../../utils/constants';
+import useAuthStore from '../../store/authStore';
 
 const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR') : '—';
 const formatDiscount = (type, value) =>
@@ -14,7 +16,9 @@ const generateCode = () => {
 };
 
 export default function AdminCoupons() {
+  const { token } = useAuthStore();  // ← NOUVEAU
   const [coupons, setCoupons] = useState([]);
+  const [stores, setStores] = useState([]);  // ← NOUVEAU
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
@@ -30,6 +34,7 @@ export default function AdminCoupons() {
     maxUses: '',
     expiresAt: '',
     isActive: true,
+    storeId: '',  // ← NOUVEAU
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -42,9 +47,17 @@ export default function AdminCoupons() {
     setLoading(true);
     setError(null);
     try {
-      const res = await couponsApi.getAll();
-      const data = res.data;
-      setCoupons(Array.isArray(data) ? data : data.data || []);
+      // ← NOUVEAU : fetch coupons + stores en parallèle
+      const [cRes, sRes] = await Promise.all([
+        couponsApi.getAll(),
+        fetch(`${API_URL}/api/stores`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+      ]);
+      const cData = cRes.data;
+      const sData = await sRes.json();
+      setCoupons(Array.isArray(cData) ? cData : cData.data || []);
+      setStores(Array.isArray(sData) ? sData : sData.data || []);
     } catch (e) {
       setError(e.message || 'Erreur chargement');
     } finally {
@@ -64,6 +77,7 @@ export default function AdminCoupons() {
       maxUses: c.maxUses || '',
       expiresAt: c.expiresAt ? c.expiresAt.slice(0, 10) : '',
       isActive: c.isActive ?? true,
+      storeId: c.storeId || '',  // ← NOUVEAU
     });
     setSelected(c);
     setModal('edit');
@@ -84,6 +98,7 @@ export default function AdminCoupons() {
     maxUses: form.maxUses ? Number(form.maxUses) : undefined,
     expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : undefined,
     isActive: form.isActive,
+    ...(form.storeId ? { storeId: form.storeId } : {}),  // ← NOUVEAU
   });
 
   const handleCreate = async (e) => {
@@ -205,6 +220,7 @@ export default function AdminCoupons() {
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   <th className="px-6 py-3">Code</th>
+                  <th className="px-6 py-3">Boutique</th>{/* ← NOUVEAU */}
                   <th className="px-6 py-3">Réduction</th>
                   <th className="px-6 py-3">Min. commande</th>
                   <th className="px-6 py-3">Utilisations</th>
@@ -218,10 +234,25 @@ export default function AdminCoupons() {
                   const shownOnSite = c.isActive &&
                     (!c.expiresAt || new Date(c.expiresAt) > new Date()) &&
                     (c.maxUses == null || c.usedCount < c.maxUses);
+                  const store = stores.find(s => s.id === c.storeId);  // ← NOUVEAU
                   return (
                     <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <span className="font-mono font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">{c.code}</span>
+                      </td>
+                      {/* ← NOUVEAU : colonne boutique */}
+                      <td className="px-6 py-4">
+                        {store ? (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            store.code === 'SONTECH'
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'bg-rose-50 text-rose-700'
+                          }`}>
+                            {store.name}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-300 italic">Toutes</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 font-medium text-gray-900">{formatDiscount(c.type, c.value)}</td>
                       <td className="px-6 py-4 text-gray-600">{c.minOrderAmount ? `${Number(c.minOrderAmount).toLocaleString('fr-FR')} FCFA` : '—'}</td>
@@ -229,14 +260,12 @@ export default function AdminCoupons() {
                       <td className="px-6 py-4 text-gray-600">{formatDate(c.expiresAt)}</td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
-                          {/* Toggle actif/inactif rapide */}
                           <button
                             onClick={() => handleToggleActive(c)}
                             className={`px-2 py-1 rounded-full text-xs font-medium w-fit transition-colors ${c.isActive ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                           >
                             {c.isActive ? 'Actif' : 'Inactif'}
                           </button>
-                          {/* Indicateur visible sur le site */}
                           {shownOnSite && (
                             <span className="text-[10px] text-rose-500 font-medium flex items-center gap-1">
                               <span className="w-1.5 h-1.5 bg-rose-500 rounded-full inline-block animate-pulse" />
@@ -268,6 +297,8 @@ export default function AdminCoupons() {
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
             <form onSubmit={modal === 'create' ? handleCreate : handleEdit} className="p-6 space-y-4">
+
+              {/* Code */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Code <span className="text-red-500">*</span></label>
                 <div className="flex gap-2">
@@ -280,7 +311,6 @@ export default function AdminCoupons() {
                     className={inputClass}
                     style={{ textTransform: 'uppercase' }}
                   />
-                  {/* NOUVEAU : bouton génération automatique */}
                   <button
                     type="button"
                     onClick={() => setForm(p => ({ ...p, code: generateCode() }))}
@@ -292,6 +322,8 @@ export default function AdminCoupons() {
                 </div>
                 <p className="text-xs text-gray-400 mt-1">Saisis un code manuellement ou clique sur Auto pour en générer un.</p>
               </div>
+
+              {/* Type + Valeur */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Type <span className="text-red-500">*</span></label>
@@ -305,6 +337,8 @@ export default function AdminCoupons() {
                   <input type="number" name="value" value={form.value} onChange={handleChange} required min="0" placeholder={form.type === 'PERCENTAGE' ? '20' : '5000'} className={inputClass} />
                 </div>
               </div>
+
+              {/* Min commande + Max utilisations */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Min. commande (FCFA)</label>
@@ -315,10 +349,29 @@ export default function AdminCoupons() {
                   <input type="number" name="maxUses" value={form.maxUses} onChange={handleChange} min="1" placeholder="100" className={inputClass} />
                 </div>
               </div>
+
+              {/* Expiration */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date d'expiration</label>
                 <input type="date" name="expiresAt" value={form.expiresAt} onChange={handleChange} className={inputClass} />
               </div>
+
+              {/* ← NOUVEAU : Sélecteur boutique */}
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+                <label className="block text-sm font-medium text-blue-800 mb-1">
+                  🏪 Boutique
+                  <span className="text-blue-400 text-xs font-normal ml-1">(laisser vide = valable sur toutes les boutiques)</span>
+                </label>
+                <select name="storeId" value={form.storeId} onChange={handleChange}
+                  className="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white">
+                  <option value="">— Toutes les boutiques —</option>
+                  {stores.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Toggle actif */}
               <div className="flex items-center justify-between py-1">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Coupon actif</label>
@@ -329,6 +382,7 @@ export default function AdminCoupons() {
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
               </div>
+
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={closeModal} className="flex-1 border border-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors">Annuler</button>
                 <button type="submit" disabled={submitting} className="flex-1 bg-black text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60">

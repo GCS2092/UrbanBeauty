@@ -296,6 +296,7 @@ export default function AdminProducts() {
   const { token } = useAuthStore();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [stores, setStores] = useState([]);  // ← NOUVEAU
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
@@ -308,6 +309,7 @@ export default function AdminProducts() {
   const emptyForm = {
     name: '', slug: '', description: '', price: '', comparePrice: '',
     purchasePrice: '', stock: '', categoryId: '',
+    storeId: '',  // ← NOUVEAU
     isActive: true, isFeatured: false,
     variantDisplayMode: 'SIZE_FIRST',
     images: [], variants: [],
@@ -328,16 +330,21 @@ export default function AdminProducts() {
   const fetchAll = async () => {
     setLoading(true); setError(null);
     try {
-      const [pRes, cRes] = await Promise.all([
+      const [pRes, cRes, sRes] = await Promise.all([
         fetch(`${API_URL}/api/products/admin/all`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
         fetch(`${API_URL}/api/categories`),
+        fetch(`${API_URL}/api/stores`, {  // ← NOUVEAU
+          headers: { Authorization: `Bearer ${token}` }
+        }),
       ]);
       const pData = await pRes.json();
       const cData = await cRes.json();
+      const sData = await sRes.json();  // ← NOUVEAU
       setProducts(Array.isArray(pData) ? pData : pData.data || []);
       setCategories(Array.isArray(cData) ? cData : cData.data || []);
+      setStores(Array.isArray(sData) ? sData : sData.data || []);  // ← NOUVEAU
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
@@ -354,6 +361,7 @@ export default function AdminProducts() {
       price: p.price, comparePrice: p.comparePrice || '',
       purchasePrice: p.purchasePrice || '',
       stock: p.stock, categoryId: p.categoryId || '',
+      storeId: p.storeId || '',  // ← NOUVEAU
       isActive: p.isActive ?? true, isFeatured: p.isFeatured ?? false,
       variantDisplayMode: p.variantDisplayMode || 'SIZE_FIRST',
       images: (p.images || []).map((img) => ({
@@ -415,6 +423,7 @@ export default function AdminProducts() {
       purchasePrice: form.purchasePrice !== '' ? Number(form.purchasePrice) : null,
       stock: totalVariantStock,
       ...(form.categoryId ? { categoryId: form.categoryId } : {}),
+      ...(form.storeId ? { storeId: form.storeId } : {}),  // ← NOUVEAU
       isActive: form.isActive,
       isFeatured: form.isFeatured,
       variantDisplayMode: form.variantDisplayMode || 'SIZE_FIRST',
@@ -539,6 +548,7 @@ export default function AdminProducts() {
                 <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   <th className="px-6 py-3">Produit</th>
                   <th className="px-6 py-3">Catégorie</th>
+                  <th className="px-6 py-3">Boutique</th>
                   <th className="px-6 py-3">Prix vente</th>
                   <th className="px-6 py-3">Prix achat</th>
                   <th className="px-6 py-3">Stock réel</th>
@@ -554,6 +564,7 @@ export default function AdminProducts() {
                 {filtered.map((p) => {
                   const mainImage = p.images?.find(i => i.isMain)?.url || p.images?.[0]?.url;
                   const cat = categories.find(c => c.id === p.categoryId);
+                  const store = stores.find(s => s.id === p.storeId);  // ← NOUVEAU
                   return (
                     <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
@@ -571,6 +582,20 @@ export default function AdminProducts() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-gray-600">{cat?.name || '—'}</td>
+                      {/* ← NOUVEAU : colonne boutique */}
+                      <td className="px-6 py-4">
+                        {store ? (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            store.code === 'SONTECH'
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'bg-rose-50 text-rose-700'
+                          }`}>
+                            {store.name}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-300 italic">Toutes</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4">
                         <div className="font-semibold text-gray-900">{formatPrice(p.price)}</div>
                         {p.comparePrice && <div className="text-xs text-gray-400 line-through">{formatPrice(p.comparePrice)}</div>}
@@ -720,7 +745,7 @@ export default function AdminProducts() {
                 )}
               </div>
 
-              {/* Stock global — masqué si variantes */}
+              {/* Stock global + Catégorie + Boutique — masqué si variantes */}
               {form.variants.length === 0 && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -751,6 +776,21 @@ export default function AdminProducts() {
                   </select>
                 </div>
               )}
+
+              {/* ← NOUVEAU : Sélecteur boutique (toujours visible) */}
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+                <label className="block text-sm font-medium text-blue-800 mb-1">
+                  🏪 Boutique
+                  <span className="text-blue-400 text-xs font-normal ml-1">(laisser vide = visible sur toutes les boutiques)</span>
+                </label>
+                <select name="storeId" value={form.storeId} onChange={handleChange}
+                  className="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white">
+                  <option value="">— Toutes les boutiques —</option>
+                  {stores.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
 
               {/* Variantes */}
               <div className="border-t border-gray-100 pt-4">

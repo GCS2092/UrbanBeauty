@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { ShoppingBag, Heart, Bell, User, Menu, X, Tag } from 'lucide-react';
+import { ShoppingBag, Heart, Bell, User, Menu, X, Tag, Cpu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import useAuthStore from '../../store/authStore';
 import useCartStore from '../../store/cartStore';
@@ -112,6 +112,16 @@ export default function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+
+            {/* Lien SonTech — desktop */}
+            <a
+              href="https://son-tech.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors mr-1"
+            >
+              🔌 SonTech
+            </a>
 
             {/* Panier — desktop seulement */}
             <Link
@@ -228,6 +238,15 @@ export default function Navbar() {
                 {link.label}
               </NavLink>
             ))}
+            {/* Lien SonTech — mobile */}
+            <a
+              href="https://urban-tech.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium px-3 py-2.5 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors"
+            >
+              🔌 Découvrir SonTech
+            </a>
             {isAuthenticated && (
               <>
                 <NavLink
