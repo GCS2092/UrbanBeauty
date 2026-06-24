@@ -37,9 +37,12 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map(o => o.trim())
-  : ['https://urban-beauty.vercel.app', 'https://son-tech.vercel.app', 'http://localhost:5173', 'http://localhost:5174'];
+const allowedOrigins = [
+  'https://urban-beauty.vercel.app',
+  'https://son-tech.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:5174',
+];
 
 app.use(helmet());
 app.use(cors({
