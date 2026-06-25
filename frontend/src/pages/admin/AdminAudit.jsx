@@ -4,6 +4,8 @@ import { Shield, Search, RefreshCw } from 'lucide-react';
 import { adminApi } from '../../api/admin.api';
 import Pagination from '../../components/shared/Pagination';
 import DateRangeFilter from '../../components/admin/DateRangeFilter';
+import StoreFilter from '../../components/admin/StoreFilter';
+import { useAdminStoreFilter } from '../../hooks/useAdminStoreFilter';
 
 const formatDate = (iso) =>
   new Date(iso).toLocaleString('fr-FR', {
@@ -21,6 +23,7 @@ const ACTION_LABELS = {
 };
 
 export default function AdminAudit() {
+  const [storeId, setStoreId] = useAdminStoreFilter();
   const [search, setSearch] = useState('');
   const [module, setModule] = useState('');
   const [page, setPage] = useState(1);
@@ -28,7 +31,7 @@ export default function AdminAudit() {
   const [to, setTo] = useState('');
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['admin-audit', page, search, module, from, to],
+    queryKey: ['admin-audit', page, search, module, from, to, storeId],
     queryFn: () =>
       adminApi
         .getAuditLogs({
@@ -38,6 +41,7 @@ export default function AdminAudit() {
           ...(module && { module }),
           ...(from && { from }),
           ...(to && { to }),
+          ...(storeId && { storeId }),
         })
         .then((r) => r.data),
   });
@@ -75,6 +79,7 @@ export default function AdminAudit() {
               className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-stone-200 text-sm"
             />
           </div>
+          <StoreFilter value={storeId} onChange={(v) => { setStoreId(v || ''); setPage(1); }} />
           <select
             value={module}
             onChange={(e) => { setModule(e.target.value); setPage(1); }}

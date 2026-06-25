@@ -13,6 +13,8 @@ const { changeOrderStatusAtomic } = require('./order-fulfillment.service');
 const {
   resolveStoreForOrder,
   computeStoreDiscount,
+  isProductVisibleForStore,
+  isCouponValidForStore,
 } = require('../stores/store.service');
 const { getSettings } = require('../settings/settings.service');
 const { notifyOrderConfirmed, notifyOrderStatus, notifyAdmins } = require('../../services/notification.service');
@@ -67,6 +69,25 @@ async function createOrder(payload, user, ip = null) {
   }
 
   const store = await resolveStoreForOrder(payload.storeId);
+
+  const productIds = [...new Set(payload.items.map((item) => item.productId))];
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds }, isActive: true },
+    select: { id: true, name: true, storeId: true },
+  });
+  if (products.length !== productIds.length) {
+    const error = new Error('Un ou plusieurs produits sont introuvables ou inactifs.');
+    error.status = 400;
+    throw error;
+  }
+  for (const product of products) {
+    if (!isProductVisibleForStore(product.storeId, store.id)) {
+      const error = new Error(`Le produit « ${product.name} » n'est pas disponible sur cette boutique.`);
+      error.status = 400;
+      throw error;
+    }
+  }
+
   const orderNumber = generateOrderNumber();
   const userId = user?.id || null;
   const guestEmail = user?.email || payload.guestEmail || null;
@@ -82,6 +103,11 @@ async function createOrder(payload, user, ip = null) {
     const coupon = await prisma.coupon.findUnique({ where: { id: payload.couponId } });
     if (!coupon || !coupon.isActive) {
       const error = new Error('Code promo invalide ou expiré.');
+      error.status = 400;
+      throw error;
+    }
+    if (!isCouponValidForStore(coupon.storeId, store.id)) {
+      const error = new Error('Ce code promo n\'est pas valable pour cette boutique.');
       error.status = 400;
       throw error;
     }
@@ -234,6 +260,7 @@ async function createOrder(payload, user, ip = null) {
       title:   `🛍️ Nouvelle commande — ${store.name}`,
       message: `Commande ${orderNumber} reçue — à traiter.`,
       link:    '/admin/orders',
+      storeId: store.id,
     }).catch(err => console.error('❌ Erreur notif admin nouvelle commande:', err.message));
   }
 
@@ -332,8 +359,12 @@ function buildOrdersWhere(query, storeIds = null) {
       throw error;
     }
     where.storeId = query.storeId;
-  } else if (storeIds?.length) {
-    where.storeId = { in: storeIds };
+  } else if (Array.isArray(storeIds)) {
+    if (storeIds.length === 0) {
+      where.storeId = { in: [] };
+    } else {
+      where.storeId = { in: storeIds };
+    }
   }
 
   applyDateRangeFilter(where, 'createdAt', query);

@@ -17,6 +17,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import PaymentModal from '../../components/checkout/PaymentModal';
 import { toast } from 'sonner';
+import { STORE_ID } from '../../utils/constants';
 
 // --- Destinations ---
 const DESTINATIONS = [
@@ -271,6 +272,7 @@ export default function Checkout() {
   };
 
   const buildOrderPayload = (formData) => ({
+    storeId: STORE_ID,
     items: cart.items.map((item) => ({
       productId: item.product.id,
       variantId: item.variant?.id || null,
@@ -300,7 +302,7 @@ export default function Checkout() {
     if (!couponCode.trim()) return;
     setValidatingCoupon(true);
     try {
-      const { data } = await couponsApi.validate(couponCode, subtotal);
+      const { data } = await couponsApi.validate(couponCode, subtotal, STORE_ID);
       setCoupon(data.coupon);
       toast.success(
         `Coupon appliqué : -${data.coupon.type === 'PERCENTAGE' ? data.coupon.value + '%' : formatPrice(data.discount)}`

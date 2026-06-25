@@ -39,11 +39,9 @@ export const accountingApi = {
     api.patch(`/api/admin/accounting/suppliers/${id}/toggle`),
 
   // ── Marges produits ───────────────────────────────────────
-  getProductMargins: () =>
-    api.get('/api/admin/accounting/product-margins'),
+  getProductMargins: (params) =>
+    api.get('/api/admin/accounting/product-margins', { params }),
 
-  // ── Produits (pour le select dans modal mouvement stock) ──
-  // ✅ Route admin dédiée — retourne tous les produits (actifs + inactifs)
-  getAdminProducts: () =>
-    api.get('/api/products/admin/all', { params: { limit: 200 } }),
+  getAdminProducts: (params) =>
+    api.get('/api/products/admin/all', { params: { limit: 200, ...params } }),
 };

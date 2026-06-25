@@ -8,6 +8,8 @@ import Pagination from '../../components/shared/Pagination';
 import DateRangeFilter from '../../components/admin/DateRangeFilter';
 import StoreFilter from '../../components/admin/StoreFilter';
 import CreateOrderModal from '../../components/admin/CreateOrderModal';
+import { getActiveStoreIdFromToken } from '../../hooks/useAdminStoreFilter';
+import useAuthStore from '../../store/authStore';
 import { buildOrderConfirmationWhatsAppLink, buildOrderStatusWhatsAppLink } from '../../utils/whatsapp.utils';
 
 const WA_ICON = (
@@ -66,8 +68,12 @@ const emptyFilters = {
 };
 
 export default function AdminOrders() {
+  const { token } = useAuthStore();
   const [page, setPage]               = useState(1);
-  const [filters, setFilters]         = useState(emptyFilters);
+  const [filters, setFilters]         = useState({
+    ...emptyFilters,
+    storeId: getActiveStoreIdFromToken(token),
+  });
   const [selected, setSelected]       = useState(null);
   const [statusModal, setStatusModal] = useState(false);
   const [newStatus, setNewStatus]     = useState('');

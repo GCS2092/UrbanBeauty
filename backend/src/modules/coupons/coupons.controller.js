@@ -2,14 +2,18 @@ const couponsService = require('./coupons.service');
 
 async function validateCoupon(req, res, next) {
   try {
-    const result = await couponsService.validateCoupon(req.body.code, req.body.orderAmount);
+    const result = await couponsService.validateCoupon(
+      req.body.code,
+      req.body.orderAmount,
+      req.body.storeId || req.query.storeId,
+    );
     res.json(result);
   } catch (error) { next(error); }
 }
 
 async function getCoupons(req, res, next) {
   try {
-    const coupons = await couponsService.getCoupons();
+    const coupons = await couponsService.getCoupons(req.query);
     res.json(coupons);
   } catch (error) { next(error); }
 }
@@ -35,10 +39,9 @@ async function deleteCoupon(req, res, next) {
   } catch (error) { next(error); }
 }
 
-// NOUVEAU - route publique sans auth
 async function getPublicCoupons(req, res, next) {
   try {
-    const coupons = await couponsService.getPublicCoupons();
+    const coupons = await couponsService.getPublicCoupons(req.query.storeId);
     res.json(coupons);
   } catch (error) { next(error); }
 }

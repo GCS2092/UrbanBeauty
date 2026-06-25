@@ -8,6 +8,8 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { accountingApi } from '../../api/accounting.api';
+import StoreFilter from '../../components/admin/StoreFilter';
+import { useAdminStoreFilter } from '../../hooks/useAdminStoreFilter';
 
 // ─── Utilitaires ───────────────────────────────────────────────
 const fmt = (amount) =>
@@ -229,6 +231,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 // ─── Page principale ────────────────────────────────────────────
 export default function AdminAccounting() {
   const [tab, setTab] = useState('dashboard');
+  const [storeId, setStoreId] = useAdminStoreFilter();
   const [period, setPeriod] = useState('month');
   const [year,   setYear]   = useState(new Date().getFullYear());
   const [month,  setMonth]  = useState(new Date().getMonth() + 1);
@@ -247,26 +250,28 @@ export default function AdminAccounting() {
   const qc = useQueryClient();
 
   // ── Queries ─────────────────────────────────────────────────
+  const storeParams = storeId ? { storeId } : {};
+
   const { data: dashboard, isLoading } = useQuery({
-    queryKey: ['accounting-dashboard', period, year, month],
-    queryFn:  () => accountingApi.getDashboard({ period, year, month }).then((r) => r.data),
+    queryKey: ['accounting-dashboard', period, year, month, storeId],
+    queryFn:  () => accountingApi.getDashboard({ period, year, month, ...storeParams }).then((r) => r.data),
   });
 
   const { data: expenses } = useQuery({
-    queryKey: ['accounting-expenses'],
-    queryFn:  () => accountingApi.getExpenses({ limit: 50 }).then((r) => r.data),
+    queryKey: ['accounting-expenses', storeId],
+    queryFn:  () => accountingApi.getExpenses({ limit: 50, ...storeParams }).then((r) => r.data),
     enabled:  tab === 'expenses',
   });
 
   const { data: stockMovements } = useQuery({
-    queryKey: ['accounting-stock'],
-    queryFn:  () => accountingApi.getStockMovements({ limit: 50 }).then((r) => r.data),
+    queryKey: ['accounting-stock', storeId],
+    queryFn:  () => accountingApi.getStockMovements({ limit: 50, ...storeParams }).then((r) => r.data),
     enabled:  tab === 'stock',
   });
 
   const { data: margins } = useQuery({
-    queryKey: ['accounting-margins'],
-    queryFn:  () => accountingApi.getProductMargins().then((r) => r.data),
+    queryKey: ['accounting-margins', storeId],
+    queryFn:  () => accountingApi.getProductMargins(storeParams).then((r) => r.data),
     enabled:  tab === 'margins',
   });
 
@@ -282,8 +287,8 @@ export default function AdminAccounting() {
   });
 
   const { data: productsData } = useQuery({
-    queryKey: ['admin-products-select'],
-    queryFn:  () => accountingApi.getAdminProducts().then((r) => r.data),
+    queryKey: ['admin-products-select', storeId],
+    queryFn:  () => accountingApi.getAdminProducts(storeParams).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
   });
   const products = productsData?.products ?? productsData?.data ?? productsData ?? [];
@@ -371,6 +376,7 @@ export default function AdminAccounting() {
   // ── Handlers ─────────────────────────────────────────────────
   const handleExpenseSubmit = (e) => {
     e.preventDefault();
+    if (!storeId) return toast.error('Sélectionnez une boutique d\'abord');
     const fd = new FormData(e.target);
     createExpenseMutation.mutate({
       category:   fd.get('category'),
@@ -380,11 +386,13 @@ export default function AdminAccounting() {
       supplierId: fd.get('supplierId') || null,
       reference:  fd.get('reference')  || null,
       notes:      fd.get('notes')      || null,
+      storeId,
     });
   };
 
   const handleStockSubmit = (e) => {
     e.preventDefault();
+    if (!storeId) return toast.error('Sélectionnez une boutique d\'abord');
     const fd = new FormData(e.target);
     const unitCostRaw = fd.get('unitCost');
     createStockMutation.mutate({
@@ -395,6 +403,7 @@ export default function AdminAccounting() {
       reason:     fd.get('reason')     || null,
       supplierId: fd.get('supplierId') || null,
       reference:  fd.get('reference')  || null,
+      storeId,
     });
   };
 
@@ -437,6 +446,7 @@ export default function AdminAccounting() {
           <p className="text-sm text-slate-400 mt-0.5">Suivi financier, stock et bénéfices</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <StoreFilter value={storeId} onChange={(v) => setStoreId(v || '')} />
           <select value={period} onChange={(e) => setPeriod(e.target.value)}
             className="text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none">
             <option value="month">Ce mois</option>

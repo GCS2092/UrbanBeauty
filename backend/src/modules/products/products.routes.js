@@ -6,6 +6,7 @@ const requireAdmin = require('../../middlewares/admin.middleware');
 const requireStaff = require('../../middlewares/staff.middleware');
 const { apiLimiter } = require('../../middlewares/rateLimit.middleware');
 const { checkValidation } = require('../../middlewares/validation.middleware');
+const { loadStoreContext } = require('../../middlewares/store.middleware');
 
 const router = express.Router();
 
@@ -48,7 +49,7 @@ router.get('/', apiLimiter, productsController.getProducts);
  */
 // ⚠️ DOIT être avant /:slug pour ne pas être capturé comme slug
 // Lecture — STAFF peut voir, filtré automatiquement par storeIds
-router.get('/admin/all', authenticate, requireStaff, productsController.getAllProductsAdmin);
+router.get('/admin/all', authenticate, requireStaff, loadStoreContext, productsController.getAllProductsAdmin);
 
 /**
  * @swagger

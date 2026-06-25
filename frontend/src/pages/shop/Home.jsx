@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Sparkles, Truck, ShieldCheck, Tag } from 'lucide-react';
 import { productsApi } from '../../api/products.api';
 import { categoriesApi } from '../../api/categories.api';
+import { STORE_ID } from '../../utils/constants';
 import ProductGrid from '../../components/shared/ProductGrid';
 import Button from '../../components/ui/Button';
 import heroImg from '../../assets/hero.png';
@@ -15,13 +16,14 @@ const perks = [
 
 export default function Home() {
   const { data: productsData, isLoading: loadingProducts } = useQuery({
-    queryKey: ['products', 'featured'],
-    queryFn: () => productsApi.getAll({ limit: 8, featured: true }).then((r) => r.data),
+    queryKey: ['products', 'featured', { storeId: STORE_ID }],
+    queryFn: () =>
+      productsApi.getAll({ limit: 8, featured: true, storeId: STORE_ID }).then((r) => r.data),
   });
 
   const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => categoriesApi.getAll().then((r) => r.data),
+    queryKey: ['categories', { storeId: STORE_ID }],
+    queryFn: () => categoriesApi.getAll({ storeId: STORE_ID }).then((r) => r.data),
   });
 
   return (

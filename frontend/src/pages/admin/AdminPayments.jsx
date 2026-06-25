@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminApi } from '../../api/admin.api';
+import StoreFilter from '../../components/admin/StoreFilter';
+import { useAdminStoreFilter } from '../../hooks/useAdminStoreFilter';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const formatPrice = (p) => `${Number(p || 0).toLocaleString('fr-FR')} FCFA`;
@@ -140,17 +142,19 @@ function ConfirmModal({ isOpen, onClose, onConfirm, action, order, isPending }) 
 
 export default function AdminPayments() {
   const queryClient = useQueryClient();
+  const [storeId, setStoreId] = useAdminStoreFilter();
   const [filters, setFilters] = useState({ paymentMethod: '', paymentStatus: '', page: 1, phone: '' });
   const [phoneInput, setPhoneInput] = useState('');
   const [modal, setModal] = useState({ open: false, action: null, order: null });
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-payments', filters],
+    queryKey: ['admin-payments', filters, storeId],
     queryFn: () => adminApi.getOrders({
       ...filters,
       paymentMethod: filters.paymentMethod || undefined,
       paymentStatus: filters.paymentStatus || undefined,
       phone: filters.phone || undefined,
+      ...(storeId && { storeId }),
     }).then(r => r.data),
   });
 
@@ -240,6 +244,7 @@ export default function AdminPayments() {
       {/* Filtres */}
       <div className="bg-white rounded-2xl border border-stone-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
         <Filter size={15} className="text-stone-400" />
+        <StoreFilter value={storeId} onChange={(v) => { setStoreId(v || ''); setFilters(f => ({ ...f, page: 1 })); }} />
 
         {/* ✅ Recherche par téléphone */}
         <form onSubmit={handlePhoneSearch} className="flex items-center gap-2">

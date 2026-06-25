@@ -83,18 +83,35 @@ async function notifyUser({ userId, type, title, message, link = '/', sendPush =
   }
 }
 
-// ── Notifier tous les admins/staff ────────────────────────────────────────
-async function notifyAdmins({ type, title, message, link = '/admin' }) {
+// ── Notifier admins + staff de la boutique concernée ────────────────────────
+async function notifyAdmins({ type, title, message, link = '/admin', storeId = null }) {
   try {
     const admins = await prisma.user.findMany({
-      where: { role: { in: ['ADMIN', 'STAFF'] } },
+      where: { role: 'ADMIN', isActive: true },
       select: { id: true },
     });
 
+    let staffIds = [];
+    if (storeId) {
+      const links = await prisma.userStore.findMany({
+        where: { storeId, user: { isActive: true, role: 'STAFF' } },
+        select: { userId: true },
+      });
+      staffIds = links.map((l) => l.userId);
+    } else {
+      const staff = await prisma.user.findMany({
+        where: { role: 'STAFF', isActive: true },
+        select: { id: true },
+      });
+      staffIds = staff.map((s) => s.id);
+    }
+
+    const recipientIds = [...new Set([...admins.map((a) => a.id), ...staffIds])];
+
     await Promise.all(
-      admins.map(admin =>
+      recipientIds.map((userId) =>
         notifyUser({
-          userId: admin.id,
+          userId,
           type,
           title,
           message,
@@ -103,7 +120,7 @@ async function notifyAdmins({ type, title, message, link = '/admin' }) {
         })
       )
     );
-    console.log(`✅ Notif admin envoyée à ${admins.length} admin(s)/staff`);
+    console.log(`✅ Notif admin envoyée à ${recipientIds.length} utilisateur(s)`);
   } catch (err) {
     console.error('❌ Erreur notifyAdmins:', err.message);
   }

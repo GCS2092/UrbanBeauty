@@ -1,4 +1,5 @@
 const ordersService = require('./orders.service');
+const { loadStoreContext } = require('../../middlewares/store.middleware');
 
 async function createOrder(req, res, next) {
   try {
@@ -60,7 +61,7 @@ async function changeOrderStatus(req, res, next) {
 
 async function getAllOrders(req, res, next) {
   try {
-    const orders = await ordersService.getAllOrders(req.query);
+    const orders = await ordersService.getAllOrders(req.query, req.storeIds);
     res.json(orders);
   } catch (error) {
     next(error);

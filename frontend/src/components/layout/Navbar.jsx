@@ -6,6 +6,7 @@ import useCartStore from '../../store/cartStore';
 import useUiStore from '../../store/uiStore';
 import { useAuth } from '../../context/AuthContext';
 import { couponsApi } from '../../api/coupons.api';
+import { STORE_ID } from '../../utils/constants';
 
 export default function Navbar() {
   const { isAuthenticated, user } = useAuthStore();
@@ -23,7 +24,7 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
-    couponsApi.getPublic()
+    couponsApi.getPublic(STORE_ID)
       .then(res => setPromoCoupons(res.data || []))
       .catch(() => {});
   }, []);

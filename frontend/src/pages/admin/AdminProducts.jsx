@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import useAuthStore from '../../store/authStore';
 import { API_URL } from '../../utils/constants';
+import StoreFilter from '../../components/admin/StoreFilter';
+import { useAdminStoreFilter } from '../../hooks/useAdminStoreFilter';
 
 const formatPrice = (p) => `${Number(p).toLocaleString('fr-FR')} FCFA`;
 
@@ -304,6 +306,7 @@ export default function AdminProducts() {
   const [selected, setSelected] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
+  const [storeFilter, setStoreFilter] = useAdminStoreFilter();
   const [fieldErrors, setFieldErrors] = useState({});
 
   const emptyForm = {
@@ -330,8 +333,11 @@ export default function AdminProducts() {
   const fetchAll = async () => {
     setLoading(true); setError(null);
     try {
+      const productParams = new URLSearchParams({ limit: '500' });
+      if (storeFilter) productParams.set('storeId', storeFilter);
+
       const [pRes, cRes, sRes] = await Promise.all([
-        fetch(`${API_URL}/api/products/admin/all`, {
+        fetch(`${API_URL}/api/products/admin/all?${productParams}`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
         fetch(`${API_URL}/api/categories`),
@@ -349,7 +355,7 @@ export default function AdminProducts() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [storeFilter]);
 
   const openCreate = () => {
     setForm(emptyForm); setSelected(null); setFieldErrors({}); setModal('create');
@@ -423,7 +429,7 @@ export default function AdminProducts() {
       purchasePrice: form.purchasePrice !== '' ? Number(form.purchasePrice) : null,
       stock: totalVariantStock,
       ...(form.categoryId ? { categoryId: form.categoryId } : {}),
-      ...(form.storeId ? { storeId: form.storeId } : {}),  // ← NOUVEAU
+      storeId: form.storeId || null,
       isActive: form.isActive,
       isFeatured: form.isFeatured,
       variantDisplayMode: form.variantDisplayMode || 'SIZE_FIRST',
@@ -515,10 +521,11 @@ export default function AdminProducts() {
         </button>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Rechercher un produit..."
           className="w-full max-w-sm border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20 bg-white" />
+        <StoreFilter value={storeFilter} onChange={(v) => setStoreFilter(v || '')} />
       </div>
 
       {error && (

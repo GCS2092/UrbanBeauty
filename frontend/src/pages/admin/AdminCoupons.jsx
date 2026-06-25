@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { couponsApi } from '../../api/coupons.api';
 import { API_URL } from '../../utils/constants';
 import useAuthStore from '../../store/authStore';
+import StoreFilter from '../../components/admin/StoreFilter';
+import { useAdminStoreFilter } from '../../hooks/useAdminStoreFilter';
 
 const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR') : '—';
 const formatDiscount = (type, value) =>
@@ -16,7 +18,8 @@ const generateCode = () => {
 };
 
 export default function AdminCoupons() {
-  const { token } = useAuthStore();  // ← NOUVEAU
+  const { token } = useAuthStore();
+  const [storeFilter, setStoreFilter] = useAdminStoreFilter();
   const [coupons, setCoupons] = useState([]);
   const [stores, setStores] = useState([]);  // ← NOUVEAU
   const [loading, setLoading] = useState(true);
@@ -49,8 +52,8 @@ export default function AdminCoupons() {
     try {
       // ← NOUVEAU : fetch coupons + stores en parallèle
       const [cRes, sRes] = await Promise.all([
-        couponsApi.getAll(),
-        fetch(`${API_URL}/api/stores`, {
+        couponsApi.getAll(storeFilter ? { storeId: storeFilter } : {}),
+        fetch(`${API_URL}/api/admin/stores`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
       ]);
@@ -65,7 +68,7 @@ export default function AdminCoupons() {
     }
   };
 
-  useEffect(() => { fetchCoupons(); }, []);
+  useEffect(() => { fetchCoupons(); }, [storeFilter]);
 
   const openCreate = () => { setForm(emptyForm); setSelected(null); setModal('create'); };
   const openEdit = (c) => {
@@ -98,7 +101,7 @@ export default function AdminCoupons() {
     maxUses: form.maxUses ? Number(form.maxUses) : undefined,
     expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : undefined,
     isActive: form.isActive,
-    ...(form.storeId ? { storeId: form.storeId } : {}),  // ← NOUVEAU
+    storeId: form.storeId || null,
   });
 
   const handleCreate = async (e) => {
@@ -173,14 +176,17 @@ export default function AdminCoupons() {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Coupons</h1>
           <p className="text-sm text-gray-500 mt-1">{coupons.length} coupon{coupons.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={openCreate} className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
-          <span className="text-lg leading-none">+</span> Nouveau coupon
-        </button>
+        <div className="flex items-center gap-3">
+          <StoreFilter value={storeFilter} onChange={(v) => setStoreFilter(v || '')} />
+          <button onClick={openCreate} className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
+            <span className="text-lg leading-none">+</span> Nouveau coupon
+          </button>
+        </div>
       </div>
 
       {/* Indicateur coupons visibles sur le site */}

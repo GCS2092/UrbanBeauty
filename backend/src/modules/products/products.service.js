@@ -1,20 +1,21 @@
 const prisma = require('../../config/database');
 const { parsePagination, buildPaginationResponse } = require('../../utils/pagination.utils');
-
-// ─── Vitrine publique ─────────────────────────────────────────────────────────
+const {
+  buildProductStoreFilter,
+  buildAdminCatalogWhere,
+  isProductVisibleForStore,
+  resolveStoreIdForCatalog,
+} = require('../stores/store.service');
 async function getProducts(query) {
   const { page, limit, skip } = parsePagination(query);
 
-  // FIX 3 : le frontend DOIT envoyer ?storeId=
-  // Avec storeId → filtre strict sur cette boutique
-  // Sans storeId → on retourne les produits globaux (storeId IS NULL)
-  const storeFilter = query.storeId
-    ? { storeId: query.storeId }
-    : { storeId: null };
+  const storeId = await resolveStoreIdForCatalog(query.storeId);
+  const storeFilter = buildProductStoreFilter(storeId);
 
   const where = {
     isActive: true,
     ...storeFilter,
+    ...(query.featured === 'true' || query.featured === true ? { isFeatured: true } : {}),
     ...(query.category && { category: { slug: query.category } }),
     ...(query.search && {
       OR: [
@@ -39,17 +40,11 @@ async function getProducts(query) {
 }
 
 // ─── Admin : tous les produits ────────────────────────────────────────────────
-async function getAllProductsAdmin(query) {
+async function getAllProductsAdmin(query, accessibleStoreIds = null) {
   const { page, limit, skip } = parsePagination(query);
 
-  // FIX 1 : storeId obligatoire pour éviter le mélange des boutiques
-  // Un ADMIN qui ne passe pas de storeId voit tout → comportement intentionnel
-  // mais le dashboard DOIT toujours envoyer ?storeId= pour filtrer
   const where = {
-    ...(query.storeId
-      ? { storeId: query.storeId }
-      : {}  // pas de storeId = tout visible (réservé aux super-admins qui veulent une vue globale)
-    ),
+    ...buildAdminCatalogWhere(query.storeId, accessibleStoreIds),
     ...(query.search && {
       OR: [
         { name: { contains: query.search, mode: 'insensitive' } },
@@ -77,11 +72,18 @@ async function getAllProductsAdmin(query) {
   return buildPaginationResponse({ data: products, total, page, limit });
 }
 
-async function getProductBySlug(slug) {
-  return prisma.product.findUnique({
+async function getProductBySlug(slug, query = {}) {
+  const product = await prisma.product.findUnique({
     where: { slug },
     include: { images: true, variants: true, category: true },
   });
+
+  if (!product || !product.isActive) return null;
+
+  const storeId = await resolveStoreIdForCatalog(query.storeId);
+  if (!isProductVisibleForStore(product.storeId, storeId)) return null;
+
+  return product;
 }
 
 async function createProduct(data) {

@@ -3,6 +3,7 @@ const ordersController = require('./orders.controller');
 const { authenticate, authenticateOptional } = require('../../middlewares/auth.middleware');
 const requireAdmin = require('../../middlewares/admin.middleware');
 const requireStaff = require('../../middlewares/staff.middleware');
+const { loadStoreContext } = require('../../middlewares/store.middleware');
 const { apiLimiter, orderCreationLimiter } = require('../../middlewares/rateLimit.middleware');
 
 const router = express.Router();
@@ -60,7 +61,7 @@ router.post('/whatsapp', orderCreationLimiter, authenticateOptional, ordersContr
  *       200:
  *         description: Liste paginée
  */
-router.get('/admin/all', authenticate, requireStaff, ordersController.getAllOrders);
+router.get('/admin/all', authenticate, requireStaff, loadStoreContext, ordersController.getAllOrders);
 
 /**
  * @swagger

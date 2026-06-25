@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { productsApi } from '../../api/products.api';
 import { categoriesApi } from '../../api/categories.api';
+import { STORE_ID } from '../../utils/constants';
 import ProductGrid from '../../components/shared/ProductGrid';
 import Pagination from '../../components/shared/Pagination';
 
@@ -14,14 +15,17 @@ export default function Products() {
   const category = searchParams.get('category') || '';
 
   const { data, isLoading } = useQuery({
-    queryKey: ['products', { page, category, search }],
-    queryFn: () => productsApi.getAll({ page, limit: 12, category, search }).then((r) => r.data),
+    queryKey: ['products', { page, category, search, storeId: STORE_ID }],
+    queryFn: () =>
+      productsApi
+        .getAll({ page, limit: 12, category, search, storeId: STORE_ID })
+        .then((r) => r.data),
     keepPreviousData: true,
   });
 
   const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => categoriesApi.getAll().then((r) => r.data),
+    queryKey: ['categories', { storeId: STORE_ID }],
+    queryFn: () => categoriesApi.getAll({ storeId: STORE_ID }).then((r) => r.data),
   });
 
   const setParam = (key, value) => {

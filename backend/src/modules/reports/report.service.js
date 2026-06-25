@@ -1,4 +1,5 @@
 const prisma = require('../../config/database');
+const { buildProductStoreFilter } = require('../stores/store.service');
 
 async function collectReportData(storeId, from, to) {
   // ── Filtre de dates ──────────────────────────────────────────
@@ -72,6 +73,7 @@ async function collectReportData(storeId, from, to) {
 
   // ── Stock ──────────────────────────────────────────────────
   const products = await prisma.product.findMany({
+    where: buildProductStoreFilter(storeId),
     include: { variants: true, category: true },
   });
 

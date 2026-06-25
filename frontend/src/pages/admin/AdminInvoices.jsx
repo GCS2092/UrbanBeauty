@@ -7,6 +7,7 @@ import { settingsApi } from '../../api/settings.api';
 import Pagination from '../../components/shared/Pagination';
 import DateRangeFilter from '../../components/admin/DateRangeFilter';
 import StoreFilter from '../../components/admin/StoreFilter';
+import { useAdminStoreFilter } from '../../hooks/useAdminStoreFilter';
 
 const formatPrice = (p) => `${Number(p || 0).toLocaleString('fr-FR')} FCFA`;
 const formatDate = (iso) =>
@@ -51,7 +52,7 @@ export default function AdminInvoices() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [page, setPage] = useState(1);
-  const [storeId, setStoreId] = useState('');
+  const [storeId, setStoreId] = useAdminStoreFilter();
   const [downloading, setDownloading] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(null);

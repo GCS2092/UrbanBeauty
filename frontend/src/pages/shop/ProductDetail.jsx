@@ -10,7 +10,7 @@ import { wishlistApi } from '../../api/wishlist.api';
 import useAuthStore from '../../store/authStore';
 import useCartStore from '../../store/cartStore';
 import { formatPrice } from '../../utils/formatPrice';
-import { API_URL } from '../../utils/constants';
+import { API_URL, STORE_ID } from '../../utils/constants';
 import Button from '../../components/ui/Button';
 import ReviewCard from '../../components/shared/ReviewCard';
 import ReviewForm from '../../components/shared/ReviewForm';
@@ -63,8 +63,8 @@ export default function ProductDetail() {
   const mainSwiperRef = useRef(null);
 
   const { data: product, isLoading } = useQuery({
-    queryKey: ['product', slug],
-    queryFn: () => productsApi.getBySlug(slug).then((r) => r.data),
+    queryKey: ['product', slug, { storeId: STORE_ID }],
+    queryFn: () => productsApi.getBySlug(slug, { storeId: STORE_ID }).then((r) => r.data),
   });
 
   const { data: reviews } = useQuery({

@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { releaseReservation } = require('../modules/products/stock.service');
 const { logAudit } = require('../services/audit.service');
+const { notifyAdmins } = require('../services/notification.service');
 
 const { getSettings } = require('../modules/settings/settings.service');
 
@@ -67,21 +68,13 @@ async function notifyUpcomingExpirations() {
   });
 
   for (const order of upcoming) {
-    const admins = await prisma.user.findMany({
-      where: { role: 'ADMIN', isActive: true },
-      select: { id: true },
-    });
-    for (const admin of admins) {
-      await prisma.notification.create({
-        data: {
-          userId: admin.id,
-          type: 'ORDER_CANCELLED',
-          title: 'Brouillon WhatsApp bientôt expiré',
-          message: `La commande ${order.orderNumber} expire le ${order.reservationExpiresAt?.toLocaleString('fr-FR')}.`,
-          link: '/admin/orders?status=DRAFT',
-        },
-      }).catch(() => {});
-    }
+    await notifyAdmins({
+      type: 'ORDER_CANCELLED',
+      title: 'Brouillon WhatsApp bientôt expiré',
+      message: `La commande ${order.orderNumber} expire le ${order.reservationExpiresAt?.toLocaleString('fr-FR')}.`,
+      link: '/admin/orders?status=DRAFT',
+      storeId: order.storeId,
+    }).catch(() => {});
   }
 
   return { warned: upcoming.length };

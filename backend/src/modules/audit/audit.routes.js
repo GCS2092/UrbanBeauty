@@ -17,6 +17,7 @@ router.get('/', isAdmin, async (req, res, next) => {
     if (req.query.module) where.module = req.query.module;
     if (req.query.userId) where.userId = req.query.userId;
     if (req.query.action) where.action = { contains: req.query.action, mode: 'insensitive' };
+    if (req.query.storeId) where.storeId = req.query.storeId;
     applyDateRangeFilter(where, 'createdAt', req.query);
     if (req.query.search) {
       const s = String(req.query.search).trim();

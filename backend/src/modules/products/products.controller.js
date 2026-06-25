@@ -11,7 +11,7 @@ async function getProducts(req, res, next) {
 
 async function getAllProductsAdmin(req, res, next) {
   try {
-    const result = await productsService.getAllProductsAdmin(req.query);
+    const result = await productsService.getAllProductsAdmin(req.query, req.storeIds);
     res.json(result);
   } catch (error) {
     next(error);
@@ -20,7 +20,7 @@ async function getAllProductsAdmin(req, res, next) {
 
 async function getProductBySlug(req, res, next) {
   try {
-    const product = await productsService.getProductBySlug(req.params.slug);
+    const product = await productsService.getProductBySlug(req.params.slug, req.query);
     if (!product) return res.status(404).json({ message: 'Produit introuvable' });
     res.json(product);
   } catch (error) {

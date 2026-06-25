@@ -1,5 +1,8 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+/** ID de la boutique affichée par ce frontend (boutique principale par défaut). */
+export const STORE_ID = import.meta.env.VITE_STORE_ID || 'clmainstore000000000001';
+
 export const ROLES = {
   CUSTOMER: 'CUSTOMER',
   ADMIN: 'ADMIN',

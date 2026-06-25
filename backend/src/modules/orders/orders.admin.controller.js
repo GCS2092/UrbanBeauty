@@ -5,6 +5,7 @@ const { buildOrdersWhere, createOrder } = require('./orders.service');
 const { parsePagination, buildPaginationResponse } = require('../../utils/pagination.utils');
 const { releaseReservation } = require('../products/stock.service');
 const { logAudit } = require('../../services/audit.service');
+const { buildProductStoreFilter, resolveStoreIdForCatalog } = require('../stores/store.service');
 
 async function getOrdersAdmin(req, res, next) {
   try {
@@ -271,15 +272,18 @@ async function searchUsers(req, res, next) {
 async function searchProducts(req, res, next) {
   try {
     const { q = '', categoryId, storeId } = req.query;
+    const effectiveStoreId = storeId
+      || (req.storeIds?.length === 1 ? req.storeIds[0] : null)
+      || (await resolveStoreIdForCatalog(null));
 
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
+        ...buildProductStoreFilter(effectiveStoreId),
         ...(categoryId && { categoryId }),
         ...(q.trim() && {
           OR: [
             { name: { contains: q, mode: 'insensitive' } },
-            { sku: { contains: q, mode: 'insensitive' } },
           ],
         }),
       },

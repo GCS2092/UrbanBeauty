@@ -70,6 +70,45 @@ function applyStoreScope(where, storeIds, storeIdFilter) {
   return where;
 }
 
+/** Produits visibles sur une boutique : assignés à cette boutique ou globaux (storeId null). */
+function buildProductStoreFilter(storeId) {
+  if (!storeId) {
+    return { storeId: null };
+  }
+  return {
+    OR: [{ storeId }, { storeId: null }],
+  };
+}
+
+/** Filtre admin catalogue : boutique choisie, ou boutiques accessibles + globaux. */
+function buildAdminCatalogWhere(queryStoreId, accessibleStoreIds) {
+  if (queryStoreId) return buildProductStoreFilter(queryStoreId);
+  if (!Array.isArray(accessibleStoreIds)) return {};
+  if (accessibleStoreIds.length === 0) return { id: '__no_store_access__' };
+  return {
+    OR: [
+      { storeId: { in: accessibleStoreIds } },
+      { storeId: null },
+    ],
+  };
+}
+
+function isProductVisibleForStore(productStoreId, storeId) {
+  if (productStoreId == null) return true;
+  return productStoreId === storeId;
+}
+
+function isCouponValidForStore(couponStoreId, storeId) {
+  if (couponStoreId == null) return true;
+  return couponStoreId === storeId;
+}
+
+async function resolveStoreIdForCatalog(queryStoreId) {
+  if (queryStoreId) return queryStoreId;
+  const main = await getMainStore();
+  return main?.id || null;
+}
+
 function computeStoreDiscount(subtotal, discountRate) {
   if (!discountRate) return 0;
   return Math.floor(subtotal * (discountRate / 100));
@@ -95,9 +134,14 @@ module.exports = {
   MAIN_STORE_ID,
   getMainStore,
   resolveStoreForOrder,
+  resolveStoreIdForCatalog,
   getAccessibleStoreIds,
   assertStoreAccess,
   applyStoreScope,
+  buildProductStoreFilter,
+  buildAdminCatalogWhere,
+  isProductVisibleForStore,
+  isCouponValidForStore,
   computeStoreDiscount,
   computeTax,
   listStores,

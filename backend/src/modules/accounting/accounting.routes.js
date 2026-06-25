@@ -3,6 +3,8 @@
 const express = require('express');
 const prisma = require('../../config/database');
 const { isAdmin } = require('../../middlewares/auth.middleware');
+const { applyStoreIdToWhere } = require('../../utils/store-scope.utils');
+const { buildProductStoreFilter } = require('../stores/store.service');
 
 const router = express.Router();
 
@@ -13,6 +15,7 @@ router.get('/dashboard', isAdmin, async (req, res) => {
       period = 'month',
       year = new Date().getFullYear(),
       month = new Date().getMonth() + 1,
+      storeId,
     } = req.query;
 
     let startDate, endDate;
@@ -29,25 +32,28 @@ router.get('/dashboard', isAdmin, async (req, res) => {
 
     const [revenueResult, cogsResult, expensesResult, expensesByCategory, products] = await Promise.all([
       prisma.order.aggregate({
-        where: { paymentStatus: 'PAID', createdAt: { gte: startDate, lte: endDate } },
+        where: applyStoreIdToWhere({ paymentStatus: 'PAID', createdAt: { gte: startDate, lte: endDate } }, storeId),
         _sum: { total: true },
         _count: { id: true },
       }),
       prisma.stockMovement.aggregate({
-        where: { type: 'OUT_SALE', createdAt: { gte: startDate, lte: endDate } },
+        where: applyStoreIdToWhere({ type: 'OUT_SALE', createdAt: { gte: startDate, lte: endDate } }, storeId),
         _sum: { totalCost: true },
       }),
       prisma.expense.aggregate({
-        where: { date: { gte: startDate, lte: endDate } },
+        where: applyStoreIdToWhere({ date: { gte: startDate, lte: endDate } }, storeId),
         _sum: { amount: true },
       }),
       prisma.expense.groupBy({
         by: ['category'],
-        where: { date: { gte: startDate, lte: endDate } },
+        where: applyStoreIdToWhere({ date: { gte: startDate, lte: endDate } }, storeId),
         _sum: { amount: true },
       }),
       prisma.product.findMany({
-        where: { isActive: true },
+        where: {
+          isActive: true,
+          ...(storeId ? buildProductStoreFilter(storeId) : {}),
+        },
         select: {
           id: true,
           stock: true,
@@ -83,7 +89,7 @@ router.get('/dashboard', isAdmin, async (req, res) => {
       const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
       const mEnd   = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
       const r      = await prisma.order.aggregate({
-        where: { paymentStatus: 'PAID', createdAt: { gte: mStart, lte: mEnd } },
+        where: applyStoreIdToWhere({ paymentStatus: 'PAID', createdAt: { gte: mStart, lte: mEnd } }, storeId),
         _sum: { total: true },
       });
       last6Months.push({
@@ -127,11 +133,12 @@ router.get('/dashboard', isAdmin, async (req, res) => {
 // GET /api/admin/accounting/stock-movements
 router.get('/stock-movements', isAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 20, productId, type } = req.query;
+    const { page = 1, limit = 20, productId, type, storeId } = req.query;
     const skip  = (Number(page) - 1) * Number(limit);
     const where = {};
     if (productId) where.productId = productId;
     if (type)      where.type      = type;
+    applyStoreIdToWhere(where, storeId);
 
     const [movements, total] = await Promise.all([
       prisma.stockMovement.findMany({
@@ -157,10 +164,13 @@ router.get('/stock-movements', isAdmin, async (req, res) => {
 // POST /api/admin/accounting/stock-movements
 router.post('/stock-movements', isAdmin, async (req, res) => {
   try {
-    const { productId, variantId, type, quantity, unitCost, reason, supplierId, reference, orderId } = req.body;
+    const { productId, variantId, type, quantity, unitCost, reason, supplierId, reference, orderId, storeId } = req.body;
 
     if (!productId || !type || !quantity) {
       return res.status(400).json({ error: 'productId, type et quantity sont requis' });
+    }
+    if (!storeId) {
+      return res.status(400).json({ error: 'storeId est requis pour identifier la boutique' });
     }
 
     const totalCost = unitCost ? Number(unitCost) * Number(quantity) : null;
@@ -177,6 +187,7 @@ router.post('/stock-movements', isAdmin, async (req, res) => {
         supplierId: supplierId || null,
         reference:  reference  || null,
         orderId:    orderId    || null,
+        storeId,
         createdBy:  req.user.id,
       },
     });
@@ -285,10 +296,11 @@ router.post('/stock-movements/:id/cancel', isAdmin, async (req, res) => {
 // GET /api/admin/accounting/expenses
 router.get('/expenses', isAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 20, category, startDate, endDate } = req.query;
+    const { page = 1, limit = 20, category, startDate, endDate, storeId } = req.query;
     const skip  = (Number(page) - 1) * Number(limit);
     const where = {};
     if (category) where.category = category;
+    applyStoreIdToWhere(where, storeId);
     if (startDate || endDate) {
       where.date = {};
       if (startDate) where.date.gte = new Date(startDate);
@@ -316,9 +328,12 @@ router.get('/expenses', isAdmin, async (req, res) => {
 // POST /api/admin/accounting/expenses
 router.post('/expenses', isAdmin, async (req, res) => {
   try {
-    const { category, label, amount, date, supplierId, reference, notes } = req.body;
+    const { category, label, amount, date, supplierId, reference, notes, storeId } = req.body;
     if (!category || !label || !amount || !date) {
       return res.status(400).json({ error: 'category, label, amount et date sont requis' });
+    }
+    if (!storeId) {
+      return res.status(400).json({ error: 'storeId est requis pour identifier la boutique' });
     }
     const expense = await prisma.expense.create({
       data: {
@@ -329,6 +344,7 @@ router.post('/expenses', isAdmin, async (req, res) => {
         supplierId: supplierId || null,
         reference:  reference  || null,
         notes:      notes      || null,
+        storeId,
         createdBy:  req.user.id,
       },
     });
@@ -450,12 +466,21 @@ router.get('/suppliers/all', isAdmin, async (req, res) => {
 // GET /api/admin/accounting/product-margins
 router.get('/product-margins', isAdmin, async (req, res) => {
   try {
+    const { storeId } = req.query;
     const products = await prisma.product.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(storeId ? buildProductStoreFilter(storeId) : {}),
+      },
       include: {
         category:   { select: { name: true } },
         orderItems: {
-          where:  { order: { paymentStatus: 'PAID' } },
+          where:  {
+            order: {
+              paymentStatus: 'PAID',
+              ...(storeId ? { storeId } : {}),
+            },
+          },
           select: { quantity: true, price: true, subtotal: true },
         },
       },

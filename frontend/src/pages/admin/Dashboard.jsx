@@ -3,6 +3,7 @@ import useAuthStore from '../../store/authStore';
 import { adminApi } from '../../api/admin.api';
 import { API_URL } from '../../utils/constants';
 import StoreFilter from '../../components/admin/StoreFilter';
+import { useAdminStoreFilter } from '../../hooks/useAdminStoreFilter';
 import { toast } from 'sonner';
 import {
   TrendingUp, Package, ShoppingBag, Users,
@@ -180,7 +181,7 @@ function ReportDownloader({ storeId, token }) {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const { token, user } = useAuthStore();
-  const [storeId, setStoreId] = useState('');
+  const [storeId, setStoreId] = useAdminStoreFilter();
   const [data, setData] = useState({ orders: [], products: [], categories: [], users: [] });
   const [loading, setLoading] = useState(true);
 
@@ -191,10 +192,12 @@ export default function Dashboard() {
       setLoading(true);
       try {
         const orderParams = { limit: 100, ...(storeId && { storeId }) };
+        const productParams = new URLSearchParams({ limit: '100', ...(storeId && { storeId }) });
+        const categoryParams = new URLSearchParams(storeId ? { storeId } : {});
         const [oRes, pRes, cRes, uRes] = await Promise.all([
           adminApi.getOrders(orderParams),
-          fetch(`${API_URL}/api/products?limit=100`),
-          fetch(`${API_URL}/api/categories`),
+          fetch(`${API_URL}/api/products?${productParams}`),
+          fetch(`${API_URL}/api/categories?${categoryParams}`),
           fetch(`${API_URL}/api/users`, { headers }),
         ]);
         const [pData, cData, uData] = await Promise.all([
