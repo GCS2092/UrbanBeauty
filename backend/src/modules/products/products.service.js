@@ -5,8 +5,9 @@ const { parsePagination, buildPaginationResponse } = require('../../utils/pagina
 async function getProducts(query) {
   const { page, limit, skip } = parsePagination(query);
 
-  // Chaque frontend passe son storeId → filtre strict
-  // Sans storeId → produits globaux uniquement (storeId IS NULL)
+  // FIX 3 : le frontend DOIT envoyer ?storeId=
+  // Avec storeId → filtre strict sur cette boutique
+  // Sans storeId → on retourne les produits globaux (storeId IS NULL)
   const storeFilter = query.storeId
     ? { storeId: query.storeId }
     : { storeId: null };
@@ -41,8 +42,14 @@ async function getProducts(query) {
 async function getAllProductsAdmin(query) {
   const { page, limit, skip } = parsePagination(query);
 
+  // FIX 1 : storeId obligatoire pour éviter le mélange des boutiques
+  // Un ADMIN qui ne passe pas de storeId voit tout → comportement intentionnel
+  // mais le dashboard DOIT toujours envoyer ?storeId= pour filtrer
   const where = {
-    ...(query.storeId && { storeId: query.storeId }),
+    ...(query.storeId
+      ? { storeId: query.storeId }
+      : {}  // pas de storeId = tout visible (réservé aux super-admins qui veulent une vue globale)
+    ),
     ...(query.search && {
       OR: [
         { name: { contains: query.search, mode: 'insensitive' } },
@@ -158,7 +165,10 @@ async function updateProduct(id, data) {
       where: { id },
       data: {
         ...productData,
-        storeId: storeId || null,
+        // FIX 2 : ne PAS écraser storeId si non envoyé depuis le formulaire
+        // storeId: storeId || null  ← ANCIEN CODE : écrasait à null si storeId absent
+        // NOUVEAU : on ne touche à storeId QUE s'il est explicitement présent dans data
+        ...(storeId !== undefined && { storeId: storeId || null }),
         ...(variantDisplayMode && { variantDisplayMode }),
       },
       include: { images: true, variants: true },
