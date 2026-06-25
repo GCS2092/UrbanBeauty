@@ -2,13 +2,13 @@ const prisma = require('../../config/database');
 const { parsePagination, buildPaginationResponse } = require('../../utils/pagination.utils');
 
 // ─── Vitrine publique ─────────────────────────────────────────────────────────
-// Accepte ?storeId=xxx pour filtrer par boutique (chaque frontend passe son storeId)
-// Sans storeId → retourne les produits globaux (storeId IS NULL) + actifs
 async function getProducts(query) {
   const { page, limit, skip } = parsePagination(query);
 
+  // Chaque frontend passe son storeId → filtre strict
+  // Sans storeId → produits globaux uniquement (storeId IS NULL)
   const storeFilter = query.storeId
-    ? { OR: [{ storeId: query.storeId }, { storeId: null }] }
+    ? { storeId: query.storeId }
     : { storeId: null };
 
   const where = {
@@ -38,7 +38,6 @@ async function getProducts(query) {
 }
 
 // ─── Admin : tous les produits ────────────────────────────────────────────────
-// Accepte ?storeId=xxx pour filtrer dans le dashboard
 async function getAllProductsAdmin(query) {
   const { page, limit, skip } = parsePagination(query);
 
@@ -84,7 +83,6 @@ async function createProduct(data) {
   return prisma.product.create({
     data: {
       ...productData,
-      // storeId null = visible sur toutes les boutiques
       storeId: storeId || null,
       variantDisplayMode: variantDisplayMode || 'SIZE_FIRST',
       ...(images.length > 0 && {
@@ -160,7 +158,6 @@ async function updateProduct(id, data) {
       where: { id },
       data: {
         ...productData,
-        // storeId vide string → null (toutes boutiques)
         storeId: storeId || null,
         ...(variantDisplayMode && { variantDisplayMode }),
       },
