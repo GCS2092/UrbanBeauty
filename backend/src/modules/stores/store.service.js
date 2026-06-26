@@ -93,9 +93,16 @@ function buildAdminCatalogWhere(queryStoreId, accessibleStoreIds) {
   };
 }
 
+/**
+ * ✅ FIX DÉFINITIF : Un produit est visible si :
+ * - son storeId est null (produit global)
+ * - aucun storeId n'est résolu (contexte sans boutique)
+ * - son storeId correspond exactement au storeId demandé
+ */
 function isProductVisibleForStore(productStoreId, storeId) {
-  if (productStoreId == null) return true;
-  return productStoreId === storeId;
+  if (productStoreId == null) return true;  // produit global → toujours visible
+  if (storeId == null) return true;          // pas de boutique résolue → tout visible
+  return productStoreId === storeId;         // sinon, comparaison exacte
 }
 
 function isCouponValidForStore(couponStoreId, storeId) {
