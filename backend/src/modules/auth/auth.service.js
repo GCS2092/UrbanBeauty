@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const prisma = require('../../config/database');
 const { signToken } = require('../../utils/jwt.utils');
 const { getAccessibleStoreIds } = require('../stores/store.service');
-const { sendEmail } = require('../../utils/email.utils');
+const { sendEmail } = require('../../config/email');
 const { buildOtpEmail } = require('../../utils/email.utils');
 
 // ─── Durée de validité de l'OTP : 15 minutes ─────────────────────────────────
