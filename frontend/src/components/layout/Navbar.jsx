@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom';
-import { ShoppingBag, Heart, Bell, User, Menu, X, Tag, Cpu } from 'lucide-react';
+import { ShoppingBag, Heart, Bell, User, Menu, X, Tag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import useAuthStore from '../../store/authStore';
 import useCartStore from '../../store/cartStore';
@@ -61,7 +61,7 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 gap-2">
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
@@ -73,9 +73,9 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Bannière promo — entre logo et hamburger, mobile + desktop */}
+          {/* Bannière promo — centrée, taille contrôlée sur mobile */}
           {currentPromo && (
-            <div className="flex-1 flex justify-center px-2">
+            <div className="flex-1 flex justify-center min-w-0">
               <div
                 style={{
                   opacity: visible ? 1 : 0,
@@ -83,11 +83,12 @@ export default function Navbar() {
                   background: 'linear-gradient(90deg, #fff1f2, #ffe4e6)',
                   border: '1px solid #fda4af',
                   borderRadius: '999px',
-                  padding: '4px 10px',
+                  padding: '4px 8px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '5px',
-                  maxWidth: '240px',
+                  gap: '4px',
+                  minWidth: 0,
+                  maxWidth: '100%',
                   animation: 'promoPulse 2.5s ease-in-out infinite',
                 }}
               >
@@ -99,11 +100,12 @@ export default function Navbar() {
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  minWidth: 0,
                 }}>
                   {formatPromo(currentPromo)}
                 </span>
                 {currentPromo.expiresAt && (
-                  <span style={{ fontSize: '10px', color: '#e11d48', opacity: 0.7, flexShrink: 0 }}>
+                  <span className="hidden sm:inline" style={{ fontSize: '10px', color: '#e11d48', opacity: 0.7, flexShrink: 0 }}>
                     · {formatExpiry(currentPromo.expiresAt)}
                   </span>
                 )}
@@ -112,19 +114,19 @@ export default function Navbar() {
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 shrink-0">
 
-            {/* Lien SonTech — desktop */}
+            {/* Lien SonTech — desktop uniquement */}
             <a
               href={isAuthenticated && token ? `https://son-tech.vercel.app?token=${token}` : "https://son-tech.vercel.app"}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="hidden md:flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors mr-1"
->
-  🔌 SonTech
-</a>
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors mr-1"
+            >
+              🔌 SonTech
+            </a>
 
-            {/* Panier — desktop seulement */}
+            {/* Panier — desktop uniquement */}
             <Link
               to="/cart"
               className="relative p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors hidden md:block"
@@ -239,17 +241,56 @@ export default function Navbar() {
                 {link.label}
               </NavLink>
             ))}
+
+            {/* Panier — mobile (dans le menu) */}
+            <Link
+              to="/cart"
+              onClick={closeMobileMenu}
+              className="flex items-center gap-2 text-sm font-medium px-3 py-2.5 rounded-xl text-stone-600 hover:bg-stone-50 transition-colors"
+            >
+              <ShoppingBag size={16} />
+              Panier
+              {getTotalItems() > 0 && (
+                <span className="ml-auto bg-stone-900 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {getTotalItems()}
+                </span>
+              )}
+            </Link>
+
             {/* Lien SonTech — mobile */}
             <a
-            href={isAuthenticated && token ? `https://son-tech.vercel.app?token=${token}` : "https://son-tech.vercel.app"}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="text-sm font-medium px-3 py-2.5 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors"
->
-  🔌 Découvrir SonTech
-</a>
+              href={isAuthenticated && token ? `https://son-tech.vercel.app?token=${token}` : "https://son-tech.vercel.app"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium px-3 py-2.5 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors"
+            >
+              🔌 Découvrir SonTech
+            </a>
+
             {isAuthenticated && (
               <>
+                <NavLink
+                  to="/account/wishlist"
+                  onClick={closeMobileMenu}
+                  className={({ isActive }) =>
+                    `text-sm font-medium px-3 py-2.5 rounded-xl transition-colors ${
+                      isActive ? 'text-stone-900 bg-stone-100' : 'text-stone-600 hover:bg-stone-50'
+                    }`
+                  }
+                >
+                  ❤️ Wishlist
+                </NavLink>
+                <NavLink
+                  to="/account/notifications"
+                  onClick={closeMobileMenu}
+                  className={({ isActive }) =>
+                    `text-sm font-medium px-3 py-2.5 rounded-xl transition-colors ${
+                      isActive ? 'text-stone-900 bg-stone-100' : 'text-stone-600 hover:bg-stone-50'
+                    }`
+                  }
+                >
+                  🔔 Notifications
+                </NavLink>
                 <NavLink
                   to="/account/profile"
                   onClick={closeMobileMenu}
