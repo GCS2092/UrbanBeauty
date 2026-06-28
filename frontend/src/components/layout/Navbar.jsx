@@ -9,7 +9,7 @@ import { couponsApi } from '../../api/coupons.api';
 import { STORE_ID } from '../../utils/constants';
 
 export default function Navbar() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, token } = useAuthStore();
   const { getTotalItems } = useCartStore();
   const { mobileMenuOpen, openMobileMenu, closeMobileMenu } = useUiStore();
   const { logout } = useAuth();
@@ -116,13 +116,13 @@ export default function Navbar() {
 
             {/* Lien SonTech — desktop */}
             <a
-              href="https://son-tech.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors mr-1"
-            >
-              🔌 SonTech
-            </a>
+              href={isAuthenticated && token ? `https://son-tech.vercel.app?token=${token}` : "https://son-tech.vercel.app"}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="hidden md:flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors mr-1"
+>
+  🔌 SonTech
+</a>
 
             {/* Panier — desktop seulement */}
             <Link
@@ -241,13 +241,13 @@ export default function Navbar() {
             ))}
             {/* Lien SonTech — mobile */}
             <a
-              href="https://son-tech.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium px-3 py-2.5 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors"
-            >
-              🔌 Découvrir SonTech
-            </a>
+            href={isAuthenticated && token ? `https://son-tech.vercel.app?token=${token}` : "https://son-tech.vercel.app"}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="text-sm font-medium px-3 py-2.5 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors"
+>
+  🔌 Découvrir SonTech
+</a>
             {isAuthenticated && (
               <>
                 <NavLink
