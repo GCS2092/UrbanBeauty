@@ -1,6 +1,3 @@
-// frontend/src/pages/auth/Register.jsx
-// Remplace ENTIÈREMENT le fichier existant
-
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,6 +7,7 @@ import axios from 'axios';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { Home, ShoppingBag, ArrowLeft, CheckCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext'; // ✅ ajouté
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -37,24 +35,21 @@ const schemaPassword = z.object({
 // ── Composant principal ───────────────────────────────────────────────────────
 
 export default function Register() {
-  const navigate   = useNavigate();
-  const [step, setStep]             = useState(1); // 1 | 2 | 3
+  const navigate = useNavigate();
+  const { login } = useAuth(); // ✅ ajouté
+
+  const [step, setStep]             = useState(1);
   const [email, setEmail]           = useState('');
   const [setupToken, setSetupToken] = useState('');
   const [loading, setLoading]       = useState(false);
   const [errorMsg, setErrorMsg]     = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  // ── Formulaire étape 1 (email) ──────────────────────────────────────────────
   const form1 = useForm({ resolver: zodResolver(schemaEmail) });
-
-  // ── Formulaire étape 2 (code OTP) ──────────────────────────────────────────
   const form2 = useForm({ resolver: zodResolver(schemaCode) });
-
-  // ── Formulaire étape 3 (infos + mot de passe) ──────────────────────────────
   const form3 = useForm({ resolver: zodResolver(schemaPassword) });
 
-  // ── Étape 1 : demande OTP ──────────────────────────────────────────────────
+  // ── Étape 1 : demande OTP ─────────────────────────────────────────────────
   const onRequestOtp = async ({ email: emailValue }) => {
     setLoading(true);
     setErrorMsg('');
@@ -70,7 +65,7 @@ export default function Register() {
     }
   };
 
-  // ── Étape 2 : vérification OTP ─────────────────────────────────────────────
+  // ── Étape 2 : vérification OTP ────────────────────────────────────────────
   const onVerifyOtp = async ({ code }) => {
     setLoading(true);
     setErrorMsg('');
@@ -85,17 +80,20 @@ export default function Register() {
     }
   };
 
-  // ── Étape 3 : finalisation ─────────────────────────────────────────────────
+  // ── Étape 3 : finalisation + login automatique ────────────────────────────
   const onComplete = async ({ firstName, lastName, phone, password }) => {
     setLoading(true);
     setErrorMsg('');
     try {
+      // 1. Crée le compte
       await axios.post(
         `${API}/auth/register/complete`,
         { firstName, lastName, phone, password },
         { headers: { Authorization: `Bearer ${setupToken}` } }
       );
-      navigate('/login?registered=1');
+      // 2. ✅ Connecte automatiquement l'utilisateur
+      // login() gère la redirection vers / ou /admin selon le rôle
+      await login({ email, password });
     } catch (err) {
       setErrorMsg(err?.response?.data?.message || 'Erreur lors de la création du compte.');
     } finally {
@@ -103,7 +101,7 @@ export default function Register() {
     }
   };
 
-  // ── Renvoi du code avec cooldown 60s ───────────────────────────────────────
+  // ── Renvoi du code avec cooldown 60s ──────────────────────────────────────
   const startResendCooldown = () => {
     setResendCooldown(60);
     const timer = setInterval(() => {
@@ -129,7 +127,6 @@ export default function Register() {
     }
   };
 
-  // ── Indicateur d'étapes ────────────────────────────────────────────────────
   const steps = [
     { n: 1, label: 'Email' },
     { n: 2, label: 'Vérification' },
