@@ -1,18 +1,48 @@
 const PDFDocument = require('pdfkit');
 const { getSettings } = require('../settings/settings.service');
+const prisma = require('../../config/database');
 
-// ─── Palette SonShop ──────────────────────────────────────────────────────────
-const C = {
-  navy:      '#1a1a2e',
-  gold:      '#c8a96e',
-  goldDark:  '#a8894e',
+// ─── Palettes par boutique ────────────────────────────────────────────────────
+
+const PALETTE_SONSHOP = {
+  primary:   '#1a1a2e',   // navy
+  accent:    '#c8a96e',   // gold
+  accentDk:  '#a8894e',
   white:     '#ffffff',
   offWhite:  '#f8f7f5',
   border:    '#e8e4dc',
   textLight: '#6b6b80',
   success:   '#2d6a4f',
   danger:    '#c0392b',
+  tagline:   'MODE & STYLE',
+  brandMain: 'SON',
+  brandSub:  'SHOP',
+  footerBg:  '#1a1a2e',
 };
+
+const PALETTE_SONTECH = {
+  primary:   '#0f172a',   // slate-900
+  accent:    '#3b82f6',   // blue-500
+  accentDk:  '#2563eb',   // blue-600
+  white:     '#ffffff',
+  offWhite:  '#f0f6ff',
+  border:    '#dbeafe',
+  textLight: '#64748b',
+  success:   '#2d6a4f',
+  danger:    '#c0392b',
+  tagline:   'TECH & ÉLECTRONIQUE',
+  brandMain: 'SON',
+  brandSub:  'TECH',
+  footerBg:  '#0f172a',
+};
+
+function getPalette(store) {
+  if (!store) return PALETTE_SONSHOP;
+  const name = (store.name || '').toLowerCase();
+  const code = (store.code || '').toLowerCase();
+  if (name.includes('tech') || code.includes('tech')) return PALETTE_SONTECH;
+  return PALETTE_SONSHOP;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fcfa(amount) {
@@ -61,7 +91,6 @@ function statusLabel(status) {
   return labels[status] || status;
 }
 
-// ─── Dessin d'un rectangle arrondi ───────────────────────────────────────────
 function roundedRect(doc, x, y, w, h, r, fill) {
   doc.save()
     .roundedRect(x, y, w, h, r)
@@ -71,8 +100,15 @@ function roundedRect(doc, x, y, w, h, r, fill) {
 
 // ─── Générateur principal ─────────────────────────────────────────────────────
 async function buildInvoicePdf(invoice) {
-  const settings  = await getSettings();
-  const company   = settings.company_name    || 'SonShop';
+  // Récupère le store pour choisir la palette
+  const store = invoice.storeId
+    ? await prisma.store.findUnique({ where: { id: invoice.storeId } })
+    : null;
+
+  const C = getPalette(store);
+
+  const settings  = await getSettings(invoice.storeId);
+  const company   = settings.company_name    || store?.name || 'SonShop';
   const address   = settings.company_address || 'Dakar, Sénégal';
   const phone     = settings.company_phone   || settings.whatsapp_number || '';
   const email     = settings.company_email   || '';
@@ -89,32 +125,32 @@ async function buildInvoicePdf(invoice) {
     doc.on('end',   ()      => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    const W  = doc.page.width;   // 595
-    const H  = doc.page.height;  // 841
-    const M  = 45;               // marge intérieure
+    const W = doc.page.width;   // 595
+    const H = doc.page.height;  // 841
+    const M = 45;
 
     // ── HEADER BAND ──────────────────────────────────────────────────────────
-    doc.rect(0, 0, W, 110).fill(C.navy);
+    doc.rect(0, 0, W, 110).fill(C.primary);
 
     // Nom boutique
-    doc.fontSize(26).font('Helvetica-Bold').fillColor(C.gold)
-       .text('SON', M, 28, { continued: true })
+    doc.fontSize(26).font('Helvetica-Bold').fillColor(C.accent)
+       .text(C.brandMain, M, 28, { continued: true })
        .fillColor(C.white)
-       .text('SHOP');
+       .text(C.brandSub);
 
     // Tagline
     doc.fontSize(8).font('Helvetica').fillColor('#aaaaaa')
-       .text('MODE & STYLE MASCULIN', M, 62, { characterSpacing: 2 });
+       .text(C.tagline, M, 62, { characterSpacing: 2 });
 
     // Titre FACTURE à droite
-    doc.fontSize(22).font('Helvetica-Bold').fillColor(C.gold)
+    doc.fontSize(22).font('Helvetica-Bold').fillColor(C.accent)
        .text('FACTURE', 0, 30, { align: 'right', width: W - M });
 
     doc.fontSize(9).font('Helvetica').fillColor('#cccccc')
        .text(invoice.invoiceNumber, 0, 58, { align: 'right', width: W - M });
 
-    // ── BANDE DORÉE FINE ─────────────────────────────────────────────────────
-    doc.rect(0, 110, W, 4).fill(C.gold);
+    // ── BANDE ACCENT FINE ─────────────────────────────────────────────────────
+    doc.rect(0, 110, W, 4).fill(C.accent);
 
     // ── BLOC INFO (entreprise + client) ──────────────────────────────────────
     const infoTop = 130;
@@ -123,7 +159,7 @@ async function buildInvoicePdf(invoice) {
     doc.fontSize(8).font('Helvetica-Bold').fillColor(C.textLight)
        .text('DE', M, infoTop, { characterSpacing: 1 });
 
-    doc.fontSize(11).font('Helvetica-Bold').fillColor(C.navy)
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(C.primary)
        .text(company, M, infoTop + 14);
 
     doc.fontSize(9).font('Helvetica').fillColor('#444444');
@@ -136,7 +172,7 @@ async function buildInvoicePdf(invoice) {
     doc.fontSize(8).font('Helvetica-Bold').fillColor(C.textLight)
        .text('FACTURÉ À', colRight, infoTop, { characterSpacing: 1 });
 
-    doc.fontSize(11).font('Helvetica-Bold').fillColor(C.navy)
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(C.primary)
        .text(client.name, colRight, infoTop + 14);
 
     doc.fontSize(9).font('Helvetica').fillColor('#444444');
@@ -147,9 +183,8 @@ async function buildInvoicePdf(invoice) {
       doc.text(addrLine, colRight, doc.y + 2, { width: W - colRight - M });
     }
 
-    // ── MÉTADONNÉES (encadré gris) ────────────────────────────────────────────
+    // ── MÉTADONNÉES ───────────────────────────────────────────────────────────
     const metaTop = 255;
-    // CORRECTION : hauteur augmentée de 68 → 80 pour éviter le débordement
     roundedRect(doc, M, metaTop, W - M * 2, 80, 6, C.offWhite);
     doc.rect(M, metaTop, W - M * 2, 80).stroke(C.border);
 
@@ -162,7 +197,6 @@ async function buildInvoicePdf(invoice) {
 
     const cellW = (W - M * 2) / metaItems.length;
 
-    // CORRECTION : width + ellipsis pour éviter le chevauchement entre colonnes
     metaItems.forEach(([label, value], i) => {
       const cx   = M + i * cellW + 14;
       const maxW = cellW - 18;
@@ -170,17 +204,16 @@ async function buildInvoicePdf(invoice) {
       doc.fontSize(7).font('Helvetica-Bold').fillColor(C.textLight)
          .text(label, cx, metaTop + 12, { characterSpacing: 0.5, width: maxW, ellipsis: true });
 
-      doc.fontSize(9).font('Helvetica-Bold').fillColor(C.navy)
+      doc.fontSize(9).font('Helvetica-Bold').fillColor(C.primary)
          .text(String(value || ''), cx, metaTop + 30, { width: maxW, ellipsis: true });
     });
 
     // ── TABLEAU PRODUITS ──────────────────────────────────────────────────────
-    // CORRECTION : tTop ajusté en fonction de la nouvelle hauteur du bloc meta
     const tTop = metaTop + 102;
     const cols = { product: M, qty: 310, pu: 380, total: 460 };
 
     // En-tête tableau
-    roundedRect(doc, M, tTop, W - M * 2, 26, 4, C.navy);
+    roundedRect(doc, M, tTop, W - M * 2, 26, 4, C.primary);
 
     doc.fontSize(8).font('Helvetica-Bold').fillColor(C.white);
     doc.text('PRODUIT',    cols.product + 8, tTop + 9);
@@ -198,12 +231,11 @@ async function buildInvoicePdf(invoice) {
         ? `${item.productName}  (${item.variantLabel})`
         : item.productName;
 
-      // Fond alterné
       if (i % 2 === 0) {
-        doc.rect(M, y, W - M * 2, rowH).fill('#fafaf8');
+        doc.rect(M, y, W - M * 2, rowH).fill(C.offWhite);
       }
 
-      doc.fontSize(9).font('Helvetica-Bold').fillColor(C.navy)
+      doc.fontSize(9).font('Helvetica-Bold').fillColor(C.primary)
          .text(label, cols.product + 8, y + 5, { width: 240 });
 
       doc.font('Helvetica').fillColor('#444444');
@@ -211,9 +243,7 @@ async function buildInvoicePdf(invoice) {
       doc.text(fcfa(item.price),      cols.pu,    y + 5, { width: 70,  align: 'right' });
       doc.text(fcfa(item.subtotal),   cols.total, y + 5, { width: 55,  align: 'right' });
 
-      // Séparateur
       doc.rect(M, y + rowH - 1, W - M * 2, 1).fill(C.border);
-
       y += rowH;
     });
 
@@ -239,22 +269,22 @@ async function buildInvoicePdf(invoice) {
     if (invoice.storeDiscount > 0) totalsRow('Remise boutique',  `-${fcfa(invoice.storeDiscount)}`, false, C.success);
     if (invoice.tax          > 0)  totalsRow('Taxes',            fcfa(invoice.tax));
 
-    // Ligne séparatrice
-    doc.rect(totalsX, y, totalsW, 1).fill(C.gold);
+    // Ligne séparatrice accent
+    doc.rect(totalsX, y, totalsW, 1).fill(C.accent);
     y += 8;
 
     // TOTAL FINAL
-    roundedRect(doc, totalsX - 10, y, totalsW + 10, 38, 6, C.navy);
+    roundedRect(doc, totalsX - 10, y, totalsW + 10, 38, 6, C.primary);
     doc.fontSize(10).font('Helvetica-Bold').fillColor(C.white)
        .text('TOTAL', totalsX, y + 12);
-    doc.fontSize(14).font('Helvetica-Bold').fillColor(C.gold)
+    doc.fontSize(14).font('Helvetica-Bold').fillColor(C.accent)
        .text(fcfa(invoice.total), totalsX, y + 10, { width: totalsW, align: 'right' });
 
-    // ── NOTE DE BAS (si présente) ─────────────────────────────────────────────
+    // ── NOTE DE BAS ───────────────────────────────────────────────────────────
     if (order.notes) {
       const noteTop = y + 58;
-      roundedRect(doc, M, noteTop, W - M * 2, 40, 6, '#fffef5');
-      doc.rect(M, noteTop, 3, 40).fill(C.gold);
+      roundedRect(doc, M, noteTop, W - M * 2, 40, 6, C.offWhite);
+      doc.rect(M, noteTop, 3, 40).fill(C.accent);
       doc.fontSize(8).font('Helvetica-Bold').fillColor(C.textLight)
          .text('NOTE', M + 12, noteTop + 8);
       doc.fontSize(9).font('Helvetica').fillColor('#444444')
@@ -262,8 +292,8 @@ async function buildInvoicePdf(invoice) {
     }
 
     // ── FOOTER ────────────────────────────────────────────────────────────────
-    doc.rect(0, H - 52, W, 52).fill(C.navy);
-    doc.rect(0, H - 52, W, 3).fill(C.gold);
+    doc.rect(0, H - 52, W, 52).fill(C.footerBg);
+    doc.rect(0, H - 52, W, 3).fill(C.accent);
 
     doc.fontSize(8).font('Helvetica').fillColor('#888888')
        .text(
