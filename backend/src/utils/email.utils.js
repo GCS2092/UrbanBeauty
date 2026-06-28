@@ -358,7 +358,7 @@ function guestInfoBanner(whatsappNumber, C) {
 }
 
 function kpiCard(emoji, label, value, subValue = '', color = '#C8748A') {
-  const C = C_SONSHOP; // kpiCard utilisé uniquement dans le rapport
+  const C = C_SONSHOP;
   return `
   <td style="width:25%;padding:8px;" valign="top">
     <table width="100%" cellpadding="0" cellspacing="0"
@@ -443,9 +443,7 @@ function buildOrderConfirmationEmail({
     ], C)}
 
     ${itemsSummaryBlock(items, false, C)}
-
     ${totalsBlock({ subtotal: sub, shippingCost, discount, storeDiscount, tax, total }, C)}
-
     ${divider(C.border)}
 
     <p style="margin:0;font-size:13px;color:${C.text};line-height:1.6;">
@@ -514,7 +512,6 @@ function buildOrderStatusEmail({
     </div>` : ''}
 
     ${items.length > 0 ? itemsSummaryBlock(items, true, C) : ''}
-
     ${divider(C.border)}
 
     ${isGuest ? `
@@ -592,7 +589,6 @@ function buildPasswordResetEmail({ name, resetUrl, storeName = 'SonShop', storeC
     </p>
 
     ${cta('Réinitialiser mon mot de passe', resetUrl, C.primary)}
-
     ${divider(C.border)}
 
     <p style="margin:0;font-size:12px;color:${C.textLight};line-height:1.6;">
@@ -862,6 +858,76 @@ function buildReportEmail({ period, financial, orders, products, stock, expenses
   };
 }
 
+// ============================================================
+// 7. EMAIL OTP — VÉRIFICATION / RÉINITIALISATION
+// ============================================================
+function buildOtpEmail({ code, type = 'REGISTER', expiresInMinutes = 15, storeName = 'SonShop', storeCode = 'SONSHOP' }) {
+  const C = getTheme(storeCode);
+
+  const isRegister = type === 'REGISTER';
+  const title    = isRegister ? 'Confirmation de votre adresse email' : 'Code de réinitialisation';
+  const subtitle = isRegister
+    ? 'Entrez ce code pour finaliser la création de votre compte.'
+    : 'Entrez ce code pour réinitialiser votre mot de passe.';
+
+  const body = `
+    <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${C.navy};">
+      ${title}
+    </h1>
+
+    <p style="margin:0 0 28px;font-size:14px;color:${C.textLight};">
+      ${subtitle}
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+      <tr>
+        <td align="center">
+          <div style="
+            display:inline-block;
+            background:${C.offWhite};
+            border:2px solid ${C.primary};
+            border-radius:12px;
+            padding:24px 40px;
+            text-align:center;
+          ">
+            <div style="font-size:11px;color:${C.textLight};text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;">
+              Votre code
+            </div>
+            <div style="
+              font-size:36px;
+              font-weight:900;
+              color:${C.navy};
+              letter-spacing:10px;
+              font-family:'Courier New', monospace;
+            ">
+              ${code}
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    ${divider(C.border)}
+
+    <p style="margin:0;font-size:12px;color:${C.textLight};line-height:1.7;text-align:center;">
+      ⏱️ Ce code expire dans <strong>${expiresInMinutes} minutes</strong>.<br/>
+      Si vous n'avez pas effectué cette demande, ignorez simplement cet email.
+    </p>
+
+    ${signature(storeName, C)}
+  `;
+
+  return {
+    subject: isRegister
+      ? `${code} — Votre code de vérification ${storeName}`
+      : `${code} — Réinitialisation de mot de passe ${storeName}`,
+    html: layout(body, title, storeName, storeCode),
+  };
+}
+
+// ============================================================
+// EXPORTS
+// ============================================================
 module.exports = {
   buildOrderConfirmationEmail,
   buildOrderStatusEmail,
@@ -869,4 +935,5 @@ module.exports = {
   buildPasswordResetEmail,
   buildPreorderEmail,
   buildReportEmail,
+  buildOtpEmail,
 };

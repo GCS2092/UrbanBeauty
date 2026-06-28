@@ -1,3 +1,6 @@
+// backend/src/modules/auth/auth.routes.js
+// Remplace ENTIÈREMENT le fichier existant
+
 const express = require('express');
 const { body } = require('express-validator');
 const { authController } = require('./auth.controller');
@@ -10,11 +13,15 @@ const { signToken } = require('../../utils/jwt.utils');
 
 const router = express.Router();
 
+// ─────────────────────────────────────────────────────────────────────────────
+// INSCRIPTION EN 3 ÉTAPES (avec OTP)
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * @swagger
- * /api/auth/register:
+ * /api/auth/register/request-otp:
  *   post:
- *     summary: Créer un compte
+ *     summary: "Étape 1 — Demander un code OTP pour créer un compte"
  *     tags: [Auth]
  *     security: []
  *     requestBody:
@@ -23,17 +30,99 @@ const router = express.Router();
  *         application/json:
  *           example:
  *             email: client@test.com
- *             password: password123
- *             firstName: Aminata
- *             lastName: Diallo
- *             phone: "+221770000001"
  *     responses:
- *       201:
- *         description: Compte créé
+ *       200:
+ *         description: Code OTP envoyé par email
  *       400:
  *         description: Email déjà utilisé
  */
-router.post('/register', authLimiter,
+router.post(
+  '/register/request-otp',
+  authLimiter,
+  body('email').isEmail().withMessage('Email invalide'),
+  checkValidation,
+  authController.requestOtp
+);
+
+/**
+ * @swagger
+ * /api/auth/register/verify-otp:
+ *   post:
+ *     summary: "Étape 2 — Vérifier le code OTP reçu par email"
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             email: client@test.com
+ *             code: "483920"
+ *     responses:
+ *       200:
+ *         description: Retourne un setupToken temporaire (30 min)
+ *       400:
+ *         description: Code invalide ou expiré
+ */
+router.post(
+  '/register/verify-otp',
+  authLimiter,
+  body('email').isEmail().withMessage('Email invalide'),
+  body('code').isLength({ min: 6, max: 6 }).withMessage('Code à 6 chiffres requis'),
+  checkValidation,
+  authController.verifyOtp
+);
+
+/**
+ * @swagger
+ * /api/auth/register/complete:
+ *   post:
+ *     summary: "Étape 3 — Finaliser la création du compte (définir le mot de passe)"
+ *     tags: [Auth]
+ *     security: []
+ *     description: |
+ *       Requiert le setupToken retourné par /verify-otp dans le header :
+ *       Authorization: Bearer <setupToken>
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             firstName: Aminata
+ *             lastName: Diallo
+ *             phone: "+221770000001"
+ *             password: monMotDePasse123
+ *     responses:
+ *       201:
+ *         description: Compte créé avec succès
+ *       401:
+ *         description: setupToken manquant ou invalide
+ */
+router.post(
+  '/register/complete',
+  authLimiter,
+  body('firstName').notEmpty().withMessage('Prénom requis'),
+  body('lastName').notEmpty().withMessage('Nom requis'),
+  body('password').isLength({ min: 6 }).withMessage('Mot de passe minimum 6 caractères'),
+  checkValidation,
+  authController.completeRegistration
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROUTES EXISTANTES (inchangées)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Créer un compte (sans OTP — route conservée)
+ *     tags: [Auth]
+ *     security: []
+ */
+router.post(
+  '/register',
+  authLimiter,
   body('email').isEmail(),
   body('password').isLength({ min: 6 }),
   body('firstName').notEmpty(),
@@ -49,20 +138,10 @@ router.post('/register', authLimiter,
  *     summary: Se connecter
  *     tags: [Auth]
  *     security: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           example:
- *             email: client@test.com
- *             password: password123
- *     responses:
- *       200:
- *         description: Retourne token + user
- *       401:
- *         description: Identifiants incorrects
  */
-router.post('/login', authLimiter,
+router.post(
+  '/login',
+  authLimiter,
   body('email').isEmail(),
   body('password').notEmpty(),
   checkValidation,
@@ -75,9 +154,6 @@ router.post('/login', authLimiter,
  *   post:
  *     summary: Se déconnecter
  *     tags: [Auth]
- *     responses:
- *       200:
- *         description: Déconnexion réussie
  */
 router.post('/logout', authenticate, authController.logout);
 
@@ -87,9 +163,6 @@ router.post('/logout', authenticate, authController.logout);
  *   get:
  *     summary: Profil de l'utilisateur connecté
  *     tags: [Auth]
- *     responses:
- *       200:
- *         description: Données utilisateur
  */
 router.get('/me', authenticate, authController.me);
 
@@ -99,19 +172,6 @@ router.get('/me', authenticate, authController.me);
  *   post:
  *     summary: Changer de boutique active
  *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           example:
- *             storeId: "clxxxxxxxxxxxxx"
- *     responses:
- *       200:
- *         description: Nouveau token JWT avec la boutique active + infos boutique
- *       403:
- *         description: Accès refusé à cette boutique
- *       404:
- *         description: Boutique introuvable ou inactive
  */
 router.post('/switch-store', authenticate, async (req, res, next) => {
   try {
@@ -120,7 +180,6 @@ router.post('/switch-store', authenticate, async (req, res, next) => {
       return res.status(400).json({ message: 'storeId requis' });
     }
 
-    // Vérifie que l'utilisateur a accès à cette boutique
     if (req.user.role !== 'ADMIN') {
       const allowed = await getAccessibleStoreIds(req.user);
       if (!allowed.includes(storeId)) {
@@ -128,17 +187,15 @@ router.post('/switch-store', authenticate, async (req, res, next) => {
       }
     }
 
-    // Récupère la boutique
     const store = await prisma.store.findUnique({ where: { id: storeId } });
     if (!store || !store.isActive) {
       return res.status(404).json({ message: 'Boutique introuvable ou inactive' });
     }
 
-    // Nouveau token avec activeStoreId injecté
     const token = signToken({
-      id:            req.user.id,
-      email:         req.user.email,
-      role:          req.user.role,
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
       activeStoreId: storeId,
     });
 

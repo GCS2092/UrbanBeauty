@@ -641,3 +641,20 @@ enum VariantDisplayMode {
   SIZE_FIRST
   COLOR_FIRST
 }
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  type      OtpType  @default(REGISTER)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email, type])
+}
+
+enum OtpType {
+  REGISTER
+  RESET_PASSWORD
+}
