@@ -1,4 +1,6 @@
 const productsService = require('./products.service');
+const importService = require('./products.import.service');
+const exportService = require('./products.export.service');
 
 async function getProducts(req, res, next) {
   try {
@@ -55,6 +57,40 @@ async function deleteProduct(req, res, next) {
   }
 }
 
+// ─── Import / Export Excel ─────────────────────────────────────
+
+async function importProducts(req, res, next) {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'Aucun fichier reçu' });
+    const report = await importService.importFromBuffer(req.file.buffer);
+    res.status(200).json(report);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function downloadTemplate(req, res, next) {
+  try {
+    const buffer = await exportService.generateTemplate();
+    res.setHeader('Content-Disposition', 'attachment; filename=template-produits.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function exportProducts(req, res, next) {
+  try {
+    const buffer = await exportService.exportProducts();
+    res.setHeader('Content-Disposition', 'attachment; filename=catalogue-produits.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getProducts,
   getAllProductsAdmin,
@@ -62,4 +98,7 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
+  importProducts,
+  downloadTemplate,
+  exportProducts,
 };

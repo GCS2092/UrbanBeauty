@@ -7,6 +7,7 @@ const requireStaff = require('../../middlewares/staff.middleware');
 const { apiLimiter } = require('../../middlewares/rateLimit.middleware');
 const { checkValidation } = require('../../middlewares/validation.middleware');
 const { loadStoreContext } = require('../../middlewares/store.middleware');
+const { excelUploadMiddleware } = require('../../middlewares/excel.middleware');
 
 const router = express.Router();
 
@@ -50,6 +51,60 @@ router.get('/', apiLimiter, productsController.getProducts);
 // ⚠️ DOIT être avant /:slug pour ne pas être capturé comme slug
 // Lecture — STAFF peut voir, filtré automatiquement par storeIds
 router.get('/admin/all', authenticate, requireStaff, loadStoreContext, productsController.getAllProductsAdmin);
+
+// ─── Import / Export Excel ─────────────────────────────────────
+// ⚠️ DOIVENT être avant /:slug pour ne pas être capturés comme slug ("import", "export")
+
+/**
+ * @swagger
+ * /api/products/import/template:
+ *   get:
+ *     summary: Télécharger le template Excel vierge (Admin)
+ *     tags: [Produits]
+ *     responses:
+ *       200:
+ *         description: Fichier .xlsx avec feuilles Produits, Variantes, Ref_Categories, Ref_Boutiques
+ */
+router.get('/import/template', authenticate, requireAdmin, productsController.downloadTemplate);
+
+/**
+ * @swagger
+ * /api/products/export:
+ *   get:
+ *     summary: Exporter le catalogue actuel en Excel (Admin)
+ *     tags: [Produits]
+ *     responses:
+ *       200:
+ *         description: Fichier .xlsx avec le catalogue complet
+ */
+router.get('/export', authenticate, requireAdmin, productsController.exportProducts);
+
+/**
+ * @swagger
+ * /api/products/import:
+ *   post:
+ *     summary: Importer des produits depuis un fichier Excel (Admin)
+ *     tags: [Produits]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Rapport d'import { total, created, updated, skipped, errors[] }
+ */
+router.post(
+  '/import',
+  authenticate, requireAdmin,
+  excelUploadMiddleware.single('file'),
+  productsController.importProducts
+);
 
 /**
  * @swagger
