@@ -4,6 +4,7 @@ const {
   expireDraftReservations,
   notifyUpcomingExpirations,
 } = require('./src/jobs/reservation-expiration.job');
+const { checkLowStockAndNotify } = require('./src/jobs/stock-alert.job');
 const { collectReportData } = require('./src/modules/reports/report.service');
 const { buildReportPdf } = require('./src/modules/reports/report-pdf.service');
 const { sendEmail } = require('./src/config/email');
@@ -30,6 +31,21 @@ cron.schedule('0 */6 * * *', async () => {
     await notifyUpcomingExpirations();
   } catch (err) {
     console.error('[cron] Erreur alertes expiration:', err.message);
+  }
+});
+
+// Alerte stock bas / rupture — tous les jours à 08h00
+// Envoie un email seulement s'il y a au moins un produit à signaler
+cron.schedule('0 8 * * *', async () => {
+  try {
+    const result = await checkLowStockAndNotify();
+    if (result.sent) {
+      console.log(`[cron] ✅ Alerte stock envoyée — ${result.outOfStockCount} épuisé(s), ${result.lowStockCount} bas`);
+    } else {
+      console.log(`[cron] Alerte stock — rien à signaler (${result.reason})`);
+    }
+  } catch (err) {
+    console.error('[cron] Erreur alerte stock:', err.message);
   }
 });
 

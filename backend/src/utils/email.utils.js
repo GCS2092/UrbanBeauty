@@ -926,6 +926,76 @@ function buildOtpEmail({ code, type = 'REGISTER', expiresInMinutes = 15, storeNa
 }
 
 // ============================================================
+// 8. ALERTE STOCK BAS / RUPTURE — envoyée par le job quotidien
+// ============================================================
+function buildStockAlertEmail({ lowStock = [], outOfStock = [], storeName = 'SonShop', storeCode = 'SONSHOP', adminUrl = '' }) {
+  const C = getTheme(storeCode);
+
+  const outOfStockRows = outOfStock.map((p) => `
+    <tr>
+      <td style="padding:6px 0;font-size:12px;color:${C.danger};font-weight:700;">❌ ${p.name}</td>
+      <td style="padding:6px 0;font-size:11px;color:${C.textLight};text-align:right;">${p.store || 'Toutes boutiques'}</td>
+    </tr>`).join('');
+
+  const lowStockRows = lowStock.map((p) => `
+    <tr>
+      <td style="padding:6px 0;font-size:12px;color:${C.warning};font-weight:600;">⚠️ ${p.name}</td>
+      <td style="padding:6px 0;font-size:11px;color:${C.textLight};text-align:right;">Stock : ${p.stock} / Alerte : ${p.alert} — ${p.store || 'Toutes boutiques'}</td>
+    </tr>`).join('');
+
+  const body = `
+    <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${C.navy};">
+      🔔 Alerte stock
+    </h1>
+    <p style="margin:0 0 24px;font-size:14px;color:${C.textLight};">
+      Voici les produits qui nécessitent votre attention aujourd'hui.
+    </p>
+
+    ${infoBox([
+      outOfStock.length > 0 ? ['Produits épuisés', `<strong style="color:${C.danger};">${outOfStock.length}</strong>`] : null,
+      lowStock.length > 0 ? ['Alertes stock bas', `<strong style="color:${C.warning};">${lowStock.length}</strong>`] : null,
+    ], C)}
+
+    ${outOfStock.length > 0 ? `
+    <div style="margin:20px 0;">
+      <div style="font-size:11px;font-weight:700;color:${C.danger};text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+        Produits épuisés (${outOfStock.length})
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0"
+        style="background:${C.offWhite};border-radius:8px;border:1px solid ${C.border};padding:4px 16px;">
+        ${outOfStockRows}
+      </table>
+    </div>` : ''}
+
+    ${lowStock.length > 0 ? `
+    <div style="margin:20px 0;">
+      <div style="font-size:11px;font-weight:700;color:${C.warning};text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+        Stock bas (${lowStock.length})
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0"
+        style="background:${C.offWhite};border-radius:8px;border:1px solid ${C.border};padding:4px 16px;">
+        ${lowStockRows}
+      </table>
+    </div>` : ''}
+
+    ${divider(C.border)}
+
+    ${adminUrl ? cta('Gérer les produits', adminUrl, C.primary) : ''}
+
+    <p style="margin:20px 0 0;font-size:11px;color:${C.textLight};text-align:center;line-height:1.6;">
+      Alerte générée automatiquement le ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+    </p>
+
+    ${signature(storeName, C)}
+  `;
+
+  return {
+    subject: `🔔 Alerte stock — ${outOfStock.length} épuisé(s), ${lowStock.length} bas — ${storeName}`,
+    html: layout(body, `${outOfStock.length + lowStock.length} produit(s) nécessitent votre attention`, storeName, storeCode),
+  };
+}
+
+// ============================================================
 // EXPORTS
 // ============================================================
 module.exports = {
@@ -936,4 +1006,5 @@ module.exports = {
   buildPreorderEmail,
   buildReportEmail,
   buildOtpEmail,
+  buildStockAlertEmail,
 };
