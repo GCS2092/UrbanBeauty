@@ -54,7 +54,7 @@ export default function Register() {
     setLoading(true);
     setErrorMsg('');
     try {
-      await axios.post(`${API}/auth/register/request-otp`, { email: emailValue });
+      await axios.post(`${API}/api/auth/register/request-otp`, { email: emailValue });
       setEmail(emailValue);
       setStep(2);
       startResendCooldown();
@@ -70,7 +70,7 @@ export default function Register() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const { data } = await axios.post(`${API}/auth/register/verify-otp`, { email, code });
+      const { data } = await axios.post(`${API}/api/auth/register/verify-otp`, { email, code });
       setSetupToken(data.setupToken);
       setStep(3);
     } catch (err) {
@@ -87,7 +87,7 @@ export default function Register() {
     try {
       // 1. Crée le compte
       await axios.post(
-        `${API}/auth/register/complete`,
+        `${API}/api/auth/register/complete`,
         { firstName, lastName, phone, password },
         { headers: { Authorization: `Bearer ${setupToken}` } }
       );
@@ -117,7 +117,7 @@ export default function Register() {
     setLoading(true);
     setErrorMsg('');
     try {
-      await axios.post(`${API}/auth/register/request-otp`, { email });
+      await axios.post(`${API}/api/auth/register/request-otp`, { email });
       form2.reset();
       startResendCooldown();
     } catch (err) {
