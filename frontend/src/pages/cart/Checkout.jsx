@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -198,6 +198,7 @@ export default function Checkout() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [pendingOrderData, setPendingOrderData] = useState(null);
   const [whatsappSent, setWhatsappSent] = useState(false);
+  const [deliverToOther, setDeliverToOther] = useState(false);
 
   const { data: addresses } = useQuery({
     queryKey: ['addresses'],
@@ -226,6 +227,28 @@ export default function Checkout() {
 
   const paymentMethod = watch('paymentMethod');
   const destination = watch('destination');
+
+  const fillFromAddress = (addr) => {
+    setValue('fullName', addr.fullName);
+    setValue('phone', addr.phone);
+    setValue('street', addr.street);
+    setValue('city', addr.city);
+  };
+
+  // ✅ Pré-remplissage automatique pour un client connecté
+  useEffect(() => {
+    if (!user || deliverToOther) return;
+
+    const defaultAddr = addresses?.find((a) => a.isDefault) || addresses?.[0];
+    if (defaultAddr) {
+      fillFromAddress(defaultAddr);
+    } else {
+      const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+      if (fullName) setValue('fullName', fullName);
+      if (user.phone) setValue('phone', user.phone);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, addresses, deliverToOther]);
 
   const handleDestinationChange = (value) => {
     setValue('destination', value);
@@ -263,13 +286,6 @@ export default function Checkout() {
     depositThreshold > 0 &&
     subtotal >= depositThreshold;
   const depositAmount = requiresDeposit ? Math.ceil((subtotal * depositPercent) / 100) : 0;
-
-  const fillFromAddress = (addr) => {
-    setValue('fullName', addr.fullName);
-    setValue('phone', addr.phone);
-    setValue('street', addr.street);
-    setValue('city', addr.city);
-  };
 
   const buildOrderPayload = (formData) => ({
     storeId: STORE_ID,
@@ -456,7 +472,44 @@ export default function Checkout() {
         {/* Formulaire */}
         <div className="lg:col-span-2 space-y-6">
 
-          {addresses?.length > 0 && (
+          {/* ✅ Toggle "Moi-même" / "Pour quelqu'un d'autre" (clients connectés uniquement) */}
+          {user && (
+            <div className="bg-white rounded-2xl border border-stone-100 p-5">
+              <h2 className="font-semibold text-stone-800 mb-3">Livrer à</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeliverToOther(false)}
+                  className={`p-3.5 rounded-xl border text-sm font-medium transition-colors ${
+                    !deliverToOther
+                      ? 'border-rose-400 bg-rose-50/50 text-rose-600'
+                      : 'border-stone-200 text-stone-500 hover:border-stone-300'
+                  }`}
+                >
+                  Moi-même
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeliverToOther(true);
+                    setValue('fullName', '');
+                    setValue('phone', '');
+                    setValue('street', '');
+                    setValue('city', '');
+                  }}
+                  className={`p-3.5 rounded-xl border text-sm font-medium transition-colors ${
+                    deliverToOther
+                      ? 'border-rose-400 bg-rose-50/50 text-rose-600'
+                      : 'border-stone-200 text-stone-500 hover:border-stone-300'
+                  }`}
+                >
+                  Pour quelqu'un d'autre
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!deliverToOther && addresses?.length > 0 && (
             <div className="bg-white rounded-2xl border border-stone-100 p-5">
               <h2 className="font-semibold text-stone-800 mb-3 flex items-center gap-2">
                 <MapPin size={17} className="text-rose-400" /> Mes adresses
