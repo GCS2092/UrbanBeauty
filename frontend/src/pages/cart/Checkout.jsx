@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, MapPin, CreditCard, Truck, Gift, AlertCircle, Copy, CheckCircle2, ShieldCheck, Lock } from 'lucide-react';
+import { ChevronLeft, MapPin, CreditCard, Truck, Gift, AlertCircle, Copy, CheckCircle2, ShieldCheck, Lock, Pencil } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { addressesApi } from '../../api/addresses.api';
 import { couponsApi } from '../../api/coupons.api';
@@ -199,6 +199,7 @@ export default function Checkout() {
   const [pendingOrderData, setPendingOrderData] = useState(null);
   const [whatsappSent, setWhatsappSent] = useState(false);
   const [deliverToOther, setDeliverToOther] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(false); // ✅ nouveau : force l'affichage du formulaire
 
   const { data: addresses } = useQuery({
     queryKey: ['addresses'],
@@ -235,13 +236,30 @@ export default function Checkout() {
     setValue('city', addr.city);
   };
 
+  // ✅ Adresse par défaut du compte (ou la première dispo)
+  const defaultAddress = addresses?.find((a) => a.isDefault) || addresses?.[0];
+
+  // ✅ L'adresse par défaut contient-elle tout le nécessaire ?
+  const isAddressComplete = !!(
+    defaultAddress?.fullName &&
+    defaultAddress?.phone &&
+    defaultAddress?.street &&
+    defaultAddress?.city
+  );
+
+  // ✅ Faut-il afficher le formulaire complet, ou juste le récap en lecture ?
+  //    - invité               → toujours le formulaire
+  //    - "pour un autre"      → toujours le formulaire (vide)
+  //    - adresse incomplète   → toujours le formulaire (pré-rempli avec ce qu'on a)
+  //    - "Modifier" cliqué    → formulaire, tant qu'on n'a pas annulé
+  const showForm = !user || deliverToOther || !isAddressComplete || editingAddress;
+
   // ✅ Pré-remplissage automatique pour un client connecté
   useEffect(() => {
     if (!user || deliverToOther) return;
 
-    const defaultAddr = addresses?.find((a) => a.isDefault) || addresses?.[0];
-    if (defaultAddr) {
-      fillFromAddress(defaultAddr);
+    if (defaultAddress) {
+      fillFromAddress(defaultAddress);
     } else {
       const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
       if (fullName) setValue('fullName', fullName);
@@ -479,7 +497,10 @@ export default function Checkout() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setDeliverToOther(false)}
+                  onClick={() => {
+                    setDeliverToOther(false);
+                    setEditingAddress(false); // ✅ revient au récap si l'adresse est complète
+                  }}
                   className={`p-3.5 rounded-xl border text-sm font-medium transition-colors ${
                     !deliverToOther
                       ? 'border-rose-400 bg-rose-50/50 text-rose-600'
@@ -492,6 +513,7 @@ export default function Checkout() {
                   type="button"
                   onClick={() => {
                     setDeliverToOther(true);
+                    setEditingAddress(true); // ✅ force le formulaire vide
                     setValue('fullName', '');
                     setValue('phone', '');
                     setValue('street', '');
@@ -505,27 +527,6 @@ export default function Checkout() {
                 >
                   Pour quelqu'un d'autre
                 </button>
-              </div>
-            </div>
-          )}
-
-          {!deliverToOther && addresses?.length > 0 && (
-            <div className="bg-white rounded-2xl border border-stone-100 p-5">
-              <h2 className="font-semibold text-stone-800 mb-3 flex items-center gap-2">
-                <MapPin size={17} className="text-rose-400" /> Mes adresses
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {addresses.map((addr) => (
-                  <button
-                    key={addr.id}
-                    type="button"
-                    onClick={() => fillFromAddress(addr)}
-                    className="text-left p-3 rounded-xl border border-stone-200 hover:border-rose-300 hover:bg-rose-50/50 transition-colors"
-                  >
-                    <p className="font-medium text-stone-800 text-sm">{addr.label}</p>
-                    <p className="text-xs text-stone-400 mt-0.5">{addr.street}, {addr.city}</p>
-                  </button>
-                ))}
               </div>
             </div>
           )}
@@ -603,50 +604,98 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* Adresse de livraison */}
-          <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
-            <h2 className="font-semibold text-stone-800 flex items-center gap-2">
-              <MapPin size={17} className="text-rose-400" /> Adresse de livraison
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Nom complet"
-                placeholder="Marie Dupont"
-                error={errors.fullName?.message}
-                {...register('fullName')}
-              />
-              <Input
-                label="Téléphone"
-                placeholder="+221 77 000 00 00"
-                error={errors.phone?.message}
-                {...register('phone')}
-              />
+          {/* ✅ Adresse : récap en lecture (si tout est déjà connu) OU formulaire complet */}
+          {!showForm ? (
+            <div className="bg-white rounded-2xl border border-stone-100 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-semibold text-stone-800 flex items-center gap-2">
+                  <MapPin size={17} className="text-rose-400" /> Livraison à
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setEditingAddress(true)}
+                  className="flex items-center gap-1 text-sm text-rose-500 hover:text-rose-600 font-medium"
+                >
+                  <Pencil size={13} /> Modifier
+                </button>
+              </div>
+              <p className="text-sm font-medium text-stone-800">{watch('fullName')}</p>
+              <p className="text-sm text-stone-500">{watch('phone')}</p>
+              <p className="text-sm text-stone-500">{watch('street')}, {watch('city')}</p>
             </div>
-            <Input
-              label="Adresse"
-              placeholder="123 Rue de la Paix"
-              error={errors.street?.message}
-              {...register('street')}
-            />
-            <Input
-              label="Ville"
-              placeholder={destination === 'SENEGAL' ? 'Dakar' : 'Brazzaville'}
-              error={errors.city?.message}
-              {...register('city')}
-            />
-            <div>
-              <label className="text-sm font-medium text-stone-700 block mb-1.5">
-                Notes (optionnel)
-              </label>
-              {/* text-base au lieu de text-sm → évite le zoom iOS */}
-              <textarea
-                {...register('notes')}
-                rows={2}
-                placeholder="Instructions de livraison..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-base outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 resize-none transition-all"
+          ) : (
+            <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-stone-800 flex items-center gap-2">
+                  <MapPin size={17} className="text-rose-400" /> Adresse de livraison
+                </h2>
+                {user && !deliverToOther && isAddressComplete && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingAddress(false)}
+                    className="text-sm text-stone-400 hover:text-stone-600"
+                  >
+                    Annuler
+                  </button>
+                )}
+              </div>
+
+              {/* Sélecteur d'adresses enregistrées — visible seulement en mode "Moi-même" */}
+              {!deliverToOther && addresses?.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {addresses.map((addr) => (
+                    <button
+                      key={addr.id}
+                      type="button"
+                      onClick={() => fillFromAddress(addr)}
+                      className="text-left p-3 rounded-xl border border-stone-200 hover:border-rose-300 hover:bg-rose-50/50 transition-colors"
+                    >
+                      <p className="font-medium text-stone-800 text-sm">{addr.label}</p>
+                      <p className="text-xs text-stone-400 mt-0.5">{addr.street}, {addr.city}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Nom complet"
+                  placeholder="Marie Dupont"
+                  error={errors.fullName?.message}
+                  {...register('fullName')}
+                />
+                <Input
+                  label="Téléphone"
+                  placeholder="+221 77 000 00 00"
+                  error={errors.phone?.message}
+                  {...register('phone')}
+                />
+              </div>
+              <Input
+                label="Adresse"
+                placeholder="123 Rue de la Paix"
+                error={errors.street?.message}
+                {...register('street')}
               />
+              <Input
+                label="Ville"
+                placeholder={destination === 'SENEGAL' ? 'Dakar' : 'Brazzaville'}
+                error={errors.city?.message}
+                {...register('city')}
+              />
+              <div>
+                <label className="text-sm font-medium text-stone-700 block mb-1.5">
+                  Notes (optionnel)
+                </label>
+                <textarea
+                  {...register('notes')}
+                  rows={2}
+                  placeholder="Instructions de livraison..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-base outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 resize-none transition-all"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Mode de paiement */}
           <div className="bg-white rounded-2xl border border-stone-100 p-5 space-y-3">

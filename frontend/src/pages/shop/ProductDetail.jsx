@@ -1,12 +1,13 @@
 import { useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ShoppingBag, Heart, Star, ChevronLeft, Minus, Plus, MessageCircle, ShieldCheck, Truck } from 'lucide-react';
+import { ShoppingBag, Heart, Star, ChevronLeft, Minus, Plus, MessageCircle, ShieldCheck, Truck, BellRing } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Thumbs } from 'swiper/modules';
 import { productsApi } from '../../api/products.api';
 import { reviewsApi } from '../../api/reviews.api';
 import { wishlistApi } from '../../api/wishlist.api';
+import { stockAlertsApi } from '../../api/stockAlerts.api';
 import useAuthStore from '../../store/authStore';
 import useCartStore from '../../store/cartStore';
 import { formatPrice } from '../../utils/formatPrice';
@@ -49,6 +50,26 @@ function PreorderButton({ product, whatsappNumber }) {
   );
 }
 
+// ✅ Bouton "M'alerter quand disponible" — composant séparé pour éviter la duplication desktop/mobile
+function StockAlertButton({ product, variantId, isAuthenticated, alertRequested, alertLoading, onRequestAlert, variant = 'outline' }) {
+  const baseClasses = 'w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-colors disabled:opacity-60';
+  const styleClasses = variant === 'outline'
+    ? 'border border-stone-300 text-stone-700 hover:bg-stone-50'
+    : 'bg-stone-800 text-white hover:bg-stone-900';
+
+  return (
+    <button
+      type="button"
+      disabled={alertRequested || alertLoading}
+      onClick={onRequestAlert}
+      className={`${baseClasses} ${styleClasses}`}
+    >
+      <BellRing size={16} />
+      {alertRequested ? 'Vous serez alerté(e) ✓' : "M'alerter quand disponible"}
+    </button>
+  );
+}
+
 export default function ProductDetail() {
   const { slug } = useParams();
   const { user, isAuthenticated } = useAuthStore();
@@ -60,6 +81,8 @@ export default function ProductDetail() {
   const [mainImg, setMainImg] = useState(0);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
   const [addingCart, setAddingCart] = useState(false);
+  const [alertRequested, setAlertRequested] = useState(false);
+  const [alertLoading, setAlertLoading] = useState(false);
   const mainSwiperRef = useRef(null);
 
   const { data: product, isLoading } = useQuery({
@@ -184,6 +207,29 @@ export default function ProductDetail() {
       toast.success('Ajouté aux favoris !');
     } catch {
       toast.error('Déjà dans vos favoris');
+    }
+  };
+
+  // ✅ Créer une alerte de retour en stock
+  const handleStockAlert = async () => {
+    let email;
+    if (!isAuthenticated) {
+      email = prompt('Votre email pour être alerté(e) :');
+      if (!email) return; // annulé par l'utilisateur
+    }
+    setAlertLoading(true);
+    try {
+      await stockAlertsApi.create({
+        productId: product.id,
+        variantId: selectedVariant?.id || null,
+        email,
+      });
+      setAlertRequested(true);
+      toast.success('Vous serez alerté(e) dès la remise en stock !');
+    } catch {
+      toast.error("Erreur lors de l'enregistrement de l'alerte");
+    } finally {
+      setAlertLoading(false);
     }
   };
 
@@ -464,6 +510,14 @@ export default function ProductDetail() {
             </div>
             {isOutOfStock && (
               <div className="space-y-2">
+                <StockAlertButton
+                  product={product}
+                  variantId={selectedVariant?.id || null}
+                  isAuthenticated={isAuthenticated}
+                  alertRequested={alertRequested}
+                  alertLoading={alertLoading}
+                  onRequestAlert={handleStockAlert}
+                />
                 <PreorderButton product={product} whatsappNumber={whatsappNumber} />
                 <p className="text-xs text-center text-stone-400">
                   Envoyez-nous un message et nous vous préviendrons dès la remise en stock.
@@ -481,6 +535,14 @@ export default function ProductDetail() {
       >
         {isOutOfStock ? (
           <div className="space-y-2">
+            <StockAlertButton
+              product={product}
+              variantId={selectedVariant?.id || null}
+              isAuthenticated={isAuthenticated}
+              alertRequested={alertRequested}
+              alertLoading={alertLoading}
+              onRequestAlert={handleStockAlert}
+            />
             <PreorderButton product={product} whatsappNumber={whatsappNumber} />
             <p className="text-xs text-center text-stone-400">
               Nous vous préviendrons dès la remise en stock.
