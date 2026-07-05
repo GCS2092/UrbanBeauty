@@ -77,6 +77,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/stock-alerts', require('./modules/products/stock-alerts.routes'));
 app.use('/api/users', usersRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/categories', categoriesRoutes);

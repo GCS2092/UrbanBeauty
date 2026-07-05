@@ -37,6 +37,21 @@ function validatePaymentDestination(paymentMethod, destination) {
   }
 }
 
+// ─── Validation adresse de livraison complète ─────────────────────────────────
+function validateShippingAddress(shippingAddress) {
+  const required = ['fullName', 'phone', 'street', 'city'];
+  const missing = required.filter(
+    (field) => !shippingAddress?.[field] || String(shippingAddress[field]).trim() === ''
+  );
+  if (missing.length > 0) {
+    const error = new Error(
+      `Adresse de livraison incomplète. Champs manquants : ${missing.join(', ')}.`
+    );
+    error.status = 400;
+    throw error;
+  }
+}
+
 // ─── Utilitaire email async ────────────────────────────────────────────────────
 function sendEmailAsync(mailOptions) {
   const { from, ...brevoOptions } = mailOptions;
@@ -53,6 +68,7 @@ async function createOrder(payload, user, ip = null) {
   }
 
   validatePaymentDestination(payload.paymentMethod, payload.destination);
+  validateShippingAddress(payload.shippingAddress);
 
   const phone = user?.phone || payload.guestPhone;
   if (!isValidPhone(phone)) {

@@ -6,6 +6,8 @@ const {
   isProductVisibleForStore,
   resolveStoreIdForCatalog,
 } = require('../stores/store.service');
+const { notifyStockAlerts } = require('./stock-alerts.service'); // ✅ AJOUT
+
 async function getProducts(query) {
   const { page, limit, skip } = parsePagination(query);
 
@@ -131,7 +133,29 @@ async function updateProduct(id, data) {
   const incomingIds = variants.filter((v) => v.id).map((v) => v.id);
   const toDelete = existingVariantIds.filter((vid) => !incomingIds.includes(vid));
 
-  return prisma.$transaction(async (tx) => {
+  // ✅ AJOUT : repère les transitions "0 → stock positif" avant modification
+  const restockedVariantIds = [];
+  let productRestocked = false;
+
+  if (
+    productData.stock !== undefined &&
+    Number(existing?.stock) === 0 &&
+    Number(productData.stock) > 0
+  ) {
+    productRestocked = true;
+  }
+
+  for (const v of variants) {
+    if (v.id) {
+      const before = existing?.variants.find((ev) => ev.id === v.id);
+      if (before && Number(before.stock) === 0 && Number(v.stock) > 0) {
+        restockedVariantIds.push(v.id);
+      }
+    }
+  }
+  // ✅ FIN AJOUT
+
+  const updated = await prisma.$transaction(async (tx) => {
     if (toDelete.length > 0) {
       await tx.productVariant.deleteMany({ where: { id: { in: toDelete } } });
     }
@@ -167,15 +191,27 @@ async function updateProduct(id, data) {
       where: { id },
       data: {
         ...productData,
-        // FIX 2 : ne PAS écraser storeId si non envoyé depuis le formulaire
-        // storeId: storeId || null  ← ANCIEN CODE : écrasait à null si storeId absent
-        // NOUVEAU : on ne touche à storeId QUE s'il est explicitement présent dans data
         ...(storeId !== undefined && { storeId: storeId || null }),
         ...(variantDisplayMode && { variantDisplayMode }),
       },
       include: { images: true, variants: true },
     });
   });
+
+  // ✅ AJOUT : déclenche les notifications APRÈS le succès de la transaction
+  if (productRestocked) {
+    notifyStockAlerts({ productId: id, variantId: null }).catch((err) =>
+      console.error('❌ Erreur notifyStockAlerts (produit):', err.message)
+    );
+  }
+  for (const variantId of restockedVariantIds) {
+    notifyStockAlerts({ productId: id, variantId }).catch((err) =>
+      console.error('❌ Erreur notifyStockAlerts (variante):', err.message)
+    );
+  }
+  // ✅ FIN AJOUT
+
+  return updated;
 }
 
 async function deleteProduct(id) {
