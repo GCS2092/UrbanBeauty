@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Truck } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -15,6 +16,14 @@ export default function Footer() {
             <p className="text-sm leading-relaxed">
               Vetements et accessoires en ligne. Produits authentiques, livraison rapide.
             </p>
+
+            {/* ✅ Bloc suivi de commande mis en avant */}
+            <Link
+              to="/suivi"
+              className="mt-4 inline-flex items-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-300 hover:text-rose-200 text-sm font-medium px-3.5 py-2 rounded-xl transition-colors"
+            >
+              <Truck size={15} /> Suivre ma commande
+            </Link>
           </div>
 
           <div>
@@ -23,6 +32,7 @@ export default function Footer() {
               <li><Link to="/products" className="hover:text-white transition-colors">Tous les produits</Link></li>
               <li><Link to="/cart" className="hover:text-white transition-colors">Mon panier</Link></li>
               <li><Link to="/orders" className="hover:text-white transition-colors">Mes commandes</Link></li>
+              <li><Link to="/suivi" className="hover:text-white transition-colors">Suivre ma commande</Link></li>
             </ul>
           </div>
 
