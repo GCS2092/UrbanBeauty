@@ -452,7 +452,7 @@ function buildOrderConfirmationEmail({
 
     ${isGuest
       ? guestInfoBanner(whatsappNumber, C)
-      : cta('Suivre ma commande', `${clientUrl}/orders/${orderNumber}`, C.primary)
+      : cta('Suivre ma commande', `${clientUrl}/suivi/${orderNumber}`, C.primary)
     }
 
     ${signature(storeName, C)}
@@ -520,7 +520,7 @@ function buildOrderStatusEmail({
     </p>
     ${whatsappCta(whatsappNumber, storeName)}
     ` : (status !== 'CANCELLED'
-      ? cta('Voir ma commande', `${clientUrl}/orders/${orderNumber}`, C.primary)
+      ? cta('Voir ma commande', `${clientUrl}/suivi/${orderNumber}`, C.primary)
       : whatsappCta(whatsappNumber, storeName)
     )}
 
