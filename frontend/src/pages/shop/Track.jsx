@@ -13,6 +13,8 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Spinner from '../../components/ui/Spinner';
 
+const LAST_ORDER_KEY = 'urbanbeauty_last_order_number';
+
 // ── Étapes du parcours (hors DRAFT / CANCELLED) ──────────────
 const STEPS = [
   { key: 'PENDING', label: 'En attente', short: 'Reçue', emoji: '🕐' },
@@ -35,7 +37,12 @@ const HERO_TEXT = {
 export default function Track() {
   const { orderNumber: paramOrderNumber } = useParams();
   const navigate = useNavigate();
-  const [search, setSearch] = useState(paramOrderNumber || '');
+
+  // Priorité : numéro dans l'URL > dernier numéro mémorisé localement
+  const initialOrderNumber =
+    paramOrderNumber || localStorage.getItem(LAST_ORDER_KEY) || '';
+
+  const [search, setSearch] = useState(initialOrderNumber);
   const [activeSearch, setActiveSearch] = useState(paramOrderNumber || null);
 
   useEffect(() => {
@@ -51,6 +58,13 @@ export default function Track() {
     enabled: !!activeSearch,
     retry: false,
   });
+
+  // Mémoriser le numéro dès qu'une recherche aboutit à une commande trouvée
+  useEffect(() => {
+    if (order?.orderNumber) {
+      localStorage.setItem(LAST_ORDER_KEY, order.orderNumber);
+    }
+  }, [order]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
