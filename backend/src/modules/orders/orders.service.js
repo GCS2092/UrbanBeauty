@@ -60,6 +60,22 @@ function sendEmailAsync(mailOptions) {
     .catch((err) => console.error('❌ ERREUR EMAIL :', err.message, err.response?.data || ''));
 }
 
+// ─── Génère un numéro de commande garanti unique ──────────────────────────────
+async function generateUniqueOrderNumber() {
+  const MAX_ATTEMPTS = 5;
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    const candidate = generateOrderNumber();
+    const exists = await prisma.order.findUnique({
+      where: { orderNumber: candidate },
+      select: { id: true },
+    });
+    if (!exists) return candidate;
+  }
+  const error = new Error('Impossible de générer un numéro de commande unique. Réessayez.');
+  error.status = 500;
+  throw error;
+}
+
 async function createOrder(payload, user, ip = null) {
   if (!Array.isArray(payload.items) || payload.items.length === 0) {
     const error = new Error('La commande doit contenir au moins un produit.');
@@ -104,7 +120,7 @@ async function createOrder(payload, user, ip = null) {
     }
   }
 
-  const orderNumber = generateOrderNumber();
+  const orderNumber = await generateUniqueOrderNumber();
   const userId = user?.id || null;
   const guestEmail = user?.email || payload.guestEmail || null;
   const guestName = payload.guestName || payload.shippingAddress?.fullName || 'Cliente';
