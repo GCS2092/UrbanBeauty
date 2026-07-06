@@ -3,7 +3,7 @@ import { Truck } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-stone-900 text-stone-400 mt-auto border-t-2 border-rose-500/20">
+    <footer className="bg-stone-900 text-stone-400 mt-auto border-t-2 border-rose-500/20 pb-20 md:pb-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
 
