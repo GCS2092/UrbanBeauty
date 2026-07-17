@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { addressesApi } from '../../api/addresses.api';
 import { couponsApi } from '../../api/coupons.api';
 import { ordersApi } from '../../api/orders.api';
+import { paymentsApi } from '../../api/payments.api';
 import { settingsApi } from '../../api/settings.api';
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
@@ -200,6 +201,10 @@ export default function Checkout() {
   const [whatsappSent, setWhatsappSent] = useState(false);
   const [deliverToOther, setDeliverToOther] = useState(false);
   const [editingAddress, setEditingAddress] = useState(false); // ✅ nouveau : force l'affichage du formulaire
+
+  // ✅ CinetPay : mode courant et commande déjà créée (pour éviter les doublons en fallback)
+  const [paymentMode, setPaymentMode] = useState('idle'); // 'idle' | 'redirecting' | 'fallback'
+  const [createdOrder, setCreatedOrder] = useState(null);
 
   const { data: addresses } = useQuery({
     queryKey: ['addresses'],
@@ -404,11 +409,36 @@ export default function Checkout() {
     },
   });
 
+  // ✅ Tentative de paiement automatique CinetPay, avec bascule vers le flow manuel en cas d'échec
+  const { mutate: placeOrderWithCinetpay, isPending: isPendingCinetpay } = useMutation({
+    mutationFn: async (data) => {
+      const { data: order } = await ordersApi.create(data);
+      setCreatedOrder(order);
+      const { data: payment } = await paymentsApi.initier(order.id);
+      return { order, payment };
+    },
+    onSuccess: ({ payment }) => {
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      clearCart(user?.id);
+      // Redirection vers la page de paiement sécurisée CinetPay
+      window.location.href = payment.paymentUrl;
+    },
+    onError: (err) => {
+      // CinetPay indisponible (compte non validé, réseau, etc.) → on bascule sur le flow manuel.
+      // La commande a peut-être déjà été créée (createdOrder) : on la réutilise, pas de doublon.
+      console.error('CinetPay indisponible, bascule manuelle:', err.message);
+      toast.info('Paiement automatique indisponible pour le moment. Utilisez le paiement manuel ci-dessous.');
+      setPaymentMode('fallback');
+      setShowPaymentModal(true);
+    },
+  });
+
   const onSubmit = (formData) => {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
     if (formData.paymentMethod === 'MOBILE_MONEY') {
       setPendingOrderData(buildOrderPayload(formData));
-      setShowPaymentModal(true);
+      setPaymentMode('redirecting');
+      placeOrderWithCinetpay(buildOrderPayload(formData));
       return;
     }
     placeOrder(buildOrderPayload(formData));
@@ -441,7 +471,15 @@ export default function Checkout() {
     placeDraftOrder({ ...payload, _formData: formData });
   };
 
+  // ✅ Confirmation du flow manuel (fallback). Si une commande a déjà été créée
+  // lors de la tentative CinetPay, on la réutilise au lieu d'en créer une nouvelle.
   const handleConfirmPayment = () => {
+    if (createdOrder) {
+      setShowPaymentModal(false);
+      toast.success('Commande enregistrée, en attente de vérification manuelle.');
+      navigate(`/orders/${createdOrder.orderNumber}`);
+      return;
+    }
     if (pendingOrderData) placeOrder(pendingOrderData);
   };
 
@@ -456,7 +494,18 @@ export default function Checkout() {
         settings={settings}
         isPending={isPending}
         orderData={pendingOrderData}
+        mode={paymentMode}
       />
+
+      {/* ✅ Écran de redirection pendant la tentative de paiement CinetPay */}
+      {paymentMode === 'redirecting' && isPendingCinetpay && (
+        <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-[3px] border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+            <p className="text-sm text-stone-600">Redirection vers le paiement sécurisé...</p>
+          </div>
+        </div>
+      )}
 
       <Link
         to="/cart"
@@ -860,7 +909,7 @@ export default function Checkout() {
             <Button
               className="w-full"
               size="lg"
-              loading={isPending}
+              loading={isPending || isPendingCinetpay}
               onClick={handleSubmit(onSubmit)}
             >
               {paymentMethod === 'MOBILE_MONEY' ? 'Payer par Mobile Money' : 'Confirmer la commande'}

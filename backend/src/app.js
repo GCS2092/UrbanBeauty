@@ -32,6 +32,7 @@ const invoicesRoutes = require('./modules/invoices/invoices.routes');
 const storesRoutes = require('./modules/stores/stores.routes');
 const stockTransfersRoutes = require('./modules/stock-transfers/stock-transfers.routes');
 const creditNotesRoutes = require('./modules/credit-notes/credit-notes.routes');
+const paymentsRoutes = require('./modules/payments/payments.routes');
 
 const app = express();
 
@@ -90,6 +91,7 @@ app.use('/api/reviews', reviewsRoutes);
 app.use('/api/coupons', couponsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/payments', paymentsRoutes);
 app.use('/api/admin/orders', ordersAdminRoutes);
 app.use('/api/admin/accounting', accountingRoutes);
 app.use('/api/admin/audit', auditRoutes);

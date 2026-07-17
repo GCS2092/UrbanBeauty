@@ -1,7 +1,9 @@
-import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, MapPin, CreditCard, CheckCircle2, Package } from 'lucide-react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { ChevronLeft, MapPin, CreditCard, CheckCircle2, Package, Loader2, XCircle } from 'lucide-react';
 import { ordersApi } from '../../api/orders.api';
+import { paymentsApi } from '../../api/payments.api';
 import { formatPrice } from '../../utils/formatPrice';
 import { formatDateTime } from '../../utils/formatDate';
 import { PAYMENT_METHOD_LABELS, ORDER_STATUS_LABELS } from '../../utils/constants';
@@ -9,13 +11,134 @@ import { getImageUrl } from '../../utils/imageUrl';
 import OrderStatusBadge from '../../components/shared/OrderStatusBadge';
 import Spinner from '../../components/ui/Spinner';
 
+// ---------------------------------------------------------------------------
+// Bandeau affiché pendant/après la vérification du paiement CinetPay
+// ---------------------------------------------------------------------------
+function PaymentVerificationBanner({ verificationState }) {
+  if (verificationState === 'checking') {
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center gap-3">
+        <Loader2 size={18} className="text-blue-500 animate-spin shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-blue-700">Vérification du paiement en cours...</p>
+          <p className="text-xs text-blue-600 mt-0.5">Merci de patienter quelques secondes.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (verificationState === 'success') {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3">
+        <CheckCircle2 size={18} className="text-green-600 shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-green-700">Paiement confirmé !</p>
+          <p className="text-xs text-green-600 mt-0.5">Votre commande a été validée avec succès.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (verificationState === 'failed') {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
+        <XCircle size={18} className="text-red-500 shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-red-700">Le paiement n'a pas abouti</p>
+          <p className="text-xs text-red-600 mt-0.5">
+            Aucun montant n'a été débité, ou la transaction a échoué. Vous pouvez réessayer.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (verificationState === 'timeout') {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+        <Loader2 size={18} className="text-amber-600 shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-amber-700">Vérification en cours (opérateur lent)</p>
+          <p className="text-xs text-amber-600 mt-0.5">
+            Le paiement met un peu plus de temps que prévu à se confirmer. Rechargez cette page
+            dans une minute, ou contactez-nous si le statut ne change pas.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default function OrderDetail() {
   const { orderNumber } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+
+  // 'return' = le client revient d'une tentative de paiement CinetPay
+  const isPaymentReturn = searchParams.get('payment') === 'return';
+
+  // idle | checking | success | failed | timeout
+  const [verificationState, setVerificationState] = useState(isPaymentReturn ? 'checking' : 'idle');
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['order', orderNumber],
     queryFn: () => ordersApi.getByNumber(orderNumber).then((r) => r.data),
   });
+
+  // Vérification active + polling léger, uniquement au retour de CinetPay
+  useEffect(() => {
+    if (!isPaymentReturn || !order?.id) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 6; // 6 x 2s = 12 secondes max avant d'afficher le message "opérateur lent"
+
+    const check = async () => {
+      if (cancelled) return;
+      attempts++;
+      try {
+        const { data } = await paymentsApi.verifier(order.id);
+
+        if (data.status === 'PAID') {
+          setVerificationState('success');
+          queryClient.invalidateQueries({ queryKey: ['order', orderNumber] });
+          searchParams.delete('payment');
+          setSearchParams(searchParams, { replace: true });
+          return;
+        }
+
+        if (data.status === 'REJECTED') {
+          setVerificationState('failed');
+          queryClient.invalidateQueries({ queryKey: ['order', orderNumber] });
+          searchParams.delete('payment');
+          setSearchParams(searchParams, { replace: true });
+          return;
+        }
+
+        // Toujours PENDING → on retente, sauf si on a atteint la limite
+        if (attempts < maxAttempts) {
+          setTimeout(check, 2000);
+        } else {
+          setVerificationState('timeout');
+        }
+      } catch (err) {
+        console.error('Erreur vérification paiement:', err.message);
+        if (attempts < maxAttempts) {
+          setTimeout(check, 2000);
+        } else {
+          setVerificationState('timeout');
+        }
+      }
+    };
+
+    check();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPaymentReturn, order?.id]);
 
   if (isLoading) {
     return (
@@ -45,6 +168,11 @@ export default function OrderDetail() {
       >
         <ChevronLeft size={15} /> Mes commandes
       </Link>
+
+      {/* Bandeau de vérification du paiement, visible uniquement au retour de CinetPay */}
+      {verificationState !== 'idle' && (
+        <PaymentVerificationBanner verificationState={verificationState} />
+      )}
 
       {/* Header */}
       <div className="bg-white rounded-2xl border border-stone-100 p-5 flex items-center justify-between flex-wrap gap-3">
