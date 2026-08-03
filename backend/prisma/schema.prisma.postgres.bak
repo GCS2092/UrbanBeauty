@@ -1,0 +1,678 @@
+// ============================================================
+// SCHEMA PRISMA COMPLET ET CORRIGÃ‰
+// Remplace ENTIÃˆREMENT le contenu de backend/prisma/schema.prisma
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// USERS & AUTH
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?
+  role          Role           @default(CUSTOMER)
+  refreshToken  String?
+  isActive      Boolean        @default(true)
+  addresses     Address[]
+  orders        Order[]
+  carts         Cart[]
+  wishlist      Wishlist[]
+  reviews       Review[]
+  notifications Notification[]
+  userStores    UserStore[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  stockAlerts StockAlert[]
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// BOUTIQUES (multi-boutiques)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Store {
+  id             String            @id @default(cuid())
+  code           String            @unique
+  name           String
+  address        String?
+  phone          String?
+  isMain         Boolean           @default(false)
+  isActive       Boolean           @default(true)
+  taxRate        Float             @default(0)
+  discountRate   Float             @default(0)
+  currency       String            @default("XOF")
+  exchangeRate   Float             @default(1)
+  orders         Order[]
+  invoices       Invoice[]
+  stockMovements StockMovement[]
+  expenses       Expense[]
+  auditLogs      AuditLog[]
+  userStores     UserStore[]
+  transfersFrom  StockTransfer[]   @relation("TransferFrom")
+  transfersTo    StockTransfer[]   @relation("TransferTo")
+  invoiceSequences InvoiceSequence[]
+  creditNotes    CreditNote[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  products  Product[]   // ← ajouter
+  coupons   Coupon[]    // ← ajouter
+}
+
+model UserStore {
+  id      String        @id @default(cuid())
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  store   Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  storeId String
+  role    StoreStaffRole @default(MANAGER)
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, storeId])
+  @@index([storeId])
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  label     String
+  fullName  String
+  phone     String
+  street    String
+  city      String
+  country   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// CATALOGUE
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  imageUrl  String?
+  isActive  Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id              String           @id @default(cuid())
+  name            String
+  slug            String           @unique
+ description      String           @default("")
+  price           Int
+  comparePrice    Int?
+  stock           Int
+  reservedStock   Int              @default(0)
+  isActive        Boolean          @default(true)
+  isFeatured      Boolean          @default(false)
+  purchasePrice   Int?
+  lowStockAlert   Int              @default(5)
+  overstockAlert  Int?
+  category        Category         @relation(fields: [categoryId], references: [id])
+  categoryId      String
+  images          ProductImage[]
+  variants        ProductVariant[]
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+  wishlist        Wishlist[]
+  reviews         Review[]
+  stockMovements  StockMovement[]
+  transferItems   StockTransferItem[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  variantDisplayMode  VariantDisplayMode  @default(SIZE_FIRST)
+  store     Store?   @relation(fields: [storeId], references: [id])
+  storeId   String?  // nullable = visible sur les deux boutiques
+  stockAlerts StockAlert[]
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  url       String
+  publicId  String
+  position  Int     @default(0)
+  isMain    Boolean @default(false)
+  color     String?   // ← NOUVEAU
+}
+
+model ProductVariant {
+  id             String          @id @default(cuid())
+  product        Product         @relation(fields: [productId], references: [id])
+  productId      String
+  size           String
+  color          String
+  stock          Int
+  reservedStock  Int              @default(0)
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  stockMovements StockMovement[]
+  transferItems  StockTransferItem[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([productId, size, color])
+  stockAlerts StockAlert[]
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// WISHLIST
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// REVIEWS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Review {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  rating    Int
+  comment   String?
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// CART
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Cart {
+  id          String     @id @default(cuid())
+  user        User?      @relation(fields: [userId], references: [id])
+  userId      String?
+  anonymousId String?    @unique
+  items       CartItem[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String          @id @default(cuid())
+  cart      Cart            @relation(fields: [cartId], references: [id])
+  cartId    String
+  product   Product         @relation(fields: [productId], references: [id])
+  productId String
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  variantId String?
+  quantity  Int             @default(1)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// COUPONS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Coupon {
+  id             String       @id @default(cuid())
+  code           String       @unique
+  type           DiscountType
+  value          Int
+  minOrderAmount Int?
+  maxUses        Int?
+  usedCount      Int          @default(0)
+  isActive       Boolean      @default(true)
+  expiresAt      DateTime?
+  orders         Order[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  store     Store?   @relation(fields: [storeId], references: [id])
+  storeId   String?  // null = valable partout
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ORDERS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Order {
+  id                   String          @id @default(cuid())
+  orderNumber          String          @unique
+  store                Store           @relation(fields: [storeId], references: [id])
+  storeId              String
+  user                 User?           @relation(fields: [userId], references: [id])
+  userId               String?
+  guestEmail           String?
+  guestPhone           String?
+  guestName            String?
+  status               OrderStatus     @default(PENDING)
+  paymentMethod        PaymentMethod
+  paymentStatus        PaymentStatus   @default(PENDING)
+  subtotal             Int
+  shippingCost         Int
+  discount             Int             @default(0)
+  storeDiscount        Int             @default(0)
+  total                Int
+  shippingAddress      Json
+  destination          String?
+  notes                String?
+  reservationExpiresAt DateTime?
+  coupon               Coupon?         @relation(fields: [couponId], references: [id])
+  couponId             String?
+  items                OrderItem[]
+  tracking             OrderTracking[]
+  payments             Payment[]
+  statusHistory        OrderStatusHistory[]
+  invoice              Invoice?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([storeId])
+  @@index([status, reservationExpiresAt])
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(cuid())
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId    String
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  message    String?
+  reason     String?
+  changedBy  String?
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId])
+}
+
+model OrderItem {
+  id           String          @id @default(cuid())
+  order        Order           @relation(fields: [orderId], references: [id])
+  orderId      String
+  product      Product         @relation(fields: [productId], references: [id])
+  productId    String
+  variant      ProductVariant? @relation(fields: [variantId], references: [id])
+  variantId    String?
+  productName  String
+  variantLabel String?
+  price        Int
+  quantity     Int
+  subtotal     Int
+}
+
+model OrderTracking {
+  id        String      @id @default(cuid())
+  order     Order       @relation(fields: [orderId], references: [id])
+  orderId   String
+  status    OrderStatus
+  message   String
+  location  String?
+  createdAt DateTime    @default(now())
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// FACTURES
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Invoice {
+  id              String        @id @default(cuid())
+  invoiceNumber   String        @unique
+  store           Store         @relation(fields: [storeId], references: [id])
+  storeId         String
+  order           Order         @relation(fields: [orderId], references: [id])
+  orderId         String        @unique
+  subtotal        Int
+  shippingCost    Int           @default(0)
+  discount        Int           @default(0)
+  storeDiscount   Int           @default(0)
+  tax             Int           @default(0)
+  total           Int
+  status          InvoiceStatus @default(GENERATED)
+  issuedAt        DateTime      @default(now())
+  creditNotes     CreditNote[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([storeId])
+}
+
+model InvoiceSequence {
+  storeId    String
+  year       Int
+  lastNumber Int    @default(0)
+  store      Store  @relation(fields: [storeId], references: [id])
+
+  @@id([storeId, year])
+}
+
+model CreditNote {
+  id               String           @id @default(cuid())
+  creditNoteNumber String           @unique
+  invoice          Invoice          @relation(fields: [invoiceId], references: [id])
+  invoiceId        String
+  store            Store            @relation(fields: [storeId], references: [id])
+  storeId          String
+  amount           Int
+  reason           String?
+  status           CreditNoteStatus @default(ISSUED)
+  createdBy        String?
+  createdAt        DateTime         @default(now())
+
+  @@index([storeId])
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// JOURNAL D'AUDIT
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  store      Store?   @relation(fields: [storeId], references: [id])
+  storeId    String?
+  action     String
+  module     String
+  entityId   String?
+  entityType String?
+  oldValue   Json?
+  newValue   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([module, createdAt])
+  @@index([userId])
+  @@index([storeId])
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// PAYMENTS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Payment {
+  id            String        @id @default(cuid())
+  order         Order         @relation(fields: [orderId], references: [id])
+  orderId       String
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  amount        Int
+  transactionId String?
+  momoNumber    String?
+  paidAt        DateTime?
+  notifyToken   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// NOTIFICATIONS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Notification {
+  id        String           @id @default(cuid())
+  user      User             @relation(fields: [userId], references: [id])
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// SETTINGS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// COMPTABILITÃ‰
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+model Supplier {
+  id           String          @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  address      String?
+  isActive     Boolean         @default(true)
+  stockEntries StockMovement[]
+  expenses     Expense[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model StockMovement {
+  id         String            @id @default(cuid())
+  store      Store?            @relation(fields: [storeId], references: [id])
+  storeId    String?
+  product    Product           @relation(fields: [productId], references: [id])
+  productId  String
+  variant    ProductVariant?   @relation(fields: [variantId], references: [id])
+  variantId  String?
+  type       StockMovementType
+  quantity   Int
+  unitCost   Int?
+  totalCost  Int?
+  reason     String?
+  supplier   Supplier?         @relation(fields: [supplierId], references: [id])
+  supplierId String?
+  reference  String?
+  orderId    String?
+  transferId String?
+  createdBy  String?
+  createdAt  DateTime          @default(now())
+
+  @@index([storeId])
+}
+
+model Expense {
+  id         String          @id @default(cuid())
+  store      Store?          @relation(fields: [storeId], references: [id])
+  storeId    String?
+  category   ExpenseCategory
+  label      String
+  amount     Int
+  date       DateTime
+  supplier   Supplier?       @relation(fields: [supplierId], references: [id])
+  supplierId String?
+  reference  String?
+  notes      String?
+  createdBy  String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([storeId])
+}
+
+model StockTransfer {
+  id             String              @id @default(cuid())
+  transferNumber String              @unique
+  fromStore      Store               @relation("TransferFrom", fields: [fromStoreId], references: [id])
+  fromStoreId    String
+  toStore        Store               @relation("TransferTo", fields: [toStoreId], references: [id])
+  toStoreId      String
+  status         TransferStatus      @default(PENDING)
+  notes          String?
+  items          StockTransferItem[]
+  validatedBy    String?
+  validatedAt    DateTime?
+  createdBy      String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([fromStoreId])
+  @@index([toStoreId])
+}
+
+model StockTransferItem {
+  id         String          @id @default(cuid())
+  transfer   StockTransfer   @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  transferId String
+  product    Product         @relation(fields: [productId], references: [id])
+  productId  String
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
+  variantId  String?
+  quantity   Int
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ENUMS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+enum Role {
+  CUSTOMER
+  STAFF 
+  ADMIN
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+  MOBILE_MONEY
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REJECTED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum NotificationType {
+  ORDER_CONFIRMED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  PAYMENT_RECEIVED
+  PROMO
+}
+
+enum StockMovementType {
+  IN
+  OUT_SALE
+  OUT_LOSS
+  OUT_RETURN
+  ADJUSTMENT
+  RETURN_IN
+  TRANSFER_OUT
+  TRANSFER_IN
+}
+
+enum ExpenseCategory {
+  STOCK_PURCHASE
+  SHIPPING
+  MARKETING
+  PACKAGING
+  SALARY
+  RENT
+  UTILITIES
+  OTHER
+}
+
+enum InvoiceStatus {
+  GENERATED
+  SENT
+  PAID
+  CANCELLED
+}
+
+enum StoreStaffRole {
+  MANAGER
+  ACCOUNTANT
+  COMMERCIAL
+  WAREHOUSE
+  DELIVERY
+}
+
+enum TransferStatus {
+  PENDING
+  VALIDATED
+  CANCELLED
+}
+
+enum CreditNoteStatus {
+  ISSUED
+  APPLIED
+  CANCELLED
+}
+enum VariantDisplayMode {
+  SIZE_FIRST
+  COLOR_FIRST
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  type      OtpType  @default(REGISTER)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email, type])
+}
+
+enum OtpType {
+  REGISTER
+  RESET_PASSWORD
+}
+model StockAlert {
+  id         String          @id @default(cuid())
+  user       User?           @relation(fields: [userId], references: [id])
+  userId     String?
+  email      String?
+  product    Product         @relation(fields: [productId], references: [id])
+  productId  String
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
+  variantId  String?
+  notifiedAt DateTime?
+  createdAt  DateTime        @default(now())
+
+  @@index([productId, variantId, notifiedAt])
+}
