@@ -238,6 +238,9 @@ async function createOrder(payload, user, ip = null) {
     });
 
     return created;
+  }, {
+    timeout: 20000,
+    maxWait: 10000,
   });
 
   // ── Emails async (commandes non-draft uniquement) ──────────────────────────
@@ -404,13 +407,13 @@ function buildOrdersWhere(query, storeIds = null) {
   if (query.search) {
     const s = String(query.search).trim();
     where.OR = [
-      { orderNumber: { contains: s, mode: 'insensitive' } },
-      { guestName: { contains: s, mode: 'insensitive' } },
-      { guestEmail: { contains: s, mode: 'insensitive' } },
-      { guestPhone: { contains: s, mode: 'insensitive' } },
-      { user: { email: { contains: s, mode: 'insensitive' } } },
-      { user: { firstName: { contains: s, mode: 'insensitive' } } },
-      { user: { lastName: { contains: s, mode: 'insensitive' } } },
+      { orderNumber: { contains: s } },
+      { guestName: { contains: s } },
+      { guestEmail: { contains: s } },
+      { guestPhone: { contains: s } },
+      { user: { email: { contains: s } } },
+      { user: { firstName: { contains: s } } },
+      { user: { lastName: { contains: s } } },
     ];
   }
 
