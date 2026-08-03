@@ -1,20 +1,11 @@
-// ============================================================
-// SCHEMA PRISMA COMPLET ET CORRIGÃ‰
-// Remplace ENTIÃˆREMENT le contenu de backend/prisma/schema.prisma
-// ============================================================
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// USERS & AUTH
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 model User {
   id            String         @id @default(cuid())
@@ -26,58 +17,54 @@ model User {
   role          Role           @default(CUSTOMER)
   refreshToken  String?
   isActive      Boolean        @default(true)
-  addresses     Address[]
-  orders        Order[]
-  carts         Cart[]
-  wishlist      Wishlist[]
-  reviews       Review[]
-  notifications Notification[]
-  userStores    UserStore[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  stockAlerts StockAlert[]
+  addresses     Address[]
+  carts         Cart[]
+  notifications Notification[]
+  orders        Order[]
+  reviews       Review[]
+  stockAlerts   StockAlert[]
+  userStores    UserStore[]
+  wishlist      Wishlist[]
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// BOUTIQUES (multi-boutiques)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 model Store {
-  id             String            @id @default(cuid())
-  code           String            @unique
-  name           String
-  address        String?
-  phone          String?
-  isMain         Boolean           @default(false)
-  isActive       Boolean           @default(true)
-  taxRate        Float             @default(0)
-  discountRate   Float             @default(0)
-  currency       String            @default("XOF")
-  exchangeRate   Float             @default(1)
-  orders         Order[]
-  invoices       Invoice[]
-  stockMovements StockMovement[]
-  expenses       Expense[]
-  auditLogs      AuditLog[]
-  userStores     UserStore[]
-  transfersFrom  StockTransfer[]   @relation("TransferFrom")
-  transfersTo    StockTransfer[]   @relation("TransferTo")
+  id               String            @id @default(cuid())
+  code             String            @unique
+  name             String
+  address          String?
+  phone            String?
+  isMain           Boolean           @default(false)
+  isActive         Boolean           @default(true)
+  taxRate          Float             @default(0)
+  discountRate     Float             @default(0)
+  currency         String            @default("XOF")
+  exchangeRate     Float             @default(1)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  auditLogs        AuditLog[]
+  coupons          Coupon[]
+  creditNotes      CreditNote[]
+  expenses         Expense[]
+  invoices         Invoice[]
   invoiceSequences InvoiceSequence[]
-  creditNotes    CreditNote[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  products  Product[]   // ← ajouter
-  coupons   Coupon[]    // ← ajouter
+  orders           Order[]
+  products         Product[]
+  stockMovements   StockMovement[]
+  transfersFrom    StockTransfer[]   @relation("TransferFrom")
+  transfersTo      StockTransfer[]   @relation("TransferTo")
+  userStores       UserStore[]
 }
 
 model UserStore {
-  id      String        @id @default(cuid())
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId  String
-  store   Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  storeId String
-  role    StoreStaffRole @default(MANAGER)
-  createdAt DateTime    @default(now())
+  id        String         @id @default(cuid())
+  userId    String
+  storeId   String
+  role      StoreStaffRole @default(MANAGER)
+  createdAt DateTime       @default(now())
+  store     Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, storeId])
   @@index([storeId])
@@ -85,7 +72,6 @@ model UserStore {
 
 model Address {
   id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
   userId    String
   label     String
   fullName  String
@@ -96,11 +82,10 @@ model Address {
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
+  user      User     @relation(fields: [userId], references: [id])
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// CATALOGUE
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @@index([userId], map: "Address_userId_fkey")
+}
 
 model Category {
   id        String    @id @default(cuid())
@@ -108,137 +93,134 @@ model Category {
   slug      String    @unique
   imageUrl  String?
   isActive  Boolean   @default(true)
-  products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  products  Product[]
 }
 
 model Product {
-  id              String           @id @default(cuid())
-  name            String
-  slug            String           @unique
- description      String           @default("")
-  price           Int
-  comparePrice    Int?
-  stock           Int
-  reservedStock   Int              @default(0)
-  isActive        Boolean          @default(true)
-  isFeatured      Boolean          @default(false)
-  purchasePrice   Int?
-  lowStockAlert   Int              @default(5)
-  overstockAlert  Int?
-  category        Category         @relation(fields: [categoryId], references: [id])
-  categoryId      String
-  images          ProductImage[]
-  variants        ProductVariant[]
-  cartItems       CartItem[]
-  orderItems      OrderItem[]
-  wishlist        Wishlist[]
-  reviews         Review[]
-  stockMovements  StockMovement[]
-  transferItems   StockTransferItem[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  variantDisplayMode  VariantDisplayMode  @default(SIZE_FIRST)
-  store     Store?   @relation(fields: [storeId], references: [id])
-  storeId   String?  // nullable = visible sur les deux boutiques
-  stockAlerts StockAlert[]
+  id                 String              @id @default(cuid())
+  name               String
+  slug               String              @unique
+  description        String              @default("")
+  price              Int
+  comparePrice       Int?
+  stock              Int
+  reservedStock      Int                 @default(0)
+  isActive           Boolean             @default(true)
+  isFeatured         Boolean             @default(false)
+  purchasePrice      Int?
+  lowStockAlert      Int                 @default(5)
+  overstockAlert     Int?
+  categoryId         String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  variantDisplayMode VariantDisplayMode  @default(SIZE_FIRST)
+  storeId            String?
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+  category           Category            @relation(fields: [categoryId], references: [id])
+  store              Store?              @relation(fields: [storeId], references: [id])
+  images             ProductImage[]
+  variants           ProductVariant[]
+  reviews            Review[]
+  stockAlerts        StockAlert[]
+  stockMovements     StockMovement[]
+  transferItems      StockTransferItem[]
+  wishlist           Wishlist[]
+
+  @@index([categoryId], map: "Product_categoryId_fkey")
+  @@index([storeId], map: "Product_storeId_fkey")
 }
 
 model ProductImage {
   id        String  @id @default(cuid())
-  product   Product @relation(fields: [productId], references: [id])
   productId String
   url       String
   publicId  String
   position  Int     @default(0)
   isMain    Boolean @default(false)
-  color     String?   // ← NOUVEAU
+  color     String?
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([productId], map: "ProductImage_productId_fkey")
 }
 
 model ProductVariant {
-  id             String          @id @default(cuid())
-  product        Product         @relation(fields: [productId], references: [id])
+  id             String              @id @default(cuid())
   productId      String
   size           String
   color          String
   stock          Int
-  reservedStock  Int              @default(0)
+  reservedStock  Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
   cartItems      CartItem[]
   orderItems     OrderItem[]
+  product        Product             @relation(fields: [productId], references: [id])
+  stockAlerts    StockAlert[]
   stockMovements StockMovement[]
   transferItems  StockTransferItem[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
 
   @@unique([productId, size, color])
-  stockAlerts StockAlert[]
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// WISHLIST
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 model Wishlist {
   id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
   userId    String
-  product   Product  @relation(fields: [productId], references: [id])
   productId String
   createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, productId])
+  @@index([productId], map: "Wishlist_productId_fkey")
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// REVIEWS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 model Review {
   id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
   userId    String
-  product   Product  @relation(fields: [productId], references: [id])
   productId String
   rating    Int
   comment   String?
   isVisible Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, productId])
+  @@index([productId], map: "Review_productId_fkey")
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// CART
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 model Cart {
   id          String     @id @default(cuid())
-  user        User?      @relation(fields: [userId], references: [id])
   userId      String?
   anonymousId String?    @unique
-  items       CartItem[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  user        User?      @relation(fields: [userId], references: [id])
+  items       CartItem[]
+
+  @@index([userId], map: "Cart_userId_fkey")
 }
 
 model CartItem {
   id        String          @id @default(cuid())
-  cart      Cart            @relation(fields: [cartId], references: [id])
   cartId    String
-  product   Product         @relation(fields: [productId], references: [id])
   productId String
-  variant   ProductVariant? @relation(fields: [variantId], references: [id])
   variantId String?
   quantity  Int             @default(1)
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
-}
+  cart      Cart            @relation(fields: [cartId], references: [id])
+  product   Product         @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// COUPONS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @@index([cartId], map: "CartItem_cartId_fkey")
+  @@index([productId], map: "CartItem_productId_fkey")
+  @@index([variantId], map: "CartItem_variantId_fkey")
+}
 
 model Coupon {
   id             String       @id @default(cuid())
@@ -250,56 +232,55 @@ model Coupon {
   usedCount      Int          @default(0)
   isActive       Boolean      @default(true)
   expiresAt      DateTime?
-  orders         Order[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  store     Store?   @relation(fields: [storeId], references: [id])
-  storeId   String?  // null = valable partout
+  storeId        String?
+  store          Store?       @relation(fields: [storeId], references: [id])
+  orders         Order[]
+
+  @@index([storeId], map: "Coupon_storeId_fkey")
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// ORDERS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 model Order {
-  id                   String          @id @default(cuid())
-  orderNumber          String          @unique
-  store                Store           @relation(fields: [storeId], references: [id])
+  id                   String               @id @default(cuid())
+  orderNumber          String               @unique
   storeId              String
-  user                 User?           @relation(fields: [userId], references: [id])
   userId               String?
   guestEmail           String?
   guestPhone           String?
   guestName            String?
-  status               OrderStatus     @default(PENDING)
+  status               OrderStatus          @default(PENDING)
   paymentMethod        PaymentMethod
-  paymentStatus        PaymentStatus   @default(PENDING)
+  paymentStatus        PaymentStatus        @default(PENDING)
   subtotal             Int
   shippingCost         Int
-  discount             Int             @default(0)
-  storeDiscount        Int             @default(0)
+  discount             Int                  @default(0)
+  storeDiscount        Int                  @default(0)
   total                Int
   shippingAddress      Json
   destination          String?
   notes                String?
   reservationExpiresAt DateTime?
-  coupon               Coupon?         @relation(fields: [couponId], references: [id])
   couponId             String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  invoice              Invoice?
+  coupon               Coupon?              @relation(fields: [couponId], references: [id])
+  store                Store                @relation(fields: [storeId], references: [id])
+  user                 User?                @relation(fields: [userId], references: [id])
   items                OrderItem[]
+  statusHistory        OrderStatusHistory[]
   tracking             OrderTracking[]
   payments             Payment[]
-  statusHistory        OrderStatusHistory[]
-  invoice              Invoice?
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
 
   @@index([storeId])
   @@index([status, reservationExpiresAt])
+  @@index([couponId], map: "Order_couponId_fkey")
+  @@index([userId], map: "Order_userId_fkey")
 }
 
 model OrderStatusHistory {
   id         String       @id @default(cuid())
-  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId    String
   fromStatus OrderStatus?
   toStatus   OrderStatus
@@ -307,57 +288,60 @@ model OrderStatusHistory {
   reason     String?
   changedBy  String?
   createdAt  DateTime     @default(now())
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
 }
 
 model OrderItem {
   id           String          @id @default(cuid())
-  order        Order           @relation(fields: [orderId], references: [id])
   orderId      String
-  product      Product         @relation(fields: [productId], references: [id])
   productId    String
-  variant      ProductVariant? @relation(fields: [variantId], references: [id])
   variantId    String?
   productName  String
   variantLabel String?
   price        Int
   quantity     Int
   subtotal     Int
+  order        Order           @relation(fields: [orderId], references: [id])
+  product      Product         @relation(fields: [productId], references: [id])
+  variant      ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([orderId], map: "OrderItem_orderId_fkey")
+  @@index([productId], map: "OrderItem_productId_fkey")
+  @@index([variantId], map: "OrderItem_variantId_fkey")
 }
 
 model OrderTracking {
   id        String      @id @default(cuid())
-  order     Order       @relation(fields: [orderId], references: [id])
   orderId   String
   status    OrderStatus
   message   String
   location  String?
   createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id])
+
+  @@index([orderId], map: "OrderTracking_orderId_fkey")
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// FACTURES
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 model Invoice {
-  id              String        @id @default(cuid())
-  invoiceNumber   String        @unique
-  store           Store         @relation(fields: [storeId], references: [id])
-  storeId         String
-  order           Order         @relation(fields: [orderId], references: [id])
-  orderId         String        @unique
-  subtotal        Int
-  shippingCost    Int           @default(0)
-  discount        Int           @default(0)
-  storeDiscount   Int           @default(0)
-  tax             Int           @default(0)
-  total           Int
-  status          InvoiceStatus @default(GENERATED)
-  issuedAt        DateTime      @default(now())
-  creditNotes     CreditNote[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  storeId       String
+  orderId       String        @unique
+  subtotal      Int
+  shippingCost  Int           @default(0)
+  discount      Int           @default(0)
+  storeDiscount Int           @default(0)
+  tax           Int           @default(0)
+  total         Int
+  status        InvoiceStatus @default(GENERATED)
+  issuedAt      DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  creditNotes   CreditNote[]
+  order         Order         @relation(fields: [orderId], references: [id])
+  store         Store         @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
 }
@@ -374,27 +358,23 @@ model InvoiceSequence {
 model CreditNote {
   id               String           @id @default(cuid())
   creditNoteNumber String           @unique
-  invoice          Invoice          @relation(fields: [invoiceId], references: [id])
   invoiceId        String
-  store            Store            @relation(fields: [storeId], references: [id])
   storeId          String
   amount           Int
   reason           String?
   status           CreditNoteStatus @default(ISSUED)
   createdBy        String?
   createdAt        DateTime         @default(now())
+  invoice          Invoice          @relation(fields: [invoiceId], references: [id])
+  store            Store            @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
+  @@index([invoiceId], map: "CreditNote_invoiceId_fkey")
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// JOURNAL D'AUDIT
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 model AuditLog {
   id         String   @id @default(cuid())
   userId     String?
-  store      Store?   @relation(fields: [storeId], references: [id])
   storeId    String?
   action     String
   module     String
@@ -404,19 +384,15 @@ model AuditLog {
   newValue   Json?
   ip         String?
   createdAt  DateTime @default(now())
+  store      Store?   @relation(fields: [storeId], references: [id])
 
   @@index([module, createdAt])
   @@index([userId])
   @@index([storeId])
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// PAYMENTS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 model Payment {
   id            String        @id @default(cuid())
-  order         Order         @relation(fields: [orderId], references: [id])
   orderId       String
   method        PaymentMethod
   status        PaymentStatus @default(PENDING)
@@ -427,15 +403,13 @@ model Payment {
   notifyToken   String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-}
+  order         Order         @relation(fields: [orderId], references: [id])
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// NOTIFICATIONS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @@index([orderId], map: "Payment_orderId_fkey")
+}
 
 model Notification {
   id        String           @id @default(cuid())
-  user      User             @relation(fields: [userId], references: [id])
   userId    String
   type      NotificationType
   title     String
@@ -443,11 +417,10 @@ model Notification {
   isRead    Boolean          @default(false)
   link      String?
   createdAt DateTime         @default(now())
-}
+  user      User             @relation(fields: [userId], references: [id])
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// SETTINGS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @@index([userId], map: "Notification_userId_fkey")
+}
 
 model Setting {
   id        Int      @id @default(autoincrement())
@@ -456,10 +429,6 @@ model Setting {
   updatedAt DateTime @updatedAt
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// COMPTABILITÃ‰
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 model Supplier {
   id           String          @id @default(cuid())
   name         String
@@ -467,70 +436,74 @@ model Supplier {
   phone        String?
   address      String?
   isActive     Boolean         @default(true)
-  stockEntries StockMovement[]
-  expenses     Expense[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
+  expenses     Expense[]
+  stockEntries StockMovement[]
 }
 
 model StockMovement {
   id         String            @id @default(cuid())
-  store      Store?            @relation(fields: [storeId], references: [id])
   storeId    String?
-  product    Product           @relation(fields: [productId], references: [id])
   productId  String
-  variant    ProductVariant?   @relation(fields: [variantId], references: [id])
   variantId  String?
   type       StockMovementType
   quantity   Int
   unitCost   Int?
   totalCost  Int?
   reason     String?
-  supplier   Supplier?         @relation(fields: [supplierId], references: [id])
   supplierId String?
   reference  String?
   orderId    String?
   transferId String?
   createdBy  String?
   createdAt  DateTime          @default(now())
+  product    Product           @relation(fields: [productId], references: [id])
+  store      Store?            @relation(fields: [storeId], references: [id])
+  supplier   Supplier?         @relation(fields: [supplierId], references: [id])
+  variant    ProductVariant?   @relation(fields: [variantId], references: [id])
 
   @@index([storeId])
+  @@index([productId], map: "StockMovement_productId_fkey")
+  @@index([supplierId], map: "StockMovement_supplierId_fkey")
+  @@index([variantId], map: "StockMovement_variantId_fkey")
 }
 
 model Expense {
   id         String          @id @default(cuid())
-  store      Store?          @relation(fields: [storeId], references: [id])
   storeId    String?
   category   ExpenseCategory
   label      String
   amount     Int
   date       DateTime
-  supplier   Supplier?       @relation(fields: [supplierId], references: [id])
   supplierId String?
   reference  String?
   notes      String?
   createdBy  String?
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
+  store      Store?          @relation(fields: [storeId], references: [id])
+  supplier   Supplier?       @relation(fields: [supplierId], references: [id])
 
   @@index([storeId])
+  @@index([supplierId], map: "Expense_supplierId_fkey")
 }
 
 model StockTransfer {
   id             String              @id @default(cuid())
   transferNumber String              @unique
-  fromStore      Store               @relation("TransferFrom", fields: [fromStoreId], references: [id])
   fromStoreId    String
-  toStore        Store               @relation("TransferTo", fields: [toStoreId], references: [id])
   toStoreId      String
   status         TransferStatus      @default(PENDING)
   notes          String?
-  items          StockTransferItem[]
   validatedBy    String?
   validatedAt    DateTime?
   createdBy      String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+  fromStore      Store               @relation("TransferFrom", fields: [fromStoreId], references: [id])
+  toStore        Store               @relation("TransferTo", fields: [toStoreId], references: [id])
+  items          StockTransferItem[]
 
   @@index([fromStoreId])
   @@index([toStoreId])
@@ -538,22 +511,51 @@ model StockTransfer {
 
 model StockTransferItem {
   id         String          @id @default(cuid())
-  transfer   StockTransfer   @relation(fields: [transferId], references: [id], onDelete: Cascade)
   transferId String
-  product    Product         @relation(fields: [productId], references: [id])
   productId  String
-  variant    ProductVariant? @relation(fields: [variantId], references: [id])
   variantId  String?
   quantity   Int
+  product    Product         @relation(fields: [productId], references: [id])
+  transfer   StockTransfer   @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([productId], map: "StockTransferItem_productId_fkey")
+  @@index([transferId], map: "StockTransferItem_transferId_fkey")
+  @@index([variantId], map: "StockTransferItem_variantId_fkey")
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// ENUMS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+model OtpCode {
+  id        String    @id @default(cuid())
+  email     String
+  code      String
+  type      OtpType   @default(REGISTER)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email, type])
+}
+
+model StockAlert {
+  id         String          @id @default(cuid())
+  userId     String?
+  email      String?
+  productId  String
+  variantId  String?
+  notifiedAt DateTime?
+  createdAt  DateTime        @default(now())
+  product    Product         @relation(fields: [productId], references: [id])
+  user       User?           @relation(fields: [userId], references: [id])
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([productId, variantId, notifiedAt])
+  @@index([userId], map: "StockAlert_userId_fkey")
+  @@index([variantId], map: "StockAlert_variantId_fkey")
+}
 
 enum Role {
   CUSTOMER
-  STAFF 
+  STAFF
   ADMIN
 }
 
@@ -641,38 +643,13 @@ enum CreditNoteStatus {
   APPLIED
   CANCELLED
 }
+
 enum VariantDisplayMode {
   SIZE_FIRST
   COLOR_FIRST
 }
 
-model OtpCode {
-  id        String   @id @default(cuid())
-  email     String
-  code      String
-  type      OtpType  @default(REGISTER)
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime @default(now())
-
-  @@index([email, type])
-}
-
 enum OtpType {
   REGISTER
   RESET_PASSWORD
-}
-model StockAlert {
-  id         String          @id @default(cuid())
-  user       User?           @relation(fields: [userId], references: [id])
-  userId     String?
-  email      String?
-  product    Product         @relation(fields: [productId], references: [id])
-  productId  String
-  variant    ProductVariant? @relation(fields: [variantId], references: [id])
-  variantId  String?
-  notifiedAt DateTime?
-  createdAt  DateTime        @default(now())
-
-  @@index([productId, variantId, notifiedAt])
 }
