@@ -13,6 +13,22 @@ const prisma = require('./src/config/database');
 
 const PORT = process.env.PORT || 5000;
 
+// ── Keep-alive DB — toutes les 5 minutes ────────────────────────────────────
+// Maintient la connexion Prisma ↔ MySQL "chaude" pour éviter de payer le coût
+// d'une reconnexion complète (handshake TCP + auth) à chaque nouvelle requête
+// après une période d'inactivité. Impact mesuré : ~1500ms (connexion froide)
+// vs ~200ms (connexion chaude) sur cette liaison Render ↔ Systalink.
+cron.schedule('*/5 * * * *', async () => {
+  try {
+    const start = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    const duration = Date.now() - start;
+    console.log(`[cron] Keep-alive DB — ${duration}ms`);
+  } catch (err) {
+    console.error('[cron] Erreur keep-alive DB:', err.message);
+  }
+});
+
 // Expiration des réservations brouillon WhatsApp — toutes les heures
 cron.schedule('0 * * * *', async () => {
   try {
