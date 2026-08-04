@@ -4,6 +4,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const reportRoutes = require('./modules/reports/report.routes');
+const prisma = require('./config/database');
 
 const apiLimiter = require('./middlewares/rateLimit.middleware').apiLimiter;
 const requestLogger = require('./middlewares/logger.middleware');
@@ -41,6 +42,8 @@ app.set('trust proxy', 1);
 const allowedOrigins = [
   'https://urban-beauty.vercel.app',
   'https://son-tech.vercel.app',
+  'https://sonshop.beauty',
+  'https://www.sonshop.beauty',
   'http://localhost:5173',
   'http://localhost:5174',
 ];
@@ -66,6 +69,18 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ⚠️ TEMPORAIRE — route de diagnostic latence DB, à retirer après test
+app.get('/api/debug/db-latency', async (req, res) => {
+  try {
+    const start = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    const duration = Date.now() - start;
+    res.json({ latencyMs: duration });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/', (req, res) => {
