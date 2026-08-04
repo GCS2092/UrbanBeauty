@@ -87,6 +87,9 @@ async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, 
       throw error;
     }
 
+    // ── Stock/facture : garde l'ordre séquentiel ici, car fulfillStockSale et
+    // createInvoiceForOrder peuvent toucher les mêmes lignes produit/stock —
+    // les paralléliser risquerait des écritures concurrentes incohérentes.
     if (willBePaid && !wasPaid) {
       await fulfillStockSale(tx, order.items, order.id, adminUser?.id, order.storeId);
       await createInvoiceForOrder(tx, order);
@@ -114,69 +117,70 @@ async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, 
           ? 'PENDING'
           : order.status;
 
-    // 1. mise à jour "légère" — pas d'include lourd ici
+    // 1. mise à jour "légère" du statut — doit précéder le reste (les autres
+    // écritures ne dépendent pas de son résultat, mais on garde la commande
+    // cohérente dès que possible en cas d'erreur ultérieure)
     await tx.order.update({
       where: { id: orderId },
       data: { paymentStatus, status: newOrderStatus },
     });
 
-    // 2. traces, APRÈS la mise à jour du statut
-    await tx.orderTracking.create({
-      data: {
-        orderId: order.id,
-        status: newOrderStatus,
-        message:
-          paymentStatus === 'PAID'
-            ? 'Paiement validé — commande confirmée.'
-            : paymentStatus === 'REJECTED'
-              ? `Paiement rejeté. ${note || ''}`.trim()
-              : `Paiement remis en attente. ${note || ''}`.trim(),
-      },
-    });
-
-    await recordStatusHistory(tx, {
-      orderId: order.id,
-      fromStatus: order.status,
-      toStatus: newOrderStatus,
-      message: `Paiement : ${order.paymentStatus} → ${paymentStatus}`,
-      reason: note || null,
-      changedBy: adminUser?.id,
-    });
-
-    // 3. paiement — upsert, AVANT le fetch final
+    // 2. paiement — lecture nécessaire avant upsert (doit rester à part)
     const payment = await tx.payment.findFirst({ where: { orderId } });
-    if (payment) {
-      await tx.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: paymentStatus,
-          paidAt: paymentStatus === 'PAID' ? new Date() : null,
-        },
-      });
-    } else {
-      await tx.payment.create({
+
+    // 3. écritures indépendantes entre elles → en parallèle
+    // (tracking, historique, paiement, audit ne se lisent pas mutuellement)
+    await Promise.all([
+      tx.orderTracking.create({
         data: {
           orderId: order.id,
-          method: order.paymentMethod,
-          status: paymentStatus,
-          amount: order.total,
-          paidAt: paymentStatus === 'PAID' ? new Date() : null,
+          status: newOrderStatus,
+          message:
+            paymentStatus === 'PAID'
+              ? 'Paiement validé — commande confirmée.'
+              : paymentStatus === 'REJECTED'
+                ? `Paiement rejeté. ${note || ''}`.trim()
+                : `Paiement remis en attente. ${note || ''}`.trim(),
         },
-      });
-    }
-
-    await logAudit({
-      tx,
-      userId: adminUser?.id,
-      storeId: order.storeId,
-      action: 'PAYMENT_STATUS_UPDATE',
-      module: 'orders',
-      entityId: order.id,
-      entityType: 'Order',
-      oldValue: { paymentStatus: order.paymentStatus, status: order.status },
-      newValue: { paymentStatus, status: newOrderStatus },
-      ip,
-    });
+      }),
+      recordStatusHistory(tx, {
+        orderId: order.id,
+        fromStatus: order.status,
+        toStatus: newOrderStatus,
+        message: `Paiement : ${order.paymentStatus} → ${paymentStatus}`,
+        reason: note || null,
+        changedBy: adminUser?.id,
+      }),
+      payment
+        ? tx.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: paymentStatus,
+              paidAt: paymentStatus === 'PAID' ? new Date() : null,
+            },
+          })
+        : tx.payment.create({
+            data: {
+              orderId: order.id,
+              method: order.paymentMethod,
+              status: paymentStatus,
+              amount: order.total,
+              paidAt: paymentStatus === 'PAID' ? new Date() : null,
+            },
+          }),
+      logAudit({
+        tx,
+        userId: adminUser?.id,
+        storeId: order.storeId,
+        action: 'PAYMENT_STATUS_UPDATE',
+        module: 'orders',
+        entityId: order.id,
+        entityType: 'Order',
+        oldValue: { paymentStatus: order.paymentStatus, status: order.status },
+        newValue: { paymentStatus, status: newOrderStatus },
+        ip,
+      }),
+    ]);
 
     // 4. fetch final, complet et frais — EN DERNIER
     return tx.order.findUnique({
@@ -247,37 +251,37 @@ async function changeOrderStatusAtomic(orderId, payload, adminUser, ip) {
       data: { status: payload.status },
     });
 
-    // 2. on crée les traces APRÈS
-    await tx.orderTracking.create({
-      data: {
+    // 2. écritures indépendantes entre elles → en parallèle
+    await Promise.all([
+      tx.orderTracking.create({
+        data: {
+          orderId: order.id,
+          status: payload.status,
+          message: payload.message || `Statut changé en ${payload.status}`,
+          location: payload.location || null,
+        },
+      }),
+      recordStatusHistory(tx, {
         orderId: order.id,
-        status: payload.status,
-        message: payload.message || `Statut changé en ${payload.status}`,
-        location: payload.location || null,
-      },
-    });
-
-    await recordStatusHistory(tx, {
-      orderId: order.id,
-      fromStatus: order.status,
-      toStatus: payload.status,
-      message: payload.message,
-      reason: payload.reason,
-      changedBy: adminUser?.id,
-    });
-
-    await logAudit({
-      tx,
-      userId: adminUser?.id,
-      storeId: order.storeId,
-      action: 'ORDER_STATUS_UPDATE',
-      module: 'orders',
-      entityId: order.id,
-      entityType: 'Order',
-      oldValue: { status: order.status },
-      newValue: { status: payload.status },
-      ip,
-    });
+        fromStatus: order.status,
+        toStatus: payload.status,
+        message: payload.message,
+        reason: payload.reason,
+        changedBy: adminUser?.id,
+      }),
+      logAudit({
+        tx,
+        userId: adminUser?.id,
+        storeId: order.storeId,
+        action: 'ORDER_STATUS_UPDATE',
+        module: 'orders',
+        entityId: order.id,
+        entityType: 'Order',
+        oldValue: { status: order.status },
+        newValue: { status: payload.status },
+        ip,
+      }),
+    ]);
 
     // 3. on refetch tout, propre et complet, EN DERNIER
     return tx.order.findUnique({
