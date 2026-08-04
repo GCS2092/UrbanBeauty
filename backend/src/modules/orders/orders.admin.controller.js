@@ -245,10 +245,10 @@ async function searchUsers(req, res, next) {
       where: q.trim()
         ? {
             OR: [
-              { firstName: { contains: q, mode: 'insensitive' } },
-              { lastName: { contains: q, mode: 'insensitive' } },
-              { email: { contains: q, mode: 'insensitive' } },
-              { phone: { contains: q, mode: 'insensitive' } },
+              { firstName: { contains: q } },
+              { lastName: { contains: q } },
+              { email: { contains: q } },
+              { phone: { contains: q } },
             ],
           }
         : {},
@@ -283,7 +283,7 @@ async function searchProducts(req, res, next) {
         ...(categoryId && { categoryId }),
         ...(q.trim() && {
           OR: [
-            { name: { contains: q, mode: 'insensitive' } },
+            { name: { contains: q } },
           ],
         }),
       },

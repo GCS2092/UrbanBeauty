@@ -53,10 +53,10 @@ function buildInvoicesWhere(query, storeIds = null) {
   if (query.search) {
     const s = String(query.search).trim();
     where.OR = [
-      { invoiceNumber: { contains: s, mode: 'insensitive' } },
-      { order: { orderNumber: { contains: s, mode: 'insensitive' } } },
-      { order: { guestName: { contains: s, mode: 'insensitive' } } },
-      { order: { guestEmail: { contains: s, mode: 'insensitive' } } },
+      { invoiceNumber: { contains: s } },
+      { order: { orderNumber: { contains: s } } },
+      { order: { guestName: { contains: s } } },
+      { order: { guestEmail: { contains: s } } },
     ];
   }
 

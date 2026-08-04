@@ -21,8 +21,8 @@ async function getProducts(query) {
     ...(query.category && { category: { slug: query.category } }),
     ...(query.search && {
       OR: [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { description: { contains: query.search, mode: 'insensitive' } },
+        { name: { contains: query.search } },
+        { description: { contains: query.search } },
       ],
     }),
   };
@@ -49,8 +49,8 @@ async function getAllProductsAdmin(query, accessibleStoreIds = null) {
     ...buildAdminCatalogWhere(query.storeId, accessibleStoreIds),
     ...(query.search && {
       OR: [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { description: { contains: query.search, mode: 'insensitive' } },
+        { name: { contains: query.search } },
+        { description: { contains: query.search } },
       ],
     }),
   };
