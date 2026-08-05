@@ -11,22 +11,24 @@ async function mergeGuestCart(userId, anonymousId) {
     userCart = await prisma.cart.create({ data: { userId } });
   }
 
-  for (const item of guestCart.items) {
-    const existingItem = await prisma.cartItem.findFirst({
-      where: {
-        cartId: userCart.id,
-        productId: item.productId,
-        variantId: item.variantId,
-      },
-    });
-
-    if (existingItem) {
-      await prisma.cartItem.update({
-        where: { id: existingItem.id },
-        data: { quantity: existingItem.quantity + item.quantity },
+  // ── Articles indépendants entre eux → traités en parallèle ──────────────────
+  await Promise.all(
+    guestCart.items.map(async (item) => {
+      const existingItem = await prisma.cartItem.findFirst({
+        where: {
+          cartId: userCart.id,
+          productId: item.productId,
+          variantId: item.variantId,
+        },
       });
-    } else {
-      await prisma.cartItem.create({
+
+      if (existingItem) {
+        return prisma.cartItem.update({
+          where: { id: existingItem.id },
+          data: { quantity: existingItem.quantity + item.quantity },
+        });
+      }
+      return prisma.cartItem.create({
         data: {
           cartId: userCart.id,
           productId: item.productId,
@@ -34,9 +36,11 @@ async function mergeGuestCart(userId, anonymousId) {
           quantity: item.quantity,
         },
       });
-    }
-  }
+    })
+  );
 
+  // ── Nettoyage panier invité — indépendant, en parallèle du reste possible,
+  // mais doit rester après le merge pour ne pas perdre les items ─────────────
   await prisma.cartItem.deleteMany({ where: { cartId: guestCart.id } });
   await prisma.cart.delete({ where: { id: guestCart.id } });
   return userCart;
@@ -80,13 +84,26 @@ async function getCart(query) {
   return prisma.cart.findUnique({
     where: { id: cart.id },
     include: {
-  items: {
-    include: {
-      product: { include: { images: true } },
-      variant: true,
+      items: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              price: true,
+              comparePrice: true,
+              stock: true,
+              reservedStock: true,
+              // ✅ Seulement l'image principale, pas toutes les images —
+              // le panier n'a besoin que d'une miniature par article.
+              images: { where: { isMain: true }, take: 1 },
+            },
+          },
+          variant: true,
+        },
+      },
     },
-  },
-},
   });
 }
 
