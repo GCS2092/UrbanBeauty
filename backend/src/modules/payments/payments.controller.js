@@ -10,6 +10,8 @@ async function initier(req, res, next) {
     const result = await creerPaiementPourCommande(orderId);
     res.json(result);
   } catch (err) {
+    // ⚠️ TEMPORAIRE — log détaillé pour diagnostiquer le 422 CinetPay
+    console.error('Erreur CinetPay détaillée:', err.response?.data || err.message);
     next(err);
   }
 }
