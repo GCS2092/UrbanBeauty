@@ -21,24 +21,27 @@ async function getAccessToken() {
 async function initierPaiement({ merchantTransactionId, amount, designation, customer, notifyUrl, successUrl, failedUrl }) {
   const token = await getAccessToken();
 
-  const { data } = await axios.post(
-    `${BASE_URL}/v1/payment`,
-    {
-      currency: 'XOF',
-      merchant_transaction_id: merchantTransactionId,
-      amount,
-      lang: 'fr',
-      designation,
-      client_email: customer.email,
-      client_phone_number: customer.phone,
-      client_first_name: customer.firstName,
-      client_last_name: customer.lastName,
-      success_url: successUrl,
-      failed_url: failedUrl,
-      notify_url: notifyUrl,
-    },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  const payload = {
+    currency: 'XOF',
+    merchant_transaction_id: merchantTransactionId,
+    amount,
+    lang: 'fr',
+    designation,
+    client_email: customer.email,
+    client_phone_number: customer.phone,
+    client_first_name: customer.firstName,
+    client_last_name: customer.lastName,
+    success_url: successUrl,
+    failed_url: failedUrl,
+    notify_url: notifyUrl,
+  };
+
+  // ⚠️ TEMPORAIRE — log du payload exact pour diagnostiquer le 422 INVALID_PARAMS
+  console.log('Payload envoyé à CinetPay:', JSON.stringify(payload, null, 2));
+
+  const { data } = await axios.post(`${BASE_URL}/v1/payment`, payload, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
   return data;
 }
