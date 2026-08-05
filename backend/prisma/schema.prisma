@@ -593,6 +593,7 @@ enum NotificationType {
   ORDER_CANCELLED
   PAYMENT_RECEIVED
   PROMO
+  NEW_ORDER
 }
 
 enum StockMovementType {
