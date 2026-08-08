@@ -392,20 +392,32 @@ model AuditLog {
 }
 
 model Payment {
-  id            String        @id @default(cuid())
-  orderId       String
-  method        PaymentMethod
-  status        PaymentStatus @default(PENDING)
-  amount        Int
-  transactionId String?
-  momoNumber    String?
-  paidAt        DateTime?
-  notifyToken   String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  order         Order         @relation(fields: [orderId], references: [id])
+  id      String        @id @default(cuid())
+  orderId String
+  method  PaymentMethod
+  status  PaymentStatus @default(PENDING)
+  amount  Int
 
-  @@index([orderId], map: "Payment_orderId_fkey")
+  // Identifiant généré par notre boutique
+  merchantTransactionId String?
+
+  // Identifiant généré par CinetPay
+  transactionId String?
+
+  momoNumber String?
+
+  // Token utilisé pour sécuriser le webhook CinetPay
+  notifyToken String?
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([merchantTransactionId])
+  @@index([transactionId])
 }
 
 model Notification {
