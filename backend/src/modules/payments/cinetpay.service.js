@@ -16,7 +16,9 @@ async function getAccessToken() {
   });
 
   cachedToken = data.access_token;
-  tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+
+  tokenExpiry =
+    Date.now() + Math.max((data.expires_in - 60) * 1000, 30_000);
 
   return cachedToken;
 }
@@ -38,31 +40,42 @@ async function initierPaiement({
     amount,
     lang: 'fr',
     designation,
+
     client_email: customer.email,
     client_phone_number: customer.phone,
     client_first_name: customer.firstName,
     client_last_name: customer.lastName,
+
     success_url: successUrl,
     failed_url: failedUrl,
     notify_url: notifyUrl,
   };
 
-  // ⚠️ TEMPORAIRE — log du payload exact pour diagnostiquer CinetPay
+  // Diagnostic temporaire
   console.log(
     'Payload envoyé à CinetPay:',
     JSON.stringify(payload, null, 2)
   );
 
-  // 🌍 Diagnostic : récupérer l'IP publique réellement utilisée
-  // par le serveur Render pour ses requêtes sortantes.
-  const { data: ipData } = await axios.get(
-    'https://api.ipify.org?format=json'
-  );
+  // Diagnostic IP publique Render
+  try {
+    const { data: ipData } = await axios.get(
+      'https://api.ipify.org?format=json',
+      {
+        timeout: 5000,
+      }
+    );
 
-  console.log(
-    '🌍 IP SORTANTE RÉELLE POUR CINETPAY :',
-    ipData.ip
-  );
+    console.log(
+      '🌍 IP SORTANTE RÉELLE POUR CINETPAY :',
+      ipData.ip
+    );
+  } catch (error) {
+    console.warn(
+      '⚠️ Impossible de récupérer l’IP publique Render:',
+      error.message
+    );
+  }
 
   const { data } = await axios.post(
     `${BASE_URL}/v1/payment`,
@@ -70,11 +83,13 @@ async function initierPaiement({
     {
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+      timeout: 15000,
     }
   );
 
-  // ⚠️ TEMPORAIRE — diagnostic de la réponse CinetPay
+  // Diagnostic temporaire
   console.log(
     '✅ Réponse CinetPay complète:',
     JSON.stringify(data, null, 2)
@@ -96,8 +111,15 @@ async function verifierStatut(merchantTransactionId) {
     {
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+      timeout: 15000,
     }
+  );
+
+  console.log(
+    '🔎 Vérification CinetPay:',
+    JSON.stringify(data, null, 2)
   );
 
   return data;
