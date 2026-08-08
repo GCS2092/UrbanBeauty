@@ -16,8 +16,14 @@ async function creerPaiementPourCommande(orderId) {
   const merchantTransactionId = `CMD${order.id}${Date.now()}`.slice(0, 30);
 
   const customer = {
-    firstName: order.user?.firstName || order.guestName?.split(' ')[0] || 'Client',
-    lastName: order.user?.lastName || order.guestName?.split(' ')[1] || 'Boutique',
+    firstName:
+      order.user?.firstName ||
+      order.guestName?.split(' ')[0] ||
+      'Client',
+    lastName:
+      order.user?.lastName ||
+      order.guestName?.split(' ')[1] ||
+      'Boutique',
     email: order.user?.email || order.guestEmail,
     phone: order.user?.phone || order.guestPhone,
   };
@@ -39,8 +45,13 @@ async function creerPaiementPourCommande(orderId) {
   // orders.service.js crée déjà un Payment PENDING à la création de la commande.
   // On le met à jour au lieu d'en créer un deuxième (évite les doublons).
   const existingPayment = await prisma.payment.findFirst({
-    where: { orderId: order.id, status: 'PENDING' },
-    orderBy: { createdAt: 'desc' },
+    where: {
+      orderId: order.id,
+      status: 'PENDING',
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
   });
 
   if (existingPayment) {
@@ -64,10 +75,15 @@ async function creerPaiementPourCommande(orderId) {
     });
   }
 
-  return { paymentUrl: result.payment_url };
+  return {
+    paymentUrl: result.payment_url,
+  };
 }
 
-async function traiterNotification({ notify_token, merchant_transaction_id }) {
+async function traiterNotification({
+  notify_token,
+  merchant_transaction_id,
+}) {
   if (!merchant_transaction_id) {
     const err = new Error('merchant_transaction_id manquant');
     err.statusCode = 400;
@@ -75,7 +91,9 @@ async function traiterNotification({ notify_token, merchant_transaction_id }) {
   }
 
   const payment = await prisma.payment.findFirst({
-    where: { transactionId: merchant_transaction_id },
+    where: {
+      transactionId: merchant_transaction_id,
+    },
   });
 
   if (!payment) {
@@ -92,7 +110,9 @@ async function traiterNotification({ notify_token, merchant_transaction_id }) {
 
   // Idempotence : déjà traité, on ne refait rien
   if (payment.status === 'PAID' || payment.status === 'REJECTED') {
-    return { alreadyProcessed: true };
+    return {
+      alreadyProcessed: true,
+    };
   }
 
   // Ne jamais faire confiance au payload : on re-vérifie via l'API
@@ -102,30 +122,48 @@ async function traiterNotification({ notify_token, merchant_transaction_id }) {
   if (statutReel === 'SUCCESS') {
     await prisma.payment.update({
       where: { id: payment.id },
-      data: { status: 'PAID', paidAt: new Date() },
+      data: {
+        status: 'PAID',
+        paidAt: new Date(),
+      },
     });
+
     await prisma.order.update({
       where: { id: payment.orderId },
-      data: { paymentStatus: 'PAID', status: 'CONFIRMED' },
+      data: {
+        paymentStatus: 'PAID',
+        status: 'CONFIRMED',
+      },
     });
   } else if (statutReel === 'FAILED') {
     await prisma.payment.update({
       where: { id: payment.id },
-      data: { status: 'REJECTED' },
+      data: {
+        status: 'REJECTED',
+      },
     });
+
     await prisma.order.update({
       where: { id: payment.orderId },
-      data: { paymentStatus: 'REJECTED' },
+      data: {
+        paymentStatus: 'REJECTED',
+        status: 'CONFIRMED',
+      },
     });
   }
 
-  return { status: statutReel };
+  return {
+    status: statutReel,
+  };
 }
 
 // Vérification active du statut, appelée par le frontend au retour du client
 // depuis CinetPay (comble le délai éventuel avant que le webhook n'arrive).
 async function verifierPaiementParCommande(orderId) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+  });
+
   if (!order) {
     const err = new Error('Commande introuvable');
     err.statusCode = 404;
@@ -138,14 +176,18 @@ async function verifierPaiementParCommande(orderId) {
   });
 
   if (!payment || !payment.transactionId) {
-    const err = new Error('Aucun paiement CinetPay initié pour cette commande');
+    const err = new Error(
+      'Aucun paiement CinetPay initié pour cette commande'
+    );
     err.statusCode = 404;
     throw err;
   }
 
   // Déjà tranché (webhook déjà passé) → pas besoin de rappeler CinetPay
   if (payment.status === 'PAID' || payment.status === 'REJECTED') {
-    return { status: payment.status };
+    return {
+      status: payment.status,
+    };
   }
 
   const verif = await verifierStatut(payment.transactionId);
@@ -154,28 +196,53 @@ async function verifierPaiementParCommande(orderId) {
   if (statutReel === 'SUCCESS') {
     await prisma.payment.update({
       where: { id: payment.id },
-      data: { status: 'PAID', paidAt: new Date() },
+      data: {
+        status: 'PAID',
+        paidAt: new Date(),
+      },
     });
+
     await prisma.order.update({
       where: { id: orderId },
-      data: { paymentStatus: 'PAID', status: 'CONFIRMED' },
+      data: {
+        paymentStatus: 'PAID',
+        status: 'CONFIRMED',
+      },
     });
-    return { status: 'PAID' };
+
+    return {
+      status: 'PAID',
+    };
   }
 
   if (statutReel === 'FAILED') {
     await prisma.payment.update({
       where: { id: payment.id },
-      data: { status: 'REJECTED' },
+      data: {
+        status: 'REJECTED',
+      },
     });
+
     await prisma.order.update({
       where: { id: orderId },
-      data: { paymentStatus: 'REJECTED' },
+      data: {
+        paymentStatus: 'REJECTED',
+        status: 'CONFIRMED',
+      },
     });
-    return { status: 'REJECTED' };
+
+    return {
+      status: 'REJECTED',
+    };
   }
 
-  return { status: 'PENDING' }; // toujours en cours de traitement
+  return {
+    status: 'PENDING',
+  }; // toujours en cours de traitement
 }
 
-module.exports = { creerPaiementPourCommande, traiterNotification, verifierPaiementParCommande };
+module.exports = {
+  creerPaiementPourCommande,
+  traiterNotification,
+  verifierPaiementParCommande,
+};

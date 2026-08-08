@@ -15,10 +15,19 @@ async function getAccessToken() {
 
   cachedToken = data.access_token;
   tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+
   return cachedToken;
 }
 
-async function initierPaiement({ merchantTransactionId, amount, designation, customer, notifyUrl, successUrl, failedUrl }) {
+async function initierPaiement({
+  merchantTransactionId,
+  amount,
+  designation,
+  customer,
+  notifyUrl,
+  successUrl,
+  failedUrl,
+}) {
   const token = await getAccessToken();
 
   const payload = {
@@ -36,11 +45,16 @@ async function initierPaiement({ merchantTransactionId, amount, designation, cus
     notify_url: notifyUrl,
   };
 
-  // ⚠️ TEMPORAIRE — log du payload exact pour diagnostiquer le 422 INVALID_PARAMS
-  console.log('Payload envoyé à CinetPay:', JSON.stringify(payload, null, 2));
+  // ⚠️ TEMPORAIRE — log du payload exact pour diagnostiquer les paramètres CinetPay
+  console.log(
+    'Payload envoyé à CinetPay:',
+    JSON.stringify(payload, null, 2)
+  );
 
   const { data } = await axios.post(`${BASE_URL}/v1/payment`, payload, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   return data;
@@ -49,11 +63,20 @@ async function initierPaiement({ merchantTransactionId, amount, designation, cus
 async function verifierStatut(merchantTransactionId) {
   const token = await getAccessToken();
 
-  const { data } = await axios.get(`${BASE_URL}/v1/payment/${merchantTransactionId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const { data } = await axios.get(
+    `${BASE_URL}/v1/payment/${merchantTransactionId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
   return data;
 }
 
-module.exports = { getAccessToken, initierPaiement, verifierStatut };
+module.exports = {
+  getAccessToken,
+  initierPaiement,
+  verifierStatut,
+};
