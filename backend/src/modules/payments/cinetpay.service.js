@@ -6,7 +6,9 @@ let cachedToken = null;
 let tokenExpiry = 0;
 
 async function getAccessToken() {
-  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
+  if (cachedToken && Date.now() < tokenExpiry) {
+    return cachedToken;
+  }
 
   const { data } = await axios.post(`${BASE_URL}/v1/oauth/login`, {
     api_key: process.env.CINETPAY_API_KEY,
@@ -45,18 +47,32 @@ async function initierPaiement({
     notify_url: notifyUrl,
   };
 
-  // ⚠️ TEMPORAIRE — log du payload exact pour diagnostiquer les paramètres CinetPay
+  // ⚠️ TEMPORAIRE — log du payload exact pour diagnostiquer CinetPay
   console.log(
     'Payload envoyé à CinetPay:',
     JSON.stringify(payload, null, 2)
   );
-const { data: ipData } = await axios.get('https://api.ipify.org?format=json');
-console.log('🌍 IP SORTANTE RÉELLE POUR CINETPAY :', ipData.ip);
-  const { data } = await axios.post(`${BASE_URL}/v1/payment`, payload, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+
+  // 🌍 Diagnostic : récupérer l'IP publique réellement utilisée
+  // par le serveur Render pour ses requêtes sortantes.
+  const { data: ipData } = await axios.get(
+    'https://api.ipify.org?format=json'
+  );
+
+  console.log(
+    '🌍 IP SORTANTE RÉELLE POUR CINETPAY :',
+    ipData.ip
+  );
+
+  const { data } = await axios.post(
+    `${BASE_URL}/v1/payment`,
+    payload,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
   return data;
 }
