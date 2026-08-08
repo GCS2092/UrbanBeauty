@@ -74,6 +74,17 @@ async function initierPaiement({
     }
   );
 
+  // ⚠️ TEMPORAIRE — diagnostic de la réponse CinetPay
+  console.log(
+    '✅ Réponse CinetPay complète:',
+    JSON.stringify(data, null, 2)
+  );
+
+  console.log(
+    '🔗 PAYMENT URL:',
+    data.payment_url
+  );
+
   return data;
 }
 
