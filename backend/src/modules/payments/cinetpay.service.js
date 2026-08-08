@@ -50,7 +50,8 @@ async function initierPaiement({
     'Payload envoyé à CinetPay:',
     JSON.stringify(payload, null, 2)
   );
-
+const { data: ipData } = await axios.get('https://api.ipify.org?format=json');
+console.log('🌍 IP SORTANTE RÉELLE POUR CINETPAY :', ipData.ip);
   const { data } = await axios.post(`${BASE_URL}/v1/payment`, payload, {
     headers: {
       Authorization: `Bearer ${token}`,
