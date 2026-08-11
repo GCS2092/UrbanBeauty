@@ -1,0 +1,56 @@
+# Vercel Speed Insights Implementation
+
+## Summary
+Successfully installed and configured Vercel Speed Insights for the Urban Beauty project.
+
+## Changes Made
+
+### 1. Package Installation
+- Installed `@vercel/speed-insights` package (version latest)
+- Updated `package.json` with the new dependency
+- Updated `package-lock.json` with dependency tree
+
+### 2. Code Integration
+**Modified: `src/App.jsx`**
+- Added import statement: `import { SpeedInsights } from '@vercel/speed-insights/react';`
+- Placed `<SpeedInsights />` component within the `QueryClientProvider` wrapper
+- Component is positioned after the `ReactQueryDevtools` component for optimal placement
+
+## Implementation Details
+
+This is a **Vite + React** project, so I followed the official Vercel documentation's React-specific instructions:
+- Fetched the latest quickstart guide from: https://vercel.com/docs/speed-insights/quickstart
+- Used the React integration path (`@vercel/speed-insights/react`)
+- Placed the component at the app root level for global performance tracking
+
+The `SpeedInsights` component will automatically:
+- Track Core Web Vitals (LCP, FID, CLS, FCP, TTFB, INP)
+- Send performance metrics to Vercel's Speed Insights dashboard
+- Work seamlessly in production environments deployed to Vercel
+
+## Verification Steps Completed
+
+✅ Build successful: `npm run build` completed without errors
+✅ Linter passed: No new linting errors introduced in App.jsx
+✅ Dependencies installed: package-lock.json properly updated
+✅ Code follows existing patterns: Maintained project's import organization and component structure
+
+## Next Steps
+
+To view Speed Insights data:
+1. Deploy the application to Vercel
+2. Navigate to the Speed Insights dashboard in the Vercel project settings
+3. After some visitor traffic, performance metrics will be available
+
+## Files Modified
+
+- `frontend/package.json` - Added @vercel/speed-insights dependency
+- `frontend/package-lock.json` - Updated with new dependency tree
+- `frontend/src/App.jsx` - Added SpeedInsights component import and usage
+
+## Notes
+
+- No breaking changes introduced
+- Existing functionality preserved
+- Component placement follows React best practices
+- Integration is framework-specific and optimized for Vite + React setup

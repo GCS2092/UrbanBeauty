@@ -15,6 +15,7 @@ import {
 } from '@tanstack/react-query-devtools';
 
 import { Toaster } from 'sonner';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 import { AuthProvider } from './context/AuthContext';
 
@@ -297,6 +298,8 @@ export default function App() {
           initialIsOpen={false}
         />
       )}
+
+      <SpeedInsights />
     </QueryClientProvider>
   );
 }
