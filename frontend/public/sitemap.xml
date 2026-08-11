@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.sonshop.beauty/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1</priority>
+    
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/boutique</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/categorie/accessoires</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/categorie/chaussures</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/categorie/mode-femme</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/categorie/parfums</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/categorie/robes</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/categorie/sacs-a-main</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/produit/sac-main-cuir-structure</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-08</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/produit/pochette-soiree-doree</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-05</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/produit/eau-parfum-signature</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-08</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/produit/escarpins-talon-fin</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-03</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/produit/sandales-plates-tressees</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-03</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/produit/foulard-soie-imprime</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-08</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/produit/robe-wax-imprimee</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-08</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/produit/robe-longue-satin</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-03</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/produit/robe-elegante</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-08</lastmod>
+  </url>
+</urlset>
