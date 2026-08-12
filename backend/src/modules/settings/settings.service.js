@@ -1,4 +1,4 @@
-const prisma = require('../../config/database');
+﻿const prisma = require('../../config/database');
 
 const DEFAULT_SETTINGS = {
   // Entreprise
@@ -46,7 +46,7 @@ async function updateSettings(data) {
       create: { key, value: String(value) },
     })
   );
-  await Promise.all(updates);
+  await prisma.$transaction(updates);
   return getSettings();
 }
 
