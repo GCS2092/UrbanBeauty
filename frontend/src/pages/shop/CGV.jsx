@@ -15,7 +15,7 @@ export default function CGV() {
       <section className="mb-6">
         <h2 className="text-lg font-semibold mb-2">2. Prix</h2>
         <p>
-          Les prix de nos produits sont indiqués en euros, toutes taxes
+          Les prix de nos produits sont indiqués en francs CFA (FCFA), toutes taxes
           comprises (TTC).
         </p>
       </section>
@@ -46,4 +46,3 @@ export default function CGV() {
     </div>
   );
 }
-

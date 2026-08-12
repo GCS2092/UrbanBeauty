@@ -120,15 +120,6 @@ export default function Navbar() {
               <Truck size={13} /> Suivi
             </Link>
 
-            <a
-              href={isAuthenticated && token ? `https://son-tech.vercel.app?token=${token}` : "https://son-tech.vercel.app"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors mr-1"
-            >
-              🔌 SonTech
-            </a>
-
             <Link
               to="/cart"
               className="relative p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors hidden md:block"
@@ -261,15 +252,6 @@ export default function Navbar() {
               <Truck size={16} />
               Suivre ma commande
             </Link>
-
-            <a
-              href={isAuthenticated && token ? `https://son-tech.vercel.app?token=${token}` : "https://son-tech.vercel.app"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium px-3 py-2.5 rounded-xl text-blue-500 hover:bg-blue-50 transition-colors"
-            >
-              🔌 Découvrir SonTech
-            </a>
 
             {isAuthenticated && (
               <>
