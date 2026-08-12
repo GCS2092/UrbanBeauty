@@ -1,4 +1,4 @@
-﻿export function ProductSchema({ product }) {
+﻿export function ProductSchema({ product, reviews, avgRating }) {
   if (!product) return null;
 
   const schema = {
@@ -10,7 +10,7 @@
     sku: product.id,
     offers: {
       "@type": "Offer",
-      url: `https://www.sonshop.beauty/produit/${product.slug}`,
+      url: `https://www.sonshop.beauty/products/${product.slug}`,
       priceCurrency: "XOF",
       price: product.price,
       availability:
@@ -19,6 +19,14 @@
           : "https://schema.org/OutOfStock",
     },
   };
+
+  if (avgRating && reviews?.length) {
+    schema.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: avgRating,
+      reviewCount: reviews.length,
+    };
+  }
 
   return (
     <script

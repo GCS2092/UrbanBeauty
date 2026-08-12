@@ -7,6 +7,7 @@ import { categoriesApi } from '../../api/categories.api';
 import { STORE_ID } from '../../utils/constants';
 import ProductGrid from '../../components/shared/ProductGrid';
 import Pagination from '../../components/shared/Pagination';
+import { useMeta } from '../../hooks/useMeta';
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,6 +27,26 @@ export default function Products() {
   const { data: categories } = useQuery({
     queryKey: ['categories', { storeId: STORE_ID }],
     queryFn: () => categoriesApi.getAll({ storeId: STORE_ID }).then((r) => r.data),
+  });
+
+  // SEO : titre/description dynamiques selon le filtre actif.
+  // Les pages filtrées (search, page > 1) sont marquées noindex pour éviter
+  // le contenu dupliqué aux yeux de Google.
+  const activeCategory = categories?.find((c) => c.slug === category);
+  const metaTitle = activeCategory ? `${activeCategory.name} — Boutique` : 'Boutique';
+  const metaDescription = activeCategory
+    ? `Découvrez notre sélection ${activeCategory.name.toLowerCase()} chez SonShop. Livraison rapide partout au Sénégal.`
+    : 'Découvrez tout le catalogue SonShop : vêtements, accessoires, chaussures et plus. Livraison rapide partout au Sénégal.';
+  const isFiltered = Boolean(search) || page > 1;
+  const canonicalUrl = category
+    ? `https://www.sonshop.beauty/products?category=${category}`
+    : 'https://www.sonshop.beauty/products';
+
+  useMeta({
+    title: metaTitle,
+    description: metaDescription,
+    url: canonicalUrl,
+    noindex: isFiltered,
   });
 
   const setParam = (key, value) => {
