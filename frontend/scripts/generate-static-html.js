@@ -2,7 +2,6 @@
 // Genere un HTML statique pour chaque route listee, a partir du build Vite.
 // Usage : node scripts/generate-static-html.js (a lancer APRES "vite build")
 
-import puppeteer from "puppeteer";
 import { spawn } from "child_process";
 import fs from "fs";
 import path from "path";
@@ -12,6 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, "..", "dist");
 const PORT = 4173;
 const BASE_URL = `http://localhost:${PORT}`;
+const isVercel = !!process.env.VERCEL;
 
 // Ajoute ici toutes les routes importantes a pre-rendre pour le SEO
 const ROUTES = [
@@ -35,6 +35,26 @@ function waitForServer(url, timeout = 15000) {
   });
 }
 
+async function getBrowser() {
+  if (isVercel) {
+    // Sur Vercel : Chromium special serverless (toutes ses dependances incluses)
+    const chromium = (await import("@sparticuz/chromium")).default;
+    const puppeteer = await import("puppeteer-core");
+    return puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    });
+  } else {
+    // En local : Chrome standard telecharge par puppeteer
+    const puppeteer = await import("puppeteer");
+    return puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+  }
+}
+
 async function run() {
   console.log("Demarrage du serveur de preview (vite preview)...");
   const server = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
@@ -43,12 +63,9 @@ async function run() {
   });
 
   await waitForServer(BASE_URL);
-  console.log("Serveur pret. Lancement de Puppeteer...");
+  console.log("Serveur pret. Lancement du navigateur...");
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
+  const browser = await getBrowser();
 
   for (const route of ROUTES) {
     const page = await browser.newPage();
