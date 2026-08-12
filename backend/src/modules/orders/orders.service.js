@@ -349,7 +349,7 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
     });
 
     let attachments = [];
-    if (order.invoice && order.status === 'CONFIRMED') {
+    if (order.invoice && order.status === 'DELIVERED') {
       try {
         const pdfBuffer = await buildInvoicePdf(order.invoice);
         attachments = [{
