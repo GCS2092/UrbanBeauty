@@ -40,7 +40,7 @@ function PreorderButton({ product, whatsappNumber }) {
   ].filter(l => l !== null).join('\n');
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   return (
-    
+    <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
