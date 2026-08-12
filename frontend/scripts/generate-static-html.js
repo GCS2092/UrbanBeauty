@@ -1,5 +1,6 @@
-﻿// scripts/generate-static-html.js
-// Genere un HTML statique pour chaque route listee, a partir du build Vite.
+// scripts/generate-static-html.js
+// Genere un HTML statique pour chaque route (statique + une par produit),
+// a partir du build Vite.
 // Usage : node scripts/generate-static-html.js (a lancer APRES "vite build")
 
 import { spawn } from "child_process";
@@ -13,12 +14,48 @@ const PORT = 4173;
 const BASE_URL = `http://localhost:${PORT}`;
 const isVercel = !!process.env.VERCEL;
 
-// Ajoute ici toutes les routes importantes a pre-rendre pour le SEO
-const ROUTES = [
+// URL de l'API backend (meme variable que le frontend utilise)
+const API_URL = process.env.VITE_API_URL || "https://api.sonshop.beauty";
+
+// Routes statiques a pre-rendre pour le SEO
+const STATIC_ROUTES = [
   "/",
-  "/produits",
-  "/categories",
+  "/products",
+  "/about",
+  "/contact",
+  "/cgv",
+  "/returns",
 ];
+
+// Recupere tous les slugs de produits en parcourant la pagination de l'API
+async function getAllProductSlugs() {
+  const slugs = [];
+  let page = 1;
+  const limit = 100;
+
+  while (true) {
+    const url = `${API_URL}/api/products?page=${page}&limit=${limit}`;
+    console.log(`Recuperation des produits : ${url}`);
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error(`Erreur API produits (page ${page}) : ${res.status}`);
+      break;
+    }
+    const json = await res.json();
+    const products = json.data || [];
+
+    for (const p of products) {
+      if (p.slug) slugs.push(p.slug);
+    }
+
+    // Arrete si on a recupere moins que la limite (derniere page)
+    if (products.length < limit) break;
+    page += 1;
+  }
+
+  console.log(`${slugs.length} produits trouves.`);
+  return slugs;
+}
 
 function waitForServer(url, timeout = 15000) {
   const start = Date.now();
@@ -55,23 +92,12 @@ async function getBrowser() {
   }
 }
 
-async function run() {
-  console.log("Demarrage du serveur de preview (vite preview)...");
-  const server = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
-    stdio: "inherit",
-    shell: true,
-  });
+async function renderRoute(browser, route) {
+  const page = await browser.newPage();
+  const url = `${BASE_URL}${route}`;
+  console.log(`Rendu de ${url} ...`);
 
-  await waitForServer(BASE_URL);
-  console.log("Serveur pret. Lancement du navigateur...");
-
-  const browser = await getBrowser();
-
-  for (const route of ROUTES) {
-    const page = await browser.newPage();
-    const url = `${BASE_URL}${route}`;
-    console.log(`Rendu de ${url} ...`);
-
+  try {
     await page.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
     await new Promise((r) => setTimeout(r, 1500));
 
@@ -82,7 +108,39 @@ async function run() {
     fs.writeFileSync(path.join(outDir, "index.html"), html, "utf-8");
 
     console.log(`Ecrit : ${path.join(outDir, "index.html")}`);
+  } catch (err) {
+    console.error(`Erreur rendu ${url} :`, err.message);
+  } finally {
     await page.close();
+  }
+}
+
+async function run() {
+  console.log("Demarrage du serveur de preview (vite preview)...");
+  const server = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
+    stdio: "inherit",
+    shell: true,
+  });
+
+  await waitForServer(BASE_URL);
+  console.log("Serveur pret.");
+
+  // Recupere les slugs produits AVANT de lancer le navigateur
+  let productSlugs = [];
+  try {
+    productSlugs = await getAllProductSlugs();
+  } catch (err) {
+    console.error("Impossible de recuperer les produits, on continue sans :", err.message);
+  }
+
+  const productRoutes = productSlugs.map((slug) => `/products/${slug}`);
+  const ALL_ROUTES = [...STATIC_ROUTES, ...productRoutes];
+
+  console.log(`Lancement du navigateur pour ${ALL_ROUTES.length} pages...`);
+  const browser = await getBrowser();
+
+  for (const route of ALL_ROUTES) {
+    await renderRoute(browser, route);
   }
 
   await browser.close();
