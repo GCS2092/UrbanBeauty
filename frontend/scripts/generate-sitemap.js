@@ -6,42 +6,29 @@ const API_URL = process.env.VITE_API_URL || 'https://api.sonshop.beauty';
 
 const STATIC_ROUTES = [
   { url: '/', priority: 1.0, changefreq: 'daily' },
-  { url: '/boutique', priority: 0.9, changefreq: 'daily' },
+  { url: '/products', priority: 0.9, changefreq: 'daily' },
   { url: '/contact', priority: 0.5, changefreq: 'monthly' },
+  { url: '/about', priority: 0.5, changefreq: 'monthly' },
 ];
 
 async function generateSitemap() {
   let productUrls = [];
-  let categoryUrls = [];
 
   try {
     const res = await fetch(`${API_URL}/api/products?limit=1000`);
     const json = await res.json();
     const products = json.data || json;
     productUrls = products.map((p) => ({
-      url: `/produit/${p.slug || p._id}`,
+      url: `/products/${p.slug || p.id}`,
       priority: 0.8,
       changefreq: 'weekly',
       lastmod: p.updatedAt,
     }));
   } catch (err) {
-    console.error('Erreur rï¿½cupï¿½ration produits pour sitemap:', err.message);
+    console.error('Erreur récupération produits pour sitemap:', err.message);
   }
 
-  try {
-    const res = await fetch(`${API_URL}/api/categories`);
-    const json = await res.json();
-    const categories = json.data || json;
-    categoryUrls = categories.map((c) => ({
-      url: `/categorie/${c.slug || c._id}`,
-      priority: 0.7,
-      changefreq: 'weekly',
-    }));
-  } catch (err) {
-    console.error('Erreur rï¿½cupï¿½ration catï¿½gories pour sitemap:', err.message);
-  }
-
-  const allRoutes = [...STATIC_ROUTES, ...categoryUrls, ...productUrls];
+  const allRoutes = [...STATIC_ROUTES, ...productUrls];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -59,7 +46,7 @@ ${allRoutes
 
   const outPath = path.resolve('public', 'sitemap.xml');
   fs.writeFileSync(outPath, xml);
-  console.log(`? Sitemap gï¿½nï¿½rï¿½ avec ${allRoutes.length} URLs ? ${outPath}`);
+  console.log(`Sitemap généré avec ${allRoutes.length} URLs -> ${outPath}`);
 }
 
 generateSitemap();
