@@ -1,7 +1,26 @@
+import { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 
 export default function Contact() {
-  const whatsappNumber = '221XXXXXXXXX'; // ← remplace par ton numéro
+  const [settings, setSettings] = useState({
+    whatsapp_number: '',
+    company_phone: '',
+    company_address: '',
+    company_email: 'sonshop221@gmail.com',
+  });
+
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    fetch(`${apiUrl}/api/settings`)
+      .then((res) => res.json())
+      .then((data) => setSettings((prev) => ({ ...prev, ...data })))
+      .catch((err) => console.error('Erreur chargement settings:', err));
+  }, []);
+
+  const whatsappNumber = settings.whatsapp_number;
+  const phone = settings.company_phone;
+  const address = settings.company_address || 'Dakar, Sénégal';
+  const email = settings.company_email || 'sonshop221@gmail.com';
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
@@ -9,24 +28,26 @@ export default function Contact() {
       <p className="text-stone-400 text-sm mb-10">On vous répond en moins de 24h</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
-        <a
-          href={`https://wa.me/${whatsappNumber}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-start gap-4 p-5 rounded-2xl border border-stone-200 hover:border-green-300 hover:bg-green-50 transition-colors group"
-        >
-          <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0 group-hover:bg-green-200 transition-colors">
-            <MessageCircle size={20} className="text-green-600" />
-          </div>
-          <div>
-            <p className="font-semibold text-stone-800">WhatsApp</p>
-            <p className="text-sm text-stone-500 mt-0.5">Réponse rapide, 7j/7</p>
-            <p className="text-sm text-green-600 mt-1 font-medium">Écrire sur WhatsApp →</p>
-          </div>
-        </a>
+        {whatsappNumber && (
+          <a
+            href={`https://wa.me/${whatsappNumber}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-4 p-5 rounded-2xl border border-stone-200 hover:border-green-300 hover:bg-green-50 transition-colors group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0 group-hover:bg-green-200 transition-colors">
+              <MessageCircle size={20} className="text-green-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-stone-800">WhatsApp</p>
+              <p className="text-sm text-stone-500 mt-0.5">Réponse rapide, 7j/7</p>
+              <p className="text-sm text-green-600 mt-1 font-medium">Écrire sur WhatsApp →</p>
+            </div>
+          </a>
+        )}
 
         <a
-          href="mailto:sonshop221@gmail.com"
+          href={`mailto:${email}`}
           className="flex items-start gap-4 p-5 rounded-2xl border border-stone-200 hover:border-rose-300 hover:bg-rose-50 transition-colors group"
         >
           <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-200 transition-colors">
@@ -35,20 +56,22 @@ export default function Contact() {
           <div>
             <p className="font-semibold text-stone-800">Email</p>
             <p className="text-sm text-stone-500 mt-0.5">Réponse sous 24h</p>
-            <p className="text-sm text-rose-500 mt-1 font-medium">sonshop221@gmail.com</p>
+            <p className="text-sm text-rose-500 mt-1 font-medium">{email}</p>
           </div>
         </a>
 
-        <div className="flex items-start gap-4 p-5 rounded-2xl border border-stone-200">
-          <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
-            <Phone size={20} className="text-stone-500" />
+        {phone && (
+          <div className="flex items-start gap-4 p-5 rounded-2xl border border-stone-200">
+            <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
+              <Phone size={20} className="text-stone-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-stone-800">Téléphone</p>
+              <p className="text-sm text-stone-500 mt-0.5">Lun–Sam, 9h–18h</p>
+              <p className="text-sm text-stone-700 mt-1 font-medium">{phone}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-semibold text-stone-800">Téléphone</p>
-            <p className="text-sm text-stone-500 mt-0.5">Lun–Sam, 9h–18h</p>
-            <p className="text-sm text-stone-700 mt-1 font-medium">+221 XX XXX XX XX</p>
-          </div>
-        </div>
+        )}
 
         <div className="flex items-start gap-4 p-5 rounded-2xl border border-stone-200">
           <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0">
@@ -56,7 +79,7 @@ export default function Contact() {
           </div>
           <div>
             <p className="font-semibold text-stone-800">Adresse</p>
-            <p className="text-sm text-stone-500 mt-0.5">Dakar, Sénégal</p>
+            <p className="text-sm text-stone-500 mt-0.5">{address}</p>
             <p className="text-sm text-stone-700 mt-1">Livraison partout au Sénégal</p>
           </div>
         </div>
