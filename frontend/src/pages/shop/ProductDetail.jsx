@@ -17,6 +17,8 @@ import ReviewCard from '../../components/shared/ReviewCard';
 import ReviewForm from '../../components/shared/ReviewForm';
 import Spinner from '../../components/ui/Spinner';
 import { toast } from 'sonner';
+import { useMeta } from '../../hooks/useMeta';
+import { ProductSchema } from '../../components/seo/ProductSchema';
 
 function PreorderButton({ product, whatsappNumber }) {
   if (!product || product.stock > 0) return null;
@@ -38,7 +40,7 @@ function PreorderButton({ product, whatsappNumber }) {
   ].filter(l => l !== null).join('\n');
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   return (
-    <a
+    
       href={url}
       target="_blank"
       rel="noopener noreferrer"
@@ -107,6 +109,17 @@ export default function ProductDetail() {
   const avgRating = reviews?.length
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
     : null;
+
+  // SEO : titre, description et canonical dynamiques par produit.
+  // Le hook s'exécute même pendant le chargement (product undefined),
+  // useMeta retombe alors sur les valeurs par défaut du site le temps que
+  // les données arrivent, puis se met à jour automatiquement.
+  useMeta({
+    title: product?.name,
+    description: product?.description,
+    image: product?.images?.[0]?.url,
+    url: `https://www.sonshop.beauty/products/${slug}`,
+  });
 
   const allImages = product?.images?.sort((a, b) => a.position - b.position) || [];
 
@@ -333,6 +346,8 @@ export default function ProductDetail() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ProductSchema product={product} reviews={reviews} avgRating={avgRating} />
+
       <Link
         to="/products"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-stone-800 hover:bg-stone-100 px-3 py-1.5 rounded-lg transition-colors mb-6"
