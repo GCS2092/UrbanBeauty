@@ -110,10 +110,6 @@ export default function ProductDetail() {
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
     : null;
 
-  // SEO : titre, description et canonical dynamiques par produit.
-  // Le hook s'exécute même pendant le chargement (product undefined),
-  // useMeta retombe alors sur les valeurs par défaut du site le temps que
-  // les données arrivent, puis se met à jour automatiquement.
   useMeta({
     title: product?.name,
     description: product?.description,
@@ -223,12 +219,11 @@ export default function ProductDetail() {
     }
   };
 
-  // ✅ Créer une alerte de retour en stock
   const handleStockAlert = async () => {
     let email;
     if (!isAuthenticated) {
       email = prompt('Votre email pour être alerté(e) :');
-      if (!email) return; // annulé par l'utilisateur
+      if (!email) return;
     }
     setAlertLoading(true);
     try {
@@ -370,7 +365,7 @@ export default function ProductDetail() {
             slidesPerView={1}
             onSwiper={(s) => { mainSwiperRef.current = s; }}
             onSlideChange={(s) => setMainImg(s.realIndex)}
-            className="aspect-square bg-stone-100 rounded-2xl overflow-hidden relative"
+            className="h-[340px] sm:h-[420px] md:aspect-square md:h-auto bg-stone-100 rounded-2xl overflow-hidden relative"
           >
             {displayImages.length ? displayImages.map((img, i) => (
               <SwiperSlide key={img.id || i}>
@@ -393,35 +388,51 @@ export default function ProductDetail() {
             )}
           </Swiper>
 
+          {/* Points de pagination — mobile uniquement (le swipe tactile suffit, pas besoin de vignettes) */}
           {displayImages.length > 1 && (
-            <Swiper
-              key={`thumbs-${selectedColor || 'default'}`}
-              modules={[Thumbs]}
-              onSwiper={(s) => {
-                setThumbsSwiper(null);
-                setTimeout(() => setThumbsSwiper(s), 0);
-              }}
-              slidesPerView={Math.min(displayImages.length, 4)}
-              spaceBetween={8}
-              loopedSlides={displayImages.length}
-              watchSlidesProgress
-              className="w-full"
-            >
-              {displayImages.map((img, i) => (
-                <SwiperSlide key={img.id || i}>
-                  <button className={`w-full aspect-square rounded-xl overflow-hidden border-2 transition-colors ${
-                    i === mainImg ? 'border-stone-800' : 'border-transparent hover:border-stone-300'
-                  }`}>
-                    <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                  </button>
-                </SwiperSlide>
+            <div className="flex sm:hidden justify-center gap-1.5">
+              {displayImages.map((_, i) => (
+                <div
+                  key={i}
+                  className={`rounded-full transition-all duration-200 ${
+                    i === mainImg ? 'w-4 h-1.5 bg-stone-800' : 'w-1.5 h-1.5 bg-stone-300'
+                  }`}
+                />
               ))}
-            </Swiper>
+            </div>
+          )}
+
+          {/* Vignettes cliquables — desktop uniquement */}
+          {displayImages.length > 1 && (
+            <div className="hidden sm:block">
+              <Swiper
+                key={`thumbs-${selectedColor || 'default'}`}
+                modules={[Thumbs]}
+                onSwiper={(s) => {
+                  setThumbsSwiper(null);
+                  setTimeout(() => setThumbsSwiper(s), 0);
+                }}
+                slidesPerView={Math.min(displayImages.length, 4)}
+                spaceBetween={8}
+                loopedSlides={displayImages.length}
+                watchSlidesProgress
+                className="w-full"
+              >
+                {displayImages.map((img, i) => (
+                  <SwiperSlide key={img.id || i}>
+                    <button className={`w-full aspect-square rounded-xl overflow-hidden border-2 transition-colors ${
+                      i === mainImg ? 'border-stone-800' : 'border-transparent hover:border-stone-300'
+                    }`}>
+                      <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    </button>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
           )}
         </div>
 
         {/* Infos produit */}
-        {/* pb-36 sur mobile pour laisser de la place au CTA sticky */}
         <div className="space-y-5 pb-36 md:pb-0">
           <div>
             <p className="text-sm text-stone-500 font-medium mb-1">{product.category?.name}</p>
@@ -452,7 +463,6 @@ export default function ProductDetail() {
 
           <p className="text-stone-500 leading-relaxed">{product.description}</p>
 
-          {/* Variantes */}
           {hasVariants && (
             <div className="space-y-4">
               {displayMode === 'COLOR_FIRST' ? (
@@ -476,7 +486,6 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Quantité — visible sur tous les écrans */}
           {!isOutOfStock && (
             <div>
               <p className="text-sm font-medium text-stone-700 mb-2">Quantité</p>
@@ -499,7 +508,6 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* CTA desktop uniquement */}
           <div className="hidden md:flex flex-col gap-3 pt-2">
             <div className="flex gap-3">
               <Button
