@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, Bell, User, Menu, X, Tag, Truck, Search, HelpCircle } from 'lucide-react';
+import { ShoppingBag, Heart, Bell, User, Menu, X, Tag, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import useAuthStore from '../../store/authStore';
 import useCartStore from '../../store/cartStore';
@@ -7,6 +7,8 @@ import useUiStore from '../../store/uiStore';
 import { useAuth } from '../../context/AuthContext';
 import { couponsApi } from '../../api/coupons.api';
 import { STORE_ID } from '../../utils/constants';
+
+const TRACK_TITLE = "Le numéro de commande se trouve dans l'email ou le message WhatsApp de confirmation reçu après votre achat.";
 
 export default function Navbar() {
   const { isAuthenticated, user, token } = useAuthStore();
@@ -19,9 +21,8 @@ export default function Navbar() {
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 
-  // Suivi de commande — champ dans le menu mobile
+  // Suivi de commande — champ inline dans le header
   const [trackNumber, setTrackNumber] = useState('');
-  const [showTrackHelp, setShowTrackHelp] = useState(false);
 
   const navLinks = [
     { to: '/', label: 'Accueil' },
@@ -67,7 +68,6 @@ export default function Navbar() {
     e.preventDefault();
     const clean = trackNumber.trim();
     if (!clean) return;
-    setShowTrackHelp(false);
     closeMobileMenu();
     navigate(`/suivi/${clean}`);
   };
@@ -87,9 +87,34 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Bannière promo — centrée, taille contrôlée sur mobile */}
+          {/* Suivi — mobile : remplit l'espace vide entre le nom et le hamburger */}
+          <form onSubmit={handleTrackSubmit} className="flex-1 min-w-0 md:hidden">
+            <div
+              className="flex items-center gap-1.5 bg-stone-50 border border-stone-200 rounded-full pl-3 pr-1 py-1.5 focus-within:border-stone-400 transition-colors"
+              title={TRACK_TITLE}
+            >
+              <input
+                type="text"
+                autoComplete="off"
+                value={trackNumber}
+                onChange={(e) => setTrackNumber(e.target.value)}
+                placeholder="Suivre ma commande"
+                aria-label="Numéro de commande"
+                className="flex-1 min-w-0 bg-transparent text-xs text-stone-700 placeholder:text-stone-400 outline-none"
+              />
+              <button
+                type="submit"
+                aria-label="Rechercher ma commande"
+                className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-stone-500 hover:bg-stone-200 hover:text-stone-700 transition-colors"
+              >
+                <Search size={13} />
+              </button>
+            </div>
+          </form>
+
+          {/* Bannière promo — desktop uniquement (mobile : priorité au champ de suivi) */}
           {currentPromo && (
-            <div className="flex-1 flex justify-center min-w-0">
+            <div className="hidden md:flex flex-1 justify-center min-w-0">
               <div
                 style={{
                   opacity: visible ? 1 : 0,
@@ -127,16 +152,33 @@ export default function Navbar() {
             </div>
           )}
 
+          {/* Suivi — desktop : champ compact à côté du logo */}
+          <form onSubmit={handleTrackSubmit} className="hidden md:flex items-center shrink-0">
+            <div
+              className="flex items-center gap-1.5 bg-stone-50 border border-stone-200 rounded-full pl-3 pr-1 py-1.5 focus-within:border-stone-400 transition-colors"
+              title={TRACK_TITLE}
+            >
+              <input
+                type="text"
+                autoComplete="off"
+                value={trackNumber}
+                onChange={(e) => setTrackNumber(e.target.value)}
+                placeholder="Suivre ma commande"
+                aria-label="Numéro de commande"
+                className="w-28 lg:w-40 bg-transparent text-xs text-stone-700 placeholder:text-stone-400 outline-none"
+              />
+              <button
+                type="submit"
+                aria-label="Rechercher ma commande"
+                className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-stone-500 hover:bg-stone-200 hover:text-stone-700 transition-colors"
+              >
+                <Search size={13} />
+              </button>
+            </div>
+          </form>
+
           {/* Actions */}
           <div className="flex items-center gap-1 shrink-0">
-
-            {/* Lien Suivi — desktop uniquement */}
-            <Link
-              to="/suivi"
-              className="hidden md:flex items-center gap-1 text-xs text-stone-500 hover:text-stone-700 font-medium transition-colors mr-1"
-            >
-              <Truck size={13} /> Suivi
-            </Link>
 
             {/* Panier — desktop uniquement */}
             <Link
@@ -235,6 +277,46 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* Bannière promo — mobile : 2e ligne dédiée, sous le header principal */}
+        {currentPromo && (
+          <div className="md:hidden pb-2 -mt-1">
+            <div
+              style={{
+                opacity: visible ? 1 : 0,
+                transition: 'opacity 0.4s ease',
+                background: 'linear-gradient(90deg, #fff1f2, #ffe4e6)',
+                border: '1px solid #fda4af',
+                borderRadius: '999px',
+                padding: '4px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                width: 'fit-content',
+                maxWidth: '100%',
+                animation: 'promoPulse 2.5s ease-in-out infinite',
+              }}
+            >
+              <Tag size={11} color="#e11d48" style={{ flexShrink: 0 }} />
+              <span style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#be123c',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                minWidth: 0,
+              }}>
+                {formatPromo(currentPromo)}
+              </span>
+              {currentPromo.expiresAt && (
+                <span style={{ fontSize: '10px', color: '#e11d48', opacity: 0.7, flexShrink: 0 }}>
+                  · {formatExpiry(currentPromo.expiresAt)}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Menu mobile déroulant */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-stone-100 py-4 flex flex-col gap-1">
@@ -268,49 +350,6 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
-
-            {/* ── Suivi de commande — mobile : champ de recherche direct ── */}
-            <div className="px-3 py-2">
-              <form onSubmit={handleTrackSubmit} className="relative">
-                <div className="flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-xl pl-3 pr-2 py-2.5 focus-within:border-stone-400 transition-colors">
-                  <Search size={16} className="text-stone-400 shrink-0" />
-                  <input
-                    type="text"
-                    inputMode="text"
-                    autoComplete="off"
-                    value={trackNumber}
-                    onChange={(e) => setTrackNumber(e.target.value)}
-                    placeholder="Suivre ma commande"
-                    aria-label="Numéro de commande"
-                    className="flex-1 min-w-0 bg-transparent text-sm text-stone-700 placeholder:text-stone-400 outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowTrackHelp((v) => !v)}
-                    aria-label="Où trouver mon numéro de commande ?"
-                    aria-expanded={showTrackHelp}
-                    className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-stone-200 text-stone-500 hover:bg-stone-300 hover:text-stone-700 transition-colors"
-                  >
-                    <HelpCircle size={13} />
-                  </button>
-                </div>
-
-                {showTrackHelp && (
-                  <div className="mt-2 text-xs text-stone-500 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 leading-relaxed">
-                    📩 Le numéro de commande (ex : <span className="font-semibold">UB-2024-001</span>) se
-                    trouve dans l'email ou le message WhatsApp de confirmation reçu après votre achat.
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={!trackNumber.trim()}
-                  className="mt-2 w-full flex items-center justify-center gap-2 text-sm font-medium px-3 py-2.5 rounded-xl bg-stone-900 text-white hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Truck size={15} /> Suivre ma commande
-                </button>
-              </form>
-            </div>
 
             {isAuthenticated && (
               <>
