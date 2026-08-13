@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, Bell, User, Menu, X, Tag, Truck, Search } from 'lucide-react';
+import { ShoppingBag, Heart, Bell, User, Menu, X, Tag, Truck, Search, HelpCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import useAuthStore from '../../store/authStore';
 import useCartStore from '../../store/cartStore';
@@ -7,8 +7,6 @@ import useUiStore from '../../store/uiStore';
 import { useAuth } from '../../context/AuthContext';
 import { couponsApi } from '../../api/coupons.api';
 import { STORE_ID } from '../../utils/constants';
-
-const TRACK_TITLE = "Le numéro de commande se trouve dans l'email ou le message WhatsApp de confirmation reçu après votre achat.";
 
 export default function Navbar() {
   const { isAuthenticated, user, token } = useAuthStore();
@@ -21,9 +19,9 @@ export default function Navbar() {
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 
-  // Suivi de commande — champ compact à côté du logo
+  // Suivi de commande — champ dans le menu mobile
   const [trackNumber, setTrackNumber] = useState('');
-  const [mobileTrackOpen, setMobileTrackOpen] = useState(false);
+  const [showTrackHelp, setShowTrackHelp] = useState(false);
 
   const navLinks = [
     { to: '/', label: 'Accueil' },
@@ -69,7 +67,7 @@ export default function Navbar() {
     e.preventDefault();
     const clean = trackNumber.trim();
     if (!clean) return;
-    setMobileTrackOpen(false);
+    setShowTrackHelp(false);
     closeMobileMenu();
     navigate(`/suivi/${clean}`);
   };
@@ -79,53 +77,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2">
 
-          {/* Logo + Suivi de commande (groupés) */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Link to="/" className="flex items-center gap-2 shrink-0">
-              <div className="w-8 h-8 rounded-xl bg-stone-900 flex items-center justify-center">
-                <ShoppingBag size={16} className="text-white" />
-              </div>
-              <span className="font-bold text-xl tracking-tight text-stone-900 hidden xs:inline">
-                Son<span className="text-stone-500">Shop</span>
-              </span>
-            </Link>
-
-            {/* Suivi — champ compact, desktop uniquement */}
-            <form onSubmit={handleTrackSubmit} className="hidden md:flex items-center">
-              <div
-                className="flex items-center gap-1.5 bg-stone-50 border border-stone-200 rounded-full pl-3 pr-1 py-1.5 focus-within:border-stone-400 transition-colors"
-                title={TRACK_TITLE}
-              >
-                <input
-                  type="text"
-                  autoComplete="off"
-                  value={trackNumber}
-                  onChange={(e) => setTrackNumber(e.target.value)}
-                  placeholder="Suivre ma commande"
-                  aria-label="Numéro de commande"
-                  className="w-28 lg:w-40 bg-transparent text-xs text-stone-700 placeholder:text-stone-400 outline-none"
-                />
-                <button
-                  type="submit"
-                  aria-label="Rechercher ma commande"
-                  className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-stone-500 hover:bg-stone-200 hover:text-stone-700 transition-colors"
-                >
-                  <Search size={13} />
-                </button>
-              </div>
-            </form>
-
-            {/* Suivi — icône seule, mobile : ouvre le tiroir de recherche */}
-            <button
-              type="button"
-              onClick={() => setMobileTrackOpen((v) => !v)}
-              aria-label="Suivre ma commande"
-              aria-expanded={mobileTrackOpen}
-              className="md:hidden p-1.5 text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
-            >
-              <Search size={18} />
-            </button>
-          </div>
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-stone-900 flex items-center justify-center">
+              <ShoppingBag size={16} className="text-white" />
+            </div>
+            <span className="font-bold text-xl tracking-tight text-stone-900">
+              Son<span className="text-stone-500">Shop</span>
+            </span>
+          </Link>
 
           {/* Bannière promo — centrée, taille contrôlée sur mobile */}
           {currentPromo && (
@@ -169,6 +129,14 @@ export default function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center gap-1 shrink-0">
+
+            {/* Lien Suivi — desktop uniquement */}
+            <Link
+              to="/suivi"
+              className="hidden md:flex items-center gap-1 text-xs text-stone-500 hover:text-stone-700 font-medium transition-colors mr-1"
+            >
+              <Truck size={13} /> Suivi
+            </Link>
 
             {/* Panier — desktop uniquement */}
             <Link
@@ -267,41 +235,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Tiroir de suivi — mobile, indépendant du menu hamburger */}
-        {mobileTrackOpen && (
-          <div className="md:hidden border-t border-stone-100 py-3">
-            <form onSubmit={handleTrackSubmit} className="flex items-center gap-2">
-              <div
-                className="flex-1 flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2.5 focus-within:border-stone-400 transition-colors"
-                title={TRACK_TITLE}
-              >
-                <Search size={16} className="text-stone-400 shrink-0" />
-                <input
-                  type="text"
-                  autoFocus
-                  autoComplete="off"
-                  value={trackNumber}
-                  onChange={(e) => setTrackNumber(e.target.value)}
-                  placeholder="Suivre ma commande"
-                  aria-label="Numéro de commande"
-                  className="flex-1 min-w-0 bg-transparent text-sm text-stone-700 placeholder:text-stone-400 outline-none"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => setMobileTrackOpen(false)}
-                aria-label="Fermer la recherche"
-                className="shrink-0 p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </form>
-            <p className="text-[11px] text-stone-400 mt-1.5 px-1">
-              Le numéro se trouve dans l'email ou le message WhatsApp de confirmation.
-            </p>
-          </div>
-        )}
-
         {/* Menu mobile déroulant */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-stone-100 py-4 flex flex-col gap-1">
@@ -336,15 +269,48 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Suivi de commande — lien de secours, l'accès principal est l'icône près du logo */}
-            <Link
-              to="/suivi"
-              onClick={closeMobileMenu}
-              className="flex items-center gap-2 text-sm font-medium px-3 py-2.5 rounded-xl text-stone-600 hover:bg-stone-50 transition-colors"
-            >
-              <Truck size={16} />
-              Suivre ma commande
-            </Link>
+            {/* ── Suivi de commande — mobile : champ de recherche direct ── */}
+            <div className="px-3 py-2">
+              <form onSubmit={handleTrackSubmit} className="relative">
+                <div className="flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-xl pl-3 pr-2 py-2.5 focus-within:border-stone-400 transition-colors">
+                  <Search size={16} className="text-stone-400 shrink-0" />
+                  <input
+                    type="text"
+                    inputMode="text"
+                    autoComplete="off"
+                    value={trackNumber}
+                    onChange={(e) => setTrackNumber(e.target.value)}
+                    placeholder="Suivre ma commande"
+                    aria-label="Numéro de commande"
+                    className="flex-1 min-w-0 bg-transparent text-sm text-stone-700 placeholder:text-stone-400 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowTrackHelp((v) => !v)}
+                    aria-label="Où trouver mon numéro de commande ?"
+                    aria-expanded={showTrackHelp}
+                    className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-stone-200 text-stone-500 hover:bg-stone-300 hover:text-stone-700 transition-colors"
+                  >
+                    <HelpCircle size={13} />
+                  </button>
+                </div>
+
+                {showTrackHelp && (
+                  <div className="mt-2 text-xs text-stone-500 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 leading-relaxed">
+                    📩 Le numéro de commande (ex : <span className="font-semibold">UB-2024-001</span>) se
+                    trouve dans l'email ou le message WhatsApp de confirmation reçu après votre achat.
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!trackNumber.trim()}
+                  className="mt-2 w-full flex items-center justify-center gap-2 text-sm font-medium px-3 py-2.5 rounded-xl bg-stone-900 text-white hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Truck size={15} /> Suivre ma commande
+                </button>
+              </form>
+            </div>
 
             {isAuthenticated && (
               <>
