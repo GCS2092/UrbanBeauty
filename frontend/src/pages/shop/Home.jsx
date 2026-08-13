@@ -41,7 +41,7 @@ export default function Home() {
               <span className="inline-flex items-center gap-1.5 bg-rose-100 text-rose-600 text-xs font-semibold px-3 py-1 rounded-full mb-4">
                 <Sparkles size={12} /> SonShop - Nouvelle collection disponible
               </span>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-stone-900 leading-tight mb-4">
+              <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-stone-900 leading-tight mb-4">
                 Le style <br />
                 <span className="text-rose-400">qui vous ressemble</span>
               </h1>
