@@ -112,50 +112,10 @@ export default function Navbar() {
             </div>
           </form>
 
-          {/* Bannière promo — desktop uniquement (mobile : priorité au champ de suivi) */}
-          {currentPromo && (
-            <div className="hidden md:flex flex-1 justify-center min-w-0">
-              <div
-                style={{
-                  opacity: visible ? 1 : 0,
-                  transition: 'opacity 0.4s ease',
-                  background: 'linear-gradient(90deg, #fff1f2, #ffe4e6)',
-                  border: '1px solid #fda4af',
-                  borderRadius: '999px',
-                  padding: '4px 8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  minWidth: 0,
-                  maxWidth: '100%',
-                  animation: 'promoPulse 2.5s ease-in-out infinite',
-                }}
-              >
-                <Tag size={11} color="#e11d48" style={{ flexShrink: 0 }} />
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  color: '#be123c',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  minWidth: 0,
-                }}>
-                  {formatPromo(currentPromo)}
-                </span>
-                {currentPromo.expiresAt && (
-                  <span className="hidden sm:inline" style={{ fontSize: '10px', color: '#e11d48', opacity: 0.7, flexShrink: 0 }}>
-                    · {formatExpiry(currentPromo.expiresAt)}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Suivi — desktop : champ compact à côté du logo */}
-          <form onSubmit={handleTrackSubmit} className="hidden md:flex items-center shrink-0">
+          {/* Suivi — desktop : champ compact à côté du logo, taille normale (plus de bandeau promo à cote pour lui faire de la place) */}
+          <form onSubmit={handleTrackSubmit} className="hidden md:flex items-center shrink-0 flex-1 justify-center">
             <div
-              className="flex items-center gap-1.5 bg-stone-50 border border-stone-200 rounded-full pl-3 pr-1 py-1.5 focus-within:border-stone-400 transition-colors"
+              className="flex items-center gap-1.5 bg-stone-50 border border-stone-200 rounded-full pl-3 pr-1 py-1.5 focus-within:border-stone-400 transition-colors w-40 lg:w-56"
               title={TRACK_TITLE}
             >
               <input
@@ -165,7 +125,7 @@ export default function Navbar() {
                 onChange={(e) => setTrackNumber(e.target.value)}
                 placeholder="Suivre ma commande"
                 aria-label="Numéro de commande"
-                className="w-28 lg:w-40 bg-transparent text-xs text-stone-700 placeholder:text-stone-400 outline-none"
+                className="flex-1 min-w-0 bg-transparent text-xs text-stone-700 placeholder:text-stone-400 outline-none"
               />
               <button
                 type="submit"
@@ -277,9 +237,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Bannière promo — mobile : 2e ligne dédiée, sous le header principal */}
+        {/* Bannière promo — 2e ligne unifiee, visible sur mobile ET desktop, sous le header principal */}
         {currentPromo && (
-          <div className="md:hidden pb-2 -mt-1">
+          <div className="pb-2 -mt-1 flex justify-center md:justify-center">
             <div
               style={{
                 opacity: visible ? 1 : 0,
