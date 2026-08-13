@@ -99,18 +99,25 @@ async function releaseReservation(tx, items) {
   }
 }
 
+/**
+ * ⚡ OPTIMISÉ : 1 seule requête de lecture par item (au lieu de 2 : product
+ * pour le purchasePrice, puis variant/product à nouveau pour le stock).
+ * Réduit de moitié le nombre d'aller-retours DB dans cette boucle, ce qui
+ * réduit d'autant le temps total passé dans la transaction appelante et
+ * donc le risque de dépasser le timeout Prisma.
+ */
 async function fulfillStockSale(tx, items, orderId, createdBy = null, storeId = null) {
   for (const item of items) {
-    const product = await tx.product.findUnique({
-      where: { id: item.productId },
-      select: { purchasePrice: true, name: true },
-    });
-    const unitCost = product?.purchasePrice ?? null;
-    const totalCost = unitCost != null ? unitCost * item.quantity : null;
-
     if (item.variantId) {
-      const variant = await tx.productVariant.findUnique({ where: { id: item.variantId } });
+      const variant = await tx.productVariant.findUnique({
+        where: { id: item.variantId },
+        include: { product: { select: { purchasePrice: true } } },
+      });
+
+      const unitCost = variant?.product?.purchasePrice ?? null;
+      const totalCost = unitCost != null ? unitCost * item.quantity : null;
       const reservedRelease = Math.min(item.quantity, variant?.reservedStock || 0);
+
       await tx.productVariant.update({
         where: { id: item.variantId },
         data: {
@@ -118,9 +125,29 @@ async function fulfillStockSale(tx, items, orderId, createdBy = null, storeId = 
           ...(reservedRelease > 0 && { reservedStock: { decrement: reservedRelease } }),
         },
       });
+
+      await tx.stockMovement.create({
+        data: {
+          productId: variant.productId,
+          variantId: item.variantId,
+          type: 'OUT_SALE',
+          quantity: item.quantity,
+          unitCost,
+          totalCost,
+          reason: `Vente commande`,
+          orderId,
+          reference: orderId,
+          storeId,
+          createdBy,
+        },
+      });
     } else {
-      const productRow = await tx.product.findUnique({ where: { id: item.productId } });
-      const reservedRelease = Math.min(item.quantity, productRow?.reservedStock || 0);
+      const product = await tx.product.findUnique({ where: { id: item.productId } });
+
+      const unitCost = product?.purchasePrice ?? null;
+      const totalCost = unitCost != null ? unitCost * item.quantity : null;
+      const reservedRelease = Math.min(item.quantity, product?.reservedStock || 0);
+
       await tx.product.update({
         where: { id: item.productId },
         data: {
@@ -128,23 +155,23 @@ async function fulfillStockSale(tx, items, orderId, createdBy = null, storeId = 
           ...(reservedRelease > 0 && { reservedStock: { decrement: reservedRelease } }),
         },
       });
-    }
 
-    await tx.stockMovement.create({
-      data: {
-        productId: item.productId,
-        variantId: item.variantId || null,
-        type: 'OUT_SALE',
-        quantity: item.quantity,
-        unitCost,
-        totalCost,
-        reason: `Vente commande`,
-        orderId,
-        reference: orderId,
-        storeId,
-        createdBy,
-      },
-    });
+      await tx.stockMovement.create({
+        data: {
+          productId: item.productId,
+          variantId: null,
+          type: 'OUT_SALE',
+          quantity: item.quantity,
+          unitCost,
+          totalCost,
+          reason: `Vente commande`,
+          orderId,
+          reference: orderId,
+          storeId,
+          createdBy,
+        },
+      });
+    }
   }
 }
 

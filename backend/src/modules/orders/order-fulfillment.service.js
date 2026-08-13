@@ -9,6 +9,13 @@ const {
 
 const TERMINAL_STATUSES = ['DELIVERED', 'CANCELLED'];
 
+// Filet de sécurité : le vrai fix est de raccourcir le travail dans la
+// transaction (voir fulfillStockSale optimisé + fetch final sorti), mais on
+// garde une marge explicite au cas où la charge DB soit ponctuellement plus
+// lente (ex: contention sur InvoiceSequence en cas de paiements simultanés).
+const TX_TIMEOUT_MS = 10000;
+const TX_MAX_WAIT_MS = 5000;
+
 async function recordStatusHistory(tx, {
   orderId,
   fromStatus,
@@ -63,8 +70,23 @@ const invoiceWithOrderInclude = {
   },
 };
 
+// ─── include pour la relecture finale (identique à avant, mais utilisé hors tx)
+const orderFullInclude = {
+  user: { select: { id: true, firstName: true, lastName: true, email: true } },
+  payments: true,
+  items: true,
+  tracking: { orderBy: { createdAt: 'asc' } },
+  invoice: invoiceWithOrderInclude,
+  statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 },
+};
+
 async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, ip) {
-  return prisma.$transaction(async (tx) => {
+  // ⚡ Le findUnique final (lecture pure, aucune garantie transactionnelle
+  // requise) a été sorti de la transaction pour libérer le verrou DB
+  // (notamment celui posé par nextInvoiceNumber sur InvoiceSequence) le plus
+  // tôt possible, réduisant la fenêtre de contention pour les transactions
+  // concurrentes.
+  await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
       include: { items: true, user: true, invoice: true },
@@ -181,19 +203,17 @@ async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, 
         ip,
       }),
     ]);
+    // Fin de la transaction : plus de findUnique ici, voir plus bas.
+  }, {
+    timeout: TX_TIMEOUT_MS,
+    maxWait: TX_MAX_WAIT_MS,
+  });
 
-    // 4. fetch final, complet et frais — EN DERNIER
-    return tx.order.findUnique({
-      where: { id: orderId },
-      include: {
-        user: { select: { id: true, firstName: true, lastName: true, email: true } },
-        payments: true,
-        items: true,
-        tracking: { orderBy: { createdAt: 'asc' } },
-        invoice: invoiceWithOrderInclude,
-        statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 },
-      },
-    });
+  // Relecture complète hors transaction : aucune garantie d'atomicité requise
+  // ici, c'est une simple lecture pour construire la réponse HTTP.
+  return prisma.order.findUnique({
+    where: { id: orderId },
+    include: orderFullInclude,
   });
 }
 
@@ -217,7 +237,7 @@ function assertStatusChangeAllowed(currentStatus, newStatus) {
 }
 
 async function changeOrderStatusAtomic(orderId, payload, adminUser, ip) {
-  return prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
       include: { items: true, user: true, invoice: true },
@@ -282,18 +302,22 @@ async function changeOrderStatusAtomic(orderId, payload, adminUser, ip) {
         ip,
       }),
     ]);
+    // Fin de la transaction : plus de findUnique ici, voir plus bas.
+  }, {
+    timeout: TX_TIMEOUT_MS,
+    maxWait: TX_MAX_WAIT_MS,
+  });
 
-    // 3. on refetch tout, propre et complet, EN DERNIER
-    return tx.order.findUnique({
-      where: { id: orderId },
-      include: {
-        tracking: { orderBy: { createdAt: 'asc' } },
-        user: true,
-        items: true,
-        invoice: invoiceWithOrderInclude,
-        statusHistory: { orderBy: { createdAt: 'desc' }, take: 10 },
-      },
-    });
+  // 3. relecture complète, hors transaction, EN DERNIER
+  return prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      tracking: { orderBy: { createdAt: 'asc' } },
+      user: true,
+      items: true,
+      invoice: invoiceWithOrderInclude,
+      statusHistory: { orderBy: { createdAt: 'desc' }, take: 10 },
+    },
   });
 }
 
