@@ -86,3 +86,23 @@ html {
   outline: 2px solid #fb7185;
   outline-offset: 2px;
 }
+@keyframes breathe1 {
+  0%, 100% { transform: scale(1) translate(0,0); opacity: 0.7; }
+  50% { transform: scale(1.25) translate(-8px,10px); opacity: 1; }
+}
+@keyframes breathe2 {
+  0%, 100% { transform: scale(1) translate(0,0); opacity: 0.6; }
+  50% { transform: scale(1.2) translate(6px,-8px); opacity: 0.95; }
+}
+@keyframes vitrineScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.blob-breathe-a { animation: breathe1 6s ease-in-out infinite; }
+.blob-breathe-b { animation: breathe2 7s ease-in-out infinite; }
+.vitrine-track { animation: vitrineScroll 14s linear infinite; }
+.live-dot { animation: pulseDot 1.6s ease-in-out infinite; }

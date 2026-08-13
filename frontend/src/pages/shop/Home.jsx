@@ -7,6 +7,7 @@ import { STORE_ID } from '../../utils/constants';
 import Button from '../../components/ui/Button';
 import CategoryMarquee from '../../components/shop/home/CategoryMarquee';
 import ProductCarousel from '../../components/shop/home/ProductCarousel';
+import TrendingStrip from '../../components/shop/home/TrendingStrip';
 import heroImg from '../../assets/hero.png';
 
 const perks = [
@@ -48,7 +49,7 @@ export default function Home() {
                 Decouvrez notre selection de vetements et accessoires authentiques,
                 livres partout au Senegal et exportes a l'international.
               </p>
-              <div className="flex gap-3 flex-wrap">
+              <div className="flex gap-3 flex-wrap mb-8">
                 <Link to="/products">
                   <Button size="lg">
                     Decouvrir la boutique <ArrowRight size={18} />
@@ -60,6 +61,9 @@ export default function Home() {
                   </Button>
                 </Link>
               </div>
+
+              {/* Vitrine produits tendance qui defile - visible des l'ouverture */}
+              <TrendingStrip products={products.slice(0, 8)} />
             </div>
 
             <div className="hidden md:block relative">
@@ -84,8 +88,8 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="absolute top-10 right-10 w-64 h-64 bg-rose-200/30 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-1/3 w-48 h-48 bg-amber-200/30 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute top-10 right-10 w-64 h-64 bg-rose-200/30 rounded-full blur-3xl pointer-events-none blob-breathe-a" />
+        <div className="absolute bottom-0 right-1/3 w-48 h-48 bg-amber-200/30 rounded-full blur-2xl pointer-events-none blob-breathe-b" />
       </section>
 
       <section className="border-y border-stone-100 bg-white">
