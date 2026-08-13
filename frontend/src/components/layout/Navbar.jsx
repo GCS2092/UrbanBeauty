@@ -90,7 +90,7 @@ export default function Navbar() {
           {/* Suivi — mobile : remplit l'espace vide entre le nom et le hamburger */}
           <form onSubmit={handleTrackSubmit} className="flex-1 min-w-0 md:hidden">
             <div
-              className="flex items-center gap-1.5 bg-stone-50 border border-stone-200 rounded-full pl-3 pr-1 py-1.5 focus-within:border-stone-400 transition-colors"
+              className="flex items-center gap-1 bg-stone-50 border border-stone-200 rounded-full pl-2.5 pr-1 py-1 focus-within:border-stone-400 transition-colors"
               title={TRACK_TITLE}
             >
               <input
@@ -100,14 +100,14 @@ export default function Navbar() {
                 onChange={(e) => setTrackNumber(e.target.value)}
                 placeholder="Suivre ma commande"
                 aria-label="Numéro de commande"
-                className="flex-1 min-w-0 bg-transparent text-xs text-stone-700 placeholder:text-stone-400 outline-none"
+                className="flex-1 min-w-0 bg-transparent text-[11px] text-stone-700 placeholder:text-stone-400 outline-none"
               />
               <button
                 type="submit"
                 aria-label="Rechercher ma commande"
-                className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-stone-500 hover:bg-stone-200 hover:text-stone-700 transition-colors"
+                className="shrink-0 w-[18px] h-[18px] flex items-center justify-center rounded-full text-stone-500 hover:bg-stone-200 hover:text-stone-700 transition-colors"
               >
-                <Search size={13} />
+                <Search size={11} />
               </button>
             </div>
           </form>
@@ -115,7 +115,7 @@ export default function Navbar() {
           {/* Suivi — desktop : champ compact à côté du logo, taille normale (plus de bandeau promo à cote pour lui faire de la place) */}
           <form onSubmit={handleTrackSubmit} className="hidden md:flex items-center shrink-0 flex-1 justify-center">
             <div
-              className="flex items-center gap-1.5 bg-stone-50 border border-stone-200 rounded-full pl-3 pr-1 py-1.5 focus-within:border-stone-400 transition-colors w-40 lg:w-56"
+              className="flex items-center gap-1 bg-stone-50 border border-stone-200 rounded-full pl-2.5 pr-1 py-1 focus-within:border-stone-400 transition-colors w-40 lg:w-56"
               title={TRACK_TITLE}
             >
               <input
@@ -125,14 +125,14 @@ export default function Navbar() {
                 onChange={(e) => setTrackNumber(e.target.value)}
                 placeholder="Suivre ma commande"
                 aria-label="Numéro de commande"
-                className="flex-1 min-w-0 bg-transparent text-xs text-stone-700 placeholder:text-stone-400 outline-none"
+                className="flex-1 min-w-0 bg-transparent text-[11px] text-stone-700 placeholder:text-stone-400 outline-none"
               />
               <button
                 type="submit"
                 aria-label="Rechercher ma commande"
-                className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-stone-500 hover:bg-stone-200 hover:text-stone-700 transition-colors"
+                className="shrink-0 w-[18px] h-[18px] flex items-center justify-center rounded-full text-stone-500 hover:bg-stone-200 hover:text-stone-700 transition-colors"
               >
-                <Search size={13} />
+                <Search size={11} />
               </button>
             </div>
           </form>
