@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { couponsApi } from '../../api/coupons.api';
 import { STORE_ID } from '../../utils/constants';
 
-const TRACK_TITLE = "Le numÃ©ro de commande se trouve dans l'email ou le message WhatsApp de confirmation reÃ§u aprÃ¨s votre achat.";
+const TRACK_TITLE = "Le numéro de commande se trouve dans l'email ou le message WhatsApp de confirmation reçu après votre achat.";
 
 export default function Navbar() {
   const { isAuthenticated, user, token } = useAuthStore();
@@ -21,7 +21,7 @@ export default function Navbar() {
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 
-  // Suivi de commande â€” champ inline dans le header
+  // Suivi de commande — champ inline dans le header
   const [trackNumber, setTrackNumber] = useState('');
 
   const navLinks = [
@@ -54,9 +54,9 @@ export default function Navbar() {
       ? `-${coupon.value}%`
       : `-${coupon.value} FCFA`;
     const min = coupon.minOrderAmount
-      ? ` dÃ¨s ${coupon.minOrderAmount} FCFA`
+      ? ` dès ${coupon.minOrderAmount} FCFA`
       : '';
-    return `ðŸŽ ${coupon.code} â€¢ ${reduction}${min}`;
+    return `🎁 ${coupon.code} • ${reduction}${min}`;
   };
 
   const formatExpiry = (date) => {
@@ -79,13 +79,15 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img src="/favicon.svg" alt="SonShop" className="w-8 h-8" />
+            <div className="w-8 h-8 rounded-xl bg-stone-900 flex items-center justify-center">
+              <ShoppingBag size={16} className="text-white" />
+            </div>
             <span className="font-bold text-xl tracking-tight text-stone-900">
               Son<span className="text-stone-500">Shop</span>
             </span>
           </Link>
 
-          {/* Suivi â€” mobile : remplit l'espace vide entre le nom et le hamburger */}
+          {/* Suivi — mobile : remplit l'espace vide entre le nom et le hamburger */}
           <form onSubmit={handleTrackSubmit} className="flex-1 min-w-0 md:hidden">
             <div
               className="flex items-center gap-1 bg-stone-50 border border-stone-200 rounded-full pl-2.5 pr-1 py-1 focus-within:border-stone-400 transition-colors"
@@ -97,7 +99,7 @@ export default function Navbar() {
                 value={trackNumber}
                 onChange={(e) => setTrackNumber(e.target.value)}
                 placeholder="Suivre ma commande"
-                aria-label="NumÃ©ro de commande"
+                aria-label="Numéro de commande"
                 className="flex-1 min-w-0 bg-transparent text-[11px] text-stone-700 placeholder:text-stone-400 outline-none"
               />
               <button
@@ -110,7 +112,7 @@ export default function Navbar() {
             </div>
           </form>
 
-          {/* Suivi â€” desktop : champ compact Ã  cÃ´tÃ© du logo, taille normale (plus de bandeau promo Ã  cote pour lui faire de la place) */}
+          {/* Suivi — desktop : champ compact à côté du logo, taille normale (plus de bandeau promo à cote pour lui faire de la place) */}
           <form onSubmit={handleTrackSubmit} className="hidden md:flex items-center shrink-0 flex-1 justify-center">
             <div
               className="flex items-center gap-1 bg-stone-50 border border-stone-200 rounded-full pl-2.5 pr-1 py-1 focus-within:border-stone-400 transition-colors w-40 lg:w-56"
@@ -122,7 +124,7 @@ export default function Navbar() {
                 value={trackNumber}
                 onChange={(e) => setTrackNumber(e.target.value)}
                 placeholder="Suivre ma commande"
-                aria-label="NumÃ©ro de commande"
+                aria-label="Numéro de commande"
                 className="flex-1 min-w-0 bg-transparent text-[11px] text-stone-700 placeholder:text-stone-400 outline-none"
               />
               <button
@@ -138,7 +140,7 @@ export default function Navbar() {
           {/* Actions */}
           <div className="flex items-center gap-1 shrink-0">
 
-            {/* Panier â€” desktop uniquement */}
+            {/* Panier — desktop uniquement */}
             <Link
               to="/cart"
               className="relative p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors hidden md:block"
@@ -153,7 +155,7 @@ export default function Navbar() {
 
             {isAuthenticated ? (
               <>
-                {/* Wishlist â€” desktop */}
+                {/* Wishlist — desktop */}
                 <Link
                   to="/account/wishlist"
                   className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors hidden md:block"
@@ -161,7 +163,7 @@ export default function Navbar() {
                   <Heart size={20} />
                 </Link>
 
-                {/* Notifications â€” desktop */}
+                {/* Notifications — desktop */}
                 <Link
                   to="/account/notifications"
                   className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors hidden md:block"
@@ -169,7 +171,7 @@ export default function Navbar() {
                   <Bell size={20} />
                 </Link>
 
-                {/* Profil dropdown â€” desktop */}
+                {/* Profil dropdown — desktop */}
                 <div className="relative hidden md:block">
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
@@ -208,7 +210,7 @@ export default function Navbar() {
                           onClick={() => { setProfileOpen(false); logout(); }}
                           className="w-full flex items-center gap-2 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors"
                         >
-                          DÃ©connexion
+                          Déconnexion
                         </button>
                       </div>
                     </>
@@ -235,7 +237,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* BanniÃ¨re promo â€” 2e ligne unifiee, visible sur mobile ET desktop, sous le header principal */}
+        {/* Bannière promo — 2e ligne unifiee, visible sur mobile ET desktop, sous le header principal */}
         {currentPromo && (
           <div className="pb-2 -mt-1 flex justify-center md:justify-center">
             <div
@@ -268,14 +270,14 @@ export default function Navbar() {
               </span>
               {currentPromo.expiresAt && (
                 <span style={{ fontSize: '10px', color: '#e11d48', opacity: 0.7, flexShrink: 0 }}>
-                  Â· {formatExpiry(currentPromo.expiresAt)}
+                  · {formatExpiry(currentPromo.expiresAt)}
                 </span>
               )}
             </div>
           </div>
         )}
 
-        {/* Menu mobile dÃ©roulant */}
+        {/* Menu mobile déroulant */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-stone-100 py-4 flex flex-col gap-1">
             {navLinks.map((link) => (
@@ -294,7 +296,7 @@ export default function Navbar() {
               </NavLink>
             ))}
 
-            {/* Panier â€” mobile (dans le menu) */}
+            {/* Panier — mobile (dans le menu) */}
             <Link
               to="/cart"
               onClick={closeMobileMenu}
@@ -320,7 +322,7 @@ export default function Navbar() {
                     }`
                   }
                 >
-                  â¤ Wishlist
+                  ❤ Wishlist
                 </NavLink>
                 <NavLink
                   to="/account/notifications"
@@ -331,7 +333,7 @@ export default function Navbar() {
                     }`
                   }
                 >
-                  ðŸ”” Notifications
+                  🔔 Notifications
                 </NavLink>
                 <NavLink
                   to="/account/profile"
@@ -348,7 +350,7 @@ export default function Navbar() {
                   onClick={() => { closeMobileMenu(); logout(); }}
                   className="text-left text-sm font-medium px-3 py-2.5 rounded-xl text-stone-600 hover:bg-stone-50 transition-colors"
                 >
-                  DÃ©connexion
+                  Déconnexion
                 </button>
               </>
             )}
