@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
+import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -15,7 +17,7 @@ const schema = z.object({
 });
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -29,7 +31,6 @@ export default function Login() {
     try {
       await login(data);
     } catch (err) {
-      // On affiche le message d'erreur directement dans la page
       const msg =
         err?.response?.data?.message ||
         err?.message ||
@@ -40,12 +41,20 @@ export default function Login() {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setErrorMsg('');
+    try {
+      await loginWithGoogle(credentialResponse.credential);
+    } catch (err) {
+      setErrorMsg('Connexion Google impossible. Réessayez.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
 
       <AuthTopBar />
 
-      {/* Contenu centré — pb-20 sur mobile pour laisser la place à la BottomNav fixe */}
       <div className="flex-1 flex items-center justify-center p-4 pb-20 md:pb-4">
         <div className="w-full max-w-md">
 
@@ -84,6 +93,22 @@ export default function Login() {
             >
               Se connecter
             </Button>
+
+            <div className="flex items-center gap-3 pt-1">
+              <div className="flex-1 h-px bg-stone-200" />
+              <span className="text-xs text-stone-400">ou</span>
+              <div className="flex-1 h-px bg-stone-200" />
+            </div>
+
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error('Connexion Google impossible.')}
+                locale="fr"
+                width="320"
+                text="continue_with"
+              />
+            </div>
           </div>
 
           <p className="text-center text-sm text-stone-400 mt-4">

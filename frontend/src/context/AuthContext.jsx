@@ -15,17 +15,13 @@ export function AuthProvider({ children }) {
   const { fetchCart } = useCartStore();
   const navigate = useNavigate();
 
-  // ✅ Demande permission OneSignal + associe l'user dès qu'il est connecté
   useNotifications();
 
-  // ✅ Auto-login si token passé dans l'URL (depuis SonTech)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
     if (urlToken && !isAuthenticated) {
-      // Nettoie l'URL sans recharger la page
       window.history.replaceState({}, '', window.location.pathname);
-      // Stocke le token provisoirement et vérifie avec /me
       setAuth(null, urlToken);
       authApi.me()
         .then(({ data }) => {
@@ -64,6 +60,26 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // ✅ Connexion / inscription via Google — reçoit le "credential" (id_token) renvoyé par le bouton Google
+  const loginWithGoogle = async (credential) => {
+    try {
+      const { data } = await authApi.google(credential);
+      const anonymousId = localStorage.getItem(ANONYMOUS_CART_KEY);
+      setAuth(data.user, data.token);
+      await fetchCart(data.user.id, anonymousId);
+      localStorage.removeItem(ANONYMOUS_CART_KEY);
+      toast.success(`Bienvenue ${data.user.firstName} !`);
+      navigate(data.user.role === 'ADMIN' || data.user.role === 'STAFF' ? '/admin' : '/');
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Connexion Google impossible. Réessayez.';
+      toast.error(message);
+      throw err;
+    }
+  };
+
   const register = async (formData) => {
     try {
       await authApi.register(formData);
@@ -90,7 +106,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated, login, loginWithGoogle, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

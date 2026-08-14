@@ -24,6 +24,17 @@ async function login(req, res, next) {
   }
 }
 
+// ─── Login / inscription via Google ──────────────────────────────────────────
+async function googleAuth(req, res, next) {
+  try {
+    const { credential } = req.body;
+    const data = await authService.loginWithGoogle({ idToken: credential });
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ─── Logout ───────────────────────────────────────────────────────────────────
 async function logout(req, res) {
   res.json({ message: 'Déconnexion réussie' });
@@ -58,7 +69,6 @@ async function verifyOtp(req, res, next) {
 // ─── ÉTAPE 3 : Finalisation du compte (définition du mot de passe) ────────────
 async function completeRegistration(req, res, next) {
   try {
-    // Le setupToken est envoyé dans le header Authorization: Bearer <setupToken>
     const authHeader = req.headers.authorization || '';
     const setupToken = authHeader.replace('Bearer ', '').trim();
 
@@ -98,6 +108,7 @@ module.exports = {
   authController: {
     register,
     login,
+    googleAuth,
     logout,
     me,
     requestOtp,

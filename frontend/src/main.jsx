@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import OneSignal from 'react-onesignal'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 
 OneSignal.init({
   appId: import.meta.env.VITE_ONESIGNAL_APP_ID,
@@ -21,6 +22,8 @@ OneSignal.init({
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <App />
+    </GoogleOAuthProvider>
   </StrictMode>
 )
