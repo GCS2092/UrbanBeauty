@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import {
   BrowserRouter,
   Routes,
@@ -25,11 +26,11 @@ import AdminOnlyRoute from './components/shared/AdminOnlyRoute';
 
 import ShopLayout from './components/layout/ShopLayout';
 import AdminLayout from './components/layout/AdminLayout';
-import AccountLayout from './pages/account/AccountLayout';
 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 
+// ✅ Pages boutique : chargées immédiatement, ce sont celles vues par tous les visiteurs
 import Home from './pages/shop/Home';
 import Products from './pages/shop/Products';
 import ProductDetail from './pages/shop/ProductDetail';
@@ -42,27 +43,30 @@ import Track from './pages/shop/Track';
 import Cart from './pages/cart/Cart';
 import Checkout from './pages/cart/Checkout';
 
-import Orders from './pages/orders/Orders';
-import OrderDetail from './pages/orders/OrderDetail';
+// ✅ Code-splitting : ces pages ne sont téléchargées que si l'utilisateur y accède
+// (compte connecté ou admin/staff) — elles ne pèsent plus sur le chargement initial
+// de la boutique pour un visiteur anonyme.
+const AccountLayout    = lazy(() => import('./pages/account/AccountLayout'));
+const Orders            = lazy(() => import('./pages/orders/Orders'));
+const OrderDetail       = lazy(() => import('./pages/orders/OrderDetail'));
+const Profile           = lazy(() => import('./pages/account/Profile'));
+const Addresses         = lazy(() => import('./pages/account/Addresses'));
+const Wishlist          = lazy(() => import('./pages/account/Wishlist'));
+const Notifications     = lazy(() => import('./pages/account/Notifications'));
 
-import Profile from './pages/account/Profile';
-import Addresses from './pages/account/Addresses';
-import Wishlist from './pages/account/Wishlist';
-import Notifications from './pages/account/Notifications';
-
-import Dashboard from './pages/admin/Dashboard';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminOrders from './pages/admin/AdminOrders';
-import AdminCategories from './pages/admin/AdminCategories';
-import AdminCoupons from './pages/admin/AdminCoupons';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminPayments from './pages/admin/AdminPayments';
-import AdminSettings from './pages/admin/AdminSettings';
-import AdminAccounting from './pages/admin/AdminAccounting';
-import AdminInvoices from './pages/admin/AdminInvoices';
-import AdminAudit from './pages/admin/AdminAudit';
-import AdminStores from './pages/admin/AdminStores';
-import AdminStockTransfers from './pages/admin/AdminStockTransfers';
+const Dashboard             = lazy(() => import('./pages/admin/Dashboard'));
+const AdminProducts         = lazy(() => import('./pages/admin/AdminProducts'));
+const AdminOrders           = lazy(() => import('./pages/admin/AdminOrders'));
+const AdminCategories       = lazy(() => import('./pages/admin/AdminCategories'));
+const AdminCoupons          = lazy(() => import('./pages/admin/AdminCoupons'));
+const AdminUsers            = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminPayments         = lazy(() => import('./pages/admin/AdminPayments'));
+const AdminSettings         = lazy(() => import('./pages/admin/AdminSettings'));
+const AdminAccounting       = lazy(() => import('./pages/admin/AdminAccounting'));
+const AdminInvoices         = lazy(() => import('./pages/admin/AdminInvoices'));
+const AdminAudit            = lazy(() => import('./pages/admin/AdminAudit'));
+const AdminStores           = lazy(() => import('./pages/admin/AdminStores'));
+const AdminStockTransfers   = lazy(() => import('./pages/admin/AdminStockTransfers'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,6 +78,15 @@ const queryClient = new QueryClient({
 });
 
 const isDev = import.meta.env.DEV;
+
+// ✅ Fallback simple pendant le chargement d'une page différée
+function PageLoader() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-stone-200 border-t-stone-800 rounded-full animate-spin" />
+    </div>
+  );
+}
 
 export default function App() {
   return (
@@ -87,208 +100,210 @@ export default function App() {
         />
 
         <AuthProvider>
-          <Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
 
-            {/* Auth */}
-            <Route
-              path="/login"
-              element={<Login />}
-            />
-
-            <Route
-              path="/register"
-              element={<Register />}
-            />
-
-            {/* Shop */}
-            <Route element={<ShopLayout />}>
-
+              {/* Auth */}
               <Route
-                path="/"
-                element={<Home />}
+                path="/login"
+                element={<Login />}
               />
 
               <Route
-                path="/products"
-                element={<Products />}
+                path="/register"
+                element={<Register />}
               />
 
-              <Route
-                path="/products/:slug"
-                element={<ProductDetail />}
-              />
+              {/* Shop */}
+              <Route element={<ShopLayout />}>
 
-              <Route
-                path="/about"
-                element={<About />}
-              />
+                <Route
+                  path="/"
+                  element={<Home />}
+                />
 
-              <Route
-                path="/contact"
-                element={<Contact />}
-              />
+                <Route
+                  path="/products"
+                  element={<Products />}
+                />
 
-              <Route
-                path="/cgv"
-                element={<CGV />}
-              />
+                <Route
+                  path="/products/:slug"
+                  element={<ProductDetail />}
+                />
 
-              <Route
-                path="/returns"
-                element={<Returns />}
-              />
+                <Route
+                  path="/about"
+                  element={<About />}
+                />
 
-              <Route
-                path="/suivi"
-                element={<Track />}
-              />
+                <Route
+                  path="/contact"
+                  element={<Contact />}
+                />
 
-              <Route
-                path="/suivi/:orderNumber"
-                element={<Track />}
-              />
+                <Route
+                  path="/cgv"
+                  element={<CGV />}
+                />
 
-              <Route
-                path="/cart"
-                element={<Cart />}
-              />
+                <Route
+                  path="/returns"
+                  element={<Returns />}
+                />
 
-              <Route
-                path="/checkout"
-                element={<Checkout />}
-              />
+                <Route
+                  path="/suivi"
+                  element={<Track />}
+                />
 
-              {/* Pages protégées avec sidebar compte */}
-              <Route element={<ProtectedRoute />}>
-                <Route element={<AccountLayout />}>
+                <Route
+                  path="/suivi/:orderNumber"
+                  element={<Track />}
+                />
+
+                <Route
+                  path="/cart"
+                  element={<Cart />}
+                />
+
+                <Route
+                  path="/checkout"
+                  element={<Checkout />}
+                />
+
+                {/* Pages protégées avec sidebar compte */}
+                <Route element={<ProtectedRoute />}>
+                  <Route element={<AccountLayout />}>
+
+                    <Route
+                      path="/account/profile"
+                      element={<Profile />}
+                    />
+
+                    <Route
+                      path="/account/addresses"
+                      element={<Addresses />}
+                    />
+
+                    <Route
+                      path="/account/wishlist"
+                      element={<Wishlist />}
+                    />
+
+                    <Route
+                      path="/account/notifications"
+                      element={<Notifications />}
+                    />
+
+                    <Route
+                      path="/orders"
+                      element={<Orders />}
+                    />
+
+                    {/* IMPORTANT :
+                        C'est cette route qui reçoit :
+                        /orders/CMD-xxxx?payment=return
+                    */}
+                    <Route
+                      path="/orders/:orderNumber"
+                      element={<OrderDetail />}
+                    />
+
+                  </Route>
+                </Route>
+
+              </Route>
+
+              {/* Admin + Staff */}
+              <Route element={<AdminRoute />}>
+                <Route element={<AdminLayout />}>
 
                   <Route
-                    path="/account/profile"
-                    element={<Profile />}
+                    path="/admin"
+                    element={<Dashboard />}
                   />
 
                   <Route
-                    path="/account/addresses"
-                    element={<Addresses />}
+                    path="/admin/products"
+                    element={<AdminProducts />}
                   />
 
                   <Route
-                    path="/account/wishlist"
-                    element={<Wishlist />}
+                    path="/admin/orders"
+                    element={<AdminOrders />}
                   />
 
                   <Route
-                    path="/account/notifications"
-                    element={<Notifications />}
+                    path="/admin/payments"
+                    element={<AdminPayments />}
                   />
 
                   <Route
-                    path="/orders"
-                    element={<Orders />}
+                    path="/admin/accounting"
+                    element={<AdminAccounting />}
                   />
 
-                  {/* IMPORTANT :
-                      C'est cette route qui reçoit :
-                      /orders/CMD-xxxx?payment=return
-                  */}
                   <Route
-                    path="/orders/:orderNumber"
-                    element={<OrderDetail />}
+                    path="/admin/invoices"
+                    element={<AdminInvoices />}
                   />
+
+                  <Route
+                    path="/admin/stock-transfers"
+                    element={<AdminStockTransfers />}
+                  />
+
+                  <Route
+                    path="/admin/audit"
+                    element={<AdminAudit />}
+                  />
+
+                  <Route
+                    path="/admin/categories"
+                    element={<AdminCategories />}
+                  />
+
+                  <Route element={<AdminOnlyRoute />}>
+
+                    <Route
+                      path="/admin/stores"
+                      element={<AdminStores />}
+                    />
+
+                    <Route
+                      path="/admin/coupons"
+                      element={<AdminCoupons />}
+                    />
+
+                    <Route
+                      path="/admin/users"
+                      element={<AdminUsers />}
+                    />
+
+                    <Route
+                      path="/admin/settings"
+                      element={<AdminSettings />}
+                    />
+
+                  </Route>
 
                 </Route>
               </Route>
 
-            </Route>
-
-            {/* Admin + Staff */}
-            <Route element={<AdminRoute />}>
-              <Route element={<AdminLayout />}>
-
-                <Route
-                  path="/admin"
-                  element={<Dashboard />}
-                />
-
-                <Route
-                  path="/admin/products"
-                  element={<AdminProducts />}
-                />
-
-                <Route
-                  path="/admin/orders"
-                  element={<AdminOrders />}
-                />
-
-                <Route
-                  path="/admin/payments"
-                  element={<AdminPayments />}
-                />
-
-                <Route
-                  path="/admin/accounting"
-                  element={<AdminAccounting />}
-                />
-
-                <Route
-                  path="/admin/invoices"
-                  element={<AdminInvoices />}
-                />
-
-                <Route
-                  path="/admin/stock-transfers"
-                  element={<AdminStockTransfers />}
-                />
-
-                <Route
-                  path="/admin/audit"
-                  element={<AdminAudit />}
-                />
-
-                <Route
-                  path="/admin/categories"
-                  element={<AdminCategories />}
-                />
-
-                <Route element={<AdminOnlyRoute />}>
-
-                  <Route
-                    path="/admin/stores"
-                    element={<AdminStores />}
+              {/* Fallback */}
+              <Route
+                path="*"
+                element={
+                  <Navigate
+                    to="/"
+                    replace
                   />
+                }
+              />
 
-                  <Route
-                    path="/admin/coupons"
-                    element={<AdminCoupons />}
-                  />
-
-                  <Route
-                    path="/admin/users"
-                    element={<AdminUsers />}
-                  />
-
-                  <Route
-                    path="/admin/settings"
-                    element={<AdminSettings />}
-                  />
-
-                </Route>
-
-              </Route>
-            </Route>
-
-            {/* Fallback */}
-            <Route
-              path="*"
-              element={
-                <Navigate
-                  to="/"
-                  replace
-                />
-              }
-            />
-
-          </Routes>
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
 
