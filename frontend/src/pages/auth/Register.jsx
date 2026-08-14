@@ -6,8 +6,10 @@ import { useState } from 'react';
 import axios from 'axios';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import { Home, ShoppingBag, ArrowLeft, CheckCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import AuthTopBar from '../../components/layout/AuthTopBar';
+import BottomNav from '../../components/layout/BottomNav';
 import '../../components/shop/home/hero.css';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -129,21 +131,12 @@ export default function Register() {
       <div className="absolute top-10 right-10 w-64 h-64 bg-rose-200/30 rounded-full blur-3xl pointer-events-none blob-breathe-a" />
       <div className="absolute bottom-20 left-0 w-48 h-48 bg-amber-200/30 rounded-full blur-2xl pointer-events-none blob-breathe-b" />
 
-      <header className="relative z-10 sticky top-0 bg-white/85 backdrop-blur-md border-b border-stone-100">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/favicon.svg" alt="SonShop" className="w-8 h-8" />
-            <span className="font-bold text-lg tracking-tight text-stone-900">
-              Son<span className="text-rose-400">Shop</span>
-            </span>
-          </Link>
-          <Link to="/products" className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800 transition-colors">
-            <ShoppingBag size={15} /> Boutique
-          </Link>
-        </div>
-      </header>
+      <div className="relative z-10">
+        <AuthTopBar />
+      </div>
 
-      <div className="relative z-10 flex-1 flex items-center justify-center p-4">
+      {/* pb-20 sur mobile pour laisser la place à la BottomNav fixe */}
+      <div className="relative z-10 flex-1 flex items-center justify-center p-4 pb-20 md:pb-4">
         <div className="w-full max-w-md">
 
           <div className="text-center mb-6">
@@ -273,14 +266,14 @@ export default function Register() {
                 <Input
                   label="Mot de passe"
                   type="password"
-                  placeholder="********"
+                  placeholder="••••••••"
                   error={form3.formState.errors.password?.message}
                   {...form3.register('password')}
                 />
                 <Input
                   label="Confirmer le mot de passe"
                   type="password"
-                  placeholder="********"
+                  placeholder="••••••••"
                   error={form3.formState.errors.confirm?.message}
                   {...form3.register('confirm')}
                 />
@@ -305,6 +298,8 @@ export default function Register() {
 
         </div>
       </div>
+
+      <BottomNav />
     </div>
   );
 }
