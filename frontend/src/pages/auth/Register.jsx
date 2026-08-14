@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+﻿import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,11 +7,10 @@ import axios from 'axios';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { Home, ShoppingBag, ArrowLeft, CheckCircle } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext'; // ✅ ajouté
+import { useAuth } from '../../context/AuthContext';
+import '../../components/shop/home/hero.css';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-// ── Schémas de validation par étape ──────────────────────────────────────────
 
 const schemaEmail = z.object({
   email: z.string().email('Email invalide'),
@@ -22,21 +21,19 @@ const schemaCode = z.object({
 });
 
 const schemaPassword = z.object({
-  firstName: z.string().min(2, 'Prénom requis'),
+  firstName: z.string().min(2, 'Prenom requis'),
   lastName:  z.string().min(2, 'Nom requis'),
   phone:     z.string().optional(),
-  password:  z.string().min(6, 'Minimum 6 caractères'),
+  password:  z.string().min(6, 'Minimum 6 caracteres'),
   confirm:   z.string(),
 }).refine((d) => d.password === d.confirm, {
   message: 'Les mots de passe ne correspondent pas',
   path: ['confirm'],
 });
 
-// ── Composant principal ───────────────────────────────────────────────────────
-
 export default function Register() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // ✅ ajouté
+  const { login } = useAuth();
 
   const [step, setStep]             = useState(1);
   const [email, setEmail]           = useState('');
@@ -49,7 +46,6 @@ export default function Register() {
   const form2 = useForm({ resolver: zodResolver(schemaCode) });
   const form3 = useForm({ resolver: zodResolver(schemaPassword) });
 
-  // ── Étape 1 : demande OTP ─────────────────────────────────────────────────
   const onRequestOtp = async ({ email: emailValue }) => {
     setLoading(true);
     setErrorMsg('');
@@ -59,13 +55,12 @@ export default function Register() {
       setStep(2);
       startResendCooldown();
     } catch (err) {
-      setErrorMsg(err?.response?.data?.message || 'Erreur lors de l\'envoi du code.');
+      setErrorMsg(err?.response?.data?.message || "Erreur lors de l'envoi du code.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Étape 2 : vérification OTP ────────────────────────────────────────────
   const onVerifyOtp = async ({ code }) => {
     setLoading(true);
     setErrorMsg('');
@@ -74,34 +69,29 @@ export default function Register() {
       setSetupToken(data.setupToken);
       setStep(3);
     } catch (err) {
-      setErrorMsg(err?.response?.data?.message || 'Code invalide ou expiré.');
+      setErrorMsg(err?.response?.data?.message || 'Code invalide ou expire.');
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Étape 3 : finalisation + login automatique ────────────────────────────
   const onComplete = async ({ firstName, lastName, phone, password }) => {
     setLoading(true);
     setErrorMsg('');
     try {
-      // 1. Crée le compte
       await axios.post(
         `${API}/api/auth/register/complete`,
         { firstName, lastName, phone, password },
         { headers: { Authorization: `Bearer ${setupToken}` } }
       );
-      // 2. ✅ Connecte automatiquement l'utilisateur
-      // login() gère la redirection vers / ou /admin selon le rôle
       await login({ email, password });
     } catch (err) {
-      setErrorMsg(err?.response?.data?.message || 'Erreur lors de la création du compte.');
+      setErrorMsg(err?.response?.data?.message || 'Erreur lors de la creation du compte.');
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Renvoi du code avec cooldown 60s ──────────────────────────────────────
   const startResendCooldown = () => {
     setResendCooldown(60);
     const timer = setInterval(() => {
@@ -129,43 +119,38 @@ export default function Register() {
 
   const steps = [
     { n: 1, label: 'Email' },
-    { n: 2, label: 'Vérification' },
+    { n: 2, label: 'Verification' },
     { n: 3, label: 'Compte' },
   ];
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col">
+    <div className="min-h-screen relative bg-gradient-to-br from-rose-50 via-stone-50 to-amber-50 overflow-hidden flex flex-col">
 
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-stone-100">
+      <div className="absolute top-10 right-10 w-64 h-64 bg-rose-200/30 rounded-full blur-3xl pointer-events-none blob-breathe-a" />
+      <div className="absolute bottom-20 left-0 w-48 h-48 bg-amber-200/30 rounded-full blur-2xl pointer-events-none blob-breathe-b" />
+
+      <header className="relative z-10 sticky top-0 bg-white/85 backdrop-blur-md border-b border-stone-100">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <span className="text-xl">🛍️</span>
-            <span className="font-bold text-lg tracking-tight text-stone-800">
+            <img src="/favicon.svg" alt="SonShop" className="w-8 h-8" />
+            <span className="font-bold text-lg tracking-tight text-stone-900">
               Son<span className="text-rose-400">Shop</span>
             </span>
           </Link>
-          <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800 transition-colors">
-              <Home size={15} /> Accueil
-            </Link>
-            <Link to="/products" className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800 transition-colors">
-              <ShoppingBag size={15} /> Boutique
-            </Link>
-          </div>
+          <Link to="/products" className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800 transition-colors">
+            <ShoppingBag size={15} /> Boutique
+          </Link>
         </div>
       </header>
 
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="relative z-10 flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
 
-          {/* Titre */}
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-semibold text-stone-800">Créer un compte</h1>
-            <p className="text-stone-400 text-sm mt-1">Rejoignez la communauté SonShop</p>
+            <h1 className="text-2xl font-semibold text-stone-900">Creer un compte</h1>
+            <p className="text-stone-500 text-sm mt-1">Rejoignez la communaute SonShop</p>
           </div>
 
-          {/* Stepper */}
           <div className="flex items-center justify-center gap-0 mb-8">
             {steps.map((s, i) => (
               <div key={s.n} className="flex items-center">
@@ -187,20 +172,18 @@ export default function Register() {
             ))}
           </div>
 
-          <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-stone-100 shadow-lg shadow-rose-200/30 p-6 space-y-4">
 
-            {/* Erreur */}
             {errorMsg && (
               <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
                 <p className="text-sm text-rose-600 font-medium">{errorMsg}</p>
               </div>
             )}
 
-            {/* ── ÉTAPE 1 : Email ── */}
             {step === 1 && (
               <div className="space-y-4">
                 <p className="text-sm text-stone-500">
-                  Entrez votre email pour recevoir un code de vérification.
+                  Entrez votre email pour recevoir un code de verification.
                 </p>
                 <Input
                   label="Email"
@@ -214,19 +197,18 @@ export default function Register() {
                   loading={loading}
                   onClick={form1.handleSubmit(onRequestOtp)}
                 >
-                  Recevoir le code de vérification
+                  Recevoir le code de verification
                 </Button>
               </div>
             )}
 
-            {/* ── ÉTAPE 2 : Code OTP ── */}
             {step === 2 && (
               <div className="space-y-4">
                 <p className="text-sm text-stone-500">
-                  Un code à 6 chiffres a été envoyé à <strong className="text-stone-700">{email}</strong>
+                  Un code a 6 chiffres a ete envoye a <strong className="text-stone-700">{email}</strong>
                 </p>
                 <Input
-                  label="Code de vérification"
+                  label="Code de verification"
                   type="text"
                   inputMode="numeric"
                   maxLength={6}
@@ -243,7 +225,6 @@ export default function Register() {
                   Valider le code
                 </Button>
 
-                {/* Renvoi + retour */}
                 <div className="flex items-center justify-between pt-1">
                   <button
                     type="button"
@@ -264,15 +245,14 @@ export default function Register() {
               </div>
             )}
 
-            {/* ── ÉTAPE 3 : Infos + mot de passe ── */}
             {step === 3 && (
               <div className="space-y-4">
                 <p className="text-sm text-stone-500">
-                  Email vérifié ✅ Complétez votre profil pour finaliser la création de votre compte.
+                  Email verifie. Completez votre profil pour finaliser la creation de votre compte.
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <Input
-                    label="Prénom"
+                    label="Prenom"
                     placeholder="Marie"
                     error={form3.formState.errors.firstName?.message}
                     {...form3.register('firstName')}
@@ -285,7 +265,7 @@ export default function Register() {
                   />
                 </div>
                 <Input
-                  label="Téléphone (optionnel)"
+                  label="Telephone (optionnel)"
                   type="tel"
                   placeholder="+221 77 000 00 00"
                   {...form3.register('phone')}
@@ -293,14 +273,14 @@ export default function Register() {
                 <Input
                   label="Mot de passe"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="********"
                   error={form3.formState.errors.password?.message}
                   {...form3.register('password')}
                 />
                 <Input
                   label="Confirmer le mot de passe"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="********"
                   error={form3.formState.errors.confirm?.message}
                   {...form3.register('confirm')}
                 />
@@ -309,7 +289,7 @@ export default function Register() {
                   loading={loading}
                   onClick={form3.handleSubmit(onComplete)}
                 >
-                  Créer mon compte
+                  Creer mon compte
                 </Button>
               </div>
             )}
@@ -317,7 +297,7 @@ export default function Register() {
           </div>
 
           <p className="text-center text-sm text-stone-400 mt-4">
-            Déjà un compte ?{' '}
+            Deja un compte ?{' '}
             <Link to="/login" className="text-rose-500 hover:text-rose-600 font-medium">
               Se connecter
             </Link>

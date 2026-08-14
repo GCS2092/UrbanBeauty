@@ -1,12 +1,13 @@
+﻿const path = require('path');
 const PDFDocument = require('pdfkit');
 const { getSettings } = require('../settings/settings.service');
 const prisma = require('../../config/database');
 
-// ─── Palettes par boutique ────────────────────────────────────────────────────
+const LOGO_PATH = path.join(__dirname, '../../assets/logo.png');
 
 const PALETTE_SONSHOP = {
-  primary:   '#1a1a2e',   // navy
-  accent:    '#c8a96e',   // gold
+  primary:   '#1a1a2e',
+  accent:    '#c8a96e',
   accentDk:  '#a8894e',
   white:     '#ffffff',
   offWhite:  '#f8f7f5',
@@ -21,16 +22,16 @@ const PALETTE_SONSHOP = {
 };
 
 const PALETTE_SONTECH = {
-  primary:   '#0f172a',   // slate-900
-  accent:    '#3b82f6',   // blue-500
-  accentDk:  '#2563eb',   // blue-600
+  primary:   '#0f172a',
+  accent:    '#3b82f6',
+  accentDk:  '#2563eb',
   white:     '#ffffff',
   offWhite:  '#f0f6ff',
   border:    '#dbeafe',
   textLight: '#64748b',
   success:   '#2d6a4f',
   danger:    '#c0392b',
-  tagline:   'TECH & ÉLECTRONIQUE',
+  tagline:   'TECH & ELECTRONIQUE',
   brandMain: 'SON',
   brandSub:  'TECH',
   footerBg:  '#0f172a',
@@ -44,7 +45,6 @@ function getPalette(store) {
   return PALETTE_SONSHOP;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function fcfa(amount) {
   return `${Number(amount || 0).toLocaleString('fr-FR')} FCFA`;
 }
@@ -75,7 +75,7 @@ function getClientInfo(order) {
 
 function paymentMethodLabel(method) {
   const labels = {
-    CASH_ON_DELIVERY: 'Paiement à la livraison',
+    CASH_ON_DELIVERY: 'Paiement a la livraison',
     MOBILE_MONEY:     'Mobile Money',
   };
   return labels[method] || method || '';
@@ -83,10 +83,10 @@ function paymentMethodLabel(method) {
 
 function statusLabel(status) {
   const labels = {
-    GENERATED:  'Générée',
-    SENT:       'Envoyée',
-    PAID:       'Payée',
-    CANCELLED:  'Annulée',
+    GENERATED:  'Generee',
+    SENT:       'Envoyee',
+    PAID:       'Payee',
+    CANCELLED:  'Annulee',
   };
   return labels[status] || status;
 }
@@ -98,9 +98,7 @@ function roundedRect(doc, x, y, w, h, r, fill) {
     .restore();
 }
 
-// ─── Générateur principal ─────────────────────────────────────────────────────
 async function buildInvoicePdf(invoice) {
-  // Récupère le store pour choisir la palette
   const store = invoice.storeId
     ? await prisma.store.findUnique({ where: { id: invoice.storeId } })
     : null;
@@ -109,7 +107,7 @@ async function buildInvoicePdf(invoice) {
 
   const settings  = await getSettings(invoice.storeId);
   const company   = settings.company_name    || store?.name || 'SonShop';
-  const address   = settings.company_address || 'Dakar, Sénégal';
+  const address   = settings.company_address || 'Dakar, Senegal';
   const phone     = settings.company_phone   || settings.whatsapp_number || '';
   const email     = settings.company_email   || '';
 
@@ -125,37 +123,40 @@ async function buildInvoicePdf(invoice) {
     doc.on('end',   ()      => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    const W = doc.page.width;   // 595
-    const H = doc.page.height;  // 841
+    const W = doc.page.width;
+    const H = doc.page.height;
     const M = 45;
 
-    // ── HEADER BAND ──────────────────────────────────────────────────────────
+    try {
+      doc.save();
+      doc.opacity(0.05);
+      const wmSize = 320;
+      doc.image(LOGO_PATH, (W - wmSize) / 2, (H - wmSize) / 2, { width: wmSize, height: wmSize });
+      doc.restore();
+    } catch (e) {
+      doc.restore();
+    }
+
     doc.rect(0, 0, W, 110).fill(C.primary);
 
-    // Nom boutique
     doc.fontSize(26).font('Helvetica-Bold').fillColor(C.accent)
        .text(C.brandMain, M, 28, { continued: true })
        .fillColor(C.white)
        .text(C.brandSub);
 
-    // Tagline
     doc.fontSize(8).font('Helvetica').fillColor('#aaaaaa')
        .text(C.tagline, M, 62, { characterSpacing: 2 });
 
-    // Titre FACTURE à droite
     doc.fontSize(22).font('Helvetica-Bold').fillColor(C.accent)
        .text('FACTURE', 0, 30, { align: 'right', width: W - M });
 
     doc.fontSize(9).font('Helvetica').fillColor('#cccccc')
        .text(invoice.invoiceNumber, 0, 58, { align: 'right', width: W - M });
 
-    // ── BANDE ACCENT FINE ─────────────────────────────────────────────────────
     doc.rect(0, 110, W, 4).fill(C.accent);
 
-    // ── BLOC INFO (entreprise + client) ──────────────────────────────────────
     const infoTop = 130;
 
-    // Colonne gauche – entreprise
     doc.fontSize(8).font('Helvetica-Bold').fillColor(C.textLight)
        .text('DE', M, infoTop, { characterSpacing: 1 });
 
@@ -164,13 +165,12 @@ async function buildInvoicePdf(invoice) {
 
     doc.fontSize(9).font('Helvetica').fillColor('#444444');
     if (address) doc.text(address, M, doc.y + 2);
-    if (phone)   doc.text(`Tél : ${phone}`, M, doc.y + 2);
+    if (phone)   doc.text(`Tel : ${phone}`, M, doc.y + 2);
     if (email)   doc.text(email, M, doc.y + 2);
 
-    // Colonne droite – client
     const colRight = W / 2 + 10;
     doc.fontSize(8).font('Helvetica-Bold').fillColor(C.textLight)
-       .text('FACTURÉ À', colRight, infoTop, { characterSpacing: 1 });
+       .text('FACTURE A', colRight, infoTop, { characterSpacing: 1 });
 
     doc.fontSize(11).font('Helvetica-Bold').fillColor(C.primary)
        .text(client.name, colRight, infoTop + 14);
@@ -183,16 +183,15 @@ async function buildInvoicePdf(invoice) {
       doc.text(addrLine, colRight, doc.y + 2, { width: W - colRight - M });
     }
 
-    // ── MÉTADONNÉES ───────────────────────────────────────────────────────────
     const metaTop = 255;
     roundedRect(doc, M, metaTop, W - M * 2, 80, 6, C.offWhite);
     doc.rect(M, metaTop, W - M * 2, 80).stroke(C.border);
 
     const metaItems = [
-      ['N° COMMANDE',  order.orderNumber],
-      ['DATE',         dateFr(invoice.issuedAt)],
-      ['STATUT',       statusLabel(invoice.status)],
-      ['PAIEMENT',     paymentMethodLabel(order.paymentMethod)],
+      ['N COMMANDE',  order.orderNumber],
+      ['DATE',        dateFr(invoice.issuedAt)],
+      ['STATUT',      statusLabel(invoice.status)],
+      ['PAIEMENT',    paymentMethodLabel(order.paymentMethod)],
     ];
 
     const cellW = (W - M * 2) / metaItems.length;
@@ -208,20 +207,17 @@ async function buildInvoicePdf(invoice) {
          .text(String(value || ''), cx, metaTop + 30, { width: maxW, ellipsis: true });
     });
 
-    // ── TABLEAU PRODUITS ──────────────────────────────────────────────────────
     const tTop = metaTop + 102;
     const cols = { product: M, qty: 310, pu: 380, total: 460 };
 
-    // En-tête tableau
     roundedRect(doc, M, tTop, W - M * 2, 26, 4, C.primary);
 
     doc.fontSize(8).font('Helvetica-Bold').fillColor(C.white);
     doc.text('PRODUIT',    cols.product + 8, tTop + 9);
-    doc.text('QTÉ',        cols.qty,         tTop + 9, { width: 60, align: 'center' });
+    doc.text('QTE',        cols.qty,         tTop + 9, { width: 60, align: 'center' });
     doc.text('PRIX UNIT.', cols.pu,          tTop + 9, { width: 70, align: 'right' });
     doc.text('TOTAL',      cols.total,       tTop + 9, { width: 55, align: 'right' });
 
-    // Lignes produits
     let y = tTop + 26;
     const items = order.items || [];
 
@@ -239,15 +235,14 @@ async function buildInvoicePdf(invoice) {
          .text(label, cols.product + 8, y + 5, { width: 240 });
 
       doc.font('Helvetica').fillColor('#444444');
-      doc.text(String(item.quantity), cols.qty,   y + 5, { width: 60,  align: 'center' });
-      doc.text(fcfa(item.price),      cols.pu,    y + 5, { width: 70,  align: 'right' });
-      doc.text(fcfa(item.subtotal),   cols.total, y + 5, { width: 55,  align: 'right' });
+      doc.text(String(item.quantity), cols.qty,   y + 5, { width: 60, align: 'center' });
+      doc.text(fcfa(item.price),      cols.pu,    y + 5, { width: 70, align: 'right' });
+      doc.text(fcfa(item.subtotal),   cols.total, y + 5, { width: 55, align: 'right' });
 
       doc.rect(M, y + rowH - 1, W - M * 2, 1).fill(C.border);
       y += rowH;
     });
 
-    // ── TOTAUX ────────────────────────────────────────────────────────────────
     y += 12;
     const totalsX = 360;
     const totalsW = W - M - totalsX;
@@ -263,24 +258,21 @@ async function buildInvoicePdf(invoice) {
       y += 18;
     }
 
-    totalsRow('Sous-total',  fcfa(invoice.subtotal));
-    if (invoice.shippingCost > 0)  totalsRow('Livraison',        fcfa(invoice.shippingCost));
-    if (invoice.discount     > 0)  totalsRow('Remise',           `-${fcfa(invoice.discount)}`,      false, C.success);
-    if (invoice.storeDiscount > 0) totalsRow('Remise boutique',  `-${fcfa(invoice.storeDiscount)}`, false, C.success);
-    if (invoice.tax          > 0)  totalsRow('Taxes',            fcfa(invoice.tax));
+    totalsRow('Sous-total', fcfa(invoice.subtotal));
+    if (invoice.shippingCost > 0)  totalsRow('Livraison',       fcfa(invoice.shippingCost));
+    if (invoice.discount     > 0)  totalsRow('Remise',          `-${fcfa(invoice.discount)}`,      false, C.success);
+    if (invoice.storeDiscount > 0) totalsRow('Remise boutique', `-${fcfa(invoice.storeDiscount)}`, false, C.success);
+    if (invoice.tax          > 0)  totalsRow('Taxes',           fcfa(invoice.tax));
 
-    // Ligne séparatrice accent
     doc.rect(totalsX, y, totalsW, 1).fill(C.accent);
     y += 8;
 
-    // TOTAL FINAL
     roundedRect(doc, totalsX - 10, y, totalsW + 10, 38, 6, C.primary);
     doc.fontSize(10).font('Helvetica-Bold').fillColor(C.white)
        .text('TOTAL', totalsX, y + 12);
     doc.fontSize(14).font('Helvetica-Bold').fillColor(C.accent)
        .text(fcfa(invoice.total), totalsX, y + 10, { width: totalsW, align: 'right' });
 
-    // ── NOTE DE BAS ───────────────────────────────────────────────────────────
     if (order.notes) {
       const noteTop = y + 58;
       roundedRect(doc, M, noteTop, W - M * 2, 40, 6, C.offWhite);
@@ -291,13 +283,12 @@ async function buildInvoicePdf(invoice) {
          .text(order.notes, M + 12, noteTop + 20, { width: W - M * 2 - 20 });
     }
 
-    // ── FOOTER ────────────────────────────────────────────────────────────────
     doc.rect(0, H - 52, W, 52).fill(C.footerBg);
     doc.rect(0, H - 52, W, 3).fill(C.accent);
 
     doc.fontSize(8).font('Helvetica').fillColor('#888888')
        .text(
-         `Document généré automatiquement par ${company}  ·  Les montants sont en FCFA  ·  Dakar, Sénégal`,
+         `Document genere automatiquement par ${company}  .  Les montants sont en FCFA  .  Dakar, Senegal`,
          0, H - 32,
          { align: 'center', width: W },
        );
