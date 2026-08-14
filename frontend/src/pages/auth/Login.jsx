@@ -10,7 +10,7 @@ import { Home, ShoppingBag } from 'lucide-react';
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
-  password: z.string().min(6, 'Minimum 6 caractÃ¨res'),
+  password: z.string().min(6, 'Minimum 6 caractères'),
 });
 
 export default function Login() {
@@ -28,7 +28,7 @@ export default function Login() {
     try {
       await login(data);
     } catch (err) {
-      // âœ… On affiche le message d'erreur directement dans la page
+      // ✅ On affiche le message d'erreur directement dans la page
       const msg =
         err?.response?.data?.message ||
         err?.message ||
@@ -42,11 +42,11 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
 
-      {/* âœ… Mini navbar sur login/register pour ne pas Ãªtre bloquÃ© */}
+      {/* ✅ Mini navbar sur login/register pour ne pas être bloqué */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-stone-100">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <span className="text-xl">ðŸ›ï¸</span>
+            <span className="text-xl">🛍️</span>
             <span className="font-bold text-lg tracking-tight text-stone-800">
               Son<span className="text-rose-400">Shop</span>
             </span>
@@ -62,18 +62,18 @@ export default function Login() {
         </div>
       </header>
 
-      {/* Contenu centrÃ© */}
+      {/* Contenu centré */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
 
           <div className="text-center mb-8">
             <h1 className="text-2xl font-semibold text-stone-800">Bon retour !</h1>
-            <p className="text-stone-400 text-sm mt-1">Connectez-vous Ã  votre compte</p>
+            <p className="text-stone-400 text-sm mt-1">Connectez-vous à votre compte</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-6 space-y-4">
 
-            {/* âœ… Message d'erreur visible dans la page */}
+            {/* ✅ Message d'erreur visible dans la page */}
             {errorMsg && (
               <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
                 <p className="text-sm text-rose-600 font-medium">{errorMsg}</p>
@@ -90,7 +90,7 @@ export default function Login() {
             <Input
               label="Mot de passe"
               type="password"
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="••••••••"
               error={errors.password?.message}
               {...register('password')}
             />
@@ -107,7 +107,7 @@ export default function Login() {
           <p className="text-center text-sm text-stone-400 mt-4">
             Pas encore de compte ?{' '}
             <Link to="/register" className="text-rose-500 hover:text-rose-600 font-medium">
-              CrÃ©er un compte
+              Créer un compte
             </Link>
           </p>
         </div>
