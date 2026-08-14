@@ -1,276 +1,134 @@
-// backend/src/modules/auth/auth.service.js
+// backend/src/modules/auth/auth.routes.js
 // Remplace ENTIÈREMENT le fichier existant
 
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const { OAuth2Client } = require('google-auth-library');
+const express = require('express');
+const { body } = require('express-validator');
+const { authController } = require('./auth.controller');
+const { checkValidation } = require('../../middlewares/validation.middleware');
+const { authLimiter } = require('../../middlewares/rateLimit.middleware');
+const { authenticate } = require('../../middlewares/auth.middleware');
 const prisma = require('../../config/database');
-const { signToken } = require('../../utils/jwt.utils');
 const { getAccessibleStoreIds } = require('../stores/store.service');
-const { sendEmail } = require('../../config/email');
-const { buildOtpEmail } = require('../../utils/email.utils');
+const { signToken } = require('../../utils/jwt.utils');
 
-// ─── Durée de validité de l'OTP : 15 minutes ─────────────────────────────────
-const OTP_TTL_MINUTES = 15;
+const router = express.Router();
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// ─────────────────────────────────────────────────────────────────────────────
+// INSCRIPTION EN 3 ÉTAPES (avec OTP)
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ─── Génère un code numérique à 6 chiffres ───────────────────────────────────
-function generateOtpCode() {
-  return String(Math.floor(100000 + crypto.randomInt(900000)));
-}
+router.post(
+  '/register/request-otp',
+  authLimiter,
+  body('email').isEmail().withMessage('Email invalide'),
+  checkValidation,
+  authController.requestOtp
+);
 
-// ─── ÉTAPE 1 : Demande d'inscription → envoi OTP ─────────────────────────────
-async function requestRegisterOtp({ email }) {
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
-    const error = new Error('Cet email est déjà utilisé.');
-    error.status = 400;
-    throw error;
-  }
+router.post(
+  '/register/verify-otp',
+  authLimiter,
+  body('email').isEmail().withMessage('Email invalide'),
+  body('code').isLength({ min: 6, max: 6 }).withMessage('Code à 6 chiffres requis'),
+  checkValidation,
+  authController.verifyOtp
+);
 
-  await prisma.otpCode.deleteMany({
-    where: { email, type: 'REGISTER' },
-  });
+router.post(
+  '/register/complete',
+  authLimiter,
+  body('firstName').notEmpty().withMessage('Prénom requis'),
+  body('lastName').notEmpty().withMessage('Nom requis'),
+  body('password').isLength({ min: 6 }).withMessage('Mot de passe minimum 6 caractères'),
+  checkValidation,
+  authController.completeRegistration
+);
 
-  const code = generateOtpCode();
-  const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+// ─────────────────────────────────────────────────────────────────────────────
+// ROUTES EXISTANTES (inchangées)
+// ─────────────────────────────────────────────────────────────────────────────
 
-  await prisma.otpCode.create({
-    data: { email, code, type: 'REGISTER', expiresAt },
-  });
+router.post(
+  '/register',
+  authLimiter,
+  body('email').isEmail(),
+  body('password').isLength({ min: 6 }),
+  body('firstName').notEmpty(),
+  body('lastName').notEmpty(),
+  checkValidation,
+  authController.register
+);
 
-  const { subject, html } = buildOtpEmail({
-    code,
-    type: 'REGISTER',
-    expiresInMinutes: OTP_TTL_MINUTES,
-  });
+router.post(
+  '/login',
+  authLimiter,
+  body('email').isEmail(),
+  body('password').notEmpty(),
+  checkValidation,
+  authController.login
+);
 
-  await sendEmail({ to: email, subject, html });
+/**
+ * @swagger
+ * /api/auth/google:
+ *   post:
+ *     summary: Se connecter ou s'inscrire via Google
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           example:
+ *             credential: "eyJhbGciOi..."
+ *     responses:
+ *       200:
+ *         description: Connexion réussie, retourne token + user
+ *       401:
+ *         description: Token Google invalide
+ */
+router.post(
+  '/google',
+  authLimiter,
+  body('credential').notEmpty().withMessage('Token Google requis'),
+  checkValidation,
+  authController.googleAuth
+);
 
-  return { message: 'Code de vérification envoyé par email.' };
-}
+router.post('/logout', authenticate, authController.logout);
 
-// ─── ÉTAPE 2 : Vérification du code OTP ──────────────────────────────────────
-async function verifyOtp({ email, code, type = 'REGISTER' }) {
-  const otp = await prisma.otpCode.findFirst({
-    where: {
-      email,
-      code,
-      type,
-      usedAt: null,
-      expiresAt: { gt: new Date() },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+router.get('/me', authenticate, authController.me);
 
-  if (!otp) {
-    const error = new Error('Code invalide ou expiré.');
-    error.status = 400;
-    throw error;
-  }
-
-  await prisma.otpCode.update({
-    where: { id: otp.id },
-    data: { usedAt: new Date() },
-  });
-
-  const setupToken = signToken(
-    { email, otpVerified: true, type },
-    { expiresIn: '30m' }
-  );
-
-  return { setupToken, message: 'Code vérifié avec succès.' };
-}
-
-// ─── ÉTAPE 3 : Création du compte avec mot de passe ──────────────────────────
-async function completeRegistration({ email, password, firstName, lastName, phone, otpVerified }) {
-  if (!otpVerified) {
-    const error = new Error('Vérification OTP requise.');
-    error.status = 403;
-    throw error;
-  }
-
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
-    const error = new Error('Cet email est déjà utilisé.');
-    error.status = 400;
-    throw error;
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password: hashedPassword,
-      firstName,
-      lastName,
-      phone,
-    },
-  });
-
-  return {
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    role: user.role,
-  };
-}
-
-// ─── ANCIEN register (conservé pour rétrocompatibilité si besoin) ─────────────
-async function register({ email, password, firstName, lastName, phone }) {
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
-    const error = new Error('Cet email est déjà utilisé.');
-    error.status = 400;
-    throw error;
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
-    data: { email, password: hashedPassword, firstName, lastName, phone },
-  });
-
-  return {
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    role: user.role,
-  };
-}
-
-// ─── LOGIN classique ──────────────────────────────────────────────────────────
-async function login({ email, password }) {
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !user.password) {
-    const error = new Error('Email ou mot de passe incorrect.');
-    error.status = 401;
-    throw error;
-  }
-
-  const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid) {
-    const error = new Error('Email ou mot de passe incorrect.');
-    error.status = 401;
-    throw error;
-  }
-
-  await prisma.order.updateMany({
-    where: { guestEmail: email, userId: null },
-    data: { userId: user.id },
-  });
-
-  return buildAuthResponse(user);
-}
-
-// ─── LOGIN / INSCRIPTION via Google ──────────────────────────────────────────
-async function loginWithGoogle({ idToken }) {
-  if (!idToken) {
-    const error = new Error('Token Google manquant.');
-    error.status = 400;
-    throw error;
-  }
-
-  let payload;
+router.post('/switch-store', authenticate, async (req, res, next) => {
   try {
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    payload = ticket.getPayload();
-  } catch {
-    const error = new Error('Token Google invalide.');
-    error.status = 401;
-    throw error;
-  }
-
-  const { email, email_verified, given_name, family_name, sub: googleId } = payload;
-
-  if (!email || !email_verified) {
-    const error = new Error("Compte Google non vérifié, connexion refusée.");
-    error.status = 400;
-    throw error;
-  }
-
-  let user = await prisma.user.findUnique({ where: { email } });
-
-  if (user) {
-    // Sécurité : on ne relie jamais automatiquement un compte ADMIN/STAFF à Google.
-    // Ces rôles doivent continuer à se connecter par mot de passe pour éviter
-    // qu'un compte Google externe correspondant au même email ne prenne le contrôle.
-    if (user.role !== 'CUSTOMER') {
-      const error = new Error("Ce compte doit se connecter avec son mot de passe.");
-      error.status = 403;
-      throw error;
+    const { storeId } = req.body;
+    if (!storeId) {
+      return res.status(400).json({ message: 'storeId requis' });
     }
-    // Compte client existant (créé par mot de passe ou déjà via Google) → on relie googleId si besoin
-    if (!user.googleId) {
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { googleId },
-      });
+
+    if (req.user.role !== 'ADMIN') {
+      const allowed = await getAccessibleStoreIds(req.user);
+      if (!allowed.includes(storeId)) {
+        return res.status(403).json({ message: 'Accès refusé à cette boutique' });
+      }
     }
-  } else {
-    // Nouveau compte, créé directement via Google (pas de mot de passe)
-    user = await prisma.user.create({
-      data: {
-        email,
-        googleId,
-        firstName: given_name || 'Client',
-        lastName: family_name || '',
-        password: null,
-      },
+
+    const store = await prisma.store.findUnique({ where: { id: storeId } });
+    if (!store || !store.isActive) {
+      return res.status(404).json({ message: 'Boutique introuvable ou inactive' });
+    }
+
+    const token = signToken({
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      activeStoreId: storeId,
     });
+
+    res.json({ token, store });
+  } catch (err) {
+    next(err);
   }
+});
 
-  await prisma.order.updateMany({
-    where: { guestEmail: email, userId: null },
-    data: { userId: user.id },
-  });
-
-  return buildAuthResponse(user);
-}
-
-// ─── Helper commun : génère le JWT + la réponse (login classique et Google) ──
-async function buildAuthResponse(user) {
-  const storeIds = await getAccessibleStoreIds(user);
-  const activeStoreId = user.role === 'ADMIN' ? null : (storeIds[0] || null);
-
-  const token = signToken({
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    activeStoreId,
-  });
-
-  let stores = [];
-  if (storeIds.length) {
-    stores = await prisma.store.findMany({
-      where: { id: { in: storeIds } },
-      orderBy: [{ isMain: 'desc' }, { name: 'asc' }],
-    });
-  }
-
-  return {
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-    },
-    stores,
-  };
-}
-
-module.exports = {
-  register,
-  login,
-  loginWithGoogle,
-  requestRegisterOtp,
-  verifyOtp,
-  completeRegistration,
-};
+module.exports = router;
