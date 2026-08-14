@@ -4,15 +4,14 @@ import './index.css'
 import App from './App.jsx'
 import OneSignal from 'react-onesignal'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 OneSignal.init({
   appId: import.meta.env.VITE_ONESIGNAL_APP_ID,
   notifyButton: { enable: false },
   allowLocalhostAsSecureOrigin: true,
-  // ✅ Chemin explicite vers notre worker dans public/
   serviceWorkerParam: { scope: '/' },
   serviceWorkerPath: '/OneSignalSDKWorker.js',
-  // ✅ On dit à OneSignal de NE PAS utiliser le sw.js de Vite PWA
   serviceWorkerUpdaterPath: '/OneSignalSDKWorker.js',
 }).then(() => {
   console.log('OneSignal initialisé ✅')
@@ -24,6 +23,7 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <App />
+      <SpeedInsights />
     </GoogleOAuthProvider>
   </StrictMode>
 )
