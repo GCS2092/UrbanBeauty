@@ -15,6 +15,8 @@ import {
   ReactQueryDevtools,
 } from '@tanstack/react-query-devtools';
 
+import { SpeedInsights } from '@vercel/speed-insights/react';
+
 import { Toaster } from 'sonner';
 
 import { AuthProvider } from './context/AuthContext';
@@ -98,6 +100,8 @@ export default function App() {
           position="top-right"
           richColors
         />
+
+        <SpeedInsights />
 
         <AuthProvider>
           <Suspense fallback={<PageLoader />}>
