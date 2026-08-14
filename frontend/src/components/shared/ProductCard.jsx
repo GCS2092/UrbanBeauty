@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatPrice } from '../../utils/formatPrice';
+import { optimizeImage } from '../../utils/optimizeImage';
 import useAuthStore from '../../store/authStore';
 import useCartStore from '../../store/cartStore';
 import { toast } from 'sonner';
@@ -61,9 +62,16 @@ export default function ProductCard({ product }) {
           onTouchEnd={onTouchEnd}
         >
           {currentImage ? (
+            // ✅ optimizeImage : redimensionne côté Unsplash (évite de télécharger l'image en pleine résolution)
+            // ✅ width/height : réserve l'espace pour stopper le layout shift (CLS)
+            // ✅ loading="lazy" : ne charge pas les images hors écran au premier rendu
             <img
-              src={currentImage.url}
+              src={optimizeImage(currentImage.url, { width: 500, quality: 75 })}
               alt={product.name}
+              width="500"
+              height="500"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
