@@ -2,6 +2,7 @@
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, FreeMode } from 'swiper/modules';
 import { Tag } from 'lucide-react';
+import { optimizeImage } from '../../../utils/optimizeImage';
 
 import 'swiper/css';
 import 'swiper/css/free-mode';
@@ -36,8 +37,12 @@ export default function CategoryMarquee({ categories = [] }) {
               <span className="w-8 h-8 rounded-full overflow-hidden bg-stone-100 shrink-0 flex items-center justify-center text-stone-300">
                 {cat.imageUrl ? (
                   <img
-                    src={cat.imageUrl}
+                    src={optimizeImage(cat.imageUrl, { width: 80, quality: 70 })}
                     alt=""
+                    width="80"
+                    height="80"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 ) : (

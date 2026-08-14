@@ -1,5 +1,6 @@
 ﻿import { Link } from 'react-router-dom';
 import { formatPrice } from '../../../utils/formatPrice';
+import { optimizeImage } from '../../../utils/optimizeImage';
 
 export default function TrendingStrip({ products = [] }) {
   if (!products.length) return null;
@@ -27,10 +28,13 @@ export default function TrendingStrip({ products = [] }) {
                 <div className="relative w-20 h-20 rounded-2xl border-2 border-white shadow-lg shadow-rose-200/40 overflow-hidden bg-gradient-to-br from-rose-100 to-amber-100 ring-1 ring-stone-100">
                   {mainImage ? (
                     <img
-                      src={mainImage}
+                      src={optimizeImage(mainImage, { width: 160, quality: 70 })}
                       alt={p.name || ''}
+                      width="160"
+                      height="160"
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <span className="w-full h-full flex items-center justify-center text-2xl">🛍️</span>
