@@ -11,6 +11,7 @@ import { stockAlertsApi } from '../../api/stockAlerts.api';
 import useAuthStore from '../../store/authStore';
 import useCartStore from '../../store/cartStore';
 import { formatPrice } from '../../utils/formatPrice';
+import { optimizeImage } from '../../utils/optimizeImage';
 import { API_URL, STORE_ID } from '../../utils/constants';
 import Button from '../../components/ui/Button';
 import ReviewCard from '../../components/shared/ReviewCard';
@@ -40,8 +41,8 @@ function PreorderButton({ product, whatsappNumber }) {
   ].filter(l => l !== null).join('\n');
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   return (
-    <a
-      href={url}
+    
+    <a  href={url}
       target="_blank"
       rel="noopener noreferrer"
       className="flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-green-500 hover:bg-green-600 active:scale-95 text-white font-semibold text-sm transition-all duration-200 shadow-sm shadow-green-200"
@@ -277,7 +278,15 @@ export default function ProductDetail() {
                   <span className={`block w-12 h-12 rounded-xl overflow-hidden border-2 transition-all ${
                     selectedColor === color ? 'border-stone-900 scale-105 shadow-md' : 'border-stone-200 hover:border-stone-400'
                   }`}>
-                    <img src={previewImg.url} alt={color} className="w-full h-full object-cover" />
+                    <img
+                      src={optimizeImage(previewImg.url, { width: 100, quality: 70 })}
+                      alt={color}
+                      width="100"
+                      height="100"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover"
+                    />
                     {!colorHasStock && (
                       <span className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-xl">
                         <span className="block w-8 h-0.5 bg-stone-400 rotate-45" />
@@ -370,10 +379,14 @@ export default function ProductDetail() {
             {displayImages.length ? displayImages.map((img, i) => (
               <SwiperSlide key={img.id || i}>
                 <img
-                  src={img.url}
+                  src={optimizeImage(img.url, { width: 900, quality: 80 })}
                   alt={product.name}
+                  width="900"
+                  height="900"
                   className="w-full h-full object-cover"
                   loading={i === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={i === 0 ? 'high' : 'auto'}
+                  decoding="async"
                 />
               </SwiperSlide>
             )) : (
@@ -423,7 +436,15 @@ export default function ProductDetail() {
                     <button className={`w-full aspect-square rounded-xl overflow-hidden border-2 transition-colors ${
                       i === mainImg ? 'border-stone-800' : 'border-transparent hover:border-stone-300'
                     }`}>
-                      <img src={img.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      <img
+                        src={optimizeImage(img.url, { width: 150, quality: 70 })}
+                        alt=""
+                        width="150"
+                        height="150"
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
                     </button>
                   </SwiperSlide>
                 ))}

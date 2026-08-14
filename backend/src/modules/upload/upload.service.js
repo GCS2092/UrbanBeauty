@@ -6,9 +6,10 @@ async function uploadImage(file) {
     const result = await cloudinary.uploader.upload(file.path, {
       folder: 'urbanbeauty/products',
       resource_type: 'image',
-      // Transformation automatique : qualité optimale, format moderne
+      // ✅ Limite la dimension max stockée + optimise qualité/format
       transformation: [
-        { quality: 'auto:best', fetch_format: 'auto' },
+        { width: 1600, height: 1600, crop: 'limit' }, // jamais plus grand que 1600px, respecte le ratio
+        { quality: 'auto:good', fetch_format: 'auto' },
       ],
     });
 
