@@ -103,7 +103,7 @@ model Product {
   id                 String              @id @default(cuid())
   name               String
   slug               String              @unique
-  description        String              @default("")
+  description String @db.Text
   price              Int
   comparePrice       Int?
   stock              Int
