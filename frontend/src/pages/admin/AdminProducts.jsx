@@ -284,9 +284,9 @@ function ImageUploader({ images, onChange, token, variantColors = [] }) {
           onClick={() => setSelectedIdx(null)}
         >
           <div
-            className="bg-white rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+  className="bg-white rounded-2xl p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto space-y-4 shadow-xl"
+  onClick={(e) => e.stopPropagation()}
+>
             <div className="flex items-start justify-between">
               <h3 className="text-sm font-semibold text-gray-900">
                 Détails de l'image
