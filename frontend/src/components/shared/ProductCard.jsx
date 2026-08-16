@@ -19,6 +19,8 @@ export default function ProductCard({ product }) {
 
   const hasDiscount = product.comparePrice && product.comparePrice > product.price;
   const isOutOfStock = product.stock === 0;
+  // ✅ Badge de rareté — levier psychologique (Cialdini), déclenché sur stock faible
+  const lowStock = product.stock > 0 && product.stock <= 5;
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
@@ -62,9 +64,6 @@ export default function ProductCard({ product }) {
           onTouchEnd={onTouchEnd}
         >
           {currentImage ? (
-            // ✅ optimizeImage : redimensionne côté Unsplash (évite de télécharger l'image en pleine résolution)
-            // ✅ width/height : réserve l'espace pour stopper le layout shift (CLS)
-            // ✅ loading="lazy" : ne charge pas les images hors écran au premier rendu
             <img
               src={optimizeImage(currentImage.url, { width: 500, quality: 75 })}
               alt={product.name}
@@ -80,7 +79,6 @@ export default function ProductCard({ product }) {
             </div>
           )}
 
-          {/* Flèches — toujours visibles sur mobile, hover sur desktop */}
           {hasMultiple && (
             <>
               <button
@@ -100,7 +98,6 @@ export default function ProductCard({ product }) {
                 <ChevronRight size={14} />
               </button>
 
-              {/* Dots */}
               <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-1 z-10">
                 {images.map((_, i) => (
                   <div
@@ -126,12 +123,13 @@ export default function ProductCard({ product }) {
                 Rupture
               </span>
             )}
+            {lowStock && (
+              <span className="bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                Plus que {product.stock} en stock
+              </span>
+            )}
           </div>
 
-          {/* Bouton panier
-              Mobile  : toujours visible (opacity-100)
-              Desktop : apparaît au hover (md:opacity-0 md:group-hover:opacity-100)
-          */}
           {!isOutOfStock && (
             <button
               onClick={handleAddToCart}
@@ -151,7 +149,8 @@ export default function ProductCard({ product }) {
           <p className="text-xs text-stone-400 mb-0.5">{product.category?.name}</p>
           <h3 className="text-sm font-semibold text-stone-800 line-clamp-1 mb-1">{product.name}</h3>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-stone-900 text-sm">{formatPrice(product.price)}</span>
+            {/* Prix : text-base au lieu de text-sm — l'info la plus scannée du catalogue */}
+            <span className="font-bold text-stone-900 text-base">{formatPrice(product.price)}</span>
             {hasDiscount && (
               <span className="text-xs text-stone-400 line-through">{formatPrice(product.comparePrice)}</span>
             )}

@@ -1,9 +1,6 @@
 import api from "./axios";
 import { API_URL, AUTH_TOKEN_KEY } from "../utils/constants";
 
-// Même pattern que downloadBlob dans admin.api.js — téléchargement de fichier
-// binaire (xlsx) avec le token lu directement dans localStorage, car axios
-// n'est pas adapté pour déclencher un téléchargement navigateur.
 async function downloadBlob(url, filename, errorMessage) {
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
   const res = await fetch(url, {
@@ -24,14 +21,12 @@ async function downloadBlob(url, filename, errorMessage) {
 
 export const productsApi = {
   getAll: (params) => api.get("/api/products", { params }),
+  getFilters: (params) => api.get("/api/products/filters", { params }),
   getBySlug: (slug, params) => api.get(`/api/products/${slug}`, { params }),
   create: (data) => api.post("/api/products", data),
   update: (id, data) => api.put(`/api/products/${id}`, data),
   delete: (id) => api.delete(`/api/products/${id}`),
 
-  // ── Import / Export Excel ──────────────────────────────────────
-
-  // Upload d'un fichier Excel — retourne le rapport { total, created, updated, skipped, errors[] }
   importExcel: (file) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -40,7 +35,6 @@ export const productsApi = {
     });
   },
 
-  // Télécharge le template vierge (avec feuilles Ref_Categories / Ref_Boutiques)
   downloadTemplate: () =>
     downloadBlob(
       `${API_URL}/api/products/import/template`,
@@ -48,7 +42,6 @@ export const productsApi = {
       "Impossible de télécharger le template.",
     ),
 
-  // Exporte le catalogue actuel en Excel
   exportExcel: () => {
     const datePart = new Date().toISOString().slice(0, 10);
     return downloadBlob(

@@ -11,6 +11,15 @@ async function getProducts(req, res, next) {
   }
 }
 
+async function getProductFilters(req, res, next) {
+  try {
+    const filters = await productsService.getProductFilters(req.query);
+    res.json(filters);
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getAllProductsAdmin(req, res, next) {
   try {
     const result = await productsService.getAllProductsAdmin(req.query, req.storeIds);
@@ -57,7 +66,7 @@ async function deleteProduct(req, res, next) {
   }
 }
 
-// ─── Import / Export Excel ─────────────────────────────────────
+// ─── Import / Export Excel ──────────────────────────────────────────
 
 async function importProducts(req, res, next) {
   try {
@@ -93,6 +102,7 @@ async function exportProducts(req, res, next) {
 
 module.exports = {
   getProducts,
+  getProductFilters,
   getAllProductsAdmin,
   getProductBySlug,
   createProduct,

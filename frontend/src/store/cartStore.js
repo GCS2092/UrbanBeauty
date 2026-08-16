@@ -13,11 +13,15 @@ const getOrCreateAnonymousId = () => {
   return id;
 };
 
+// Debounce des updates de quantité, en dehors du state (pas besoin de re-render pour ça)
+const updateTimers = {};
+
 const useCartStore = create(
   persist(
     (set, get) => ({
       cart: null,
       loading: false,
+      lastRemovedItem: null, // pour permettre "Annuler" après suppression
 
       getCartParams: (userId) => {
         if (userId) return { userId };
@@ -43,14 +47,47 @@ const useCartStore = create(
         await get().fetchCart(userId);
       },
 
-      updateItem: async (userId, itemId, quantity) => {
-        await cartApi.updateItem(itemId, { quantity });
+      // ✅ Update optimiste : le chiffre change à l'écran immédiatement.
+      // L'appel API est débounce (500ms après le dernier clic) pour éviter le spam.
+      updateItem: (userId, itemId, quantity) => {
+        set((state) => {
+          if (!state.cart) return state;
+          const items = state.cart.items.map((item) =>
+            item.id === itemId ? { ...item, quantity } : item
+          );
+          return { cart: { ...state.cart, items } };
+        });
+
+        clearTimeout(updateTimers[itemId]);
+        updateTimers[itemId] = setTimeout(async () => {
+          try {
+            await cartApi.updateItem(itemId, { quantity });
+            await get().fetchCart(userId); // resynchronise avec le serveur
+          } catch {
+            await get().fetchCart(userId); // rollback si erreur
+          }
+        }, 500);
+      },
+
+      // ✅ Garde une copie de l'item retiré pour permettre l'annulation
+      removeItem: async (userId, itemId) => {
+        const removedItem = get().cart?.items.find((i) => i.id === itemId);
+        set({ lastRemovedItem: removedItem || null });
+
+        await cartApi.removeItem(itemId);
         await get().fetchCart(userId);
       },
 
-      removeItem: async (userId, itemId) => {
-        await cartApi.removeItem(itemId);
-        await get().fetchCart(userId);
+      // ✅ Annule la dernière suppression en rajoutant le même produit/variante/quantité
+      undoRemove: async (userId) => {
+        const removed = get().lastRemovedItem;
+        if (!removed) return;
+        await get().addItem(userId, {
+          productId: removed.product.id,
+          variantId: removed.variant?.id || null,
+          quantity: removed.quantity,
+        });
+        set({ lastRemovedItem: null });
       },
 
       clearCart: async (userId) => {

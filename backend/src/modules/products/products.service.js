@@ -6,13 +6,20 @@ const {
   isProductVisibleForStore,
   resolveStoreIdForCatalog,
 } = require('../stores/store.service');
-const { notifyStockAlerts } = require('./stock-alerts.service'); // ✅ AJOUT
+const { notifyStockAlerts } = require('./stock-alerts.service');
 
 async function getProducts(query) {
   const { page, limit, skip } = parsePagination(query);
 
   const storeId = await resolveStoreIdForCatalog(query.storeId);
   const storeFilter = buildProductStoreFilter(storeId);
+
+  // ── Filtres pro ──────────────────────────────────────────────
+  const minPrice = query.minPrice !== undefined && query.minPrice !== '' ? Number(query.minPrice) : undefined;
+  const maxPrice = query.maxPrice !== undefined && query.maxPrice !== '' ? Number(query.maxPrice) : undefined;
+  const sizes = query.size ? String(query.size).split(',').filter(Boolean) : [];
+  const colors = query.color ? String(query.color).split(',').filter(Boolean) : [];
+  const inStock = query.inStock === 'true' || query.inStock === true;
 
   const where = {
     isActive: true,
@@ -25,6 +32,21 @@ async function getProducts(query) {
         { description: { contains: query.search } },
       ],
     }),
+    ...((minPrice !== undefined || maxPrice !== undefined) && {
+      price: {
+        ...(minPrice !== undefined && !isNaN(minPrice) && { gte: minPrice }),
+        ...(maxPrice !== undefined && !isNaN(maxPrice) && { lte: maxPrice }),
+      },
+    }),
+    ...(inStock && { stock: { gt: 0 } }),
+    ...((sizes.length > 0 || colors.length > 0) && {
+      variants: {
+        some: {
+          ...(sizes.length > 0 && { size: { in: sizes } }),
+          ...(colors.length > 0 && { color: { in: colors } }),
+        },
+      },
+    }),
   };
 
   const [total, products] = await Promise.all([
@@ -34,14 +56,61 @@ async function getProducts(query) {
       skip,
       take: limit,
       include: { images: true, variants: true, category: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: buildProductOrderBy(query.sort),
     }),
   ]);
 
   return buildPaginationResponse({ data: products, total, page, limit });
 }
 
-// ─── Admin : tous les produits ────────────────────────────────────────────────
+function buildProductOrderBy(sort) {
+  switch (sort) {
+    case 'price_asc': return { price: 'asc' };
+    case 'price_desc': return { price: 'desc' };
+    case 'name_asc': return { name: 'asc' };
+    default: return { createdAt: 'desc' }; // 'newest' par défaut
+  }
+}
+
+// ─── Facettes de filtre : ne renvoie que les options réellement disponibles
+// pour le contexte actuel (catégorie / recherche / boutique), pour ne jamais
+// proposer un filtre qui viderait le catalogue.
+async function getProductFilters(query) {
+  const storeId = await resolveStoreIdForCatalog(query.storeId);
+  const storeFilter = buildProductStoreFilter(storeId);
+
+  const where = {
+    isActive: true,
+    ...storeFilter,
+    ...(query.category && { category: { slug: query.category } }),
+    ...(query.search && {
+      OR: [
+        { name: { contains: query.search } },
+        { description: { contains: query.search } },
+      ],
+    }),
+  };
+
+  const [priceAgg, variants] = await Promise.all([
+    prisma.product.aggregate({ where, _min: { price: true }, _max: { price: true } }),
+    prisma.productVariant.findMany({
+      where: { product: where },
+      select: { size: true, color: true },
+    }),
+  ]);
+
+  const sizes = [...new Set(variants.map((v) => v.size).filter(Boolean))].sort();
+  const colors = [...new Set(variants.map((v) => v.color).filter(Boolean))].sort();
+
+  return {
+    priceMin: priceAgg._min.price ?? 0,
+    priceMax: priceAgg._max.price ?? 0,
+    sizes,
+    colors,
+  };
+}
+
+// ─── Admin : tous les produits ─────────────────────────────────────────────
 async function getAllProductsAdmin(query, accessibleStoreIds = null) {
   const { page, limit, skip } = parsePagination(query);
 
@@ -133,7 +202,6 @@ async function updateProduct(id, data) {
   const incomingIds = variants.filter((v) => v.id).map((v) => v.id);
   const toDelete = existingVariantIds.filter((vid) => !incomingIds.includes(vid));
 
-  // ✅ AJOUT : repère les transitions "0 → stock positif" avant modification
   const restockedVariantIds = [];
   let productRestocked = false;
 
@@ -153,7 +221,6 @@ async function updateProduct(id, data) {
       }
     }
   }
-  // ✅ FIN AJOUT
 
   const updated = await prisma.$transaction(async (tx) => {
     if (toDelete.length > 0) {
@@ -198,7 +265,6 @@ async function updateProduct(id, data) {
     });
   });
 
-  // ✅ AJOUT : déclenche les notifications APRÈS le succès de la transaction
   if (productRestocked) {
     notifyStockAlerts({ productId: id, variantId: null }).catch((err) =>
       console.error('❌ Erreur notifyStockAlerts (produit):', err.message)
@@ -209,7 +275,6 @@ async function updateProduct(id, data) {
       console.error('❌ Erreur notifyStockAlerts (variante):', err.message)
     );
   }
-  // ✅ FIN AJOUT
 
   return updated;
 }
@@ -222,6 +287,7 @@ module.exports = {
   getProducts,
   getAllProductsAdmin,
   getProductBySlug,
+  getProductFilters,
   createProduct,
   updateProduct,
   deleteProduct,

@@ -15,7 +15,7 @@ const router = express.Router();
  * @swagger
  * /api/products:
  *   get:
- *     summary: Liste des produits
+ *     summary: Liste des produits (avec filtres)
  *     tags: [Produits]
  *     security: []
  *     parameters:
@@ -32,11 +32,52 @@ const router = express.Router();
  *       - in: query
  *         name: search
  *         schema: { type: string }
+ *       - in: query
+ *         name: minPrice
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: maxPrice
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: size
+ *         schema: { type: string }
+ *         description: Tailles séparées par virgule, ex "M,L"
+ *       - in: query
+ *         name: color
+ *         schema: { type: string }
+ *         description: Couleurs séparées par virgule
+ *       - in: query
+ *         name: inStock
+ *         schema: { type: boolean }
+ *       - in: query
+ *         name: sort
+ *         schema: { type: string, enum: [newest, price_asc, price_desc, name_asc] }
  *     responses:
  *       200:
  *         description: Liste paginée
  */
 router.get('/', apiLimiter, productsController.getProducts);
+
+/**
+ * @swagger
+ * /api/products/filters:
+ *   get:
+ *     summary: Options de filtres disponibles (tailles, couleurs, prix min/max)
+ *     tags: [Produits]
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema: { type: string }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: "{ priceMin, priceMax, sizes[], colors[] }"
+ */
+// ⚠️ DOIT être avant /:slug pour ne pas être capturé comme slug
+router.get('/filters', apiLimiter, productsController.getProductFilters);
 
 /**
  * @swagger
@@ -49,10 +90,9 @@ router.get('/', apiLimiter, productsController.getProducts);
  *         description: Liste paginée — actifs + inactifs
  */
 // ⚠️ DOIT être avant /:slug pour ne pas être capturé comme slug
-// Lecture — STAFF peut voir, filtré automatiquement par storeIds
 router.get('/admin/all', authenticate, requireStaff, loadStoreContext, productsController.getAllProductsAdmin);
 
-// ─── Import / Export Excel ─────────────────────────────────────
+// ─── Import / Export Excel ──────────────────────────────────────────
 // ⚠️ DOIVENT être avant /:slug pour ne pas être capturés comme slug ("import", "export")
 
 /**
@@ -149,7 +189,6 @@ router.get('/:slug', apiLimiter, productsController.getProductBySlug);
  *       201:
  *         description: Produit créé
  */
-// Créer — ADMIN seulement
 router.post('/', authenticate, requireAdmin,
   body('name').notEmpty(),
   body('slug').notEmpty(),
@@ -184,7 +223,6 @@ router.post('/', authenticate, requireAdmin,
  *       200:
  *         description: Produit modifié
  */
-// Modifier — ADMIN seulement
 router.put('/:id', authenticate, requireAdmin,
   body('name').optional().notEmpty(),
   body('description').optional().notEmpty(),
@@ -211,7 +249,6 @@ router.put('/:id', authenticate, requireAdmin,
  *       204:
  *         description: Supprimé
  */
-// Supprimer — ADMIN seulement
 router.delete('/:id', authenticate, requireAdmin, productsController.deleteProduct);
 
 module.exports = router;

@@ -10,21 +10,31 @@ import Spinner from '../../components/ui/Spinner';
 import { toast } from 'sonner';
 
 export default function Cart() {
-  const { cart, loading, fetchCart, updateItem, removeItem, getTotalPrice } = useCartStore();
+  const { cart, loading, fetchCart, updateItem, removeItem, undoRemove, getTotalPrice } = useCartStore();
   const { user } = useAuthStore();
 
   useEffect(() => { fetchCart(user?.id); }, [user?.id]);
 
   const items = cart?.items || [];
 
-  const handleUpdate = async (itemId, quantity) => {
-    try { await updateItem(user?.id, itemId, quantity); }
-    catch { toast.error('Erreur de mise à jour'); }
+  // ✅ Plus besoin d'await ni de try/catch : updateItem est optimiste et débounce en interne
+  const handleUpdate = (itemId, quantity) => {
+    updateItem(user?.id, itemId, quantity);
   };
 
+  // ✅ Toast avec bouton "Annuler" — aversion à la perte, évite l'abandon après un mauvais clic
   const handleRemove = async (itemId) => {
-    try { await removeItem(user?.id, itemId); toast.success('Article retiré'); }
-    catch { toast.error('Erreur'); }
+    try {
+      await removeItem(user?.id, itemId);
+      toast.success('Article retiré', {
+        action: {
+          label: 'Annuler',
+          onClick: () => undoRemove(user?.id),
+        },
+      });
+    } catch {
+      toast.error('Erreur');
+    }
   };
 
   if (loading) return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
@@ -49,7 +59,11 @@ export default function Cart() {
               <div key={item.id} className="bg-white rounded-2xl border border-stone-100 p-4 flex gap-4">
                 <div className="w-20 h-20 rounded-xl bg-stone-50 overflow-hidden shrink-0">
                   {item.product.images?.[0] ? (
-                    <img src={item.product.images.find((i) => i.isMain)?.url || item.product.images[0].url} alt={item.product.name} className="w-full h-full object-cover" />
+                    <img
+                      src={item.product.images.find((i) => i.isMain)?.url || item.product.images[0].url}
+                      alt={item.product.name}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-2xl">🛍️</div>
                   )}
@@ -60,19 +74,29 @@ export default function Cart() {
                   {item.variant && (
                     <p className="text-xs text-stone-400 mt-0.5">{item.variant.size} — {item.variant.color}</p>
                   )}
-                  <p className="text-rose-500 font-semibold text-sm mt-1">{formatPrice(item.product.price)}</p>
+                  {/* Prix : text-base au lieu de text-sm, plus visible car c'est l'info clé de décision */}
+                  <p className="text-rose-500 font-bold text-base mt-1">{formatPrice(item.product.price)}</p>
 
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => handleUpdate(item.id, Math.max(1, item.quantity - 1))} className="w-7 h-7 rounded-lg border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors">
+                      <button
+                        onClick={() => handleUpdate(item.id, Math.max(1, item.quantity - 1))}
+                        className="w-7 h-7 rounded-lg border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors"
+                      >
                         <Minus size={12} />
                       </button>
                       <span className="text-sm font-semibold w-6 text-center">{item.quantity}</span>
-                      <button onClick={() => handleUpdate(item.id, item.quantity + 1)} className="w-7 h-7 rounded-lg border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors">
+                      <button
+                        onClick={() => handleUpdate(item.id, item.quantity + 1)}
+                        className="w-7 h-7 rounded-lg border border-stone-200 flex items-center justify-center hover:bg-stone-50 transition-colors"
+                      >
                         <Plus size={12} />
                       </button>
                     </div>
-                    <button onClick={() => handleRemove(item.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-stone-400 hover:text-red-500 transition-colors">
+                    <button
+                      onClick={() => handleRemove(item.id)}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-stone-400 hover:text-red-500 transition-colors"
+                    >
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -92,7 +116,8 @@ export default function Cart() {
               </div>
               <div className="flex justify-between text-stone-600">
                 <span>Livraison</span>
-                <span className="text-green-600">À calculer</span>
+                {/* Gris neutre au lieu de vert — évite de laisser croire à une livraison gratuite */}
+                <span className="text-stone-500">Calculée à l'étape suivante</span>
               </div>
             </div>
 
