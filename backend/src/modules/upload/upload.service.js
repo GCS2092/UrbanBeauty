@@ -1,11 +1,16 @@
 const fs = require('fs').promises;
 const cloudinary = require('../../config/cloudinary');
 
+// Nombre max d'uploads Cloudinary lancés EN MÊME TEMPS.
+// Sur Render free (RAM/CPU limités), 5 est un bon compromis entre vitesse et stabilité.
+const CONCURRENCY_LIMIT = 5;
+
 async function uploadImage(file) {
   try {
     const result = await cloudinary.uploader.upload(file.path, {
       folder: 'urbanbeauty/products',
       resource_type: 'image',
+      timeout: 30000, // évite qu'un upload bloque indéfiniment si Cloudinary répond lentement
       transformation: [
         { width: 1600, height: 1600, crop: 'limit' },
         { quality: 'auto:good', fetch_format: 'auto' },
@@ -23,9 +28,36 @@ async function uploadImage(file) {
   }
 }
 
-// Upload plusieurs images en parallèle
+// Exécute une liste de tâches asynchrones avec un nombre limité d'exécutions simultanées.
+// Évite de saturer la RAM/CPU/réseau de l'instance Render en lançant tout en parallèle.
+async function runWithConcurrencyLimit(items, limit, worker) {
+  const results = new Array(items.length);
+  let currentIndex = 0;
+
+  async function runNext() {
+    while (currentIndex < items.length) {
+      const index = currentIndex++;
+      try {
+        const value = await worker(items[index], index);
+        results[index] = { status: 'fulfilled', value };
+      } catch (reason) {
+        results[index] = { status: 'rejected', reason };
+      }
+    }
+  }
+
+  // Lance `limit` "workers" qui piochent les tâches restantes au fur et à mesure
+  const workers = Array.from({ length: Math.min(limit, items.length) }, runNext);
+  await Promise.all(workers);
+
+  return results;
+}
+
+// Upload plusieurs images, avec un maximum de CONCURRENCY_LIMIT uploads simultanés
 async function uploadImages(files) {
-  const results = await Promise.allSettled(files.map((file) => uploadImage(file)));
+  const results = await runWithConcurrencyLimit(files, CONCURRENCY_LIMIT, (file) =>
+    uploadImage(file),
+  );
 
   return results.map((r, i) => {
     if (r.status === 'fulfilled') {
