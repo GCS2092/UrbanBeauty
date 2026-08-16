@@ -6,31 +6,48 @@ import { useAdminStoreFilter } from "../../hooks/useAdminStoreFilter";
 import ProductImportExport from "../../components/admin/ProductImportExport";
 const formatPrice = (p) => `${Number(p).toLocaleString("fr-FR")} FCFA`;
 
+// Nombre max de fichiers envoyés par requête (doit rester < limite backend, actuellement 30)
+const UPLOAD_BATCH_SIZE = 25;
+
 // ─── Composant upload image ────────────────────────────────────────────────
 function ImageUploader({ images, onChange, token, variantColors = [] }) {
   const fileRef = useRef();
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
   const [urlInput, setUrlInput] = useState("");
   const [tab, setTab] = useState("file");
   const [selectedIdx, setSelectedIdx] = useState(null); // index de l'image ouverte dans le panneau détail
 
   const uploadFiles = async (files) => {
-    const formData = new FormData();
-    Array.from(files).forEach((file) => formData.append("images", file));
+    const fileArray = Array.from(files);
+    const allResults = [];
 
-    const res = await fetch(`${API_URL}/api/upload/images`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-    if (!res.ok) throw new Error("Échec upload");
-    const { images: results } = await res.json();
-    return results; // [{ success, originalName, url?, publicId?, error? }]
+    for (let i = 0; i < fileArray.length; i += UPLOAD_BATCH_SIZE) {
+      const batch = fileArray.slice(i, i + UPLOAD_BATCH_SIZE);
+      const formData = new FormData();
+      batch.forEach((file) => formData.append("images", file));
+
+      const res = await fetch(`${API_URL}/api/upload/images`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Échec upload");
+      const { images: results } = await res.json();
+      allResults.push(...results);
+
+      setUploadProgress(
+        `${Math.min(i + UPLOAD_BATCH_SIZE, fileArray.length)}/${fileArray.length}`,
+      );
+    }
+
+    return allResults; // [{ success, originalName, url?, publicId?, error? }]
   };
 
   const handleFiles = async (files) => {
     if (!files || files.length === 0) return;
     setUploading(true);
+    setUploadProgress(null);
     try {
       const results = await uploadFiles(files);
       const succeeded = results.filter((r) => r.success);
@@ -58,6 +75,7 @@ function ImageUploader({ images, onChange, token, variantColors = [] }) {
       );
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -174,7 +192,9 @@ function ImageUploader({ images, onChange, token, variantColors = [] }) {
                   d="M4 12a8 8 0 018-8v8z"
                 />
               </svg>
-              <p className="text-sm text-gray-500">Upload en cours...</p>
+              <p className="text-sm text-gray-500">
+                Upload en cours...{uploadProgress ? ` (${uploadProgress})` : ""}
+              </p>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-1.5">
