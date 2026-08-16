@@ -10,6 +10,7 @@ import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import AuthTopBar from '../../components/layout/AuthTopBar';
 import BottomNav from '../../components/layout/BottomNav';
+import SocialLinks from '../../components/shared/SocialLinks';
 import '../../components/shop/home/hero.css';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -135,12 +136,11 @@ export default function Register() {
         <AuthTopBar />
       </div>
 
-      {/* pb-20 sur mobile pour laisser la place à la BottomNav fixe */}
       <div className="relative z-10 flex-1 flex items-center justify-center p-4 pb-20 md:pb-4">
         <div className="w-full max-w-md">
 
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-semibold text-stone-900">Creer un compte</h1>
+            <h1 className="text-2xl font-semibold text-stone-900">Creer uncompte</h1>
             <p className="text-stone-500 text-sm mt-1">Rejoignez la communaute SonShop</p>
           </div>
 
@@ -150,7 +150,7 @@ export default function Register() {
                 <div className="flex flex-col items-center">
                   <div className={`
                     w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors
-                    ${step > s.n ? 'bg-rose-400 text-white' : step === s.n ? 'bg-rose-500 text-white' : 'bg-stone-200 text-stone-400'}
+                    ${step > s.n ? 'bg-rose-400 text-white' : step === s.n? 'bg-rose-500 text-white' : 'bg-stone-200 text-stone-400'}
                   `}>
                     {step > s.n ? <CheckCircle size={16} /> : s.n}
                   </div>
@@ -230,7 +230,7 @@ export default function Register() {
                     type="button"
                     onClick={handleResend}
                     disabled={resendCooldown > 0 || loading}
-                    className={`text-sm transition-colors ${resendCooldown > 0 ? 'text-stone-300 cursor-not-allowed' : 'text-rose-400 hover:text-rose-600'}`}
+                    className={`text-sm transition-colors ${resendCooldown> 0 ? 'text-stone-300 cursor-not-allowed' : 'text-rose-400 hover:text-rose-600'}`}
                   >
                     {resendCooldown > 0 ? `Renvoyer (${resendCooldown}s)` : 'Renvoyer le code'}
                   </button>
@@ -295,6 +295,8 @@ export default function Register() {
               Se connecter
             </Link>
           </p>
+
+          <SocialLinks />
 
         </div>
       </div>

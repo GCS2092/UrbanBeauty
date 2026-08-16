@@ -10,6 +10,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import AuthTopBar from '../../components/layout/AuthTopBar';
 import BottomNav from '../../components/layout/BottomNav';
+import SocialLinks from '../../components/shared/SocialLinks';
 
 const schema = z.object({
   email: z.string().email('Email invalide'),
@@ -117,6 +118,8 @@ export default function Login() {
               Créer un compte
             </Link>
           </p>
+
+          <SocialLinks />
         </div>
       </div>
 
