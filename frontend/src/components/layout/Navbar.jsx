@@ -78,14 +78,13 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 gap-2">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-xl bg-stone-900 flex items-center justify-center">
-              <ShoppingBag size={16} className="text-white" />
-            </div>
-            <span className="font-bold text-xl tracking-tight text-stone-900">
-              Son<span className="text-stone-500">Shop</span>
-            </span>
-          </Link>
+<Link to="/" className="flex items-center shrink-0">
+  <img
+    src="/SonshoLogo.PNG"
+    alt="SonShop"
+    className="h-10 w-10 rounded-xl object-cover"
+  />
+</Link>
 
           {/* Suivi — mobile : remplit l'espace vide entre le nom et le hamburger */}
           <form onSubmit={handleTrackSubmit} className="flex-1 min-w-0 md:hidden">
