@@ -12,24 +12,31 @@ function ImageUploader({ images, onChange, token, variantColors = [] }) {
   const [uploading, setUploading] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [tab, setTab] = useState("file");
+  const [selectedIdx, setSelectedIdx] = useState(null); // index de l'image ouverte dans le panneau détail
 
-  const uploadFile = async (file) => {
+  const uploadFiles = async (files) => {
     const formData = new FormData();
-    formData.append("image", file);
-    const res = await fetch(`${API_URL}/api/upload/image`, {
+    Array.from(files).forEach((file) => formData.append("images", file));
+
+    const res = await fetch(`${API_URL}/api/upload/images`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
     if (!res.ok) throw new Error("Échec upload");
-    return res.json();
+    const { images: results } = await res.json();
+    return results; // [{ success, originalName, url?, publicId?, error? }]
   };
 
   const handleFiles = async (files) => {
+    if (!files || files.length === 0) return;
     setUploading(true);
     try {
-      const uploaded = await Promise.all(Array.from(files).map(uploadFile));
-      const newImages = uploaded.map((img, i) => ({
+      const results = await uploadFiles(files);
+      const succeeded = results.filter((r) => r.success);
+      const failed = results.filter((r) => !r.success);
+
+      const newImages = succeeded.map((img, i) => ({
         url: img.url,
         publicId: img.publicId,
         isMain: images.length === 0 && i === 0,
@@ -37,6 +44,14 @@ function ImageUploader({ images, onChange, token, variantColors = [] }) {
         color: null,
       }));
       onChange([...images, ...newImages]);
+
+      if (failed.length > 0) {
+        alert(
+          `${failed.length} image(s) n'ont pas pu être uploadées :\n${failed
+            .map((f) => `- ${f.originalName}`)
+            .join("\n")}`,
+        );
+      }
     } catch {
       alert(
         "Erreur lors de l'upload. Vérifiez le format (JPEG, PNG, WebP, AVIF) et la taille (max 5 Mo).",
@@ -79,6 +94,7 @@ function ImageUploader({ images, onChange, token, variantColors = [] }) {
         position: i,
       }));
     onChange(next);
+    setSelectedIdx(null);
   };
 
   const setColor = (idx, color) => {
@@ -88,6 +104,17 @@ function ImageUploader({ images, onChange, token, variantColors = [] }) {
       ),
     );
   };
+
+  const moveImage = (idx, direction) => {
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= images.length) return;
+    const next = [...images];
+    [next[idx], next[targetIdx]] = [next[targetIdx], next[idx]];
+    onChange(next.map((img, i) => ({ ...img, position: i })));
+    setSelectedIdx(targetIdx);
+  };
+
+  const selected = selectedIdx !== null ? images[selectedIdx] : null;
 
   return (
     <div className="space-y-3">
@@ -185,19 +212,26 @@ function ImageUploader({ images, onChange, token, variantColors = [] }) {
         </div>
       )}
 
+      {/* Grille de miniatures — clic pour ouvrir le panneau de détails */}
       {images.length > 0 && (
         <div className="space-y-2 mt-1">
-          {images.map((img, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-3 p-2 border border-gray-100 rounded-xl bg-gray-50"
-            >
-              {/* Miniature */}
-              <div className="relative shrink-0">
+          <div className="flex flex-wrap gap-2">
+            {images.map((img, idx) => (
+              <button
+                type="button"
+                key={idx}
+                onClick={() => setSelectedIdx(idx)}
+                className="relative shrink-0 focus:outline-none"
+                title="Cliquez pour configurer cette image"
+              >
                 <img
                   src={img.url}
                   alt={`img-${idx}`}
-                  className={`h-16 w-16 object-cover rounded-lg border-2 transition-all ${img.isMain ? "border-black" : "border-gray-200"}`}
+                  className={`h-20 w-20 object-cover rounded-lg border-2 transition-all ${
+                    img.isMain
+                      ? "border-black"
+                      : "border-gray-200 hover:border-gray-400"
+                  }`}
                   onError={(e) => {
                     e.target.src = "";
                     e.target.parentElement.style.display = "none";
@@ -208,93 +242,161 @@ function ImageUploader({ images, onChange, token, variantColors = [] }) {
                     ★
                   </span>
                 )}
-              </div>
+                {img.color && (
+                  <span className="absolute bottom-0.5 left-0.5 right-0.5 bg-black/70 text-white text-[9px] px-1 py-0.5 rounded truncate">
+                    {img.color}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400">
+            {images.length} image{images.length > 1 ? "s" : ""} — cliquez sur
+            une miniature pour la configurer
+          </p>
+        </div>
+      )}
 
-              {/* Couleur associée */}
-              <div className="flex-1 min-w-0">
-                <label className="block text-[10px] font-medium text-gray-500 mb-1">
-                  Couleur associée
-                  {variantColors.length > 0 && (
-                    <span className="text-gray-400 font-normal">
-                      {" "}
-                      — cliquez pour assigner
-                    </span>
-                  )}
-                </label>
-                {variantColors.length > 0 ? (
-                  <div className="flex gap-1 flex-wrap">
+      {/* Panneau de détails — s'ouvre au clic sur une miniature */}
+      {selected && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedIdx(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <h3 className="text-sm font-semibold text-gray-900">
+                Détails de l'image
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedIdx(null)}
+                className="text-gray-400 hover:text-gray-700 text-lg leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            <img
+              src={selected.url}
+              alt="preview"
+              className="w-full h-48 object-cover rounded-xl border border-gray-100"
+            />
+
+            {/* Image principale */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Image principale</span>
+              <button
+                type="button"
+                onClick={() => setMain(selectedIdx)}
+                disabled={selected.isMain}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  selected.isMain
+                    ? "bg-black text-white cursor-default"
+                    : "border border-gray-200 text-gray-600 hover:border-gray-400"
+                }`}
+              >
+                {selected.isMain ? "★ Principale" : "Définir comme principale"}
+              </button>
+            </div>
+
+            {/* Couleur associée */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                Couleur associée
+                {variantColors.length > 0 && (
+                  <span className="text-gray-400 font-normal">
+                    {" "}
+                    — cette image ne s'affichera que pour cette couleur
+                  </span>
+                )}
+              </label>
+              {variantColors.length > 0 ? (
+                <div className="flex gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setColor(selectedIdx, null)}
+                    className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                      !selected.color
+                        ? "bg-gray-900 text-white border-gray-900"
+                        : "border-gray-200 text-gray-500 hover:border-gray-400"
+                    }`}
+                  >
+                    Toutes les couleurs
+                  </button>
+                  {variantColors.map((c) => (
                     <button
+                      key={c}
                       type="button"
-                      onClick={() => setColor(idx, null)}
-                      className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
-                        !img.color
+                      onClick={() => setColor(selectedIdx, c)}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                        selected.color === c
                           ? "bg-gray-900 text-white border-gray-900"
                           : "border-gray-200 text-gray-500 hover:border-gray-400"
                       }`}
                     >
-                      Toutes
+                      {c}
                     </button>
-                    {variantColors.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setColor(idx, c)}
-                        className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
-                          img.color === c
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "border-gray-200 text-gray-500 hover:border-gray-400"
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <input
-                    type="text"
-                    value={img.color || ""}
-                    onChange={(e) => setColor(idx, e.target.value)}
-                    placeholder="ex : Rouge (vide = toutes les couleurs)"
-                    className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-black/20"
-                  />
-                )}
-                {img.color && (
-                  <p className="text-[10px] text-gray-400 mt-0.5">
-                    📎 Assignée à :{" "}
-                    <span className="font-medium text-gray-600">
-                      {img.color}
-                    </span>
-                  </p>
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={selected.color || ""}
+                  onChange={(e) => setColor(selectedIdx, e.target.value)}
+                  placeholder="ex : Rouge (vide = toutes les couleurs)"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20"
+                />
+              )}
+            </div>
 
-              {/* Actions */}
-              <div className="flex flex-col gap-1 shrink-0">
-                {!img.isMain && (
-                  <button
-                    type="button"
-                    onClick={() => setMain(idx)}
-                    className="bg-white border border-gray-200 text-gray-600 rounded-lg w-7 h-7 flex items-center justify-center text-xs hover:bg-yellow-50 hover:border-yellow-300"
-                    title="Image principale"
-                  >
-                    ★
-                  </button>
-                )}
+            {/* Ordre d'affichage */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                Ordre d'affichage — position {selectedIdx + 1} sur{" "}
+                {images.length}
+              </label>
+              <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => remove(idx)}
-                  className="bg-white border border-red-200 text-red-400 rounded-lg w-7 h-7 flex items-center justify-center text-xs hover:bg-red-50"
-                  title="Supprimer"
+                  onClick={() => moveImage(selectedIdx, -1)}
+                  disabled={selectedIdx === 0}
+                  className="flex-1 border border-gray-200 rounded-lg py-1.5 text-sm text-gray-600 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
-                  ✕
+                  ← Avancer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveImage(selectedIdx, 1)}
+                  disabled={selectedIdx === images.length - 1}
+                  className="flex-1 border border-gray-200 rounded-lg py-1.5 text-sm text-gray-600 hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  Reculer →
                 </button>
               </div>
             </div>
-          ))}
-          <p className="text-xs text-gray-400">
-            {images.length} image{images.length > 1 ? "s" : ""} — ★ pour définir
-            la principale
-          </p>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => remove(selectedIdx)}
+                className="flex-1 bg-white border border-red-200 text-red-500 rounded-lg py-2 text-sm font-medium hover:bg-red-50 transition-colors"
+              >
+                Supprimer cette image
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedIdx(null)}
+                className="flex-1 bg-black text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-800 transition-colors"
+              >
+                Terminé
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

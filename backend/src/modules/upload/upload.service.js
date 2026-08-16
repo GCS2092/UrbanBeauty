@@ -6,9 +6,8 @@ async function uploadImage(file) {
     const result = await cloudinary.uploader.upload(file.path, {
       folder: 'urbanbeauty/products',
       resource_type: 'image',
-      // ✅ Limite la dimension max stockée + optimise qualité/format
       transformation: [
-        { width: 1600, height: 1600, crop: 'limit' }, // jamais plus grand que 1600px, respecte le ratio
+        { width: 1600, height: 1600, crop: 'limit' },
         { quality: 'auto:good', fetch_format: 'auto' },
       ],
     });
@@ -18,17 +17,27 @@ async function uploadImage(file) {
       publicId: result.public_id,
     };
   } finally {
-    // Supprime le fichier temporaire dans tous les cas
     if (file?.path) {
       fs.unlink(file.path).catch(() => {});
     }
   }
 }
 
+// Upload plusieurs images en parallèle
+async function uploadImages(files) {
+  const results = await Promise.allSettled(files.map((file) => uploadImage(file)));
+
+  return results.map((r, i) => {
+    if (r.status === 'fulfilled') {
+      return { success: true, originalName: files[i].originalname, ...r.value };
+    }
+    return { success: false, originalName: files[i].originalname, error: r.reason.message };
+  });
+}
+
 async function deleteImage(publicId) {
-  // publicId Cloudinary peut contenir des "/" — on le décode
   const decoded = decodeURIComponent(publicId);
   await cloudinary.uploader.destroy(decoded, { resource_type: 'image' });
 }
 
-module.exports = { uploadImage, deleteImage };
+module.exports = { uploadImage, uploadImages, deleteImage };

@@ -12,6 +12,19 @@ async function uploadImage(req, res, next) {
   }
 }
 
+// Upload multiple en une requête
+async function uploadImages(req, res, next) {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'Aucun fichier reçu' });
+    }
+    const results = await uploadService.uploadImages(req.files);
+    res.status(201).json({ images: results });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function deleteImage(req, res, next) {
   try {
     await uploadService.deleteImage(req.params.publicId);
@@ -23,5 +36,6 @@ async function deleteImage(req, res, next) {
 
 module.exports = {
   uploadImage,
+  uploadImages,
   deleteImage,
 };
