@@ -594,6 +594,12 @@ export default function AdminProducts() {
   const [storeFilter, setStoreFilter] = useAdminStoreFilter();
   const [fieldErrors, setFieldErrors] = useState({});
 
+  // ── Modal "Nouvelle catégorie" ──
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
+
   const emptyForm = {
     name: "",
     slug: "",
@@ -629,6 +635,37 @@ export default function AdminProducts() {
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
+
+  const handleCreateCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      setCategoryError("Le nom est obligatoire");
+      return;
+    }
+    setCreatingCategory(true);
+    setCategoryError("");
+    try {
+      const res = await fetch(`${API_URL}/api/categories`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ name, slug: slugify(name) }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Erreur lors de la création");
+      }
+      const newCategory = await res.json();
+      setCategories((prev) => [...prev, newCategory]);
+      setForm((prev) => ({ ...prev, categoryId: newCategory.id }));
+      setNewCategoryName("");
+      setShowCategoryModal(false);
+      showToast("Catégorie créée ✓");
+    } catch (e) {
+      setCategoryError(e.message);
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -725,6 +762,7 @@ export default function AdminProducts() {
   const validate = () => {
     const errors = {};
     if (!form.name.trim()) errors.name = "Le nom est obligatoire";
+    if (!form.categoryId) errors.categoryId = "La catégorie est obligatoire";
     if (!form.price || Number(form.price) < 0) errors.price = "Prix invalide";
     if (
       form.variants.length === 0 &&
@@ -766,7 +804,7 @@ export default function AdminProducts() {
       purchasePrice:
         form.purchasePrice !== "" ? Number(form.purchasePrice) : null,
       stock: totalVariantStock,
-      ...(form.categoryId ? { categoryId: form.categoryId } : {}),
+      categoryId: form.categoryId,
       storeId: form.storeId || null,
       isActive: form.isActive,
       isFeatured: form.isFeatured,
@@ -1332,21 +1370,36 @@ export default function AdminProducts() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Catégorie
+                      Catégorie <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      name="categoryId"
-                      value={form.categoryId}
-                      onChange={handleChange}
-                      className={inputClass("categoryId")}
-                    >
-                      <option value="">— Aucune —</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        name="categoryId"
+                        value={form.categoryId}
+                        onChange={handleChange}
+                        className={inputClass("categoryId")}
+                      >
+                        <option value="">— Choisir —</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowCategoryModal(true)}
+                        className="shrink-0 px-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                        title="Créer une nouvelle catégorie"
+                      >
+                        + Nouvelle
+                      </button>
+                    </div>
+                    {fieldErrors.categoryId && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {fieldErrors.categoryId}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -1355,21 +1408,36 @@ export default function AdminProducts() {
               {form.variants.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Catégorie
+                    Catégorie <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="categoryId"
-                    value={form.categoryId}
-                    onChange={handleChange}
-                    className={inputClass("categoryId")}
-                  >
-                    <option value="">— Aucune —</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      name="categoryId"
+                      value={form.categoryId}
+                      onChange={handleChange}
+                      className={inputClass("categoryId")}
+                    >
+                      <option value="">— Choisir —</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryModal(true)}
+                      className="shrink-0 px-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                      title="Créer une nouvelle catégorie"
+                    >
+                      + Nouvelle
+                    </button>
+                  </div>
+                  {fieldErrors.categoryId && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {fieldErrors.categoryId}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1529,6 +1597,85 @@ export default function AdminProducts() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Nouvelle catégorie ── */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Nouvelle catégorie
+              </h2>
+              <button
+                onClick={() => {
+                  setShowCategoryModal(false);
+                  setNewCategoryName("");
+                  setCategoryError("");
+                }}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nom <span className="text-red-500">*</span>
+              </label>
+              <input
+                autoFocus
+                value={newCategoryName}
+                onChange={(e) => {
+                  setNewCategoryName(e.target.value);
+                  if (categoryError) setCategoryError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleCreateCategory();
+                  }
+                }}
+                placeholder="ex : Robes"
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition ${
+                  categoryError
+                    ? "border-red-400 focus:ring-red-200 bg-red-50"
+                    : "border-gray-200 focus:ring-black/20 focus:border-gray-400"
+                }`}
+              />
+              {newCategoryName.trim() && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Slug : <span className="font-mono">{slugify(newCategoryName)}</span>
+                </p>
+              )}
+              {categoryError && (
+                <p className="text-xs text-red-500 mt-1">{categoryError}</p>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCategoryModal(false);
+                  setNewCategoryName("");
+                  setCategoryError("");
+                }}
+                className="flex-1 border border-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateCategory}
+                disabled={creatingCategory}
+                className="flex-1 bg-black text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60"
+              >
+                {creatingCategory ? "Création..." : "Créer"}
+              </button>
+            </div>
           </div>
         </div>
       )}
