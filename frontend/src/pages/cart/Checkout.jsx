@@ -20,6 +20,9 @@ import PaymentModal from '../../components/checkout/PaymentModal';
 import { toast } from 'sonner';
 import { STORE_ID } from '../../utils/constants';
 
+// --- Seuil de livraison gratuite (nombre de pièces) ---
+const FREE_SHIPPING_THRESHOLD = 5;
+
 // --- Destinations ---
 const DESTINATIONS = [
   {
@@ -70,6 +73,8 @@ const PAYMENT_METHOD_INFO = {
 };
 
 // --- Composant numéros Mobile Money ---
+// ✅ Conservé dans le code (réutilisable ailleurs, ex. Sénégal) mais plus affiché
+// automatiquement pour les destinations Congo — voir CongoPaymentNotice ci-dessous.
 function MobileMoneyNumbers({ settings }) {
   const [copied, setCopied] = useState(null);
 
@@ -112,6 +117,48 @@ function MobileMoneyNumbers({ settings }) {
           {settings.payment_instructions}
         </p>
       )}
+    </div>
+  );
+}
+
+// --- ✅ Message affiché à la place des numéros pour les destinations Congo ---
+// Explique au client qu'un paiement Mobile Money est requis avant expédition,
+// et lui propose de contacter directement le numéro WhatsApp de la boutique
+// pour valider sa commande et effectuer le paiement.
+function CongoPaymentNotice({ settings }) {
+  const whatsappNumber = (settings?.whatsapp_number || '').replace(/\D/g, '');
+
+  const handleContact = () => {
+    if (!whatsappNumber) {
+      toast.error('Numéro WhatsApp non configuré.');
+      return;
+    }
+    const msg = encodeURIComponent(
+      "Bonjour, je souhaite procéder au paiement Mobile Money pour valider ma commande vers le Congo."
+    );
+    window.open(`https://wa.me/${whatsappNumber}?text=${msg}`, '_blank');
+  };
+
+  return (
+    <div className="mt-3 flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-xl p-3">
+      <AlertCircle size={15} className="text-blue-500 mt-0.5 shrink-0" />
+      <div className="flex-1 space-y-2">
+        <p className="text-xs text-blue-700 leading-relaxed">
+          <strong>Paiement requis pour confirmer votre commande.</strong>{' '}
+          Pour les livraisons Congo, veuillez procéder au paiement Mobile Money
+          afin de sécuriser et confirmer votre commande avant expédition.
+        </p>
+        <button
+          type="button"
+          onClick={handleContact}
+          className="flex items-center justify-center gap-2 w-full text-xs font-semibold text-white bg-[#25D366] hover:bg-[#1ebe5d] rounded-lg py-2 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+          </svg>
+          Contacter le service pour payer et valider ma commande
+        </button>
+      </div>
     </div>
   );
 }
@@ -284,8 +331,16 @@ export default function Checkout() {
   const availablePaymentMethods = getAvailablePaymentMethods(destination);
   const isInternational = !DESTINATIONS.find((d) => d.value === destination)?.isLocal;
 
+  // ✅ Quantité totale d'articles dans le panier — utilisée pour la livraison gratuite
+  const totalQuantity = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const qualifiesForFreeShipping = totalQuantity >= FREE_SHIPPING_THRESHOLD;
+
+  // ✅ Le coût réellement appliqué tient maintenant compte du seuil de gratuité
+  //    (avant, seul l'affichage pouvait laisser penser à une gratuité sans que
+  //    le total payé ne change réellement)
   const getShippingCost = () => {
     if (destination === 'SENEGAL') return 0;
+    if (qualifiesForFreeShipping) return 0;
     if (destination === 'CONGO_EXPRESS') return Number(settings?.congo_express_rate || 15000);
     if (destination === 'CONGO_GROUPAGE') return Number(settings?.congo_groupage_rate || 8000);
     return 0;
@@ -632,6 +687,8 @@ export default function Checkout() {
                   <div className="text-right shrink-0">
                     {dest.value === 'SENEGAL' ? (
                       <span className="text-xs text-stone-400 italic">Via WhatsApp</span>
+                    ) : qualifiesForFreeShipping ? (
+                      <span className="text-xs font-semibold text-green-600">Gratuite</span>
                     ) : (
                       <span className="text-sm font-semibold text-stone-700">
                         {formatPrice(Number(settings?.[dest.value === 'CONGO_EXPRESS' ? 'congo_express_rate' : 'congo_groupage_rate'] || (dest.value === 'CONGO_EXPRESS' ? 15000 : 8000)))}
@@ -648,8 +705,27 @@ export default function Checkout() {
                 <p className="text-xs text-amber-700 leading-relaxed">
                   <strong>Cadeau offert !</strong> Pour vous remercier de votre patience,
                   un {settings?.congo_groupage_gift || 'cadeau surprise'} sera glissé dans votre colis.
+                  <br />
+                  Aucune quantité minimale n'est requise : votre colis est simplement regroupé
+                  avec d'autres commandes pour réduire les frais de livraison.
                 </p>
               </div>
+            )}
+
+            {/* ✅ Bouton contact WhatsApp pour la destination Congo Express */}
+            {destination === 'CONGO_EXPRESS' && (
+              <button
+                type="button"
+                onClick={() => {
+                  const whatsappNumber = (settings?.whatsapp_number || '').replace(/\D/g, '');
+                  if (!whatsappNumber) { toast.error('Numéro WhatsApp non configuré.'); return; }
+                  const msg = encodeURIComponent("Bonjour, j'ai une question concernant la livraison Congo Express.");
+                  window.open(`https://wa.me/${whatsappNumber}?text=${msg}`, '_blank');
+                }}
+                className="w-full flex items-center justify-center gap-2 text-xs font-medium text-[#128C7E] border border-[#25D366] rounded-xl py-2 hover:bg-green-50 transition-colors"
+              >
+                Nous contacter au sujet de cette livraison
+              </button>
             )}
           </div>
 
@@ -788,8 +864,11 @@ export default function Checkout() {
                       </div>
                       <p className="text-xs text-stone-400 mt-0.5">{info.description}</p>
 
+                      {/* ✅ Pour le Congo, on n'affiche plus les numéros Mobile Money
+                          directement : on invite le client à contacter le service
+                          pour payer et valider sa commande. */}
                       {method === 'MOBILE_MONEY' && isSelected && isInternational && (
-                        <MobileMoneyNumbers settings={settings} />
+                        <CongoPaymentNotice settings={settings} />
                       )}
                     </div>
                   </label>
@@ -866,7 +945,9 @@ export default function Checkout() {
                 <span>
                   {destination === 'SENEGAL'
                     ? <span className="text-xs italic text-stone-400">Via WhatsApp</span>
-                    : formatPrice(shippingCost)
+                    : qualifiesForFreeShipping
+                      ? <span className="text-xs font-semibold text-green-600">Gratuite</span>
+                      : formatPrice(shippingCost)
                   }
                 </span>
               </div>

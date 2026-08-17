@@ -4,3 +4,4 @@
 
 frontend-tech/
 .vercel
+.env*
