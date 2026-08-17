@@ -20,6 +20,7 @@ const { getSettings } = require('../settings/settings.service');
 const { notifyOrderConfirmed, notifyOrderStatus, notifyAdmins } = require('../../services/notification.service');
 const { buildInvoicePdf } = require('../invoices/invoice-pdf.service');
 const { isValidPhone } = require('../../utils/phone.utils');
+const { getShippingCost, computeOrderTotal } = require('../../utils/shipping.utils');
 
 // ─── Destinations locales (paiement à la livraison autorisé) ─────────────────
 const LOCAL_DESTINATIONS = ['SENEGAL'];
@@ -124,8 +125,10 @@ async function createOrder(payload, user, ip = null) {
   const userId = user?.id || null;
   const guestEmail = user?.email || payload.guestEmail || null;
   const guestName = payload.guestName || payload.shippingAddress?.fullName || 'Cliente';
-  const shippingCost = Number(payload.shippingCost || 0);
   const subtotal = payload.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const itemCount = payload.items.reduce((sum, item) => sum + item.quantity, 0);
+  const settings = await getSettings(store.id);
+  const shippingCost = getShippingCost(payload.destination, settings, { itemCount, subtotal });
   const storeDiscount = computeStoreDiscount(subtotal, store.discountRate);
 
   let discount = 0;
@@ -149,11 +152,10 @@ async function createOrder(payload, user, ip = null) {
     couponId = coupon.id;
   }
 
-  const total = subtotal + shippingCost - discount - storeDiscount;
+  const total = computeOrderTotal(subtotal, shippingCost, discount, storeDiscount);
   const isDraft = payload.status === 'DRAFT';
   const initialStatus = isDraft ? 'DRAFT' : 'PENDING';
 
-  const settings = await getSettings();
   const expiryHours = Number(settings.reservation_expiry_hours || 24);
   const reservationExpiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
 
@@ -253,6 +255,7 @@ async function createOrder(payload, user, ip = null) {
       shippingCost,
       discount,
       storeDiscount,
+      destination: payload.destination,
       items: payload.items,
       paymentMethod: payload.paymentMethod,
       shippingAddress: payload.shippingAddress,
@@ -269,6 +272,14 @@ async function createOrder(payload, user, ip = null) {
       orderNumber,
       guestName,
       total,
+      subtotal,
+      shippingCost,
+      discount,
+      storeDiscount,
+      destination: payload.destination,
+      items: payload.items,
+      paymentMethod: payload.paymentMethod,
+      shippingAddress: payload.shippingAddress,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
       storeName: store.name,
       storeCode: store.code,

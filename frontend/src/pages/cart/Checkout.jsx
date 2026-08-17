@@ -14,21 +14,24 @@ import { settingsApi } from '../../api/settings.api';
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
 import { formatPrice } from '../../utils/formatPrice';
+import {
+  FREE_SHIPPING_ITEM_THRESHOLD,
+  getShippingCost,
+  getShippingDisplayText,
+  isExpressContactRequired,
+} from '../../utils/shipping';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import PaymentModal from '../../components/checkout/PaymentModal';
 import { toast } from 'sonner';
 import { STORE_ID } from '../../utils/constants';
 
-// --- Seuil de livraison gratuite (nombre de pièces) ---
-const FREE_SHIPPING_THRESHOLD = 5;
-
 // --- Destinations ---
 const DESTINATIONS = [
   {
     value: 'SENEGAL',
     label: 'Sénégal (Dakar)',
-    description: 'Frais communiqués via WhatsApp',
+    description: 'Livraison locale à Dakar',
     shippingFixed: null,
     flag: '🇸🇳',
     isLocal: true,
@@ -43,7 +46,7 @@ const DESTINATIONS = [
   {
     value: 'CONGO_GROUPAGE',
     label: 'Congo — Groupage',
-    description: 'Livraison avec les autres commandes + cadeau offert',
+    description: 'Rassemblement de plusieurs commandes pour une expédition groupée + cadeau offert',
     flag: '🇨🇬',
     hasGift: true,
     isLocal: false,
@@ -73,8 +76,6 @@ const PAYMENT_METHOD_INFO = {
 };
 
 // --- Composant numéros Mobile Money ---
-// ✅ Conservé dans le code (réutilisable ailleurs, ex. Sénégal) mais plus affiché
-// automatiquement pour les destinations Congo — voir CongoPaymentNotice ci-dessous.
 function MobileMoneyNumbers({ settings }) {
   const [copied, setCopied] = useState(null);
 
@@ -121,10 +122,7 @@ function MobileMoneyNumbers({ settings }) {
   );
 }
 
-// --- ✅ Message affiché à la place des numéros pour les destinations Congo ---
-// Explique au client qu'un paiement Mobile Money est requis avant expédition,
-// et lui propose de contacter directement le numéro WhatsApp de la boutique
-// pour valider sa commande et effectuer le paiement.
+// --- Message affiché à la place des numéros pour les destinations Congo ---
 function CongoPaymentNotice({ settings }) {
   const whatsappNumber = (settings?.whatsapp_number || '').replace(/\D/g, '');
 
@@ -182,21 +180,17 @@ const buildWhatsAppMessage = ({ cart, formData, subtotal, shippingCost, discount
   lines.push('*Récapitulatif :*');
   lines.push(`Sous-total : ${formatPrice(subtotal)}`);
 
-  if (destination === 'SENEGAL') {
-    lines.push(`Livraison Sénégal : à confirmer`);
+  if (destination === 'CONGO_EXPRESS') {
+    lines.push(`Livraison (${dest?.label}) : ${getShippingDisplayText(destination, shippingCost, settings)}`);
   } else {
-    lines.push(`Livraison (${dest?.label}) : ${formatPrice(shippingCost)}`);
+    lines.push(`Livraison (${dest?.label}) : ${getShippingDisplayText(destination, shippingCost, settings)}`);
   }
 
   if (discount > 0) {
     lines.push(`Réduction${coupon ? ` (${coupon.code})` : ''} : -${formatPrice(discount)}`);
   }
 
-  if (destination === 'SENEGAL') {
-    lines.push(`*Total (hors livraison) : ${formatPrice(total - shippingCost)}*`);
-  } else {
-    lines.push(`*Total : ${formatPrice(total)}*`);
-  }
+  lines.push(`*Total : ${formatPrice(total)}*`);
 
   if (destination === 'CONGO_GROUPAGE') {
     const gift = settings?.congo_groupage_gift || 'un cadeau surprise';
@@ -247,10 +241,9 @@ export default function Checkout() {
   const [pendingOrderData, setPendingOrderData] = useState(null);
   const [whatsappSent, setWhatsappSent] = useState(false);
   const [deliverToOther, setDeliverToOther] = useState(false);
-  const [editingAddress, setEditingAddress] = useState(false); // ✅ nouveau : force l'affichage du formulaire
+  const [editingAddress, setEditingAddress] = useState(false);
 
-  // ✅ CinetPay : mode courant et commande déjà créée (pour éviter les doublons en fallback)
-  const [paymentMode, setPaymentMode] = useState('idle'); // 'idle' | 'redirecting' | 'fallback'
+  const [paymentMode, setPaymentMode] = useState('idle');
   const [createdOrder, setCreatedOrder] = useState(null);
 
   const { data: addresses } = useQuery({
@@ -288,10 +281,8 @@ export default function Checkout() {
     setValue('city', addr.city);
   };
 
-  // ✅ Adresse par défaut du compte (ou la première dispo)
   const defaultAddress = addresses?.find((a) => a.isDefault) || addresses?.[0];
 
-  // ✅ L'adresse par défaut contient-elle tout le nécessaire ?
   const isAddressComplete = !!(
     defaultAddress?.fullName &&
     defaultAddress?.phone &&
@@ -299,14 +290,8 @@ export default function Checkout() {
     defaultAddress?.city
   );
 
-  // ✅ Faut-il afficher le formulaire complet, ou juste le récap en lecture ?
-  //    - invité               → toujours le formulaire
-  //    - "pour un autre"      → toujours le formulaire (vide)
-  //    - adresse incomplète   → toujours le formulaire (pré-rempli avec ce qu'on a)
-  //    - "Modifier" cliqué    → formulaire, tant qu'on n'a pas annulé
   const showForm = !user || deliverToOther || !isAddressComplete || editingAddress;
 
-  // ✅ Pré-remplissage automatique pour un client connecté
   useEffect(() => {
     if (!user || deliverToOther) return;
 
@@ -331,24 +316,15 @@ export default function Checkout() {
   const availablePaymentMethods = getAvailablePaymentMethods(destination);
   const isInternational = !DESTINATIONS.find((d) => d.value === destination)?.isLocal;
 
-  // ✅ Quantité totale d'articles dans le panier — utilisée pour la livraison gratuite
   const totalQuantity = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-  const qualifiesForFreeShipping = totalQuantity >= FREE_SHIPPING_THRESHOLD;
-
-  // ✅ Le coût réellement appliqué tient maintenant compte du seuil de gratuité
-  //    (avant, seul l'affichage pouvait laisser penser à une gratuité sans que
-  //    le total payé ne change réellement)
-  const getShippingCost = () => {
-    if (destination === 'SENEGAL') return 0;
-    if (qualifiesForFreeShipping) return 0;
-    if (destination === 'CONGO_EXPRESS') return Number(settings?.congo_express_rate || 15000);
-    if (destination === 'CONGO_GROUPAGE') return Number(settings?.congo_groupage_rate || 8000);
-    return 0;
-  };
-
-  const shippingCost = getShippingCost();
+  const qualifiesForFreeShipping = totalQuantity >= FREE_SHIPPING_ITEM_THRESHOLD;
   const selectedDest = DESTINATIONS.find((d) => d.value === destination);
   const subtotal = getTotalPrice();
+
+  const shippingCost = getShippingCost(destination, settings, {
+    itemCount: totalQuantity,
+    subtotal,
+  });
   const discount = coupon
     ? coupon.type === 'PERCENTAGE'
       ? Math.round((subtotal * coupon.value) / 100)
@@ -464,7 +440,6 @@ export default function Checkout() {
     },
   });
 
-  // ✅ Tentative de paiement automatique CinetPay, avec bascule vers le flow manuel en cas d'échec
   const { mutate: placeOrderWithCinetpay, isPending: isPendingCinetpay } = useMutation({
     mutationFn: async (data) => {
       const { data: order } = await ordersApi.create(data);
@@ -475,12 +450,9 @@ export default function Checkout() {
     onSuccess: ({ payment }) => {
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       clearCart(user?.id);
-      // Redirection vers la page de paiement sécurisée CinetPay
       window.location.href = payment.paymentUrl;
     },
     onError: (err) => {
-      // CinetPay indisponible (compte non validé, réseau, etc.) → on bascule sur le flow manuel.
-      // La commande a peut-être déjà été créée (createdOrder) : on la réutilise, pas de doublon.
       console.error('CinetPay indisponible, bascule manuelle:', err.message);
       toast.info('Paiement automatique indisponible pour le moment. Utilisez le paiement manuel ci-dessous.');
       setPaymentMode('fallback');
@@ -513,7 +485,7 @@ export default function Checkout() {
       }),
       '',
       `Destination souhaitée : ${dest?.label || formData.destination}`,
-      `Total estimé (sans livraison) : ${formatPrice(subtotal)}`,
+      `Total estimé (articles + livraison) : ${formatPrice(subtotal + getShippingCost(formData.destination, settings, { itemCount: totalQuantity, subtotal }))}`,
     ];
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank');
   };
@@ -526,8 +498,6 @@ export default function Checkout() {
     placeDraftOrder({ ...payload, _formData: formData });
   };
 
-  // ✅ Confirmation du flow manuel (fallback). Si une commande a déjà été créée
-  // lors de la tentative CinetPay, on la réutilise au lieu d'en créer une nouvelle.
   const handleConfirmPayment = () => {
     if (createdOrder) {
       setShowPaymentModal(false);
@@ -552,7 +522,6 @@ export default function Checkout() {
         mode={paymentMode}
       />
 
-      {/* ✅ Écran de redirection pendant la tentative de paiement CinetPay */}
       {paymentMode === 'redirecting' && isPendingCinetpay && (
         <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center">
           <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-3">
@@ -594,7 +563,6 @@ export default function Checkout() {
         {/* Formulaire */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* ✅ Toggle "Moi-même" / "Pour quelqu'un d'autre" (clients connectés uniquement) */}
           {user && (
             <div className="bg-white rounded-2xl border border-stone-100 p-5">
               <h2 className="font-semibold text-stone-800 mb-3">Livrer à</h2>
@@ -603,7 +571,7 @@ export default function Checkout() {
                   type="button"
                   onClick={() => {
                     setDeliverToOther(false);
-                    setEditingAddress(false); // ✅ revient au récap si l'adresse est complète
+                    setEditingAddress(false);
                   }}
                   className={`p-3.5 rounded-xl border text-sm font-medium transition-colors ${
                     !deliverToOther
@@ -617,7 +585,7 @@ export default function Checkout() {
                   type="button"
                   onClick={() => {
                     setDeliverToOther(true);
-                    setEditingAddress(true); // ✅ force le formulaire vide
+                    setEditingAddress(true);
                     setValue('fullName', '');
                     setValue('phone', '');
                     setValue('street', '');
@@ -684,14 +652,24 @@ export default function Checkout() {
                     </div>
                     <p className="text-xs text-stone-400 mt-0.5">{dest.description}</p>
                   </div>
-                  <div className="text-right shrink-0">
-                    {dest.value === 'SENEGAL' ? (
-                      <span className="text-xs text-stone-400 italic">Via WhatsApp</span>
-                    ) : qualifiesForFreeShipping ? (
+                  <div className="text-right shrink-0 max-w-[45%]">
+                    {dest.value === 'CONGO_EXPRESS' ? (
+                      <span className="text-xs font-semibold text-blue-600 leading-snug">
+                        {getShippingDisplayText(
+                          dest.value,
+                          getShippingCost(dest.value, settings, { itemCount: totalQuantity, subtotal }),
+                          settings
+                        )}
+                      </span>
+                    ) : qualifiesForFreeShipping && dest.value !== 'SENEGAL' ? (
                       <span className="text-xs font-semibold text-green-600">Gratuite</span>
                     ) : (
                       <span className="text-sm font-semibold text-stone-700">
-                        {formatPrice(Number(settings?.[dest.value === 'CONGO_EXPRESS' ? 'congo_express_rate' : 'congo_groupage_rate'] || (dest.value === 'CONGO_EXPRESS' ? 15000 : 8000)))}
+                        {getShippingDisplayText(
+                          dest.value,
+                          getShippingCost(dest.value, settings, { itemCount: totalQuantity, subtotal }),
+                          settings
+                        )}
                       </span>
                     )}
                   </div>
@@ -703,16 +681,26 @@ export default function Checkout() {
               <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3">
                 <Gift size={16} className="text-amber-600 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-700 leading-relaxed">
+                  <strong>Qu'est-ce que le groupage ?</strong>{' '}
+                  Le groupage consiste à <strong>rassembler plusieurs commandes afin de les expédier ensemble</strong>.
+                  Votre colis part avec d'autres envois pour réduire les frais de livraison.
+                  <br /><br />
                   <strong>Cadeau offert !</strong> Pour vous remercier de votre patience,
                   un {settings?.congo_groupage_gift || 'cadeau surprise'} sera glissé dans votre colis.
-                  <br />
-                  Aucune quantité minimale n'est requise : votre colis est simplement regroupé
-                  avec d'autres commandes pour réduire les frais de livraison.
                 </p>
               </div>
             )}
 
-            {/* ✅ Bouton contact WhatsApp pour la destination Congo Express */}
+            {destination === 'CONGO_EXPRESS' && (
+              <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <AlertCircle size={16} className="text-blue-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  <strong>Nous contacter pour en savoir plus</strong> — les tarifs et délais
+                  de la livraison express sont communiqués sur demande.
+                </p>
+              </div>
+            )}
+
             {destination === 'CONGO_EXPRESS' && (
               <button
                 type="button"
@@ -729,7 +717,7 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* ✅ Adresse : récap en lecture (si tout est déjà connu) OU formulaire complet */}
+          {/* Adresse */}
           {!showForm ? (
             <div className="bg-white rounded-2xl border border-stone-100 p-5">
               <div className="flex items-center justify-between mb-3">
@@ -765,7 +753,6 @@ export default function Checkout() {
                 )}
               </div>
 
-              {/* Sélecteur d'adresses enregistrées — visible seulement en mode "Moi-même" */}
               {!deliverToOther && addresses?.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {addresses.map((addr) => (
@@ -864,9 +851,6 @@ export default function Checkout() {
                       </div>
                       <p className="text-xs text-stone-400 mt-0.5">{info.description}</p>
 
-                      {/* ✅ Pour le Congo, on n'affiche plus les numéros Mobile Money
-                          directement : on invite le client à contacter le service
-                          pour payer et valider sa commande. */}
                       {method === 'MOBILE_MONEY' && isSelected && isInternational && (
                         <CongoPaymentNotice settings={settings} />
                       )}
@@ -942,13 +926,8 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between text-stone-600">
                 <span>Livraison {selectedDest && `(${selectedDest.label})`}</span>
-                <span>
-                  {destination === 'SENEGAL'
-                    ? <span className="text-xs italic text-stone-400">Via WhatsApp</span>
-                    : qualifiesForFreeShipping
-                      ? <span className="text-xs font-semibold text-green-600">Gratuite</span>
-                      : formatPrice(shippingCost)
-                  }
+                <span className={`text-right max-w-[55%] ${isExpressContactRequired(destination) ? 'text-xs font-semibold text-blue-600' : ''}`}>
+                  {getShippingDisplayText(destination, shippingCost, settings)}
                 </span>
               </div>
               {discount > 0 && (
@@ -970,12 +949,7 @@ export default function Checkout() {
               )}
               <div className="flex justify-between font-bold text-stone-900 pt-2 border-t border-stone-100 text-base">
                 <span>Total</span>
-                <span>
-                  {destination === 'SENEGAL'
-                    ? `${formatPrice(subtotal - discount)} + livraison`
-                    : formatPrice(total)
-                  }
-                </span>
+                <span>{formatPrice(total)}</span>
               </div>
             </div>
 
