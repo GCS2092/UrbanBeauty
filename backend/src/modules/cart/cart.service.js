@@ -11,7 +11,6 @@ async function mergeGuestCart(userId, anonymousId) {
     userCart = await prisma.cart.create({ data: { userId } });
   }
 
-  // ── Articles indépendants entre eux → traités en parallèle ──────────────────
   await Promise.all(
     guestCart.items.map(async (item) => {
       const existingItem = await prisma.cartItem.findFirst({
@@ -39,8 +38,6 @@ async function mergeGuestCart(userId, anonymousId) {
     })
   );
 
-  // ── Nettoyage panier invité — indépendant, en parallèle du reste possible,
-  // mais doit rester après le merge pour ne pas perdre les items ─────────────
   await prisma.cartItem.deleteMany({ where: { cartId: guestCart.id } });
   await prisma.cart.delete({ where: { id: guestCart.id } });
   return userCart;
@@ -53,10 +50,8 @@ async function findOrCreateCart({ userId, anonymousId }) {
   }
 
   if (userId) {
-    // ✅ Vérifie que le user existe avant de créer le cart
     const userExists = await prisma.user.findUnique({ where: { id: userId } });
     if (!userExists) {
-      // User fantôme en localStorage → fallback anonyme
       if (anonymousId) {
         let cart = await prisma.cart.findUnique({ where: { anonymousId } });
         if (!cart) cart = await prisma.cart.create({ data: { anonymousId } });
@@ -95,8 +90,6 @@ async function getCart(query) {
               comparePrice: true,
               stock: true,
               reservedStock: true,
-              // ✅ Seulement l'image principale, pas toutes les images —
-              // le panier n'a besoin que d'une miniature par article.
               images: { where: { isMain: true }, take: 1 },
             },
           },
@@ -105,6 +98,33 @@ async function getCart(query) {
       },
     },
   });
+}
+
+// ✅ Stock réellement disponible = stock - reservedStock (les réservations en cours ne sont pas vendables)
+async function getAvailableStock(productId, variantId) {
+  if (variantId) {
+    const variant = await prisma.productVariant.findUnique({
+      where: { id: variantId },
+      select: { stock: true, reservedStock: true },
+    });
+    if (!variant) {
+      const error = new Error('Variante introuvable.');
+      error.status = 404;
+      throw error;
+    }
+    return variant.stock - variant.reservedStock;
+  }
+
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { stock: true, reservedStock: true },
+  });
+  if (!product) {
+    const error = new Error('Produit introuvable.');
+    error.status = 404;
+    throw error;
+  }
+  return product.stock - product.reservedStock;
 }
 
 async function addItem(data) {
@@ -116,6 +136,15 @@ async function addItem(data) {
       variantId: data.variantId,
     },
   });
+
+  // ✅ Vérifie le stock disponible avant d'ajouter (quantité existante + nouvelle demande)
+  const requestedQuantity = (existingItem?.quantity || 0) + (data.quantity || 1);
+  const available = await getAvailableStock(data.productId, data.variantId);
+  if (requestedQuantity > available) {
+    const error = new Error(`Stock insuffisant. ${available} disponible(s).`);
+    error.status = 400;
+    throw error;
+  }
 
   if (existingItem) {
     return prisma.cartItem.update({
@@ -135,6 +164,21 @@ async function addItem(data) {
 }
 
 async function updateItem(itemId, data) {
+  const item = await prisma.cartItem.findUnique({ where: { id: itemId } });
+  if (!item) {
+    const error = new Error('Article introuvable.');
+    error.status = 404;
+    throw error;
+  }
+
+  // ✅ Vérifie le stock disponible avant de mettre à jour la quantité
+  const available = await getAvailableStock(item.productId, item.variantId);
+  if (data.quantity > available) {
+    const error = new Error(`Stock insuffisant. ${available} disponible(s).`);
+    error.status = 400;
+    throw error;
+  }
+
   return prisma.cartItem.update({
     where: { id: itemId },
     data: { quantity: data.quantity },
@@ -156,4 +200,5 @@ module.exports = {
   updateItem,
   removeItem,
   clearCart,
+  getAvailableStock,
 };
