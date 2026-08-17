@@ -100,7 +100,6 @@ async function getCart(query) {
   });
 }
 
-// ✅ Stock réellement disponible = stock - reservedStock (les réservations en cours ne sont pas vendables)
 async function getAvailableStock(productId, variantId) {
   if (variantId) {
     const variant = await prisma.productVariant.findUnique({
@@ -127,7 +126,35 @@ async function getAvailableStock(productId, variantId) {
   return product.stock - product.reservedStock;
 }
 
+// ✅ Rejette les quantités non entières, négatives ou nulles.
+// Piège classique évité ici : `data.quantity || 1` laissait passer -5 (car -5 est "truthy" en JS).
+function assertValidQuantity(quantity) {
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    const error = new Error('Quantité invalide.');
+    error.status = 400;
+    throw error;
+  }
+}
+
+// ✅ Vérifie que l'article appartient bien au panier de l'appelant (owner = {userId, anonymousId})
+// avant de le modifier ou de le supprimer — corrige la faille IDOR.
+async function getOwnedCartItem(itemId, owner) {
+  const cart = await findOrCreateCart(owner || {});
+  const item = await prisma.cartItem.findFirst({
+    where: { id: itemId, cartId: cart.id },
+  });
+  if (!item) {
+    const error = new Error("Cet article n'existe pas dans votre panier.");
+    error.status = 404;
+    throw error;
+  }
+  return item;
+}
+
 async function addItem(data) {
+  const quantity = data.quantity === undefined ? 1 : data.quantity;
+  assertValidQuantity(quantity);
+
   const cart = await findOrCreateCart(data);
   const existingItem = await prisma.cartItem.findFirst({
     where: {
@@ -137,8 +164,7 @@ async function addItem(data) {
     },
   });
 
-  // ✅ Vérifie le stock disponible avant d'ajouter (quantité existante + nouvelle demande)
-  const requestedQuantity = (existingItem?.quantity || 0) + (data.quantity || 1);
+  const requestedQuantity = (existingItem?.quantity || 0) + quantity;
   const available = await getAvailableStock(data.productId, data.variantId);
   if (requestedQuantity > available) {
     const error = new Error(`Stock insuffisant. ${available} disponible(s).`);
@@ -149,7 +175,7 @@ async function addItem(data) {
   if (existingItem) {
     return prisma.cartItem.update({
       where: { id: existingItem.id },
-      data: { quantity: existingItem.quantity + (data.quantity || 1) },
+      data: { quantity: existingItem.quantity + quantity },
     });
   }
 
@@ -158,20 +184,16 @@ async function addItem(data) {
       cartId: cart.id,
       productId: data.productId,
       variantId: data.variantId,
-      quantity: data.quantity || 1,
+      quantity,
     },
   });
 }
 
-async function updateItem(itemId, data) {
-  const item = await prisma.cartItem.findUnique({ where: { id: itemId } });
-  if (!item) {
-    const error = new Error('Article introuvable.');
-    error.status = 404;
-    throw error;
-  }
+async function updateItem(itemId, data, owner) {
+  assertValidQuantity(data.quantity);
 
-  // ✅ Vérifie le stock disponible avant de mettre à jour la quantité
+  const item = await getOwnedCartItem(itemId, owner);
+
   const available = await getAvailableStock(item.productId, item.variantId);
   if (data.quantity > available) {
     const error = new Error(`Stock insuffisant. ${available} disponible(s).`);
@@ -185,7 +207,8 @@ async function updateItem(itemId, data) {
   });
 }
 
-async function removeItem(itemId) {
+async function removeItem(itemId, owner) {
+  await getOwnedCartItem(itemId, owner);
   return prisma.cartItem.delete({ where: { id: itemId } });
 }
 

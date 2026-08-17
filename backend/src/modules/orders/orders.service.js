@@ -84,6 +84,16 @@ async function createOrder(payload, user, ip = null) {
     throw error;
   }
 
+  // ✅ Valide chaque article AVANT tout calcul de stock/prix — bloque les quantités
+  // négatives, nulles ou non entières qui fausseraient checkStock/reserveStockItems.
+  for (const item of payload.items) {
+    if (!item.productId || !Number.isInteger(item.quantity) || item.quantity < 1) {
+      const error = new Error('Chaque article doit avoir un produit et une quantité entière positive.');
+      error.status = 400;
+      throw error;
+    }
+  }
+
   validatePaymentDestination(payload.paymentMethod, payload.destination);
   validateShippingAddress(payload.shippingAddress);
 
@@ -94,25 +104,21 @@ async function createOrder(payload, user, ip = null) {
     throw error;
   }
 
-  const stockErrors = await checkStock(payload.items);
-  if (stockErrors.length > 0) {
-    const error = new Error(stockErrors[0]);
-    error.status = 400;
-    throw error;
-  }
-
   const store = await resolveStoreForOrder(payload.storeId);
 
   const productIds = [...new Set(payload.items.map((item) => item.productId))];
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, isActive: true },
-    select: { id: true, name: true, storeId: true },
+    // ✅ price ajouté au select — c'est la source de vérité, jamais payload.items[].price
+    select: { id: true, name: true, storeId: true, price: true },
   });
   if (products.length !== productIds.length) {
     const error = new Error('Un ou plusieurs produits sont introuvables ou inactifs.');
     error.status = 400;
     throw error;
   }
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
   for (const product of products) {
     if (!isProductVisibleForStore(product.storeId, store.id)) {
       const error = new Error(`Le produit « ${product.name} » n'est pas disponible sur cette boutique.`);
@@ -121,12 +127,62 @@ async function createOrder(payload, user, ip = null) {
     }
   }
 
+  // ✅ Récupère les variantes pour valider leur appartenance au bon produit
+  // et construire un libellé fiable (taille/couleur), sans faire confiance au payload.
+  const variantIds = [...new Set(payload.items.map((item) => item.variantId).filter(Boolean))];
+  const variants = variantIds.length
+    ? await prisma.productVariant.findMany({
+        where: { id: { in: variantIds } },
+        select: { id: true, productId: true, size: true, color: true },
+      })
+    : [];
+  const variantMap = new Map(variants.map((v) => [v.id, v]));
+
+  // ✅ Reconstruit chaque article de commande à partir des données serveur.
+  // payload.items ne sert plus qu'à connaître productId/variantId/quantity —
+  // price, productName et variantLabel viennent tous de la base de données.
+  const trustedItems = payload.items.map((item) => {
+    const product = productMap.get(item.productId);
+    if (!product) {
+      const error = new Error('Produit introuvable.');
+      error.status = 400;
+      throw error;
+    }
+
+    let variantLabel = null;
+    if (item.variantId) {
+      const variant = variantMap.get(item.variantId);
+      if (!variant || variant.productId !== item.productId) {
+        const error = new Error('Variante invalide pour ce produit.');
+        error.status = 400;
+        throw error;
+      }
+      variantLabel = `${variant.size} — ${variant.color}`;
+    }
+
+    return {
+      productId: item.productId,
+      variantId: item.variantId || null,
+      productName: product.name,
+      variantLabel,
+      price: product.price,
+      quantity: item.quantity,
+    };
+  });
+
+  const stockErrors = await checkStock(trustedItems);
+  if (stockErrors.length > 0) {
+    const error = new Error(stockErrors[0]);
+    error.status = 400;
+    throw error;
+  }
+
   const orderNumber = await generateUniqueOrderNumber();
   const userId = user?.id || null;
   const guestEmail = user?.email || payload.guestEmail || null;
   const guestName = payload.guestName || payload.shippingAddress?.fullName || 'Cliente';
-  const subtotal = payload.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const itemCount = payload.items.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = trustedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const itemCount = trustedItems.reduce((sum, item) => sum + item.quantity, 0);
   const settings = await getSettings(store.id);
   const shippingCost = getShippingCost(payload.destination, settings, { itemCount, subtotal });
   const storeDiscount = computeStoreDiscount(subtotal, store.discountRate);
@@ -160,7 +216,7 @@ async function createOrder(payload, user, ip = null) {
   const reservationExpiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
 
   const order = await prisma.$transaction(async (tx) => {
-    await reserveStockItems(tx, payload.items);
+    await reserveStockItems(tx, trustedItems);
 
     if (couponId) {
       await tx.coupon.update({
@@ -190,7 +246,7 @@ async function createOrder(payload, user, ip = null) {
         notes: payload.notes,
         reservationExpiresAt,
         items: {
-          create: payload.items.map((item) => ({
+          create: trustedItems.map((item) => ({
             productId: item.productId,
             variantId: item.variantId,
             productName: item.productName,
@@ -245,7 +301,6 @@ async function createOrder(payload, user, ip = null) {
     maxWait: 10000,
   });
 
-  // ── Emails async (commandes non-draft uniquement) ──────────────────────────
   if (!isDraft && guestEmail) {
     const emailData = buildOrderConfirmationEmail({
       orderNumber,
@@ -256,7 +311,7 @@ async function createOrder(payload, user, ip = null) {
       discount,
       storeDiscount,
       destination: payload.destination,
-      items: payload.items,
+      items: trustedItems,
       paymentMethod: payload.paymentMethod,
       shippingAddress: payload.shippingAddress,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
@@ -277,7 +332,7 @@ async function createOrder(payload, user, ip = null) {
       discount,
       storeDiscount,
       destination: payload.destination,
-      items: payload.items,
+      items: trustedItems,
       paymentMethod: payload.paymentMethod,
       shippingAddress: payload.shippingAddress,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
@@ -291,7 +346,6 @@ async function createOrder(payload, user, ip = null) {
     });
   }
 
-  // ── Push OneSignal client (uniquement si utilisateur connecté et non-draft) ──
   if (!isDraft && userId) {
     const orderWithUserId = { ...order, userId, orderNumber };
     notifyOrderConfirmed(orderWithUserId).catch((err) =>
@@ -299,7 +353,6 @@ async function createOrder(payload, user, ip = null) {
     );
   }
 
-  // ── Push OneSignal admins/staff pour toute nouvelle commande non-draft ──────
   if (!isDraft) {
     notifyAdmins({
       type:    'NEW_ORDER',

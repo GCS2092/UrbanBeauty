@@ -20,7 +20,9 @@ async function addItem(req, res, next) {
 
 async function updateItem(req, res, next) {
   try {
-    const item = await cartService.updateItem(req.params.itemId, req.body);
+    // ✅ owner (userId/anonymousId) vient du query string, envoyé par le frontend,
+    // et sert à vérifier que l'article appartient bien à l'appelant.
+    const item = await cartService.updateItem(req.params.itemId, req.body, req.query);
     res.json(item);
   } catch (error) {
     next(error);
@@ -29,7 +31,7 @@ async function updateItem(req, res, next) {
 
 async function removeItem(req, res, next) {
   try {
-    await cartService.removeItem(req.params.itemId);
+    await cartService.removeItem(req.params.itemId, req.query);
     res.status(204).end();
   } catch (error) {
     next(error);
