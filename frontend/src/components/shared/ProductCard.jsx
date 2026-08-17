@@ -150,12 +150,12 @@ export default function ProductCard({ product }) {
             )}
           </div>
 
-          {/* Boutons d'action (panier + WhatsApp) */}
-          <div className="absolute bottom-2 right-2 flex items-center gap-1.5 z-10
+          {/* Boutons d'action (panier + WhatsApp) — espacés de part et d'autre */}
+          <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between z-10
                           opacity-100 md:opacity-0 md:group-hover:opacity-100
                           translate-y-0 md:translate-y-1 md:group-hover:translate-y-0
                           transition-all duration-200">
-            
+
             {/* Bouton WhatsApp - Demander des infos */}
             <button
               onClick={handleWhatsAppInfo}
@@ -169,7 +169,7 @@ export default function ProductCard({ product }) {
             </button>
 
             {/* Bouton Ajouter au panier */}
-            {!isOutOfStock && (
+            {!isOutOfStock ? (
               <button
                 onClick={handleAddToCart}
                 aria-label="Ajouter au panier"
@@ -178,6 +178,8 @@ export default function ProductCard({ product }) {
               >
                 <ShoppingBag size={16} />
               </button>
+            ) : (
+              <span />
             )}
           </div>
         </div>
@@ -186,10 +188,10 @@ export default function ProductCard({ product }) {
         <div className="p-3">
           <p className="text-xs text-stone-400 mb-0.5">{product.category?.name}</p>
           <h3 className="text-sm font-semibold text-stone-800 line-clamp-1 mb-1">{product.name}</h3>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-stone-900 text-base">{formatPrice(product.price)}</span>
+          <div className="flex items-baseline gap-2 flex-nowrap overflow-hidden">
+            <span className="font-bold text-stone-900 text-base whitespace-nowrap">{formatPrice(product.price)}</span>
             {hasDiscount && (
-              <span className="text-xs text-stone-400 line-through">{formatPrice(product.comparePrice)}</span>
+              <span className="text-xs text-stone-400 line-through whitespace-nowrap">{formatPrice(product.comparePrice)}</span>
             )}
           </div>
         </div>

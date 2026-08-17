@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingBag, Heart, Star, ChevronLeft, Minus, Plus, MessageCircle, ShieldCheck, Truck, BellRing } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -75,6 +75,7 @@ function StockAlertButton({ product, variantId, isAuthenticated, alertRequested,
 
 export default function ProductDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
   const { addItem } = useCartStore();
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -202,7 +203,12 @@ export default function ProductDetail() {
         variantId: selectedVariant?.id || null,
         quantity,
       });
-      toast.success('Ajouté au panier !');
+      toast.success('Ajouté au panier', {
+        action: {
+          label: 'Voir le panier',
+          onClick: () => navigate('/cart'),
+        },
+      });
     } catch {
       toast.error("Erreur lors de l'ajout");
     } finally {

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { toast } from 'sonner';
 import { ANONYMOUS_CART_KEY } from '../utils/constants';
 import { cartApi } from '../api/cart.api';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,7 +14,6 @@ const getOrCreateAnonymousId = () => {
   return id;
 };
 
-// Debounce des updates de quantité, en dehors du state (pas besoin de re-render pour ça)
 const updateTimers = {};
 
 const useCartStore = create(
@@ -21,7 +21,7 @@ const useCartStore = create(
     (set, get) => ({
       cart: null,
       loading: false,
-      lastRemovedItem: null, // pour permettre "Annuler" après suppression
+      lastRemovedItem: null,
 
       getCartParams: (userId) => {
         if (userId) return { userId };
@@ -47,8 +47,6 @@ const useCartStore = create(
         await get().fetchCart(userId);
       },
 
-      // ✅ Update optimiste : le chiffre change à l'écran immédiatement.
-      // L'appel API est débounce (500ms après le dernier clic) pour éviter le spam.
       updateItem: (userId, itemId, quantity) => {
         set((state) => {
           if (!state.cart) return state;
@@ -62,14 +60,16 @@ const useCartStore = create(
         updateTimers[itemId] = setTimeout(async () => {
           try {
             await cartApi.updateItem(itemId, { quantity });
-            await get().fetchCart(userId); // resynchronise avec le serveur
-          } catch {
-            await get().fetchCart(userId); // rollback si erreur
+            await get().fetchCart(userId);
+          } catch (err) {
+            // ✅ Informe l'utilisateur pourquoi sa quantité a été annulée (ex: stock insuffisant)
+            const message = err?.response?.data?.message || "Impossible de modifier la quantité.";
+            toast.error(message);
+            await get().fetchCart(userId); // rollback vers l'état serveur réel
           }
         }, 500);
       },
 
-      // ✅ Garde une copie de l'item retiré pour permettre l'annulation
       removeItem: async (userId, itemId) => {
         const removedItem = get().cart?.items.find((i) => i.id === itemId);
         set({ lastRemovedItem: removedItem || null });
@@ -78,7 +78,6 @@ const useCartStore = create(
         await get().fetchCart(userId);
       },
 
-      // ✅ Annule la dernière suppression en rajoutant le même produit/variante/quantité
       undoRemove: async (userId) => {
         const removed = get().lastRemovedItem;
         if (!removed) return;
