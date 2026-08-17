@@ -113,11 +113,6 @@ export default function ProductCard({ product }) {
 
           {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-            {hasDiscount && (
-              <span className="bg-stone-900 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                -{Math.round((1 - product.price / product.comparePrice) * 100)}%
-              </span>
-            )}
             {isOutOfStock && (
               <span className="bg-stone-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                 Rupture
