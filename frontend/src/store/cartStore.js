@@ -58,26 +58,24 @@ const useCartStore = create(
 
         clearTimeout(updateTimers[itemId]);
         updateTimers[itemId] = setTimeout(async () => {
-          try {
-            await cartApi.updateItem(itemId, { quantity });
-            await get().fetchCart(userId);
-          } catch (err) {
-            // ✅ Informe l'utilisateur pourquoi sa quantité a été annulée (ex: stock insuffisant)
-            const message = err?.response?.data?.message || "Impossible de modifier la quantité.";
-            toast.error(message);
-            await get().fetchCart(userId); // rollback vers l'état serveur réel
-          }
-        }, 500);
+  try {
+    await cartApi.updateItem(itemId, { quantity }, get().getCartParams(userId)); // ✅ params ajouté
+    await get().fetchCart(userId);
+  } catch (err) {
+    const message = err?.response?.data?.message || "Impossible de modifier la quantité.";
+    toast.error(message);
+    await get().fetchCart(userId);
+  }
+}, 500);
       },
 
       removeItem: async (userId, itemId) => {
-        const removedItem = get().cart?.items.find((i) => i.id === itemId);
-        set({ lastRemovedItem: removedItem || null });
+  const removedItem = get().cart?.items.find((i) => i.id === itemId);
+  set({ lastRemovedItem: removedItem || null });
 
-        await cartApi.removeItem(itemId);
-        await get().fetchCart(userId);
-      },
-
+  await cartApi.removeItem(itemId, get().getCartParams(userId)); // ✅ params ajouté
+  await get().fetchCart(userId);
+},
       undoRemove: async (userId) => {
         const removed = get().lastRemovedItem;
         if (!removed) return;
