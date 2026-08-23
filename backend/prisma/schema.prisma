@@ -127,6 +127,7 @@ model Product {
   reviews            Review[]
   stockAlerts        StockAlert[]
   stockMovements     StockMovement[]
+  suppliers          ProductSupplier[]
   transferItems      StockTransferItem[]
   wishlist           Wishlist[]
 
@@ -456,7 +457,22 @@ model Supplier {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   expenses     Expense[]
+  products     ProductSupplier[]
   stockEntries StockMovement[]
+}
+
+/// Lien N-N entre un produit et ses fournisseurs. Donnée strictement interne :
+/// elle ne doit jamais être exposée par les endpoints publics du catalogue.
+model ProductSupplier {
+  id         String   @id @default(cuid())
+  productId  String
+  supplierId String
+  createdAt  DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, supplierId])
+  @@index([supplierId], map: "ProductSupplier_supplierId_fkey")
 }
 
 model StockMovement {

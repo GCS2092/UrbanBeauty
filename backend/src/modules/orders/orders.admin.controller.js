@@ -6,6 +6,7 @@ const { parsePagination, buildPaginationResponse } = require('../../utils/pagina
 const { releaseReservation } = require('../products/stock.service');
 const { logAudit } = require('../../services/audit.service');
 const { buildProductStoreFilter, resolveStoreIdForCatalog } = require('../stores/store.service');
+const { buildOrderSupplierSummary } = require('../suppliers/product-suppliers.service');
 
 async function getOrdersAdmin(req, res, next) {
   try {
@@ -302,8 +303,37 @@ async function searchProducts(req, res, next) {
   }
 }
 
+/** Récap fournisseurs d'une commande — usage strictement admin. */
+async function getOrderSuppliers(req, res, next) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        orderNumber: true,
+        items: {
+          select: {
+            productId: true,
+            productName: true,
+            variantLabel: true,
+            quantity: true,
+          },
+        },
+      },
+    });
+
+    if (!order) return res.status(404).json({ message: 'Commande introuvable' });
+
+    const summary = await buildOrderSupplierSummary(order.items);
+    res.json({ orderId: order.id, orderNumber: order.orderNumber, ...summary });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getOrdersAdmin,
+  getOrderSuppliers,
   updatePaymentStatus,
   confirmDraftOrder,
   rejectDraftOrder,

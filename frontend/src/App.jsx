@@ -68,6 +68,7 @@ const AdminInvoices         = lazy(() => import('./pages/admin/AdminInvoices'));
 const AdminAudit            = lazy(() => import('./pages/admin/AdminAudit'));
 const AdminStores           = lazy(() => import('./pages/admin/AdminStores'));
 const AdminStockTransfers   = lazy(() => import('./pages/admin/AdminStockTransfers'));
+const AdminProductSuppliers = lazy(() => import('./pages/admin/AdminProductSuppliers'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -271,6 +272,11 @@ export default function App() {
                     <Route
                       path="/admin/stores"
                       element={<AdminStores />}
+                    />
+
+                    <Route
+                      path="/admin/product-suppliers"
+                      element={<AdminProductSuppliers />}
                     />
 
                     <Route

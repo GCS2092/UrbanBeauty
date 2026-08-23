@@ -5,6 +5,7 @@ const requireAdmin = require('../../middlewares/admin.middleware');
 const { loadStoreContext } = require('../../middlewares/store.middleware');
 const {
   getOrdersAdmin,
+  getOrderSuppliers,
   updatePaymentStatus,
   confirmDraftOrder,
   rejectDraftOrder,
@@ -21,6 +22,7 @@ router.get('/search/products', searchProducts);
 
 router.get('/', getOrdersAdmin);
 router.post('/', createManualOrder);
+router.get('/:id/suppliers', getOrderSuppliers);
 router.patch('/:id/payment', updatePaymentStatus);
 router.patch('/:id/confirm-draft', confirmDraftOrder);
 router.patch('/:id/reject-draft', rejectDraftOrder);

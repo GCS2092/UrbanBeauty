@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download, RefreshCw, Plus, CreditCard, AlertTriangle, Clock } from 'lucide-react';
+import { Download, RefreshCw, Plus, CreditCard, AlertTriangle, Clock, Truck, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminApi } from '../../api/admin.api';
 import api from '../../api/axios';
@@ -11,6 +11,7 @@ import CreateOrderModal from '../../components/admin/CreateOrderModal';
 import { getActiveStoreIdFromToken } from '../../hooks/useAdminStoreFilter';
 import useAuthStore from '../../store/authStore';
 import { buildOrderConfirmationWhatsAppLink, buildOrderStatusWhatsAppLink } from '../../utils/whatsapp.utils';
+import { productSuppliersApi } from '../../api/product-suppliers.api';
 
 const WA_ICON = (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -57,6 +58,78 @@ const getUrgency = (expiresAt) => {
   return { label: `${Math.round(hours / 24)} j`, color: 'bg-gray-100 text-gray-600' };
 };
 
+/** Récap fournisseurs d'une commande — visible uniquement dans l'admin. */
+function OrderSuppliersModal({ order, onClose }) {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['order-suppliers', order.id],
+    queryFn: () => productSuppliersApi.getOrderSuppliers(order.id).then((r) => r.data),
+  });
+
+  const suppliers = data?.suppliers || [];
+  const unassignedItems = data?.unassignedItems || [];
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Truck size={18} />
+              Fournisseurs — {order.orderNumber}
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">Information interne, jamais visible par le client.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
+          {isError && <p className="text-sm text-red-600">Impossible de charger les fournisseurs.</p>}
+
+          {!isLoading && !isError && suppliers.length === 0 && (
+            <p className="text-sm text-gray-500">Aucun fournisseur associé aux articles de cette commande.</p>
+          )}
+
+          {suppliers.map((supplier) => (
+            <div key={supplier.id} className="rounded-xl border border-gray-200 p-4">
+              <p className="font-medium text-gray-900">{supplier.name}</p>
+              <p className="text-xs text-gray-500">
+                {supplier.phone || 'Téléphone non renseigné'}
+                {supplier.email ? ` · ${supplier.email}` : ''}
+              </p>
+              <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                {supplier.items.map((item, index) => (
+                  <li key={`${supplier.id}-${item.productId}-${index}`}>
+                    {item.productName}{item.variantLabel ? ` (${item.variantLabel})` : ''} ×{item.quantity}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          {unassignedItems.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-800 flex items-center gap-1">
+                <AlertTriangle size={14} />
+                Articles sans fournisseur défini
+              </p>
+              <ul className="mt-2 space-y-1 text-sm text-amber-900">
+                {unassignedItems.map((item, index) => (
+                  <li key={`${item.productId}-${index}`}>
+                    {item.productName}{item.variantLabel ? ` (${item.variantLabel})` : ''} ×{item.quantity}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const emptyFilters = {
   status: '',
   paymentStatus: '',
@@ -68,13 +141,15 @@ const emptyFilters = {
 };
 
 export default function AdminOrders() {
-  const { token } = useAuthStore();
+  const { token, user } = useAuthStore();
+  const isAdmin = user?.role === 'ADMIN';
   const [page, setPage]               = useState(1);
   const [filters, setFilters]         = useState({
     ...emptyFilters,
     storeId: getActiveStoreIdFromToken(token),
   });
   const [selected, setSelected]       = useState(null);
+  const [suppliersOrder, setSuppliersOrder] = useState(null);
   const [statusModal, setStatusModal] = useState(false);
   const [newStatus, setNewStatus]     = useState('');
   const [statusMessage, setStatusMessage] = useState('');
@@ -503,6 +578,16 @@ export default function AdminOrders() {
                         >
                           Changer statut
                         </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => setSuppliersOrder(order)}
+                            className="text-xs px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 font-medium inline-flex items-center gap-1"
+                            title="Fournisseurs concernés"
+                          >
+                            <Truck size={12} />
+                            Fournisseurs
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -514,6 +599,10 @@ export default function AdminOrders() {
       </div>
 
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+
+      {suppliersOrder && (
+        <OrderSuppliersModal order={suppliersOrder} onClose={() => setSuppliersOrder(null)} />
+      )}
 
       {/* Modal statut commande */}
       {statusModal && selected && (
