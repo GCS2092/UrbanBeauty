@@ -28,6 +28,7 @@ const notificationsRoutes = require('./modules/notifications/notifications.route
 const settingsRoutes = require('./modules/settings/settings.routes');
 const ordersAdminRoutes = require('./modules/orders/orders.admin.routes');
 const accountingRoutes = require('./modules/accounting/accounting.routes');
+const productSuppliersRoutes = require('./modules/suppliers/product-suppliers.routes');
 const auditRoutes = require('./modules/audit/audit.routes');
 const invoicesRoutes = require('./modules/invoices/invoices.routes');
 const storesRoutes = require('./modules/stores/stores.routes');
@@ -109,6 +110,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/admin/orders', ordersAdminRoutes);
 app.use('/api/admin/accounting', accountingRoutes);
+app.use('/api/admin/product-suppliers', productSuppliersRoutes);
 app.use('/api/admin/audit', auditRoutes);
 app.use('/api/admin/invoices', invoicesRoutes);
 app.use('/api/admin/stores', storesRoutes);

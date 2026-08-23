@@ -465,6 +465,98 @@ function buildOrderConfirmationEmail({
 }
 
 // ============================================================
+// 1 bis. NOUVELLE COMMANDE — COPIE ADMIN (données internes)
+// ============================================================
+/**
+ * Mail destiné à l'administration uniquement : il contient le bloc
+ * « Fournisseurs concernés » (nom + téléphone), qui ne doit jamais
+ * apparaître dans un email client.
+ */
+function buildAdminOrderEmail({
+  orderNumber, guestName, guestEmail, guestPhone, total, clientUrl,
+  items = [], shippingCost = 0, discount = 0, storeDiscount = 0,
+  tax = 0, subtotal, paymentMethod, shippingAddress,
+  suppliers = [], unassignedItems = [],
+  storeName = 'SonShop', storeCode = 'SONSHOP',
+}) {
+  const C = getTheme(storeCode);
+  const name = guestName || 'Client(e) non renseigné(e)';
+  const sub  = subtotal ?? total;
+  const addrLine = shippingAddress
+    ? [shippingAddress.street, shippingAddress.city, shippingAddress.country].filter(Boolean).join(', ')
+    : null;
+
+  const payLabels = {
+    CASH_ON_DELIVERY: 'Paiement à la livraison',
+    MOBILE_MONEY:     'Mobile Money',
+  };
+
+  const supplierRow = (supplier) => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid ${C.border};font-size:13px;color:${C.text};">
+        <strong>${supplier.name}</strong>
+        ${supplier.phone ? `<br><span style="font-size:12px;color:${C.textLight};">☎ ${supplier.phone}</span>` : ''}
+        ${supplier.email ? `<br><span style="font-size:12px;color:${C.textLight};">✉ ${supplier.email}</span>` : ''}
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid ${C.border};font-size:12px;color:${C.textLight};">
+        ${supplier.items.map(i => `${i.productName}${i.variantLabel ? ` (${i.variantLabel})` : ''} ×${i.quantity}`).join('<br>')}
+      </td>
+    </tr>`;
+
+  const suppliersBlock = `
+    <h2 style="margin:24px 0 8px;font-size:15px;font-weight:700;color:${C.navy};">
+      Fournisseurs concernés
+    </h2>
+    ${suppliers.length > 0 ? `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.border};border-radius:8px;border-collapse:separate;overflow:hidden;">
+      <tr style="background:${C.offWhite};">
+        <th align="left" style="padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:${C.textLight};">Fournisseur</th>
+        <th align="left" style="padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:${C.textLight};">Articles</th>
+      </tr>
+      ${suppliers.map(supplierRow).join('')}
+    </table>` : `
+    <p style="margin:0;font-size:13px;color:${C.textLight};">
+      Aucun fournisseur n'est associé aux articles de cette commande.
+    </p>`}
+    ${unassignedItems.length > 0 ? `
+    <p style="margin:10px 0 0;font-size:12px;color:${C.textLight};">
+      Sans fournisseur défini : ${unassignedItems.map(i => `${i.productName}${i.variantLabel ? ` (${i.variantLabel})` : ''} ×${i.quantity}`).join(', ')}
+    </p>` : ''}`;
+
+  const body = `
+    <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${C.navy};">
+      Nouvelle commande ${orderNumber}
+    </h1>
+    <p style="margin:0 0 24px;font-size:14px;color:${C.textLight};">
+      Copie interne — ne pas transférer au client.
+    </p>
+
+    ${infoBox([
+      ['N° commande', `<strong style="font-size:14px;color:${C.primary};">${orderNumber}</strong>`],
+      ['Boutique',    storeName],
+      ['Client(e)',   name],
+      guestPhone    ? ['Téléphone', guestPhone] : null,
+      guestEmail    ? ['Email', guestEmail] : null,
+      addrLine      ? ['Adresse de livraison', addrLine] : null,
+      paymentMethod ? ['Mode de paiement', payLabels[paymentMethod] || paymentMethod] : null,
+    ], C)}
+
+    ${itemsSummaryBlock(items, false, C)}
+    ${totalsBlock({ subtotal: sub, shippingCost, discount, storeDiscount, tax, total }, C)}
+    ${divider(C.border)}
+
+    ${suppliersBlock}
+
+    ${cta('Ouvrir dans l’admin', `${clientUrl}/admin/orders`, C.primary)}
+  `;
+
+  return {
+    subject: `[Admin] Nouvelle commande ${orderNumber} — ${storeName}`,
+    html: layout(body, `Nouvelle commande ${orderNumber} (copie admin).`, storeName, storeCode),
+  };
+}
+
+// ============================================================
 // 2. MISE À JOUR STATUT
 // ============================================================
 function buildOrderStatusEmail({
@@ -1000,6 +1092,7 @@ function buildStockAlertEmail({ lowStock = [], outOfStock = [], storeName = 'Son
 // ============================================================
 module.exports = {
   buildOrderConfirmationEmail,
+  buildAdminOrderEmail,
   buildOrderStatusEmail,
   buildInvoiceEmail,
   buildPasswordResetEmail,

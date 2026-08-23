@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Package, ShoppingBag,
   Tag, Ticket, Users, LogOut, Menu, X, Sparkles,
   CreditCard, Settings, BookOpen, FileText, Shield, Store,
-  ArrowRightLeft, FileSpreadsheet
+  ArrowRightLeft, FileSpreadsheet, Network
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import useAuthStore from '../../store/authStore';
@@ -15,6 +15,7 @@ const allLinks = [
   { to: '/admin/orders',          label: 'Commandes',       icon: ShoppingBag,                 adminOnly: false },
   { to: '/admin/payments',        label: 'Paiements',       icon: CreditCard,                  adminOnly: false },
   { to: '/admin/accounting',      label: 'Comptabilité',    icon: BookOpen,                    adminOnly: false },
+  { to: '/admin/product-suppliers', label: 'Produits ↔ Fourn.', icon: Network,                 adminOnly: true  },
   { to: '/admin/invoices',        label: 'Factures',        icon: FileText,                    adminOnly: false },
   { to: '/admin/documents',       label: 'Documents',       icon: FileSpreadsheet,             adminOnly: false },
   { to: '/admin/stores',          label: 'Boutiques',       icon: Store,                       adminOnly: true  }, // ← masqué STAFF

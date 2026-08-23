@@ -1,6 +1,6 @@
 ﻿const prisma = require('../../config/database');
 const { sendEmail } = require('../../config/email');
-const { buildOrderConfirmationEmail, buildOrderStatusEmail } = require('../../utils/email.utils');
+const { buildOrderConfirmationEmail, buildAdminOrderEmail, buildOrderStatusEmail } = require('../../utils/email.utils');
 const { generateOrderNumber } = require('../../utils/order.utils');
 const {
   parsePagination,
@@ -17,6 +17,7 @@ const {
   isCouponValidForStore,
 } = require('../stores/store.service');
 const { getSettings } = require('../settings/settings.service');
+const { buildOrderSupplierSummary } = require('../suppliers/product-suppliers.service');
 const { notifyOrderConfirmed, notifyOrderStatus, notifyAdmins } = require('../../services/notification.service');
 const { buildInvoicePdf } = require('../invoices/invoice-pdf.service');
 const { isValidPhone } = require('../../utils/phone.utils');
@@ -336,25 +337,35 @@ async function createOrder(payload, user, ip = null) {
   }
 
   if (!isDraft && process.env.ADMIN_EMAIL) {
-    const emailData = buildOrderConfirmationEmail({
+    // Récap fournisseurs : réservé à la copie admin, jamais au mail client.
+    const supplierSummary = await buildOrderSupplierSummary(trustedItems)
+      .catch((err) => {
+        console.error('❌ Récap fournisseurs indisponible:', err.message);
+        return { suppliers: [], unassignedItems: [] };
+      });
+
+    const emailData = buildAdminOrderEmail({
       orderNumber,
       guestName,
+      guestEmail,
+      guestPhone: payload.guestPhone,
       total,
       subtotal,
       shippingCost,
       discount,
       storeDiscount,
-      destination: payload.destination,
       items: trustedItems,
       paymentMethod: payload.paymentMethod,
       shippingAddress: payload.shippingAddress,
       clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+      suppliers: supplierSummary.suppliers,
+      unassignedItems: supplierSummary.unassignedItems,
       storeName: store.name,
       storeCode: store.code,
     });
     sendEmailAsync({
       to: process.env.ADMIN_EMAIL,
-      subject: `[Admin] Nouvelle commande ${orderNumber} — ${store.name}`,
+      subject: emailData.subject,
       html: emailData.html,
     });
   }
