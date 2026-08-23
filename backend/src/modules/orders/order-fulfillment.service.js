@@ -1,6 +1,7 @@
 const prisma = require('../../config/database');
 const { nextInvoiceNumber } = require('../../utils/invoice.utils');
 const { logAudit } = require('../../services/audit.service');
+const { sendPurchaseEventSafely } = require('../../services/meta-conversions.service');
 const {
   fulfillStockSale,
   releaseReservation,
@@ -208,6 +209,11 @@ async function fulfillOrderPayment(orderId, { paymentStatus, note }, adminUser, 
     timeout: TX_TIMEOUT_MS,
     maxWait: TX_MAX_WAIT_MS,
   });
+
+  if (paymentStatus === 'PAID') {
+    // Même règle pour les paiements à la livraison validés manuellement.
+    await sendPurchaseEventSafely(orderId);
+  }
 
   // Relecture complète hors transaction : aucune garantie d'atomicité requise
   // ici, c'est une simple lecture pour construire la réponse HTTP.

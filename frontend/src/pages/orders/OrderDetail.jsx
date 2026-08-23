@@ -39,6 +39,7 @@ import { getImageUrl } from '../../utils/imageUrl';
 
 import OrderStatusBadge from '../../components/shared/OrderStatusBadge';
 import Spinner from '../../components/ui/Spinner';
+import { trackMetaEvent } from '../../utils/metaPixel';
 
 function PaymentVerificationBanner({
   verificationState,
@@ -224,6 +225,13 @@ export default function OrderDetail() {
         }
 
         if (data.status === 'PAID') {
+          trackMetaEvent('Purchase', {
+            content_ids: order.items?.map((item) => item.productId) || [],
+            content_type: 'product',
+            value: order.total,
+            currency: 'XOF',
+            num_items: order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
+          }, order.metaPurchaseEventId);
           setVerificationState(
             'success'
           );

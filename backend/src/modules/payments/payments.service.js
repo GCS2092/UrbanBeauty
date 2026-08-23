@@ -1,9 +1,26 @@
 const prisma = require('../../config/database');
+const { sendPurchaseEventSafely } = require('../../services/meta-conversions.service');
 
 const {
   initierPaiement,
   verifierStatut,
 } = require('./cinetpay.service');
+
+async function markPaymentAsPaid(paymentId, orderId) {
+  await prisma.$transaction([
+    prisma.payment.update({
+      where: { id: paymentId },
+      data: { status: 'PAID', paidAt: new Date() },
+    }),
+    prisma.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: 'PAID', status: 'CONFIRMED' },
+    }),
+  ]);
+
+  // Le suivi marketing ne doit jamais empêcher la confirmation d'un paiement.
+  await sendPurchaseEventSafely(orderId);
+}
 
 async function creerPaiementPourCommande(orderId) {
   const order = await prisma.order.findUnique({
@@ -262,25 +279,7 @@ async function traiterNotification({
     statutReel === 'ACCEPTED' ||
     statutReel === 'PAID'
   ) {
-    await prisma.payment.update({
-      where: {
-        id: payment.id,
-      },
-      data: {
-        status: 'PAID',
-        paidAt: new Date(),
-      },
-    });
-
-    await prisma.order.update({
-      where: {
-        id: payment.orderId,
-      },
-      data: {
-        paymentStatus: 'PAID',
-        status: 'CONFIRMED',
-      },
-    });
+    await markPaymentAsPaid(payment.id, payment.orderId);
 
     return {
       status: 'PAID',
@@ -398,25 +397,7 @@ async function verifierPaiementParCommande(orderId) {
     statutReel === 'ACCEPTED' ||
     statutReel === 'PAID'
   ) {
-    await prisma.payment.update({
-      where: {
-        id: payment.id,
-      },
-      data: {
-        status: 'PAID',
-        paidAt: new Date(),
-      },
-    });
-
-    await prisma.order.update({
-      where: {
-        id: orderId,
-      },
-      data: {
-        paymentStatus: 'PAID',
-        status: 'CONFIRMED',
-      },
-    });
+    await markPaymentAsPaid(payment.id, orderId);
 
     return {
       status: 'PAID',

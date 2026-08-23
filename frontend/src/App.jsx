@@ -21,6 +21,7 @@ import { AuthProvider } from './context/AuthContext';
 
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import ScrollToTop from './components/shared/ScrollToTop';
+import MetaPageTracker from './components/analytics/MetaPageTracker';
 import AdminRoute from './components/shared/AdminRoute';
 import AdminOnlyRoute from './components/shared/AdminOnlyRoute';
 
@@ -93,6 +94,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ScrollToTop />
+        <MetaPageTracker />
 
         <Toaster
           position="top-right"

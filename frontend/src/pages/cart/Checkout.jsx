@@ -25,6 +25,8 @@ import Button from '../../components/ui/Button';
 import PaymentModal from '../../components/checkout/PaymentModal';
 import { toast } from 'sonner';
 import { STORE_ID } from '../../utils/constants';
+import { getAttribution } from '../../utils/attribution';
+import { trackMetaEvent } from '../../utils/metaPixel';
 
 // --- Destinations ---
 const DESTINATIONS = [
@@ -366,6 +368,7 @@ export default function Checkout() {
     guestName: !user ? formData.fullName : undefined,
     guestPhone: formData.phone,
     destination: formData.destination,
+    attribution: getAttribution(),
   });
 
   const handleValidateCoupon = async () => {
@@ -462,6 +465,13 @@ export default function Checkout() {
 
   const onSubmit = (formData) => {
     if (!cart?.items?.length) return toast.error('Votre panier est vide');
+    trackMetaEvent('InitiateCheckout', {
+      content_ids: cart.items.map((item) => item.product.id),
+      content_type: 'product',
+      num_items: totalQuantity,
+      value: total,
+      currency: 'XOF',
+    });
     if (formData.paymentMethod === 'MOBILE_MONEY') {
       setPendingOrderData(buildOrderPayload(formData));
       setPaymentMode('redirecting');

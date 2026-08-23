@@ -261,6 +261,10 @@ model Order {
   shippingAddress      Json
   destination          String?
   notes                String?
+  attribution          Json?
+  metaPurchaseEventId  String?              @unique
+  metaPurchaseSentAt   DateTime?
+  metaPurchaseLastError String?
   reservationExpiresAt DateTime?
   couponId             String?
   createdAt            DateTime             @default(now())

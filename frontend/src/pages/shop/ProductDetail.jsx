@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingBag, Heart, Star, ChevronLeft, Minus, Plus, MessageCircle, ShieldCheck, Truck, BellRing } from 'lucide-react';
@@ -20,6 +20,7 @@ import Spinner from '../../components/ui/Spinner';
 import { toast } from 'sonner';
 import { useMeta } from '../../hooks/useMeta';
 import { ProductSchema } from '../../components/seo/ProductSchema';
+import { trackMetaEvent } from '../../utils/metaPixel';
 
 function PreorderButton({ product, whatsappNumber }) {
   if (!product || product.stock > 0) return null;
@@ -107,6 +108,17 @@ export default function ProductDetail() {
   });
 
   const whatsappNumber = settings?.whatsapp_number || '';
+
+  useEffect(() => {
+    if (!product?.id) return;
+    trackMetaEvent('ViewContent', {
+      content_ids: [product.id],
+      content_type: 'product',
+      content_name: product.name,
+      value: product.price,
+      currency: 'XOF',
+    });
+  }, [product?.id]);
 
   const avgRating = reviews?.length
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
@@ -202,6 +214,13 @@ export default function ProductDetail() {
         productId: product.id,
         variantId: selectedVariant?.id || null,
         quantity,
+      });
+      trackMetaEvent('AddToCart', {
+        content_ids: [product.id],
+        content_type: 'product',
+        content_name: product.name,
+        value: product.price * quantity,
+        currency: 'XOF',
       });
       toast.success('Ajouté au panier', {
         action: {

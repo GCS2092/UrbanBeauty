@@ -22,6 +22,17 @@ const { buildInvoicePdf } = require('../invoices/invoice-pdf.service');
 const { isValidPhone } = require('../../utils/phone.utils');
 const { getShippingCost, computeOrderTotal } = require('../../utils/shipping.utils');
 
+function sanitizeAttribution(attribution) {
+  if (!attribution || typeof attribution !== 'object' || Array.isArray(attribution)) return null;
+  const allowedKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'fbp', 'fbc', 'landing_page', 'captured_at'];
+  const sanitized = Object.fromEntries(
+    allowedKeys
+      .filter((key) => typeof attribution[key] === 'string' && attribution[key].length <= 1000)
+      .map((key) => [key, attribution[key]]),
+  );
+  return Object.keys(sanitized).length ? sanitized : null;
+}
+
 // ─── Destinations locales (paiement à la livraison autorisé) ─────────────────
 const LOCAL_DESTINATIONS = ['SENEGAL'];
 
@@ -244,6 +255,8 @@ async function createOrder(payload, user, ip = null) {
         shippingAddress: payload.shippingAddress,
         destination: payload.destination || null,
         notes: payload.notes,
+        attribution: sanitizeAttribution(payload.attribution),
+        metaPurchaseEventId: `purchase_${orderNumber}`,
         reservationExpiresAt,
         items: {
           create: trustedItems.map((item) => ({
