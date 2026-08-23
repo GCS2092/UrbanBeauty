@@ -584,6 +584,7 @@ export default function AdminProducts() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [stores, setStores] = useState([]); // ← NOUVEAU
+  const [suppliers, setSuppliers] = useState([]); // ← NOUVEAU (fournisseurs)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
@@ -610,6 +611,7 @@ export default function AdminProducts() {
     stock: "",
     categoryId: "",
     storeId: "", // ← NOUVEAU
+    supplierId: "", // ← NOUVEAU (fournisseur)
     isActive: true,
     isFeatured: false,
     variantDisplayMode: "SIZE_FIRST",
@@ -674,7 +676,7 @@ export default function AdminProducts() {
       const productParams = new URLSearchParams({ limit: "500" });
       if (storeFilter) productParams.set("storeId", storeFilter);
 
-      const [pRes, cRes, sRes] = await Promise.all([
+      const [pRes, cRes, sRes, supRes] = await Promise.all([
         fetch(`${API_URL}/api/products/admin/all?${productParams}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -683,13 +685,19 @@ export default function AdminProducts() {
           // ← NOUVEAU
           headers: { Authorization: `Bearer ${token}` },
         }),
+        fetch(`${API_URL}/api/admin/accounting/suppliers`, {
+          // ← NOUVEAU (fournisseurs)
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
       const pData = await pRes.json();
       const cData = await cRes.json();
       const sData = await sRes.json(); // ← NOUVEAU
+      const supData = await supRes.json(); // ← NOUVEAU
       setProducts(Array.isArray(pData) ? pData : pData.data || []);
       setCategories(Array.isArray(cData) ? cData : cData.data || []);
       setStores(Array.isArray(sData) ? sData : sData.data || []); // ← NOUVEAU
+      setSuppliers(Array.isArray(supData) ? supData : supData.data || []); // ← NOUVEAU
     } catch (e) {
       setError(e.message);
     } finally {
@@ -719,6 +727,7 @@ export default function AdminProducts() {
       stock: p.stock,
       categoryId: p.categoryId || "",
       storeId: p.storeId || "", // ← NOUVEAU
+      supplierId: p.supplierId || "", // ← NOUVEAU (fournisseur)
       isActive: p.isActive ?? true,
       isFeatured: p.isFeatured ?? false,
       variantDisplayMode: p.variantDisplayMode || "SIZE_FIRST",
@@ -1006,6 +1015,7 @@ export default function AdminProducts() {
                   <th className="px-6 py-3">Produit</th>
                   <th className="px-6 py-3">Catégorie</th>
                   <th className="px-6 py-3">Boutique</th>
+                  <th className="px-6 py-3">Fournisseur</th>
                   <th className="px-6 py-3">Prix vente</th>
                   <th className="px-6 py-3">Prix achat</th>
                   <th className="px-6 py-3">Stock réel</th>
@@ -1023,6 +1033,7 @@ export default function AdminProducts() {
                     p.images?.find((i) => i.isMain)?.url || p.images?.[0]?.url;
                   const cat = categories.find((c) => c.id === p.categoryId);
                   const store = stores.find((s) => s.id === p.storeId); // ← NOUVEAU
+                  const supplier = suppliers.find((s) => s.id === p.supplierId); // ← NOUVEAU
                   return (
                     <tr
                       key={p.id}
@@ -1070,6 +1081,12 @@ export default function AdminProducts() {
                           <span className="text-xs text-gray-300 italic">
                             Toutes
                           </span>
+                        )}
+                      </td>
+                      {/* ← NOUVEAU : colonne fournisseur */}
+                      <td className="px-6 py-4 text-gray-600">
+                        {supplier?.name || (
+                          <span className="text-gray-300 italic">—</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
@@ -1457,6 +1474,29 @@ export default function AdminProducts() {
                 >
                   <option value="">— Toutes les boutiques —</option>
                   {stores.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* ← NOUVEAU : Sélecteur fournisseur */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fournisseur
+                  <span className="text-gray-400 text-xs font-normal ml-1">
+                    (usage interne — jamais visible côté client)
+                  </span>
+                </label>
+                <select
+                  name="supplierId"
+                  value={form.supplierId}
+                  onChange={handleChange}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20 bg-white"
+                >
+                  <option value="">— Aucun fournisseur —</option>
+                  {suppliers.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
                     </option>
