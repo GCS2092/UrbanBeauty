@@ -14,7 +14,6 @@ async function getProducts(query) {
   const storeId = await resolveStoreIdForCatalog(query.storeId);
   const storeFilter = buildProductStoreFilter(storeId);
 
-  // ── Filtres pro ──────────────────────────────────────────────
   const minPrice = query.minPrice !== undefined && query.minPrice !== '' ? Number(query.minPrice) : undefined;
   const maxPrice = query.maxPrice !== undefined && query.maxPrice !== '' ? Number(query.maxPrice) : undefined;
   const sizes = query.size ? String(query.size).split(',').filter(Boolean) : [];
@@ -68,13 +67,10 @@ function buildProductOrderBy(sort) {
     case 'price_asc': return { price: 'asc' };
     case 'price_desc': return { price: 'desc' };
     case 'name_asc': return { name: 'asc' };
-    default: return { createdAt: 'desc' }; // 'newest' par défaut
+    default: return { createdAt: 'desc' };
   }
 }
 
-// ─── Facettes de filtre : ne renvoie que les options réellement disponibles
-// pour le contexte actuel (catégorie / recherche / boutique), pour ne jamais
-// proposer un filtre qui viderait le catalogue.
 async function getProductFilters(query) {
   const storeId = await resolveStoreIdForCatalog(query.storeId);
   const storeFilter = buildProductStoreFilter(storeId);
@@ -135,6 +131,7 @@ async function getAllProductsAdmin(query, accessibleStoreIds = null) {
         variants: true,
         category: true,
         store: { select: { id: true, name: true, code: true } },
+        supplier: { select: { id: true, name: true, phone: true } }, // ← ajouté
       },
       orderBy: { name: 'asc' },
     }),

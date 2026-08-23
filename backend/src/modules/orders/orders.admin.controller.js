@@ -45,7 +45,17 @@ async function getOrdersAdmin(req, res, next) {
           user: {
             select: { id: true, firstName: true, lastName: true, email: true, phone: true },
           },
-          items: true,
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  supplier: { select: { id: true, name: true, phone: true } },
+                },
+              },
+            },
+          },
           payments: true,
           invoice: true,
           statusHistory: { orderBy: { createdAt: 'desc' }, take: 3 },
@@ -98,7 +108,6 @@ async function updatePaymentStatus(req, res, next) {
         },
       });
 
-      // ✅ Push OneSignal + mail selon le statut de paiement
       if (paymentStatus === 'PAID') {
         await notifyPaymentReceived(order);
       } else {
@@ -151,7 +160,6 @@ async function confirmDraftOrder(req, res, next) {
         },
       });
 
-      // ✅ Push OneSignal + mail de confirmation
       await notifyOrderConfirmed(order);
     }
 
@@ -218,7 +226,6 @@ async function rejectDraftOrder(req, res, next) {
       return updated;
     });
 
-    // ✅ Push OneSignal + mail d'annulation (hors transaction pour ne pas bloquer)
     await notifyOrderStatus(order, 'CANCELLED');
 
     res.json(order);
@@ -227,7 +234,6 @@ async function rejectDraftOrder(req, res, next) {
   }
 }
 
-// ── Nouvelle commande manuelle ──────────────────────────────────────────────
 async function createManualOrder(req, res, next) {
   try {
     const order = await createOrder(req.body, req.user, req.ip);
@@ -237,7 +243,6 @@ async function createManualOrder(req, res, next) {
   }
 }
 
-// ── Recherche clients ────────────────────────────────────────────────────────
 async function searchUsers(req, res, next) {
   try {
     const { q = '' } = req.query;
@@ -268,7 +273,6 @@ async function searchUsers(req, res, next) {
   }
 }
 
-// ── Recherche produits ───────────────────────────────────────────────────────
 async function searchProducts(req, res, next) {
   try {
     const { q = '', categoryId, storeId } = req.query;

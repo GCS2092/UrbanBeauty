@@ -994,6 +994,98 @@ function buildStockAlertEmail({ lowStock = [], outOfStock = [], storeName = 'Son
     html: layout(body, `${outOfStock.length + lowStock.length} produit(s) nécessitent votre attention`, storeName, storeCode),
   };
 }
+// ============================================================
+// 9. NOTIFICATION ADMIN — NOUVELLE COMMANDE (avec fournisseurs)
+// ============================================================
+function buildAdminNewOrderEmail({
+  orderNumber, guestName, total, items = [], shippingAddress,
+  paymentMethod, adminUrl = '', storeName = 'SonShop', storeCode = 'SONSHOP',
+}) {
+  const C = getTheme(storeCode);
+  const addrLine = shippingAddress
+    ? [shippingAddress.street, shippingAddress.city, shippingAddress.country].filter(Boolean).join(', ')
+    : null;
+
+  const payLabels = {
+    CASH_ON_DELIVERY: 'Paiement à la livraison',
+    MOBILE_MONEY:     'Mobile Money',
+  };
+
+  // Regroupe les fournisseurs uniques concernés par cette commande
+  const supplierMap = new Map();
+  items.forEach((i) => {
+    if (i.supplier) supplierMap.set(i.supplier.id, i.supplier);
+  });
+  const suppliers = [...supplierMap.values()];
+
+  const itemsRows = items.map((i) => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid ${C.border};">
+        <div style="font-size:13px;font-weight:700;color:${C.text};">
+          ${i.productName}${i.variantLabel ? ` (${i.variantLabel})` : ''} × ${i.quantity}
+        </div>
+        ${i.supplier ? `
+        <div style="font-size:11px;color:${C.textLight};margin-top:3px;">
+          📦 Fournisseur : <strong style="color:${C.text};">${i.supplier.name}</strong>${i.supplier.phone ? ` — <a href="tel:${i.supplier.phone}" style="color:${C.primary};text-decoration:none;">${i.supplier.phone}</a>` : ' (téléphone non renseigné)'}
+        </div>` : `
+        <div style="font-size:11px;color:${C.textLight};margin-top:3px;">Aucun fournisseur assigné à ce produit</div>`}
+      </td>
+    </tr>`).join('');
+
+  const suppliersBlock = suppliers.length > 0 ? `
+    <div style="margin:20px 0;background:${C.offWhite};border:1px solid ${C.border};border-radius:8px;padding:14px 16px;">
+      <div style="font-size:11px;font-weight:700;color:${C.navy};text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">
+        📞 Fournisseur(s) à contacter pour cette commande
+      </div>
+      ${suppliers.map((s) => `
+        <p style="margin:0 0 8px;font-size:13px;color:${C.text};">
+          <strong>${s.name}</strong>${s.phone ? ` — <a href="tel:${s.phone}" style="color:${C.primary};font-weight:700;text-decoration:none;">${s.phone}</a>` : ' <span style="color:' + C.warning + ';">(téléphone non renseigné)</span>'}
+        </p>`).join('')}
+    </div>` : `
+    <div style="margin:20px 0;background:${C.offWhite};border:1px solid ${C.border};border-radius:8px;padding:14px 16px;">
+      <p style="margin:0;font-size:12px;color:${C.textLight};">Aucun fournisseur n'est assigné aux produits de cette commande.</p>
+    </div>`;
+
+  const body = `
+    <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${C.navy};">
+      🛍️ Nouvelle commande reçue
+    </h1>
+    <p style="margin:0 0 20px;font-size:14px;color:${C.textLight};">
+      Commande <strong style="color:${C.primary};">${orderNumber}</strong> — à traiter.
+    </p>
+
+    ${infoBox([
+      ['Client(e)', guestName || '—'],
+      addrLine ? ['Adresse de livraison', addrLine] : null,
+      paymentMethod ? ['Mode de paiement', payLabels[paymentMethod] || paymentMethod] : null,
+      ['Total', `<strong style="color:${C.primary};">${Number(total).toLocaleString('fr-FR')} FCFA</strong>`],
+    ], C)}
+
+    <div style="margin:20px 0;">
+      <div style="font-size:11px;font-weight:700;color:${C.navy};text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+        Articles commandés (${items.length})
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0"
+        style="background:${C.offWhite};border-radius:8px;border:1px solid ${C.border};padding:0 16px;overflow:hidden;">
+        ${itemsRows}
+      </table>
+    </div>
+
+    ${suppliersBlock}
+    ${divider(C.border)}
+
+    ${adminUrl ? cta('Voir la commande', adminUrl, C.primary) : ''}
+
+    <p style="margin:20px 0 0;font-size:11px;color:${C.textLight};text-align:center;">
+      Email interne — ne jamais transférer au client.
+    </p>
+  `;
+
+  return {
+    subject: `🛍️ [Admin] Nouvelle commande ${orderNumber} — ${storeName}`,
+    html: layout(body, `Nouvelle commande ${orderNumber} — ${Number(total).toLocaleString('fr-FR')} FCFA`, storeName, storeCode),
+  };
+}
 
 // ============================================================
 // EXPORTS
@@ -1007,4 +1099,5 @@ module.exports = {
   buildReportEmail,
   buildOtpEmail,
   buildStockAlertEmail,
+  buildAdminNewOrderEmail,   // ← ajouté
 };

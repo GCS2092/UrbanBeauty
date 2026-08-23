@@ -1,6 +1,6 @@
 ﻿const prisma = require('../../config/database');
 const { sendEmail } = require('../../config/email');
-const { buildOrderConfirmationEmail, buildOrderStatusEmail } = require('../../utils/email.utils');
+const { buildOrderConfirmationEmail, buildOrderStatusEmail, buildAdminNewOrderEmail } = require('../../utils/email.utils');
 const { generateOrderNumber } = require('../../utils/order.utils');
 const {
   parsePagination,
@@ -121,7 +121,14 @@ async function createOrder(payload, user, ip = null) {
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, isActive: true },
     // ✅ price ajouté au select — c'est la source de vérité, jamais payload.items[].price
-    select: { id: true, name: true, storeId: true, price: true },
+    // ✅ supplier ajouté pour transmettre ses infos dans le mail admin
+    select: {
+      id: true,
+      name: true,
+      storeId: true,
+      price: true,
+      supplier: { select: { id: true, name: true, phone: true } },
+    },
   });
   if (products.length !== productIds.length) {
     const error = new Error('Un ou plusieurs produits sont introuvables ou inactifs.');
@@ -178,6 +185,7 @@ async function createOrder(payload, user, ip = null) {
       variantLabel,
       price: product.price,
       quantity: item.quantity,
+      supplier: product.supplier || null, // ← ajouté (infos fournisseur pour le mail admin)
     };
   });
 
@@ -335,27 +343,23 @@ async function createOrder(payload, user, ip = null) {
     sendEmailAsync({ to: guestEmail, subject: emailData.subject, html: emailData.html });
   }
 
+  // ── Mail admin dédié, avec infos fournisseur — remplace l'ancien envoi ──────
   if (!isDraft && process.env.ADMIN_EMAIL) {
-    const emailData = buildOrderConfirmationEmail({
+    const adminEmailData = buildAdminNewOrderEmail({
       orderNumber,
       guestName,
       total,
-      subtotal,
-      shippingCost,
-      discount,
-      storeDiscount,
-      destination: payload.destination,
       items: trustedItems,
-      paymentMethod: payload.paymentMethod,
       shippingAddress: payload.shippingAddress,
-      clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+      paymentMethod: payload.paymentMethod,
+      adminUrl: `${process.env.CLIENT_URL || 'http://localhost:5173'}/admin/orders`,
       storeName: store.name,
       storeCode: store.code,
     });
     sendEmailAsync({
       to: process.env.ADMIN_EMAIL,
-      subject: `[Admin] Nouvelle commande ${orderNumber} — ${store.name}`,
-      html: emailData.html,
+      subject: adminEmailData.subject,
+      html: adminEmailData.html,
     });
   }
 

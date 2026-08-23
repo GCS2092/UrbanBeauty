@@ -118,10 +118,12 @@ model Product {
   updatedAt          DateTime            @updatedAt
   variantDisplayMode VariantDisplayMode  @default(SIZE_FIRST)
   storeId            String?
+  supplierId         String?              // ← doit être présent
   cartItems          CartItem[]
   orderItems         OrderItem[]
   category           Category            @relation(fields: [categoryId], references: [id])
   store              Store?              @relation(fields: [storeId], references: [id])
+  supplier           Supplier?            @relation(fields: [supplierId], references: [id])  // ← doit être présent
   images             ProductImage[]
   variants           ProductVariant[]
   reviews            Review[]
@@ -132,6 +134,7 @@ model Product {
 
   @@index([categoryId], map: "Product_categoryId_fkey")
   @@index([storeId], map: "Product_storeId_fkey")
+  @@index([supplierId], map: "Product_supplierId_fkey")  // ← doit être présent
 }
 
 model ProductImage {
@@ -457,6 +460,7 @@ model Supplier {
   updatedAt    DateTime        @updatedAt
   expenses     Expense[]
   stockEntries StockMovement[]
+  products     Product[] 
 }
 
 model StockMovement {
