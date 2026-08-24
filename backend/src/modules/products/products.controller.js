@@ -100,6 +100,16 @@ async function exportProducts(req, res, next) {
   }
 }
 
+async function assignSupplier(req, res, next) {
+  try {
+    const { supplierId } = req.body;
+    const product = await productsService.assignProductSupplier(req.params.id, supplierId || null);
+    res.json(product);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getProducts,
   getProductFilters,
@@ -111,4 +121,5 @@ module.exports = {
   importProducts,
   downloadTemplate,
   exportProducts,
+  assignSupplier, // ← corrigé (était manquant)
 };

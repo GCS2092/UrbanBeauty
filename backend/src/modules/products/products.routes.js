@@ -236,6 +236,28 @@ router.put('/:id', authenticate, requireAdmin,
 
 /**
  * @swagger
+ * /api/products/{id}/supplier:
+ *   patch:
+ *     summary: Assigner/retirer le fournisseur d'un produit (Admin) — n'affecte rien d'autre
+ *     tags: [Produits]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           example:
+ *             supplierId: "clxxxxxx"
+ *     responses:
+ *       200:
+ *         description: Produit mis à jour (id, name, supplierId)
+ */
+router.patch('/:id/supplier', authenticate, requireAdmin, productsController.assignSupplier);
+
+/**
+ * @swagger
  * /api/products/{id}:
  *   delete:
  *     summary: Supprimer un produit (Admin)

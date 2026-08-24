@@ -279,7 +279,14 @@ async function updateProduct(id, data) {
 async function deleteProduct(id) {
   return prisma.product.delete({ where: { id } });
 }
-
+// ─── Assignation rapide du fournisseur — ne touche à rien d'autre ──────────
+async function assignProductSupplier(id, supplierId) {
+  return prisma.product.update({
+    where: { id },
+    data: { supplierId: supplierId || null },
+    select: { id: true, name: true, supplierId: true },
+  });
+}
 module.exports = {
   getProducts,
   getAllProductsAdmin,
@@ -288,4 +295,5 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
+  assignProductSupplier, // ← ajouté
 };
