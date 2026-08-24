@@ -17,7 +17,7 @@ function isInStandaloneMode() {
 
 export default function PWAInstallBanner() {
   const [show, setShow]               = useState(false);
-  const [step, setStep]               = useState('banner');
+  const [step, setStep]               = useState('banner'); // 'banner' | 'guide' | 'notif-only'
   const [deferredPrompt, setDeferred] = useState(null);
   const [device, setDevice]           = useState('desktop');
   const [notifStatus, setNotifStatus] = useState('default');
@@ -52,8 +52,16 @@ export default function PWAInstallBanner() {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') { dismiss(); return; }
+      if (outcome === 'accepted') {
+        // ✅ L'app vient d'être installée (Android/Chrome/Edge) — on enchaîne
+        // avec la demande de notifications au lieu de fermer directement,
+        // sinon cette étape est zappée pour tout le monde sur ces plateformes.
+        setStep('notif-only');
+        return;
+      }
     }
+    // Pas de prompt natif disponible (iOS, ou navigateur qui ne le supporte pas)
+    // → on affiche le guide d'installation manuelle.
     setStep('guide');
   };
 
@@ -70,12 +78,63 @@ export default function PWAInstallBanner() {
 
   if (!show) return null;
 
-  // ── Guide ──────────────────────────────────────────────────────────────────
+  // ── Notifications seules (après install native réussie sur Android/desktop) ──
+  if (step === 'notif-only') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-stone-900">Application installée ✅</h2>
+            <button onClick={dismiss} className="text-stone-400 hover:text-stone-600">
+              <X size={20} />
+            </button>
+          </div>
+
+          {notifStatus === 'default' && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+              <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+                <Bell size={13} /> Activer les notifications
+              </p>
+              <p className="text-xs text-amber-700">
+                Recevez vos confirmations de commande et nos promotions exclusives.
+              </p>
+              <button
+                onClick={requestNotifications}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold py-2 rounded-lg transition-colors"
+              >
+                Autoriser les notifications
+              </button>
+            </div>
+          )}
+          {notifStatus === 'granted' && (
+            <p className="text-xs text-emerald-600 font-medium text-center">
+              ✅ Notifications activées !
+            </p>
+          )}
+          {notifStatus === 'denied' && (
+            <p className="text-xs text-stone-500 text-center">
+              Vous pourrez activer les notifications plus tard depuis les réglages de votre appareil.
+            </p>
+          )}
+
+          <button
+            onClick={dismiss}
+            className="w-full border border-stone-200 text-stone-500 text-sm py-2.5 rounded-xl hover:bg-stone-50"
+          >
+            Terminé
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Guide d'installation manuelle ──────────────────────────────────────────
   if (step === 'guide') {
     const iosSteps = [
       { icon: '⬆️', text: "Appuyez sur le bouton Partager (rectangle avec flèche vers le haut) en bas de Safari" },
       { icon: '📲', text: "Faites défiler et appuyez sur « Sur l'écran d'accueil »" },
       { icon: '✅', text: "Appuyez sur « Ajouter » en haut à droite" },
+      { icon: '🔔', text: "Une fois l'app ajoutée, ouvrez-la depuis l'écran d'accueil pour pouvoir activer les notifications" },
     ];
     const androidSteps = [
       { icon: '⋮',  text: "Appuyez sur les 3 points en haut à droite de Chrome" },
@@ -88,29 +147,40 @@ export default function PWAInstallBanner() {
     ];
     const steps = device === 'ios' ? iosSteps : device === 'android' ? androidSteps : desktopSteps;
 
+    // Sur iOS, la demande de notif ne fonctionne qu'une fois l'app ouverte en
+    // mode standalone (depuis l'écran d'accueil) — inutile de proposer le
+    // bouton ici puisqu'il échouerait silencieusement dans Safari classique.
+    const canRequestNotifNow = device !== 'ios';
+
     return (
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-stone-900">Comment installer l'app ?</h2>
-            <button onClick={dismiss} className="text-stone-400 hover:text-stone-600"><X size={20} /></button>
+            <button onClick={dismiss} className="text-stone-400 hover:text-stone-600">
+              <X size={20} />
+            </button>
           </div>
 
           <div className="space-y-4">
             {steps.map((s, i) => (
               <div key={i} className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-lg shrink-0">{s.icon}</div>
+                <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-lg shrink-0">
+                  {s.icon}
+                </div>
                 <p className="text-sm text-stone-700 leading-relaxed pt-1">{s.text}</p>
               </div>
             ))}
           </div>
 
-          {notifStatus === 'default' && (
+          {canRequestNotifNow && notifStatus === 'default' && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
               <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
                 <Bell size={13} /> Activer les notifications
               </p>
-              <p className="text-xs text-amber-700">Recevez vos confirmations de commande et nos promotions exclusives.</p>
+              <p className="text-xs text-amber-700">
+                Recevez vos confirmations de commande et nos promotions exclusives.
+              </p>
               <button
                 onClick={requestNotifications}
                 className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold py-2 rounded-lg transition-colors"
@@ -119,11 +189,16 @@ export default function PWAInstallBanner() {
               </button>
             </div>
           )}
-          {notifStatus === 'granted' && (
-            <p className="text-xs text-emerald-600 font-medium text-center">✅ Notifications activées !</p>
+          {canRequestNotifNow && notifStatus === 'granted' && (
+            <p className="text-xs text-emerald-600 font-medium text-center">
+              ✅ Notifications activées !
+            </p>
           )}
 
-          <button onClick={dismiss} className="w-full border border-stone-200 text-stone-500 text-sm py-2.5 rounded-xl hover:bg-stone-50">
+          <button
+            onClick={dismiss}
+            className="w-full border border-stone-200 text-stone-500 text-sm py-2.5 rounded-xl hover:bg-stone-50"
+          >
             Fermer
           </button>
         </div>

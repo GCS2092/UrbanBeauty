@@ -24,10 +24,10 @@ function getOrderContact(order) {
   };
 }
 
-const CLIENT_URL =
-  import.meta.env.VITE_CLIENT_URL ||
-  import.meta.env.VITE_API_URL?.replace(':5000', ':5173') ||
-  'http://localhost:5173';
+// ✅ Ce code tourne dans le navigateur, sur le site lui-même — window.location.origin
+// donne toujours la bonne URL (prod, preview, ou local), sans variable d'environnement
+// à gérer ni risque d'oubli au déploiement.
+const CLIENT_URL = window.location.origin;
 
 const STATUS_MESSAGES = {
   CONFIRMED:  'a été confirmée ✅',
@@ -53,7 +53,7 @@ export function buildOrderConfirmationWhatsAppLink(order) {
   return buildWaLink(phone, lines.join('\n'));
 }
 
-/** Lien WhatsApp — changement de statut (bouton dans le modal) */
+/** Lien WhatsApp — changement de statut (bouton dans le modal, et bouton "Suivi" dans la liste) */
 export function buildOrderStatusWhatsAppLink(order, overrideStatus = null) {
   const { phone, name } = getOrderContact(order);
   const status = overrideStatus || order.status;

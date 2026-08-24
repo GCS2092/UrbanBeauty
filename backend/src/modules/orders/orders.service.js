@@ -22,6 +22,9 @@ const { buildInvoicePdf } = require('../invoices/invoice-pdf.service');
 const { isValidPhone } = require('../../utils/phone.utils');
 const { getShippingCost, computeOrderTotal } = require('../../utils/shipping.utils');
 
+// ✅ URL du frontend — utilise la variable réellement configurée sur Render.
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
 function sanitizeAttribution(attribution) {
   if (!attribution || typeof attribution !== 'object' || Array.isArray(attribution)) return null;
   const allowedKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'fbp', 'fbc', 'landing_page', 'captured_at'];
@@ -185,7 +188,7 @@ async function createOrder(payload, user, ip = null) {
       variantLabel,
       price: product.price,
       quantity: item.quantity,
-      supplier: product.supplier || null, // ← ajouté (infos fournisseur pour le mail admin)
+      supplier: product.supplier || null,
     };
   });
 
@@ -335,7 +338,7 @@ async function createOrder(payload, user, ip = null) {
       items: trustedItems,
       paymentMethod: payload.paymentMethod,
       shippingAddress: payload.shippingAddress,
-      clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+      clientUrl: FRONTEND_URL,
       isGuest: !userId,
       storeName: store.name,
       storeCode: store.code,
@@ -343,7 +346,7 @@ async function createOrder(payload, user, ip = null) {
     sendEmailAsync({ to: guestEmail, subject: emailData.subject, html: emailData.html });
   }
 
-  // ── Mail admin dédié, avec infos fournisseur — remplace l'ancien envoi ──────
+  // ── Mail admin dédié, avec infos fournisseur ────────────────────────────────
   if (!isDraft && process.env.ADMIN_EMAIL) {
     const adminEmailData = buildAdminNewOrderEmail({
       orderNumber,
@@ -352,7 +355,7 @@ async function createOrder(payload, user, ip = null) {
       items: trustedItems,
       shippingAddress: payload.shippingAddress,
       paymentMethod: payload.paymentMethod,
-      adminUrl: `${process.env.CLIENT_URL || 'http://localhost:5173'}/admin/orders`,
+      adminUrl: `${FRONTEND_URL}/admin/orders`,
       storeName: store.name,
       storeCode: store.code,
     });
@@ -423,7 +426,7 @@ async function changeOrderStatus(orderId, payload, adminUser, ip) {
       orderNumber: order.orderNumber,
       customerName,
       status: order.status,
-      clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+      clientUrl: FRONTEND_URL,
       isGuest: !order.userId,
       storeName: order.store?.name || 'SonShop',
       storeCode: order.store?.code || 'SONSHOP',
