@@ -348,7 +348,7 @@ model Invoice {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   creditNotes   CreditNote[]
-  order         Order         @relation(fields: [orderId], references: [id])
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
   store         Store         @relation(fields: [storeId], references: [id])
 
   @@index([storeId])
@@ -421,7 +421,7 @@ model Payment {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  order Order @relation(fields: [orderId], references: [id])
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([merchantTransactionId])

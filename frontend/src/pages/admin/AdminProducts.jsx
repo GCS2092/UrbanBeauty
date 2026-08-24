@@ -814,6 +814,7 @@ export default function AdminProducts() {
         form.purchasePrice !== "" ? Number(form.purchasePrice) : null,
       stock: totalVariantStock,
       categoryId: form.categoryId,
+      supplierId: form.supplierId || null,
       storeId: form.storeId || null,
       isActive: form.isActive,
       isFeatured: form.isFeatured,
