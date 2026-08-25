@@ -253,6 +253,10 @@ async function buildAuthResponse(user) {
     });
   }
 
+  const redirectPath = user.role === 'SELLER' ? '/seller' 
+                      : user.role === 'ADMIN' || user.role === 'STAFF' ? '/admin' 
+                      : '/';
+
   return {
     token,
     user: {
@@ -263,6 +267,7 @@ async function buildAuthResponse(user) {
       role: user.role,
     },
     stores,
+    redirectPath,
   };
 }
 

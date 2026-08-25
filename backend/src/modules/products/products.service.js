@@ -155,12 +155,13 @@ async function getProductBySlug(slug, query = {}) {
 }
 
 async function createProduct(data) {
-  const { images = [], variants = [], variantDisplayMode, storeId, ...productData } = data;
+  const { images = [], variants = [], variantDisplayMode, storeId, sellerId, ...productData } = data;
 
   return prisma.product.create({
     data: {
       ...productData,
       storeId: storeId || null,
+      sellerId: sellerId || null,
       variantDisplayMode: variantDisplayMode || 'SIZE_FIRST',
       ...(images.length > 0 && {
         images: {
@@ -188,7 +189,7 @@ async function createProduct(data) {
 }
 
 async function updateProduct(id, data) {
-  const { images = [], variants = [], variantDisplayMode, storeId, ...productData } = data;
+  const { images = [], variants = [], variantDisplayMode, storeId, sellerId, ...productData } = data;
 
   const existing = await prisma.product.findUnique({
     where: { id },
@@ -256,6 +257,7 @@ async function updateProduct(id, data) {
       data: {
         ...productData,
         ...(storeId !== undefined && { storeId: storeId || null }),
+        ...(sellerId !== undefined && { sellerId: sellerId || null }),
         ...(variantDisplayMode && { variantDisplayMode }),
       },
       include: { images: true, variants: true },

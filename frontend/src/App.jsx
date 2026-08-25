@@ -27,6 +27,7 @@ import AdminOnlyRoute from './components/shared/AdminOnlyRoute';
 
 import ShopLayout from './components/layout/ShopLayout';
 import AdminLayout from './components/layout/AdminLayout';
+import SellerLayout from './components/layout/SellerLayout';
 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -69,6 +70,12 @@ const AdminAudit            = lazy(() => import('./pages/admin/AdminAudit'));
 const AdminStores           = lazy(() => import('./pages/admin/AdminStores'));
 const AdminStockTransfers   = lazy(() => import('./pages/admin/AdminStockTransfers'));
 const AdminSuppliers        = lazy(() => import('./pages/admin/AdminSuppliers'));
+
+// Seller pages
+const SellerDashboard       = lazy(() => import('./pages/seller/SellerDashboard'));
+const SellerProducts        = lazy(() => import('./pages/seller/SellerProducts'));
+const SellerOrders         = lazy(() => import('./pages/seller/SellerOrders'));
+const SellerStock          = lazy(() => import('./pages/seller/SellerStock'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -216,6 +223,33 @@ export default function App() {
                   </Route>
                 </Route>
 
+              </Route>
+
+              {/* Seller */}
+              <Route element={<ProtectedRoute requiredRole="SELLER" />}>
+                <Route element={<SellerLayout />}>
+
+                  <Route
+                    path="/seller"
+                    element={<SellerDashboard />}
+                  />
+
+                  <Route
+                    path="/seller/products"
+                    element={<SellerProducts />}
+                  />
+
+                  <Route
+                    path="/seller/orders"
+                    element={<SellerOrders />}
+                  />
+
+                  <Route
+                    path="/seller/stock"
+                    element={<SellerStock />}
+                  />
+
+                </Route>
               </Route>
 
               {/* Admin + Staff */}

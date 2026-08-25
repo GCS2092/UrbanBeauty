@@ -5,6 +5,8 @@ export const STORE_ID = import.meta.env.VITE_STORE_ID || 'clmainstore00000000000
 
 export const ROLES = {
   CUSTOMER: 'CUSTOMER',
+  SELLER: 'SELLER',
+  STAFF: 'STAFF',
   ADMIN: 'ADMIN',
 };
 

@@ -34,6 +34,7 @@ const storesRoutes = require('./modules/stores/stores.routes');
 const stockTransfersRoutes = require('./modules/stock-transfers/stock-transfers.routes');
 const creditNotesRoutes = require('./modules/credit-notes/credit-notes.routes');
 const paymentsRoutes = require('./modules/payments/payments.routes');
+const sellersRoutes = require('./modules/sellers/sellers.routes');
 
 const app = express();
 
@@ -115,6 +116,7 @@ app.use('/api/admin/stores', storesRoutes);
 app.use('/api/admin/stock-transfers', stockTransfersRoutes);
 app.use('/api/admin/credit-notes', creditNotesRoutes);
 app.use('/api/admin/reports', reportRoutes);
+app.use('/api/sellers', sellersRoutes);
 
 app.use(errorHandler);
 

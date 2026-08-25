@@ -28,6 +28,7 @@ model User {
   stockAlerts   StockAlert[]
   userStores    UserStore[]
   wishlist      Wishlist[]
+  sellerProducts Product[]      @relation("SellerProducts")
 }
 
 model Store {
@@ -119,11 +120,13 @@ model Product {
   variantDisplayMode VariantDisplayMode  @default(SIZE_FIRST)
   storeId            String?
   supplierId         String?              // ← doit être présent
+  sellerId           String?              // ← NOUVEAU
   cartItems          CartItem[]
   orderItems         OrderItem[]
   category           Category            @relation(fields: [categoryId], references: [id])
   store              Store?              @relation(fields: [storeId], references: [id])
   supplier           Supplier?            @relation(fields: [supplierId], references: [id])  // ← doit être présent
+  seller             User?                @relation("SellerProducts", fields: [sellerId], references: [id])  // ← NOUVEAU
   images             ProductImage[]
   variants           ProductVariant[]
   reviews            Review[]
@@ -135,6 +138,7 @@ model Product {
   @@index([categoryId], map: "Product_categoryId_fkey")
   @@index([storeId], map: "Product_storeId_fkey")
   @@index([supplierId], map: "Product_supplierId_fkey")  // ← doit être présent
+  @@index([sellerId], map: "Product_sellerId_fkey")  // ← NOUVEAU
 }
 
 model ProductImage {
@@ -576,6 +580,7 @@ model StockAlert {
 
 enum Role {
   CUSTOMER
+  SELLER
   STAFF
   ADMIN
 }

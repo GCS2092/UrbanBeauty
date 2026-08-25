@@ -49,7 +49,12 @@ export function AuthProvider({ children }) {
       await fetchCart(data.user.id, anonymousId);
       localStorage.removeItem(ANONYMOUS_CART_KEY);
       toast.success(`Bienvenue ${data.user.firstName} !`);
-      navigate(data.user.role === 'ADMIN' || data.user.role === 'STAFF' ? '/admin' : '/');
+      // Utiliser redirectPath du backend ou fallback
+      const redirectPath = data.redirectPath || 
+                         (data.user.role === 'SELLER' ? '/seller' :
+                          data.user.role === 'ADMIN' || data.user.role === 'STAFF' ? '/admin' :
+                          '/');
+      navigate(redirectPath);
     } catch (err) {
       const message =
         err?.response?.data?.message ||
@@ -69,7 +74,12 @@ export function AuthProvider({ children }) {
       await fetchCart(data.user.id, anonymousId);
       localStorage.removeItem(ANONYMOUS_CART_KEY);
       toast.success(`Bienvenue ${data.user.firstName} !`);
-      navigate(data.user.role === 'ADMIN' || data.user.role === 'STAFF' ? '/admin' : '/');
+      // Utiliser redirectPath du backend ou fallback
+      const redirectPath = data.redirectPath || 
+                         (data.user.role === 'SELLER' ? '/seller' :
+                          data.user.role === 'ADMIN' || data.user.role === 'STAFF' ? '/admin' :
+                          '/');
+      navigate(redirectPath);
     } catch (err) {
       const message =
         err?.response?.data?.message ||
