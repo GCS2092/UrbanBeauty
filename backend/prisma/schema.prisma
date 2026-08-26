@@ -29,6 +29,11 @@ model User {
   userStores    UserStore[]
   wishlist      Wishlist[]
   sellerProducts Product[]      @relation("SellerProducts")
+  // Champs boutique vendeur
+  storeName     String?        @db.Text
+  storeDescription String?      @db.Text
+  storeLogo     String?
+  storeContact  String?
 }
 
 model Store {
@@ -121,6 +126,7 @@ model Product {
   storeId            String?
   supplierId         String?              // ← doit être présent
   sellerId           String?              // ← NOUVEAU
+  status             ProductStatus       @default(DRAFT)  // ← NOUVEAU
   cartItems          CartItem[]
   orderItems         OrderItem[]
   category           Category            @relation(fields: [categoryId], references: [id])
@@ -139,6 +145,7 @@ model Product {
   @@index([storeId], map: "Product_storeId_fkey")
   @@index([supplierId], map: "Product_supplierId_fkey")  // ← doit être présent
   @@index([sellerId], map: "Product_sellerId_fkey")  // ← NOUVEAU
+  @@index([status], map: "Product_status_fkey")  // ← NOUVEAU
 }
 
 model ProductImage {
@@ -679,4 +686,10 @@ enum VariantDisplayMode {
 enum OtpType {
   REGISTER
   RESET_PASSWORD
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  OUT_OF_STOCK
 }

@@ -116,7 +116,8 @@ app.use('/api/admin/stores', storesRoutes);
 app.use('/api/admin/stock-transfers', stockTransfersRoutes);
 app.use('/api/admin/credit-notes', creditNotesRoutes);
 app.use('/api/admin/reports', reportRoutes);
-app.use('/api/sellers', sellersRoutes);
+app.use('/api/sellers', sellersRoutes.router);
+app.use('/api/admin/sellers', sellersRoutes.adminRouter);
 
 app.use(errorHandler);
 

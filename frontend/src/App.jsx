@@ -70,12 +70,15 @@ const AdminAudit            = lazy(() => import('./pages/admin/AdminAudit'));
 const AdminStores           = lazy(() => import('./pages/admin/AdminStores'));
 const AdminStockTransfers   = lazy(() => import('./pages/admin/AdminStockTransfers'));
 const AdminSuppliers        = lazy(() => import('./pages/admin/AdminSuppliers'));
+const AdminSellers          = lazy(() => import('./pages/admin/AdminSellers'));
 
 // Seller pages
 const SellerDashboard       = lazy(() => import('./pages/seller/SellerDashboard'));
 const SellerProducts        = lazy(() => import('./pages/seller/SellerProducts'));
 const SellerOrders         = lazy(() => import('./pages/seller/SellerOrders'));
 const SellerStock          = lazy(() => import('./pages/seller/SellerStock'));
+const SellerSettings       = lazy(() => import('./pages/seller/SellerSettings'));
+const SellerProductForm    = lazy(() => import('./pages/seller/SellerProductForm'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -240,6 +243,16 @@ export default function App() {
                   />
 
                   <Route
+                    path="/seller/products/new"
+                    element={<SellerProductForm />}
+                  />
+
+                  <Route
+                    path="/seller/products/:id/edit"
+                    element={<SellerProductForm />}
+                  />
+
+                  <Route
                     path="/seller/orders"
                     element={<SellerOrders />}
                   />
@@ -247,6 +260,11 @@ export default function App() {
                   <Route
                     path="/seller/stock"
                     element={<SellerStock />}
+                  />
+
+                  <Route
+                    path="/seller/settings"
+                    element={<SellerSettings />}
                   />
 
                 </Route>
@@ -311,6 +329,11 @@ export default function App() {
                     <Route
                       path="/admin/stores"
                       element={<AdminStores />}
+                    />
+
+                    <Route
+                      path="/admin/sellers"
+                      element={<AdminSellers />}
                     />
 
                     <Route

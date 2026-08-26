@@ -1,12 +1,14 @@
+const bcrypt = require('bcryptjs');
 const prisma = require('../../config/database');
 const { parsePagination, buildPaginationResponse } = require('../../utils/pagination.utils');
 
 // ─── Tous les produits du vendeur ─────────────────────────────────────
 async function getSellerProducts(userId, query = {}) {
   const { page, limit, skip } = parsePagination(query);
-  
+
   const where = {
     sellerId: userId,
+    ...(query.status && { status: query.status }), // ← Filtre par statut
     ...(query.search && {
       OR: [
         { name: { contains: query.search } },
@@ -14,23 +16,23 @@ async function getSellerProducts(userId, query = {}) {
       ]
     })
   };
-  
+
   const [total, products] = await Promise.all([
     prisma.product.count({ where }),
     prisma.product.findMany({
       where,
       skip,
       take: limit,
-      include: { 
-        images: true, 
-        variants: true, 
+      include: {
+        images: true,
+        variants: true,
         category: true,
         _count: { select: { orderItems: true } }
       },
       orderBy: { createdAt: 'desc' }
     })
   ]);
-  
+
   return buildPaginationResponse({ data: products, total, page, limit });
 }
 
@@ -190,8 +192,8 @@ async function getSellerStock(userId) {
     name: product.name,
     stock: product.stock,
     lowStockAlert: product.lowStockAlert,
-    status: product.stock === 0 ? 'OUT_OF_STOCK' 
-           : product.stock <= product.lowStockAlert ? 'LOW_STOCK' 
+    status: product.stock === 0 ? 'OUT_OF_STOCK'
+           : product.stock <= product.lowStockAlert ? 'LOW_STOCK'
            : 'OK',
     variants: product.variants.map(v => ({
       size: v.size,
@@ -202,9 +204,393 @@ async function getSellerStock(userId) {
   }));
 }
 
+// ─── Fonctions Admin pour la gestion des vendeurs ──────────────────────
+
+async function getAllSellers(query = {}) {
+  const { page, limit, skip } = parsePagination(query);
+  const search = query.search || '';
+
+  const where = search
+    ? {
+        role: 'SELLER',
+        OR: [
+          { email: { contains: search } },
+          { firstName: { contains: search } },
+          { lastName: { contains: search } },
+        ],
+      }
+    : { role: 'SELLER' };
+
+  const [total, sellers] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        isActive: true,
+        createdAt: true,
+        _count: {
+          select: {
+            sellerProducts: true,
+            orders: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+  ]);
+
+  return buildPaginationResponse({ data: sellers, total, page, limit });
+}
+
+async function createSeller(data) {
+  const { email, password, firstName, lastName, phone } = data;
+
+  if (!email?.trim() || !password || !firstName?.trim() || !lastName?.trim()) {
+    const error = new Error('Email, mot de passe, prénom et nom sont requis.');
+    error.status = 400;
+    throw error;
+  }
+
+  if (password.length < 6) {
+    const error = new Error('Le mot de passe doit contenir au moins 6 caractères.');
+    error.status = 400;
+    throw error;
+  }
+
+  const existingUser = await prisma.user.findUnique({ where: { email: email.trim() } });
+  if (existingUser) {
+    const error = new Error('Cet email est déjà utilisé.');
+    error.status = 400;
+    throw error;
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const seller = await prisma.user.create({
+    data: {
+      email: email.trim(),
+      password: hashedPassword,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phone: phone || null,
+      role: 'SELLER',
+      isActive: true
+    },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      role: true,
+      isActive: true,
+      createdAt: true
+    }
+  });
+
+  return seller;
+}
+
+async function updateSeller(id, data) {
+  const { email, firstName, lastName, phone, isActive } = data;
+
+  const updateData = {};
+  if (email !== undefined) {
+    const existingUser = await prisma.user.findUnique({ where: { email: email.trim() } });
+    if (existingUser && existingUser.id !== id) {
+      const error = new Error('Cet email est déjà utilisé.');
+      error.status = 400;
+      throw error;
+    }
+    updateData.email = email.trim();
+  }
+  if (firstName !== undefined) updateData.firstName = firstName.trim();
+  if (lastName !== undefined) updateData.lastName = lastName.trim();
+  if (phone !== undefined) updateData.phone = phone || null;
+  if (isActive !== undefined) updateData.isActive = isActive;
+
+  const seller = await prisma.user.update({
+    where: { id },
+    data: updateData,
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      role: true,
+      isActive: true,
+      createdAt: true
+    }
+  });
+
+  return seller;
+}
+
+async function toggleSellerActive(id) {
+  const seller = await prisma.user.findUnique({ where: { id, role: 'SELLER' } });
+  if (!seller) {
+    const error = new Error('Vendeur introuvable.');
+    error.status = 404;
+    throw error;
+  }
+
+  const updated = await prisma.user.update({
+    where: { id },
+    data: { isActive: !seller.isActive },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      isActive: true
+    }
+  });
+
+  return updated;
+}
+
+async function getSellerProductsAdmin(sellerId, query = {}) {
+  const { page, limit, skip } = parsePagination(query);
+  const search = query.search || '';
+
+  const where = {
+    sellerId,
+    ...(search && {
+      OR: [
+        { name: { contains: search } },
+        { description: { contains: search } }
+      ]
+    })
+  };
+
+  const [total, products] = await Promise.all([
+    prisma.product.count({ where }),
+    prisma.product.findMany({
+      where,
+      skip,
+      take: limit,
+      include: {
+        images: true,
+        variants: true,
+        category: true,
+        _count: { select: { orderItems: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+  ]);
+
+  return buildPaginationResponse({ data: products, total, page, limit });
+}
+
+async function getSellerStatsAdmin(sellerId) {
+  return getSellerStats(sellerId);
+}
+
+// ─── Gestion produits par le vendeur ─────────────────────────────────────
+
+async function createSellerProduct(userId, productData) {
+  const {
+    name,
+    slug,
+    description,
+    price,
+    stock,
+    categoryId,
+    purchasePrice,
+    lowStockAlert,
+    isActive,
+    status
+  } = productData;
+
+  if (!name?.trim() || !slug?.trim() || !price || !stock || !categoryId) {
+    const error = new Error('Nom, slug, prix, stock et catégorie sont requis.');
+    error.status = 400;
+    throw error;
+  }
+
+  const product = await prisma.product.create({
+    data: {
+      name: name.trim(),
+      slug: slug.trim(),
+      description: description?.trim() || '',
+      price: parseInt(price),
+      stock: parseInt(stock),
+      categoryId,
+      purchasePrice: purchasePrice ? parseInt(purchasePrice) : null,
+      lowStockAlert: lowStockAlert ? parseInt(lowStockAlert) : 5,
+      isActive: isActive !== undefined ? isActive : true,
+      status: status || 'DRAFT',
+      sellerId: userId
+    },
+    include: {
+      category: true,
+      images: true,
+      variants: true
+    }
+  });
+
+  return product;
+}
+
+async function updateSellerProduct(userId, productId, productData) {
+  // Vérifier que le produit appartient au vendeur
+  const existingProduct = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { sellerId: true }
+  });
+
+  if (!existingProduct) {
+    const error = new Error('Produit introuvable.');
+    error.status = 404;
+    throw error;
+  }
+
+  if (existingProduct.sellerId !== userId) {
+    const error = new Error('Accès refusé à ce produit.');
+    error.status = 403;
+    throw error;
+  }
+
+  const {
+    name,
+    slug,
+    description,
+    price,
+    stock,
+    categoryId,
+    purchasePrice,
+    lowStockAlert,
+    isActive,
+    status
+  } = productData;
+
+  const updateData = {};
+  if (name !== undefined) updateData.name = name.trim();
+  if (slug !== undefined) updateData.slug = slug.trim();
+  if (description !== undefined) updateData.description = description.trim();
+  if (price !== undefined) updateData.price = parseInt(price);
+  if (stock !== undefined) updateData.stock = parseInt(stock);
+  if (categoryId !== undefined) updateData.categoryId = categoryId;
+  if (purchasePrice !== undefined) updateData.purchasePrice = purchasePrice ? parseInt(purchasePrice) : null;
+  if (lowStockAlert !== undefined) updateData.lowStockAlert = parseInt(lowStockAlert);
+  if (isActive !== undefined) updateData.isActive = isActive;
+  if (status !== undefined) updateData.status = status;
+
+  const product = await prisma.product.update({
+    where: { id: productId },
+    data: updateData,
+    include: {
+      category: true,
+      images: true,
+      variants: true
+    }
+  });
+
+  return product;
+}
+
+async function deleteSellerProduct(userId, productId) {
+  // Vérifier que le produit appartient au vendeur
+  const existingProduct = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { sellerId: true }
+  });
+
+  if (!existingProduct) {
+    const error = new Error('Produit introuvable.');
+    error.status = 404;
+    throw error;
+  }
+
+  if (existingProduct.sellerId !== userId) {
+    const error = new Error('Accès refusé à ce produit.');
+    error.status = 403;
+    throw error;
+  }
+
+  await prisma.product.delete({
+    where: { id: productId }
+  });
+
+  return { message: 'Produit supprimé avec succès' };
+}
+
+// ─── Paramètres boutique du vendeur ─────────────────────────────────────
+
+async function getSellerStoreSettings(userId) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      storeName: true,
+      storeDescription: true,
+      storeLogo: true,
+      storeContact: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      phone: true
+    }
+  });
+
+  if (!user) {
+    const error = new Error('Utilisateur introuvable.');
+    error.status = 404;
+    throw error;
+  }
+
+  return user;
+}
+
+async function updateSellerStoreSettings(userId, data) {
+  const { storeName, storeDescription, storeLogo, storeContact } = data;
+
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(storeName !== undefined && { storeName: storeName.trim() }),
+      ...(storeDescription !== undefined && { storeDescription: storeDescription.trim() }),
+      ...(storeLogo !== undefined && { storeLogo: storeLogo.trim() || null }),
+      ...(storeContact !== undefined && { storeContact: storeContact.trim() || null }),
+    },
+    select: {
+      id: true,
+      storeName: true,
+      storeDescription: true,
+      storeLogo: true,
+      storeContact: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      phone: true
+    }
+  });
+
+  return updated;
+}
+
 module.exports = {
   getSellerProducts,
   getSellerStats,
   getSellerOrders,
-  getSellerStock
+  getSellerStock,
+  getAllSellers,
+  createSeller,
+  updateSeller,
+  toggleSellerActive,
+  getSellerProductsAdmin,
+  getSellerStatsAdmin,
+  getSellerStoreSettings,
+  updateSellerStoreSettings,
+  createSellerProduct,
+  updateSellerProduct,
+  deleteSellerProduct
 };

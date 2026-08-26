@@ -593,6 +593,7 @@ export default function AdminProducts() {
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState("");
   const [storeFilter, setStoreFilter] = useAdminStoreFilter();
+  const [statusFilter, setStatusFilter] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
 
   // ── Modal "Nouvelle catégorie" ──
@@ -612,6 +613,7 @@ export default function AdminProducts() {
     categoryId: "",
     storeId: "", // ← NOUVEAU
     supplierId: "", // ← NOUVEAU (fournisseur)
+    status: "DRAFT", // ← NOUVEAU
     isActive: true,
     isFeatured: false,
     variantDisplayMode: "SIZE_FIRST",
@@ -675,6 +677,7 @@ export default function AdminProducts() {
     try {
       const productParams = new URLSearchParams({ limit: "500" });
       if (storeFilter) productParams.set("storeId", storeFilter);
+      if (statusFilter) productParams.set("status", statusFilter);
 
       const [pRes, cRes, sRes, supRes] = await Promise.all([
         fetch(`${API_URL}/api/products/admin/all?${productParams}`, {
@@ -707,7 +710,7 @@ export default function AdminProducts() {
 
   useEffect(() => {
     fetchAll();
-  }, [storeFilter]);
+  }, [storeFilter, statusFilter]);
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -728,6 +731,7 @@ export default function AdminProducts() {
       categoryId: p.categoryId || "",
       storeId: p.storeId || "", // ← NOUVEAU
       supplierId: p.supplierId || "", // ← NOUVEAU (fournisseur)
+      status: p.status || "DRAFT", // ← NOUVEAU
       isActive: p.isActive ?? true,
       isFeatured: p.isFeatured ?? false,
       variantDisplayMode: p.variantDisplayMode || "SIZE_FIRST",
@@ -816,6 +820,7 @@ export default function AdminProducts() {
       categoryId: form.categoryId,
       supplierId: form.supplierId || null,
       storeId: form.storeId || null,
+      status: form.status, // ← NOUVEAU
       isActive: form.isActive,
       isFeatured: form.isFeatured,
       variantDisplayMode: form.variantDisplayMode || "SIZE_FIRST",
@@ -968,6 +973,16 @@ export default function AdminProducts() {
           value={storeFilter}
           onChange={(v) => setStoreFilter(v || "")}
         />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20"
+        >
+          <option value="">Tous les statuts</option>
+          <option value="DRAFT">Brouillons</option>
+          <option value="PUBLISHED">Publiés</option>
+          <option value="OUT_OF_STOCK">Rupture de stock</option>
+        </select>
       </div>
 
       {error && (
@@ -1160,13 +1175,26 @@ export default function AdminProducts() {
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
                           <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-medium w-fit ${p.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium w-fit ${
+                              p.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700' :
+                              p.status === 'DRAFT' ? 'bg-gray-100 text-gray-700' :
+                              p.status === 'OUT_OF_STOCK' ? 'bg-red-100 text-red-700' :
+                              'bg-gray-100 text-gray-500'
+                            }`}
                           >
-                            {p.isActive ? "Actif" : "Inactif"}
+                            {p.status === 'PUBLISHED' ? 'Publié' :
+                             p.status === 'DRAFT' ? 'Brouillon' :
+                             p.status === 'OUT_OF_STOCK' ? 'Rupture' :
+                             p.status || 'Inconnu'}
                           </span>
                           {p.isFeatured && (
                             <span className="px-2 py-0.5 rounded-full text-xs font-medium w-fit bg-amber-100 text-amber-700">
                               Vedette
+                            </span>
+                          )}
+                          {!p.isActive && (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium w-fit bg-gray-100 text-gray-500">
+                              Inactif
                             </span>
                           )}
                         </div>
@@ -1581,6 +1609,26 @@ export default function AdminProducts() {
                   token={token}
                   variantColors={variantColors}
                 />
+              </div>
+
+              {/* Statut du produit */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Statut de publication
+                </label>
+                <select
+                  name="status"
+                  value={form.status}
+                  onChange={handleChange}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/20"
+                >
+                  <option value="DRAFT">Brouillon (non visible)</option>
+                  <option value="PUBLISHED">Publié (visible sur le site)</option>
+                  <option value="OUT_OF_STOCK">Rupture de stock</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Les brouillons ne sont pas visibles sur le site. Les produits publiés apparaissent immédiatement.
+                </p>
               </div>
 
               {/* Toggles */}

@@ -10,6 +10,7 @@ export default function SellerLayout() {
     { path: '/seller/products', label: 'Mes produits', icon: '📦' },
     { path: '/seller/orders', label: 'Commandes', icon: '🛒' },
     { path: '/seller/stock', label: 'Stock', icon: '📋' },
+    { path: '/seller/settings', label: 'Paramètres', icon: '⚙️' },
   ];
   
   return (

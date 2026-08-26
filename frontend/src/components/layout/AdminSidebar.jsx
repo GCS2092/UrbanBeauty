@@ -22,6 +22,7 @@ const allLinks = [
   { to: '/admin/audit',           label: "Journal d'audit", icon: Shield,                      adminOnly: false },
   { to: '/admin/categories',      label: 'Catégories',      icon: Tag,                         adminOnly: false },
   { to: '/admin/suppliers',       label: 'Fournisseurs',    icon: Truck,                       adminOnly: false },
+  { to: '/admin/sellers',         label: 'Vendeurs',       icon: Users,                       adminOnly: true  },
   { to: '/admin/coupons',         label: 'Coupons',         icon: Ticket,                      adminOnly: true  },
   { to: '/admin/users',           label: 'Utilisateurs',    icon: Users,                       adminOnly: true  },
   { to: '/admin/settings',        label: 'Paramètres',      icon: Settings,                    adminOnly: true  },

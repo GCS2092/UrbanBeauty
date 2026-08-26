@@ -22,6 +22,7 @@ async function getProducts(query) {
 
   const where = {
     isActive: true,
+    status: 'PUBLISHED', // ← Nouveau : seuls les produits publiés sont visibles
     ...storeFilter,
     ...(query.featured === 'true' || query.featured === true ? { isFeatured: true } : {}),
     ...(query.category && { category: { slug: query.category } }),
@@ -77,6 +78,7 @@ async function getProductFilters(query) {
 
   const where = {
     isActive: true,
+    status: 'PUBLISHED', // ← Nouveau : seuls les produits publiés sont visibles
     ...storeFilter,
     ...(query.category && { category: { slug: query.category } }),
     ...(query.search && {
@@ -112,6 +114,7 @@ async function getAllProductsAdmin(query, accessibleStoreIds = null) {
 
   const where = {
     ...buildAdminCatalogWhere(query.storeId, accessibleStoreIds),
+    ...(query.status && { status: query.status }), // ← Filtre par statut
     ...(query.search && {
       OR: [
         { name: { contains: query.search } },
@@ -131,7 +134,8 @@ async function getAllProductsAdmin(query, accessibleStoreIds = null) {
         variants: true,
         category: true,
         store: { select: { id: true, name: true, code: true } },
-        supplier: { select: { id: true, name: true, phone: true } }, // ← ajouté
+        supplier: { select: { id: true, name: true, phone: true } },
+        seller: { select: { id: true, firstName: true, lastName: true, email: true } }, // ← ajouté
       },
       orderBy: { name: 'asc' },
     }),
@@ -146,7 +150,7 @@ async function getProductBySlug(slug, query = {}) {
     include: { images: true, variants: true, category: true },
   });
 
-  if (!product || !product.isActive) return null;
+  if (!product || !product.isActive || product.status !== 'PUBLISHED') return null;
 
   const storeId = await resolveStoreIdForCatalog(query.storeId);
   if (!isProductVisibleForStore(product.storeId, storeId)) return null;
@@ -155,13 +159,23 @@ async function getProductBySlug(slug, query = {}) {
 }
 
 async function createProduct(data) {
-  const { images = [], variants = [], variantDisplayMode, storeId, sellerId, ...productData } = data;
+  const { images = [], variants = [], variantDisplayMode, storeId, sellerId, status, ...productData } = data;
+
+  // Déterminer le statut initial
+  let initialStatus = status || 'DRAFT';
+  const stock = Number(productData.stock) || 0;
+
+  // Si stock = 0 et pas de statut explicite, mettre en OUT_OF_STOCK
+  if (stock === 0 && !status) {
+    initialStatus = 'OUT_OF_STOCK';
+  }
 
   return prisma.product.create({
     data: {
       ...productData,
       storeId: storeId || null,
       sellerId: sellerId || null,
+      status: initialStatus,
       variantDisplayMode: variantDisplayMode || 'SIZE_FIRST',
       ...(images.length > 0 && {
         images: {
@@ -189,7 +203,7 @@ async function createProduct(data) {
 }
 
 async function updateProduct(id, data) {
-  const { images = [], variants = [], variantDisplayMode, storeId, sellerId, ...productData } = data;
+  const { images = [], variants = [], variantDisplayMode, storeId, sellerId, status, ...productData } = data;
 
   const existing = await prisma.product.findUnique({
     where: { id },
@@ -217,6 +231,21 @@ async function updateProduct(id, data) {
       if (before && Number(before.stock) === 0 && Number(v.stock) > 0) {
         restockedVariantIds.push(v.id);
       }
+    }
+  }
+
+  // Logique automatique du statut basée sur le stock
+  let finalStatus = status;
+  const newStock = productData.stock !== undefined ? Number(productData.stock) : Number(existing?.stock);
+
+  if (status === undefined) {
+    // Si pas de statut explicite, appliquer la logique automatique
+    if (newStock === 0 && existing?.status === 'PUBLISHED') {
+      finalStatus = 'OUT_OF_STOCK';
+    } else if (newStock > 0 && existing?.status === 'OUT_OF_STOCK') {
+      finalStatus = 'PUBLISHED';
+    } else {
+      finalStatus = existing?.status || 'DRAFT';
     }
   }
 
@@ -259,6 +288,7 @@ async function updateProduct(id, data) {
         ...(storeId !== undefined && { storeId: storeId || null }),
         ...(sellerId !== undefined && { sellerId: sellerId || null }),
         ...(variantDisplayMode && { variantDisplayMode }),
+        ...(finalStatus && { status: finalStatus }),
       },
       include: { images: true, variants: true },
     });
