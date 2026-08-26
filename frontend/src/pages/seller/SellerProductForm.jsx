@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { sellersApi } from '../../api/sellers.api';
 import { categoriesApi } from '../../api/categories.api';
 import { toast } from 'sonner';
 import api from '../../api/axios';
+import { Info, Banknote, ImageIcon, ToggleLeft, X, Star } from 'lucide-react';
 
 export default function SellerProductForm() {
   const { id } = useParams();
@@ -106,7 +107,7 @@ export default function SellerProductForm() {
         toast.success(`${newImages.length} image(s) uploadée(s)`);
       }
     } catch (err) {
-      toast.error('Erreur lors de l\'upload');
+      toast.error("Erreur lors de l'upload");
     } finally {
       setUploading(false);
     }
@@ -162,22 +163,28 @@ export default function SellerProductForm() {
     }
   };
 
-  if (loading) return <div className="text-stone-500">Chargement...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24 text-stone-400">
+        Chargement...
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900">
+          <h1 className="text-xl sm:text-2xl font-bold text-stone-900">
             {isEdit ? 'Modifier le produit' : 'Nouveau produit'}
           </h1>
-          <p className="text-stone-500 mt-1">
+          <p className="text-sm sm:text-base text-stone-500 mt-1">
             {isEdit ? 'Modifiez les informations du produit' : 'Ajoutez un nouveau produit à votre catalogue'}
           </p>
         </div>
         <Link
           to="/seller/products"
-          className="px-4 py-2 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+          className="hidden sm:inline-flex px-4 py-2 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors text-sm font-medium"
         >
           Annuler
         </Link>
@@ -185,8 +192,11 @@ export default function SellerProductForm() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Informations de base */}
-        <div className="bg-white border border-stone-200 rounded-xl p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-stone-800">Informations de base</h2>
+        <div className="bg-white border border-stone-200 rounded-xl p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Info size={18} className="text-rose-600" />
+            <h2 className="text-base sm:text-lg font-semibold text-stone-800">Informations de base</h2>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">
@@ -199,7 +209,7 @@ export default function SellerProductForm() {
               onChange={handleChange}
               onBlur={generateSlug}
               required
-              className="w-full border border-stone-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full border border-stone-200 rounded-lg px-4 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
               placeholder="ex: Robe Wax Élégante"
             />
           </div>
@@ -208,20 +218,20 @@ export default function SellerProductForm() {
             <label className="block text-sm font-medium text-stone-700 mb-1">
               Slug (URL) <span className="text-red-500">*</span>
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 name="slug"
                 value={formData.slug}
                 onChange={handleChange}
                 required
-                className="flex-1 border border-stone-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="flex-1 min-w-0 border border-stone-200 rounded-lg px-4 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                 placeholder="ex: robe-wax-elegante"
               />
               <button
                 type="button"
                 onClick={generateSlug}
-                className="px-4 py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors text-sm"
+                className="px-4 py-2.5 sm:py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors text-sm font-medium whitespace-nowrap"
               >
                 Générer
               </button>
@@ -251,7 +261,7 @@ export default function SellerProductForm() {
               value={formData.categoryId}
               onChange={handleChange}
               required
-              className="w-full border border-stone-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full border border-stone-200 rounded-lg px-4 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
             >
               <option value="">Sélectionnez une catégorie</option>
               {categories.map(cat => (
@@ -262,10 +272,13 @@ export default function SellerProductForm() {
         </div>
 
         {/* Prix et stock */}
-        <div className="bg-white border border-stone-200 rounded-xl p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-stone-800">Prix et stock</h2>
+        <div className="bg-white border border-stone-200 rounded-xl p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Banknote size={18} className="text-rose-600" />
+            <h2 className="text-base sm:text-lg font-semibold text-stone-800">Prix et stock</h2>
+          </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">
                 Prix de vente (FCFA) <span className="text-red-500">*</span>
@@ -277,7 +290,7 @@ export default function SellerProductForm() {
                 onChange={handleChange}
                 required
                 min="0"
-                className="w-full border border-stone-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full border border-stone-200 rounded-lg px-4 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                 placeholder="ex: 25000"
               />
             </div>
@@ -292,13 +305,13 @@ export default function SellerProductForm() {
                 value={formData.purchasePrice}
                 onChange={handleChange}
                 min="0"
-                className="w-full border border-stone-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full border border-stone-200 rounded-lg px-4 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                 placeholder="ex: 15000"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">
                 Stock <span className="text-red-500">*</span>
@@ -310,7 +323,7 @@ export default function SellerProductForm() {
                 onChange={handleChange}
                 required
                 min="0"
-                className="w-full border border-stone-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full border border-stone-200 rounded-lg px-4 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                 placeholder="ex: 10"
               />
             </div>
@@ -325,7 +338,7 @@ export default function SellerProductForm() {
                 value={formData.lowStockAlert}
                 onChange={handleChange}
                 min="0"
-                className="w-full border border-stone-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full border border-stone-200 rounded-lg px-4 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                 placeholder="ex: 5"
               />
             </div>
@@ -333,38 +346,67 @@ export default function SellerProductForm() {
         </div>
 
         {/* Images */}
-        <div className="bg-white border border-stone-200 rounded-xl p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-stone-800">Images</h2>
+        <div className="bg-white border border-stone-200 rounded-xl p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <ImageIcon size={18} className="text-rose-600" />
+            <h2 className="text-base sm:text-lg font-semibold text-stone-800">Images</h2>
+          </div>
 
           <div>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleImageUpload}
-              disabled={uploading}
-              className="w-full text-sm text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-stone-100 file:text-stone-700 hover:file:bg-stone-200"
-            />
-            {uploading && (
-              <p className="text-xs text-stone-400 mt-1">Upload en cours...</p>
-            )}
+            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-stone-200 rounded-xl py-6 px-4 cursor-pointer hover:border-rose-300 hover:bg-rose-50/30 transition-colors">
+              <ImageIcon size={22} className="text-stone-400" />
+              <span className="text-sm font-medium text-stone-600">
+                {uploading ? 'Upload en cours...' : 'Ajouter des images'}
+              </span>
+              <span className="text-xs text-stone-400">PNG, JPG jusqu'à quelques Mo</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+            </label>
           </div>
 
           {images.length > 0 && (
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               {images.map((img, idx) => (
                 <div key={idx} className="relative group">
                   <img
                     src={img.url}
                     alt={`Image ${idx + 1}`}
-                    className="w-full h-32 object-cover rounded-lg border border-stone-200"
+                    className="w-full h-28 sm:h-32 object-cover rounded-lg border border-stone-200"
                   />
                   {img.isMain && (
-                    <span className="absolute top-2 left-2 px-2 py-1 bg-rose-600 text-white text-xs rounded">
+                    <span className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-rose-600 text-white text-[11px] font-medium rounded">
+                      <Star size={10} fill="white" />
                       Principale
                     </span>
                   )}
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+
+                  {/* Actions toujours visibles sur mobile (pas de hover), overlay au survol sur desktop */}
+                  <div className="mt-1.5 flex gap-1.5 sm:hidden">
+                    {!img.isMain && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetMainImage(idx)}
+                        className="flex-1 px-2 py-1 bg-stone-100 text-stone-700 text-[11px] font-medium rounded"
+                      >
+                        Principale
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(idx)}
+                      className="flex-1 px-2 py-1 bg-red-50 text-red-600 text-[11px] font-medium rounded"
+                    >
+                      Retirer
+                    </button>
+                  </div>
+
+                  <div className="hidden sm:flex absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg items-center justify-center gap-2">
                     {!img.isMain && (
                       <button
                         type="button"
@@ -377,9 +419,10 @@ export default function SellerProductForm() {
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(idx)}
-                      className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                      className="p-1.5 bg-red-600 text-white rounded hover:bg-red-700"
+                      aria-label="Supprimer l'image"
                     >
-                      Supprimer
+                      <X size={14} />
                     </button>
                   </div>
                 </div>
@@ -389,21 +432,22 @@ export default function SellerProductForm() {
         </div>
 
         {/* Statut */}
-        <div className="bg-white border border-stone-200 rounded-xl p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-stone-800">Statut</h2>
-
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                name="isActive"
-                checked={formData.isActive}
-                onChange={handleChange}
-                className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500"
-              />
-              <span className="text-sm text-stone-700">Produit actif</span>
-            </label>
+        <div className="bg-white border border-stone-200 rounded-xl p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <ToggleLeft size={18} className="text-rose-600" />
+            <h2 className="text-base sm:text-lg font-semibold text-stone-800">Statut</h2>
           </div>
+
+          <label className="flex items-center gap-2 cursor-pointer w-fit">
+            <input
+              type="checkbox"
+              name="isActive"
+              checked={formData.isActive}
+              onChange={handleChange}
+              className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500"
+            />
+            <span className="text-sm text-stone-700">Produit actif</span>
+          </label>
 
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">
@@ -413,7 +457,7 @@ export default function SellerProductForm() {
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full border border-stone-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full border border-stone-200 rounded-lg px-4 py-2.5 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
             >
               <option value="DRAFT">Brouillon</option>
               <option value="PUBLISHED">Publié</option>
@@ -423,17 +467,17 @@ export default function SellerProductForm() {
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pb-2">
           <Link
             to="/seller/products"
-            className="px-6 py-2 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+            className="text-center px-6 py-2.5 sm:py-2 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors font-medium text-sm"
           >
             Annuler
           </Link>
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 sm:py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
           >
             {saving ? 'Sauvegarde...' : isEdit ? 'Modifier' : 'Créer'}
           </button>
