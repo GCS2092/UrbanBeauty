@@ -24,7 +24,7 @@ export default function SellerProductForm() {
   });
 
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(!isEdit);
+  const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState([]);
