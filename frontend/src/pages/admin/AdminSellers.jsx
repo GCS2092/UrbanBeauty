@@ -34,7 +34,7 @@ export default function AdminSellers() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/sellers/admin/all`, { headers });
+      const res = await fetch(`${API_URL}/api/admin/sellers/all`, { headers });
       if (!res.ok) throw new Error('Erreur chargement vendeurs');
       const data = await res.json();
       setSellers(Array.isArray(data) ? data : data.data || []);
@@ -113,8 +113,8 @@ export default function AdminSellers() {
     try {
       const isEdit = formModal === "edit";
       const url = isEdit
-        ? `${API_URL}/api/sellers/admin/${selectedSeller.id}`
-        : `${API_URL}/api/sellers/admin`;
+        ? `${API_URL}/api/admin/sellers/${selectedSeller.id}`
+        : `${API_URL}/api/admin/sellers`;
       const res = await fetch(url, {
         method: isEdit ? "PUT" : "POST",
         headers,
@@ -143,7 +143,7 @@ export default function AdminSellers() {
   const handleToggleActive = async (s) => {
     try {
       const res = await fetch(
-        `${API_URL}/api/sellers/admin/${s.id}/toggle`,
+        `${API_URL}/api/admin/sellers/${s.id}/toggle`,
         { method: "PATCH", headers },
       );
       if (!res.ok) throw new Error("Erreur lors du changement de statut");
@@ -161,8 +161,8 @@ export default function AdminSellers() {
     setSellerProducts([]);
     try {
       const [statsRes, productsRes] = await Promise.all([
-        fetch(`${API_URL}/api/sellers/admin/${s.id}/stats`, { headers }),
-        fetch(`${API_URL}/api/sellers/admin/${s.id}/products`, { headers }),
+        fetch(`${API_URL}/api/admin/sellers/${s.id}/stats`, { headers }),
+        fetch(`${API_URL}/api/admin/sellers/${s.id}/products`, { headers }),
       ]);
       const statsData = await statsRes.json();
       const productsData = await productsRes.json();
