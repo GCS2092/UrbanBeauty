@@ -135,33 +135,39 @@ export default function SellerProductForm() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
+  e.preventDefault();
+  setSaving(true);
 
-    try {
-      const productData = {
-        ...formData,
-        price: parseInt(formData.price),
-        stock: parseInt(formData.stock),
-        purchasePrice: formData.purchasePrice ? parseInt(formData.purchasePrice) : null,
-        lowStockAlert: parseInt(formData.lowStockAlert)
-      };
+  try {
+    const productData = {
+      ...formData,
+      price: parseInt(formData.price),
+      stock: parseInt(formData.stock),
+      purchasePrice: formData.purchasePrice ? parseInt(formData.purchasePrice) : null,
+      lowStockAlert: parseInt(formData.lowStockAlert),
+      images: images.map((img, idx) => ({
+        url: img.url,
+        publicId: img.publicId,
+        isMain: img.isMain,
+        position: img.position ?? idx,
+      })),
+    };
 
-      if (isEdit) {
-        await sellersApi.updateProduct(id, productData);
-        toast.success('Produit modifié ✓');
-      } else {
-        await sellersApi.createProduct(productData);
-        toast.success('Produit créé ✓');
-      }
-
-      navigate('/seller/products');
-    } catch (err) {
-      toast.error('Erreur lors de la sauvegarde');
-    } finally {
-      setSaving(false);
+    if (isEdit) {
+      await sellersApi.updateProduct(id, productData);
+      toast.success('Produit modifié ✓');
+    } else {
+      await sellersApi.createProduct(productData);
+      toast.success('Produit créé ✓');
     }
-  };
+
+    navigate('/seller/products');
+  } catch (err) {
+    toast.error('Erreur lors de la sauvegarde');
+  } finally {
+    setSaving(false);
+  }
+};
 
   if (loading) {
     return (

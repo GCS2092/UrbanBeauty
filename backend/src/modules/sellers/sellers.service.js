@@ -428,7 +428,8 @@ async function createSellerProduct(userId, productData) {
     purchasePrice,
     lowStockAlert,
     isActive,
-    status
+    status,
+    images,
   } = productData;
 
   if (!name?.trim() || !slug?.trim() || !price || !stock || !categoryId) {
@@ -449,23 +450,32 @@ async function createSellerProduct(userId, productData) {
       lowStockAlert: lowStockAlert ? parseInt(lowStockAlert) : 5,
       isActive: isActive !== undefined ? isActive : true,
       status: status || 'DRAFT',
-      sellerId: userId
+      sellerId: userId,
+      ...(Array.isArray(images) && images.length > 0 && {
+        images: {
+          create: images.map((img, index) => ({
+            url: img.url,
+            publicId: img.publicId,
+            isMain: img.isMain ?? index === 0,
+            position: img.position ?? index,
+          })),
+        },
+      }),
     },
     include: {
       category: true,
       images: true,
-      variants: true
-    }
+      variants: true,
+    },
   });
 
   return product;
 }
 
 async function updateSellerProduct(userId, productId, productData) {
-  // Vérifier que le produit appartient au vendeur
   const existingProduct = await prisma.product.findUnique({
     where: { id: productId },
-    select: { sellerId: true }
+    select: { sellerId: true },
   });
 
   if (!existingProduct) {
@@ -490,7 +500,8 @@ async function updateSellerProduct(userId, productId, productData) {
     purchasePrice,
     lowStockAlert,
     isActive,
-    status
+    status,
+    images,
   } = productData;
 
   const updateData = {};
@@ -505,18 +516,37 @@ async function updateSellerProduct(userId, productId, productData) {
   if (isActive !== undefined) updateData.isActive = isActive;
   if (status !== undefined) updateData.status = status;
 
-  const product = await prisma.product.update({
-    where: { id: productId },
-    data: updateData,
-    include: {
-      category: true,
-      images: true,
-      variants: true
+  const product = await prisma.$transaction(async (tx) => {
+    if (Array.isArray(images)) {
+      await tx.productImage.deleteMany({ where: { productId } });
+      if (images.length > 0) {
+        await tx.productImage.createMany({
+          data: images.map((img, index) => ({
+            productId,
+            url: img.url,
+            publicId: img.publicId,
+            isMain: img.isMain ?? index === 0,
+            position: img.position ?? index,
+          })),
+        });
+      }
     }
+
+    return tx.product.update({
+      where: { id: productId },
+      data: updateData,
+      include: {
+        category: true,
+        images: true,
+        variants: true,
+      },
+    });
   });
 
   return product;
 }
+
+
 
 async function deleteSellerProduct(userId, productId) {
   // Vérifier que le produit appartient au vendeur
