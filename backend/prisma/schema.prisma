@@ -29,6 +29,7 @@ model User {
   userStores    UserStore[]
   wishlist      Wishlist[]
   sellerProducts Product[]      @relation("SellerProducts")
+  uploadedImages UploadedImage[]
   // Champs boutique vendeur
   storeName     String?        @db.Text
   storeDescription String?      @db.Text
@@ -291,7 +292,8 @@ model Order {
   statusHistory        OrderStatusHistory[]
   tracking             OrderTracking[]
   payments             Payment[]
-
+  confirmationEmailStatus String?  @default("PENDING") // PENDING | SENT | FAILED
+  confirmationEmailError  String?  @db.Text
   @@index([storeId])
   @@index([status, reservationExpiresAt])
   @@index([couponId], map: "Order_couponId_fkey")
@@ -692,4 +694,14 @@ enum ProductStatus {
   DRAFT
   PUBLISHED
   OUT_OF_STOCK
+}
+model UploadedImage {
+  id         String   @id @default(cuid())
+  publicId   String   @unique
+  url        String
+  uploadedBy String
+  createdAt  DateTime @default(now())
+  uploader   User     @relation(fields: [uploadedBy], references: [id])
+
+  @@index([uploadedBy])
 }

@@ -24,4 +24,11 @@ async function assertSellerProductAccess(req, res, next) {
   next();
 }
 
-module.exports = { requireSeller, assertSellerProductAccess };
+async function requireAdminOrSeller(req, res, next) {
+  if (req.user.role === 'ADMIN' || req.user.role === 'SELLER') {
+    return next();
+  }
+  return res.status(403).json({ message: 'Accès réservé aux administrateurs ou vendeurs.' });
+}
+
+module.exports = { requireSeller, assertSellerProductAccess, requireAdminOrSeller };

@@ -68,11 +68,37 @@ function validateShippingAddress(shippingAddress) {
 }
 
 // ─── Utilitaire email async ────────────────────────────────────────────────────
-function sendEmailAsync(mailOptions) {
+function sendEmailAsync(mailOptions, orderId = null) {
   const { from, ...brevoOptions } = mailOptions;
   sendEmail(brevoOptions)
-    .then(() => console.log('✅ Email envoyé à :', brevoOptions.to))
-    .catch((err) => console.error('❌ ERREUR EMAIL :', err.message, err.response?.data || ''));
+    .then(async () => {
+      console.log('✅ Email envoyé à :', brevoOptions.to);
+      if (orderId) {
+        await prisma.order.update({
+          where: { id: orderId },
+          data: { confirmationEmailStatus: 'SENT' },
+        }).catch(() => {});
+      }
+    })
+    .catch(async (err) => {
+      console.error('❌ ERREUR EMAIL :', err.message, err.response?.data || '');
+      if (orderId) {
+        await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            confirmationEmailStatus: 'FAILED',
+            confirmationEmailError: err.message.slice(0, 500),
+          },
+        }).catch(() => {});
+      }
+      // ✅ Alerte les admins pour qu'ils puissent recontacter le client manuellement
+      notifyAdmins({
+        type: 'ORDER_CANCELLED', // ou ajoute un type dédié EMAIL_FAILED dans l'enum
+        title: '⚠️ Échec envoi email de confirmation',
+        message: `Impossible d'envoyer l'email de confirmation pour la commande ${orderId}.`,
+        link: '/admin/orders',
+      }).catch(() => {});
+    });
 }
 
 // ─── Génère un numéro de commande garanti unique ──────────────────────────────

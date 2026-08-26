@@ -39,14 +39,12 @@ async function getProductBySlug(req, res, next) {
   }
 }
 
+// ⚠️ Route strictement Admin (voir products.routes.js : requireAdmin).
+// Les vendeurs créent/modifient/suppriment leurs produits via /api/sellers/products
+// (sellers.controller.js), où l'isolation sellerId est déjà vérifiée.
 async function createProduct(req, res, next) {
   try {
-    // Si c'est un vendeur, attacher automatiquement le sellerId
-    const productData = { ...req.body };
-    if (req.user.role === 'SELLER') {
-      productData.sellerId = req.user.id;
-    }
-    const product = await productsService.createProduct(productData);
+    const product = await productsService.createProduct(req.body);
     res.status(201).json(product);
   } catch (error) {
     next(error);
@@ -55,17 +53,6 @@ async function createProduct(req, res, next) {
 
 async function updateProduct(req, res, next) {
   try {
-    // Si c'est un vendeur, vérifier que le produit lui appartient
-    if (req.user.role === 'SELLER') {
-      const prisma = require('../../config/database');
-      const product = await prisma.product.findUnique({
-        where: { id: req.params.id },
-        select: { sellerId: true }
-      });
-      if (!product || product.sellerId !== req.user.id) {
-        return res.status(403).json({ message: 'Accès refusé à ce produit.' });
-      }
-    }
     const product = await productsService.updateProduct(req.params.id, req.body);
     res.json(product);
   } catch (error) {
@@ -75,17 +62,6 @@ async function updateProduct(req, res, next) {
 
 async function deleteProduct(req, res, next) {
   try {
-    // Si c'est un vendeur, vérifier que le produit lui appartient
-    if (req.user.role === 'SELLER') {
-      const prisma = require('../../config/database');
-      const product = await prisma.product.findUnique({
-        where: { id: req.params.id },
-        select: { sellerId: true }
-      });
-      if (!product || product.sellerId !== req.user.id) {
-        return res.status(403).json({ message: 'Accès refusé à ce produit.' });
-      }
-    }
     await productsService.deleteProduct(req.params.id);
     res.status(204).send();
   } catch (error) {
@@ -148,5 +124,5 @@ module.exports = {
   importProducts,
   downloadTemplate,
   exportProducts,
-  assignSupplier, // ← corrigé (était manquant)
+  assignSupplier,
 };

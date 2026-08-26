@@ -56,7 +56,15 @@ async function checkStock(items) {
 async function reserveStockItems(tx, items) {
   for (const item of items) {
     if (item.variantId) {
-      const variant = await tx.productVariant.findUnique({ where: { id: item.variantId } });
+      const [variant] = await tx.$queryRaw`
+        SELECT stock, reservedStock FROM ProductVariant
+        WHERE id = ${item.variantId} FOR UPDATE
+      `;
+      if (!variant) {
+        const error = new Error('Variante introuvable.');
+        error.status = 404;
+        throw error;
+      }
       const available = availableQty(variant.stock, variant.reservedStock);
       if (available < item.quantity) {
         const error = new Error(`Stock insuffisant pour la variante sélectionnée.`);
@@ -68,7 +76,15 @@ async function reserveStockItems(tx, items) {
         data: { reservedStock: { increment: item.quantity } },
       });
     } else {
-      const product = await tx.product.findUnique({ where: { id: item.productId } });
+      const [product] = await tx.$queryRaw`
+        SELECT stock, reservedStock, name FROM Product
+        WHERE id = ${item.productId} FOR UPDATE
+      `;
+      if (!product) {
+        const error = new Error('Produit introuvable.');
+        error.status = 404;
+        throw error;
+      }
       const available = availableQty(product.stock, product.reservedStock);
       if (available < item.quantity) {
         const error = new Error(`Stock insuffisant pour : ${product.name}`);
@@ -109,6 +125,9 @@ async function releaseReservation(tx, items) {
 async function fulfillStockSale(tx, items, orderId, createdBy = null, storeId = null) {
   for (const item of items) {
     if (item.variantId) {
+      await tx.$queryRaw`
+        SELECT id FROM ProductVariant WHERE id = ${item.variantId} FOR UPDATE
+      `;
       const variant = await tx.productVariant.findUnique({
         where: { id: item.variantId },
         include: { product: { select: { purchasePrice: true } } },
@@ -142,6 +161,9 @@ async function fulfillStockSale(tx, items, orderId, createdBy = null, storeId = 
         },
       });
     } else {
+      await tx.$queryRaw`
+        SELECT id FROM Product WHERE id = ${item.productId} FOR UPDATE
+      `;
       const product = await tx.product.findUnique({ where: { id: item.productId } });
 
       const unitCost = product?.purchasePrice ?? null;

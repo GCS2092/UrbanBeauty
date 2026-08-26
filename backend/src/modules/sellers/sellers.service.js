@@ -139,42 +139,63 @@ async function getSellerOrders(userId, query = {}) {
     where: { sellerId: userId },
     select: { id: true }
   });
-  
+
   const productIds = sellerProducts.map(p => p.id);
-  
+
   const orderItems = await prisma.orderItem.findMany({
     where: { productId: { in: productIds } },
     select: { orderId: true }
   });
-  
+
   const orderIds = [...new Set(orderItems.map(oi => oi.orderId))];
-  
+
   const { page, limit, skip } = parsePagination(query);
-  
+
   const where = {
     id: { in: orderIds },
     ...(query.status && { status: query.status })
   };
-  
+
   const [total, orders] = await Promise.all([
     prisma.order.count({ where }),
     prisma.order.findMany({
       where,
       skip,
       take: limit,
-      include: {
-        items: { 
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        paymentStatus: true,
+        paymentMethod: true,
+        shippingAddress: true,
+        destination: true,
+        createdAt: true,
+        updatedAt: true,
+        user: { select: { firstName: true, lastName: true, email: true, phone: true } },
+        items: {
           where: { productId: { in: productIds } },
           include: { product: { select: { name: true, sellerId: true } } }
         },
-        user: { select: { firstName: true, lastName: true, email: true, phone: true } },
-        tracking: { orderBy: { createdAt: 'asc' } }
+        tracking: { orderBy: { createdAt: 'asc' } },
       },
       orderBy: { createdAt: 'desc' }
     })
   ]);
-  
-  return buildPaginationResponse({ data: orders, total, page, limit });
+
+  // ✅ Recalcule un sous-total propre au vendeur, au lieu d'exposer order.total
+  // (qui inclut potentiellement les articles d'autres vendeurs dans la même commande)
+  const sanitizedOrders = orders.map((order) => {
+    const sellerSubtotal = order.items.reduce((sum, item) => sum + item.subtotal, 0);
+    const sellerItemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
+    return {
+      ...order,
+      sellerSubtotal,
+      sellerItemCount,
+    };
+  });
+
+  return buildPaginationResponse({ data: sanitizedOrders, total, page, limit });
 }
 
 // ─── État du stock par produit ─────────────────────────────────────────

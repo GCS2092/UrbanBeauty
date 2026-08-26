@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const uploadController = require('./upload.controller');
 const { authenticate } = require('../../middlewares/auth.middleware');
-const requireAdmin = require('../../middlewares/admin.middleware');
+const { requireAdminOrSeller } = require('../../middlewares/seller.middleware');
 const { uploadMiddleware } = require('../../middlewares/upload.middleware');
 
 const router = express.Router();
@@ -38,7 +38,7 @@ function handleUpload(multerMiddleware) {
 router.post(
   '/image',
   authenticate,
-  requireAdmin,
+  requireAdminOrSeller,
   handleUpload(uploadMiddleware.single('image')),
   uploadController.uploadImage,
 );
@@ -47,16 +47,17 @@ router.post(
 router.post(
   '/images',
   authenticate,
-  requireAdmin,
+  requireAdminOrSeller,
   handleUpload(uploadMiddleware.array('images', 30)),
   uploadController.uploadImages,
 );
 
 // DELETE /api/upload/image/:publicId — supprime une image Cloudinary
+// Admin: supprime n'importe quelle image. Seller: uniquement les siennes (vérifié dans le service).
 router.delete(
   '/image/:publicId',
   authenticate,
-  requireAdmin,
+  requireAdminOrSeller,
   uploadController.deleteImage,
 );
 
