@@ -52,5 +52,14 @@ export function useMeta({ title, description, image, url } = {}) {
     setMeta('meta[name="twitter:title"]', t);
     setMeta('meta[name="twitter:description"]', d);
     setMeta('meta[name="twitter:image"]', img);
+
+    // Canonical — indique a Google/Bing quelle est l'URL de reference pour cette page
+    let canonicalEl = document.querySelector('link[rel="canonical"]');
+    if (!canonicalEl) {
+      canonicalEl = document.createElement('link');
+      canonicalEl.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalEl);
+    }
+    canonicalEl.setAttribute('href', u);
   }, [title, description, image, url]);
 }
