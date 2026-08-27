@@ -24,4 +24,46 @@
     <priority>0.5</priority>
     
   </url>
+  <url>
+    <loc>https://www.sonshop.beauty/products/boubou-traditionnel</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-26</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/products/boubou-rayana</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-26</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/products/ensemble-stripe-chic</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-26</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/products/ensemble-tie-dye</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-26</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/products/robe-kaftan</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-26</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/products/robe-longue-boubou</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-26</lastmod>
+  </url>
+  <url>
+    <loc>https://www.sonshop.beauty/products/robe-maxi-elegante-et-confortable</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-08-26</lastmod>
+  </url>
 </urlset>

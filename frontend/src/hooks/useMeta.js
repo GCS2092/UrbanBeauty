@@ -3,9 +3,9 @@ import { useEffect } from 'react';
 const DEFAULT_META = {
   title: 'SonShop — Vêtements & accessoires authentiques',
   description:
-    'Découvrez SonShop, votre boutique en ligne de vêtements et accessoires de qualité. Livraison rapide partout au Sénégal et à l\'international.',
-  image: 'https://urban-beauty.vercel.app/icons/icon-512x512.png',
-  url: 'https://urban-beauty.vercel.app',
+    "Découvrez SonShop, votre boutique en ligne de vêtements et accessoires de qualité. Livraison rapide partout au Sénégal et à l'international.",
+  image: 'https://www.sonshop.beauty/icons/icon-512x512.png',
+  url: 'https://www.sonshop.beauty',
 };
 
 /**

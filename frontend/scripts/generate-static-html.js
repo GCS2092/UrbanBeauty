@@ -92,6 +92,42 @@ async function getBrowser() {
   }
 }
 
+/**
+ * Attend un vrai signal que le contenu de la page est chargé, au lieu
+ * d'un délai fixe qui peut capturer la page avant que React Query ait
+ * fini de récupérer les données (ex: fiche produit encore en spinner).
+ *
+ * Signal utilisé, dans l'ordre de préférence :
+ * 1. Le JSON-LD produit (<script type="application/ld+json">) — présent
+ *    uniquement sur les pages produit, et seulement une fois que les
+ *    données sont arrivées (ProductSchema retourne null avant ça).
+ * 2. Un <h1> dans la page — présent sur les pages statiques (about,
+ *    contact...) qui n'ont pas de JSON-LD produit.
+ *
+ * Si aucun des deux n'apparaît dans le délai imparti, on capture quand
+ * même la page (mieux vaut un HTML partiel que planter tout le build)
+ * mais on log un avertissement clair pour investigation.
+ */
+async function waitForContent(page, route, timeout = 8000) {
+  const isProductRoute = route.startsWith("/products/") && route !== "/products";
+
+  try {
+    if (isProductRoute) {
+      // Sur une fiche produit, on exige le JSON-LD (signal fort et spécifique)
+      await page.waitForSelector('script[type="application/ld+json"]', { timeout });
+    } else {
+      // Sur les autres pages, un h1 suffit à confirmer que le contenu a peint
+      await page.waitForSelector("h1", { timeout });
+    }
+  } catch {
+    console.warn(`  ⚠ Contenu attendu non détecté pour ${route} après ${timeout}ms — capture quand même (vérifier le HTML généré).`);
+  }
+
+  // Marge de sécurité pour laisser React terminer le rendu synchrone
+  // qui suit l'arrivée des données (ex: useMeta() met à jour les balises).
+  await new Promise((r) => setTimeout(r, 300));
+}
+
 async function renderRoute(browser, route) {
   const page = await browser.newPage();
   const url = `${BASE_URL}${route}`;
@@ -99,7 +135,8 @@ async function renderRoute(browser, route) {
 
   try {
     await page.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
-    await new Promise((r) => setTimeout(r, 1500));
+
+    await waitForContent(page, route);
 
     const html = await page.content();
 

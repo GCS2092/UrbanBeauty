@@ -47,6 +47,7 @@ const allowedOrigins = [
   'https://www.sonshop.beauty',
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:4173', // port de "vite preview", utilisé par generate-static-html.js pour le pré-rendu SEO
 ];
 
 app.use(helmet());
