@@ -9,6 +9,7 @@ import CategoryMarquee from '../../components/shop/home/CategoryMarquee';
 import ProductCarousel from '../../components/shop/home/ProductCarousel';
 import TrendingStrip from '../../components/shop/home/TrendingStrip';
 import heroImg from '../../assets/hero.png';
+import { OrganizationSchema } from '../../components/seo/OrganizationSchema';
 
 const perks = [
   { icon: Truck, label: 'Livraison & export', desc: 'Senegal et international' },
@@ -32,6 +33,8 @@ export default function Home() {
 
   return (
     <div>
+      <OrganizationSchema />
+
       {/* Hero */}
       <section className="relative bg-gradient-to-br from-rose-50 via-stone-50 to-amber-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
