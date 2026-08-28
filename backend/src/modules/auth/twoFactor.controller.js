@@ -57,7 +57,7 @@ async function verifyTwoFactorLogin(req, res, next) {
     let isValid = false;
 
     if (code) {
-      isValid = twoFactorService.verifyTotpCode(user.twoFactorSecret, code);
+      isValid = await twoFactorService.verifyTotpCode(user.twoFactorSecret, code);
     } else if (backupCode) {
       const result = twoFactorService.verifyBackupCode(user.twoFactorBackupCodes, backupCode);
       isValid = result.valid;
@@ -102,7 +102,7 @@ async function disableTwoFactor(req, res, next) {
       return res.status(401).json({ message: 'Mot de passe incorrect.' });
     }
 
-    const isCodeValid = twoFactorService.verifyTotpCode(user.twoFactorSecret, code);
+    const isCodeValid = await twoFactorService.verifyTotpCode(user.twoFactorSecret, code);
     if (!isCodeValid) {
       return res.status(400).json({ message: 'Code invalide.' });
     }

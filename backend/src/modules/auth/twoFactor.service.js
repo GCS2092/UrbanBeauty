@@ -1,8 +1,10 @@
 // backend/src/modules/auth/twoFactor.service.js
 // Service dédié à la double authentification (TOTP - Google Authenticator / Authy)
+// ⚠️ otplib v13 a changé son API : plus d'objet `authenticator`, fonctions à plat
+// et désormais asynchrones (generate/verify retournent des Promises).
 
 const crypto = require('crypto');
-const { authenticator } = require('otplib');
+const otplib = require('otplib');
 const QRCode = require('qrcode');
 const prisma = require('../../config/database');
 
@@ -10,8 +12,13 @@ const APP_NAME = 'SonShop';
 
 // ─── Génère un nouveau secret TOTP + le QR code à scanner ─────────────────
 async function generateTwoFactorSecret(userId, email) {
-  const secret = authenticator.generateSecret();
-  const otpauthUrl = authenticator.keyuri(email, APP_NAME, secret);
+  const secret = otplib.generateSecret();
+  const otpauthUrl = otplib.generateURI({
+    strategy: 'totp',
+    issuer: APP_NAME,
+    label: email,
+    secret,
+  });
   const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
 
   // On stocke le secret tout de suite, mais twoFactorEnabled reste false
@@ -25,9 +32,10 @@ async function generateTwoFactorSecret(userId, email) {
 }
 
 // ─── Vérifie un code TOTP à 6 chiffres contre le secret stocké ────────────
-function verifyTotpCode(secret, code) {
+async function verifyTotpCode(secret, code) {
   if (!secret || !code) return false;
-  return authenticator.verify({ token: code, secret });
+  const result = await otplib.verify({ strategy: 'totp', token: code, secret });
+  return result.valid;
 }
 
 // ─── Génère des codes de secours (usage unique, en cas de perte du téléphone) ─
@@ -71,7 +79,7 @@ async function enableTwoFactor(userId, code) {
     throw error;
   }
 
-  const isValid = verifyTotpCode(user.twoFactorSecret, code);
+  const isValid = await verifyTotpCode(user.twoFactorSecret, code);
   if (!isValid) {
     const error = new Error('Code invalide.');
     error.status = 400;
