@@ -5,7 +5,7 @@ import {
   Route,
   Navigate,
 } from 'react-router-dom';
-
+const TwoFactorReconfigure = lazy(() => import('./pages/account/TwoFactorReconfigure'));
 import {
   QueryClient,
   QueryClientProvider,
@@ -200,7 +200,10 @@ export default function App() {
                 {/* Pages protégées avec sidebar compte */}
                 <Route element={<ProtectedRoute />}>
                   <Route element={<AccountLayout />}>
-
+                    <Route
+                      path="/account/2fa"
+                      element={<TwoFactorReconfigure />}
+                    />
                     <Route
                       path="/account/profile"
                       element={<Profile />}

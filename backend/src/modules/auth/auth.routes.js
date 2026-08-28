@@ -175,5 +175,23 @@ router.post(
   checkValidation,
   twoFactorController.disableTwoFactor
 );
+// Changement d'appareil : étape 1 — réauthentification + nouveau QR code
+router.post(
+  '/2fa/reconfigure/start',
+  authenticate,
+  authLimiter,
+  body('password').notEmpty().withMessage('Mot de passe requis'),
+  checkValidation,
+  twoFactorController.startTwoFactorReconfigure
+);
 
+// Changement d'appareil : étape 2 — confirmation avec le nouveau code
+router.post(
+  '/2fa/reconfigure/confirm',
+  authenticate,
+  authLimiter,
+  body('code').isLength({ min: 6, max: 6 }).withMessage('Code à 6 chiffres requis'),
+  checkValidation,
+  twoFactorController.confirmTwoFactorReconfigure
+);
 module.exports = router;

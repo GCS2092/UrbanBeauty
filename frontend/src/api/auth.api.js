@@ -7,9 +7,6 @@ export const authApi = {
   logout: () => api.post('/api/auth/logout'),
   me: () => api.get('/api/auth/me'),
 
-  // ✅ 2FA — setupToken et pendingToken sont des tokens temporaires distincts
-  // du token de session normal, donc on les passe explicitement en header ici
-  // plutôt que de compter sur l'intercepteur axios habituel.
   setupTwoFactor: (setupToken) =>
     api.post('/api/auth/2fa/setup', {}, {
       headers: { Authorization: `Bearer ${setupToken}` },
@@ -20,10 +17,16 @@ export const authApi = {
       headers: { Authorization: `Bearer ${setupToken}` },
     }),
 
-  // Accepte soit un code TOTP à 6 chiffres, soit un code de secours —
-  // { code } ou { backupCode }, jamais les deux à la fois.
   verifyTwoFactor: (pendingToken, { code, backupCode } = {}) =>
     api.post('/api/auth/2fa/verify', { code, backupCode }, {
       headers: { Authorization: `Bearer ${pendingToken}` },
     }),
+
+  // ✅ Changement d'appareil — utilise la session normale déjà active
+  // (le token est ajouté automatiquement par l'intercepteur axios).
+  reconfigureStart: ({ password, code, backupCode }) =>
+    api.post('/api/auth/2fa/reconfigure/start', { password, code, backupCode }),
+
+  reconfigureConfirm: (code) =>
+    api.post('/api/auth/2fa/reconfigure/confirm', { code }),
 };
