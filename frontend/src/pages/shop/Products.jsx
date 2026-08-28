@@ -51,9 +51,8 @@ export default function Products() {
     : 'Découvrez tout le catalogue SonShop : vêtements, accessoires, chaussures et plus. Livraison rapide partout au Sénégal.';
   const isFiltered = Boolean(filters.search) || filters.page > 1 || activeCount > 0;
   const canonicalUrl = filters.category
-    ? `https://www.sonshop.beauty/products?category=${filters.category}`
-    : 'https://www.sonshop.beauty/products';
-
+  ? `https://www.sonshop.beauty/products/?category=${filters.category}`
+  : 'https://www.sonshop.beauty/products/';
   useMeta({ title: metaTitle, description: metaDescription, url: canonicalUrl, noindex: isFiltered });
 
   const handleSearch = (e) => {

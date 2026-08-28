@@ -1,4 +1,12 @@
+﻿import { useMeta } from '../../hooks/useMeta';
+
 export default function About() {
+  useMeta({
+    title: 'À propos',
+    description: "Découvrez SonShop, boutique en ligne de vêtements et accessoires authentiques au Sénégal. Qualité, transparence et livraison rapide.",
+    url: 'https://www.sonshop.beauty/about/',
+  });
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
       <h1 className="text-3xl font-bold text-stone-800 mb-2">À propos de SonShop</h1>

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
+import { useMeta } from '../../hooks/useMeta';
 
 export default function Contact() {
   const [settings, setSettings] = useState({
@@ -7,6 +8,12 @@ export default function Contact() {
     company_phone: '',
     company_address: '',
     company_email: 'sonshop221@gmail.com',
+  });
+
+  useMeta({
+    title: 'Nous contacter',
+    description: 'Contactez SonShop par WhatsApp, email ou téléphone. Réponse rapide sous 24h, service client disponible 7j/7.',
+    url: 'https://www.sonshop.beauty/contact/',
   });
 
   useEffect(() => {

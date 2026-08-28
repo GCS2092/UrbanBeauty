@@ -128,7 +128,7 @@ export default function ProductDetail() {
     title: product?.name,
     description: product?.description,
     image: product?.images?.[0]?.url,
-    url: `https://www.sonshop.beauty/products/${slug}`,
+    url: `https://www.sonshop.beauty/products/${slug}/`,
   });
 
   const allImages = product?.images?.sort((a, b) => a.position - b.position) || [];

@@ -1,4 +1,4 @@
-// scripts/generate-static-html.js
+﻿// scripts/generate-static-html.js
 // Genere un HTML statique pour chaque route (statique + une par produit),
 // a partir du build Vite.
 // Usage : node scripts/generate-static-html.js (a lancer APRES "vite build")
@@ -159,7 +159,7 @@ async function run() {
     shell: true,
   });
 
-  await waitForServer(BASE_URL);
+  await waitForServer(BASE_URL, 45000);
   console.log("Serveur pret.");
 
   // Recupere les slugs produits AVANT de lancer le navigateur
