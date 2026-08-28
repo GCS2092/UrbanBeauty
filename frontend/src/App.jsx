@@ -31,6 +31,8 @@ import SellerLayout from './components/layout/SellerLayout';
 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import TwoFactorSetup from './pages/auth/TwoFactorSetup';
+import TwoFactorVerify from './pages/auth/TwoFactorVerify';
 
 // ✅ Pages boutique : chargées immédiatement, ce sont celles vues par tous les visiteurs
 import Home from './pages/shop/Home';
@@ -125,6 +127,16 @@ export default function App() {
               <Route
                 path="/register"
                 element={<Register />}
+              />
+
+              <Route
+                path="/2fa/setup"
+                element={<TwoFactorSetup />}
+              />
+
+              <Route
+                path="/2fa/verify"
+                element={<TwoFactorVerify />}
               />
 
               {/* Shop */}
