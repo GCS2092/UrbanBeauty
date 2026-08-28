@@ -41,20 +41,38 @@ export function AuthProvider({ children }) {
     }
   }, [isAuthenticated]);
 
+  // ✅ Finalise une connexion réussie : stocke l'auth, charge le panier, redirige
+  const completeLogin = async (data) => {
+    const anonymousId = localStorage.getItem(ANONYMOUS_CART_KEY);
+    setAuth(data.user, data.token);
+    await fetchCart(data.user.id, anonymousId);
+    localStorage.removeItem(ANONYMOUS_CART_KEY);
+    toast.success(`Bienvenue ${data.user.firstName} !`);
+    const redirectPath = data.redirectPath ||
+                       (data.user.role === 'SELLER' ? '/seller' :
+                        data.user.role === 'ADMIN' || data.user.role === 'STAFF' ? '/admin' :
+                        '/');
+    navigate(redirectPath);
+  };
+
   const login = async (credentials) => {
     try {
       const { data } = await authApi.login(credentials);
-      const anonymousId = localStorage.getItem(ANONYMOUS_CART_KEY);
-      setAuth(data.user, data.token);
-      await fetchCart(data.user.id, anonymousId);
-      localStorage.removeItem(ANONYMOUS_CART_KEY);
-      toast.success(`Bienvenue ${data.user.firstName} !`);
-      // Utiliser redirectPath du backend ou fallback
-      const redirectPath = data.redirectPath || 
-                         (data.user.role === 'SELLER' ? '/seller' :
-                          data.user.role === 'ADMIN' || data.user.role === 'STAFF' ? '/admin' :
-                          '/');
-      navigate(redirectPath);
+
+      // Cas 1 : première connexion pour ce compte → 2FA à configurer
+      if (data.requiresTwoFactorSetup) {
+        navigate('/2fa/setup', { state: { setupToken: data.setupToken } });
+        return;
+      }
+
+      // Cas 2 : 2FA déjà active → code à saisir
+      if (data.requiresTwoFactor) {
+        navigate('/2fa/verify', { state: { pendingToken: data.pendingToken } });
+        return;
+      }
+
+      // Cas 3 : connexion normale, sans 2FA
+      await completeLogin(data);
     } catch (err) {
       const message =
         err?.response?.data?.message ||
@@ -69,17 +87,7 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = async (credential) => {
     try {
       const { data } = await authApi.google(credential);
-      const anonymousId = localStorage.getItem(ANONYMOUS_CART_KEY);
-      setAuth(data.user, data.token);
-      await fetchCart(data.user.id, anonymousId);
-      localStorage.removeItem(ANONYMOUS_CART_KEY);
-      toast.success(`Bienvenue ${data.user.firstName} !`);
-      // Utiliser redirectPath du backend ou fallback
-      const redirectPath = data.redirectPath || 
-                         (data.user.role === 'SELLER' ? '/seller' :
-                          data.user.role === 'ADMIN' || data.user.role === 'STAFF' ? '/admin' :
-                          '/');
-      navigate(redirectPath);
+      await completeLogin(data);
     } catch (err) {
       const message =
         err?.response?.data?.message ||
@@ -116,7 +124,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, login, loginWithGoogle, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated, login, loginWithGoogle, register, logout, completeLogin }}>
       {children}
     </AuthContext.Provider>
   );

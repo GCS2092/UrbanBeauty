@@ -4,17 +4,18 @@ import { AUTH_TOKEN_KEY } from '../utils/constants';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
   headers: { 'Content-Type': 'application/json' },
-  // ⚠️ Augmenté de 10s à 30s : le backend (Render, plan Free) peut avoir des
-  // connexions froides après une période d'inactivité, rendant certaines
-  // requêtes (notamment la création de commande) plus lentes que 10s.
   timeout: 30000,
 });
 
-// Injecte le token JWT automatiquement
+// Injecte le token JWT automatiquement, sauf si un header Authorization
+// a déjà été fourni explicitement (cas des tokens temporaires 2FA :
+// setupToken / pendingToken, différents du token de session normal).
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (!config.headers.Authorization) {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
@@ -24,9 +25,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    // Un timeout ou une erreur réseau n'a pas de error.response (pas de
-    // réponse HTTP reçue du tout) — on distingue ce cas pour donner un
-    // message honnête plutôt que le fallback générique trompeur.
     const isTimeout = error.code === 'ECONNABORTED';
     const isNetworkError = !error.response && !isTimeout;
 
@@ -39,7 +37,11 @@ api.interceptors.response.use(
       message = error.response?.data?.message || 'Une erreur est survenue';
     }
 
-    if (status === 401) {
+    // Ne pas forcer la redirection /login sur les routes 2FA : un 401 ici
+    // veut dire "setupToken/pendingToken expiré", pas "session normale expirée" —
+    // la page 2FA gère déjà ce cas elle-même.
+    const isTwoFactorRoute = error.config?.url?.includes('/2fa/');
+    if (status === 401 && !isTwoFactorRoute) {
       localStorage.removeItem(AUTH_TOKEN_KEY);
       window.location.href = '/login';
     }
