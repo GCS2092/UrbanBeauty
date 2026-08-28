@@ -7,7 +7,7 @@ function signToken(payload) {
 }
 
 function verifyToken(token) {
-  return jwt.verify(token, process.env.JWT_SECRET);
+  return jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
 }
 
 module.exports = {

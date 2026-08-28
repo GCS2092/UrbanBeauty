@@ -51,7 +51,10 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bcryptjs": "^2.4.6",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.2"
   }
