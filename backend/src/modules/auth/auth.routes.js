@@ -4,18 +4,23 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { authController } = require('./auth.controller');
+const twoFactorController = require('./twoFactor.controller');
 const { checkValidation } = require('../../middlewares/validation.middleware');
 const { authLimiter } = require('../../middlewares/rateLimit.middleware');
-const { authenticate } = require('../../middlewares/auth.middleware');
+const {
+  authenticate,
+  requireSetupToken,
+  requirePendingToken,
+} = require('../../middlewares/auth.middleware');
 const prisma = require('../../config/database');
 const { getAccessibleStoreIds } = require('../stores/store.service');
 const { signToken } = require('../../utils/jwt.utils');
 
 const router = express.Router();
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 // INSCRIPTION EN 3 ÉTAPES (avec OTP)
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 
 router.post(
   '/register/request-otp',
@@ -44,9 +49,9 @@ router.post(
   authController.completeRegistration
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 // ROUTES EXISTANTES (inchangées)
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 
 router.post(
   '/register',
@@ -130,5 +135,45 @@ router.post('/switch-store', authenticate, async (req, res, next) => {
     next(err);
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// DOUBLE AUTHENTIFICATION (2FA) — ADMIN, STAFF, SELLER
+// ─────────────────────────────────────────────────────────────────────────
+
+// Première configuration : génère le QR code (nécessite le setupToken renvoyé par /login)
+router.post(
+  '/2fa/setup',
+  authLimiter,
+  requireSetupToken,
+  twoFactorController.setupTwoFactor
+);
+
+// Confirme la configuration avec le premier code de l'app authenticator
+router.post(
+  '/2fa/enable',
+  authLimiter,
+  requireSetupToken,
+  body('code').isLength({ min: 6, max: 6 }).withMessage('Code à 6 chiffres requis'),
+  checkValidation,
+  twoFactorController.enableTwoFactor
+);
+
+// Vérifie le code lors d'une connexion (2FA déjà active, nécessite le pendingToken)
+router.post(
+  '/2fa/verify',
+  authLimiter,
+  requirePendingToken,
+  twoFactorController.verifyTwoFactorLogin
+);
+
+// Désactive la 2FA (session déjà authentifiée + mot de passe + code actuel)
+router.post(
+  '/2fa/disable',
+  authenticate,
+  body('password').notEmpty().withMessage('Mot de passe requis'),
+  body('code').isLength({ min: 6, max: 6 }).withMessage('Code à 6 chiffres requis'),
+  checkValidation,
+  twoFactorController.disableTwoFactor
+);
 
 module.exports = router;

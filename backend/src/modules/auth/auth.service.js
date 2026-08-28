@@ -10,17 +10,20 @@ const { getAccessibleStoreIds } = require('../stores/store.service');
 const { sendEmail } = require('../../config/email');
 const { buildOtpEmail } = require('../../utils/email.utils');
 
-// ─── Durée de validité de l'OTP : 15 minutes ─────────────────────────────────
+// ─── Durée de validité de l'OTP : 15 minutes ─────────────────────────────
 const OTP_TTL_MINUTES = 15;
+
+// ─── Rôles pour lesquels la double authentification est obligatoire ─────
+const REQUIRES_2FA_ROLES = ['ADMIN', 'STAFF', 'SELLER'];
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// ─── Génère un code numérique à 6 chiffres ───────────────────────────────────
+// ─── Génère un code numérique à 6 chiffres ───────────────────────────────
 function generateOtpCode() {
   return String(Math.floor(100000 + crypto.randomInt(900000)));
 }
 
-// ─── ÉTAPE 1 : Demande d'inscription → envoi OTP ─────────────────────────────
+// ─── ÉTAPE 1 : Demande d'inscription → envoi OTP ─────────────────────────
 async function requestRegisterOtp({ email }) {
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
@@ -51,7 +54,7 @@ async function requestRegisterOtp({ email }) {
   return { message: 'Code de vérification envoyé par email.' };
 }
 
-// ─── ÉTAPE 2 : Vérification du code OTP ──────────────────────────────────────
+// ─── ÉTAPE 2 : Vérification du code OTP ──────────────────────────────────
 async function verifyOtp({ email, code, type = 'REGISTER' }) {
   const otp = await prisma.otpCode.findFirst({
     where: {
@@ -83,7 +86,7 @@ async function verifyOtp({ email, code, type = 'REGISTER' }) {
   return { setupToken, message: 'Code vérifié avec succès.' };
 }
 
-// ─── ÉTAPE 3 : Création du compte avec mot de passe ──────────────────────────
+// ─── ÉTAPE 3 : Création du compte avec mot de passe ──────────────────────
 async function completeRegistration({ email, password, firstName, lastName, phone, otpVerified }) {
   if (!otpVerified) {
     const error = new Error('Vérification OTP requise.');
@@ -118,7 +121,7 @@ async function completeRegistration({ email, password, firstName, lastName, phon
   };
 }
 
-// ─── ANCIEN register (conservé pour rétrocompatibilité si besoin) ─────────────
+// ─── ANCIEN register (conservé pour rétrocompatibilité si besoin) ────────
 async function register({ email, password, firstName, lastName, phone }) {
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
@@ -141,7 +144,7 @@ async function register({ email, password, firstName, lastName, phone }) {
   };
 }
 
-// ─── LOGIN classique ──────────────────────────────────────────────────────────
+// ─── LOGIN classique ──────────────────────────────────────────────────────
 async function login({ email, password }) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.password) {
@@ -162,10 +165,48 @@ async function login({ email, password }) {
     data: { userId: user.id },
   });
 
+  // ─── Vérification 2FA pour les rôles sensibles ─────────────────────────
+  if (REQUIRES_2FA_ROLES.includes(user.role)) {
+    if (!user.twoFactorEnabled) {
+      // Jamais configurée : on force la mise en place avant de délivrer un token de session
+      const setupToken = signToken(
+        { id: user.id, email: user.email, purpose: 'setup2fa' },
+        { expiresIn: '15m' }
+      );
+      return {
+        requiresTwoFactorSetup: true,
+        setupToken,
+        message: 'Configuration de la double authentification requise.',
+      };
+    }
+
+    // Déjà configurée : on demande le code avant de délivrer le token final
+    const pendingToken = signToken(
+      { id: user.id, email: user.email, purpose: 'pending2fa' },
+      { expiresIn: '10m' }
+    );
+    return {
+      requiresTwoFactor: true,
+      pendingToken,
+      message: 'Code de double authentification requis.',
+    };
+  }
+
   return buildAuthResponse(user);
 }
 
-// ─── LOGIN / INSCRIPTION via Google ──────────────────────────────────────────
+// ─── Finalise la connexion après vérification réussie du code 2FA ───────
+async function completeTwoFactorLogin(userId) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    const error = new Error('Utilisateur introuvable.');
+    error.status = 404;
+    throw error;
+  }
+  return buildAuthResponse(user);
+}
+
+// ─── LOGIN / INSCRIPTION via Google ──────────────────────────────────────
 async function loginWithGoogle({ idToken }) {
   if (!idToken) {
     const error = new Error('Token Google manquant.');
@@ -197,15 +238,14 @@ async function loginWithGoogle({ idToken }) {
   let user = await prisma.user.findUnique({ where: { email } });
 
   if (user) {
-    // Sécurité : on ne relie jamais automatiquement un compte ADMIN/STAFF à Google.
-    // Ces rôles doivent continuer à se connecter par mot de passe pour éviter
+    // Sécurité : on ne relie jamais automatiquement un compte ADMIN/STAFF/SELLER à Google.
+    // Ces rôles doivent continuer à se connecter par mot de passe (+ 2FA) pour éviter
     // qu'un compte Google externe correspondant au même email ne prenne le contrôle.
     if (user.role !== 'CUSTOMER') {
       const error = new Error("Ce compte doit se connecter avec son mot de passe.");
       error.status = 403;
       throw error;
     }
-    // Compte client existant (créé par mot de passe ou déjà via Google) → on relie googleId si besoin
     if (!user.googleId) {
       user = await prisma.user.update({
         where: { id: user.id },
@@ -213,7 +253,6 @@ async function loginWithGoogle({ idToken }) {
       });
     }
   } else {
-    // Nouveau compte, créé directement via Google (pas de mot de passe)
     user = await prisma.user.create({
       data: {
         email,
@@ -230,6 +269,8 @@ async function loginWithGoogle({ idToken }) {
     data: { userId: user.id },
   });
 
+  // Google login est réservé aux CUSTOMER (voir vérification ci-dessus),
+  // donc jamais concerné par la 2FA — pas de vérification nécessaire ici.
   return buildAuthResponse(user);
 }
 
@@ -253,8 +294,8 @@ async function buildAuthResponse(user) {
     });
   }
 
-  const redirectPath = user.role === 'SELLER' ? '/seller' 
-                      : user.role === 'ADMIN' || user.role === 'STAFF' ? '/admin' 
+  const redirectPath = user.role === 'SELLER' ? '/seller'
+                      : user.role === 'ADMIN' || user.role === 'STAFF' ? '/admin'
                       : '/';
 
   return {
@@ -278,4 +319,6 @@ module.exports = {
   requestRegisterOtp,
   verifyOtp,
   completeRegistration,
+  completeTwoFactorLogin,
+  REQUIRES_2FA_ROLES,
 };
