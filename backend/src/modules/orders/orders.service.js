@@ -287,11 +287,13 @@ async function createOrder(payload, user, ip = null) {
       data: {
         orderNumber,
         // ✅ Relation explicite requise par Prisma (Checked Input) car cette
-        // écriture mélange un scalaire de FK obligatoire avec des créations
-        // imbriquées (items, tracking, statusHistory, payments). Sans "connect",
-        // Prisma lève "Argument `store` is missing." même si storeId est fourni.
+        // écriture mélange des scalaires de FK avec des créations imbriquées
+        // (items, tracking, statusHistory, payments). Sans "connect", Prisma
+        // lève "Argument `store` is missing." même si storeId est fourni.
         store: { connect: { id: store.id } },
-        userId,
+        // ✅ Relations optionnelles : on ne les inclut que si une valeur existe,
+        // sinon Prisma refuserait un connect avec un id null/undefined.
+        ...(userId ? { user: { connect: { id: userId } } } : {}),
         guestEmail,
         guestPhone: payload.guestPhone,
         guestName,
@@ -301,7 +303,7 @@ async function createOrder(payload, user, ip = null) {
         shippingCost,
         discount,
         storeDiscount,
-        couponId,
+        ...(couponId ? { coupon: { connect: { id: couponId } } } : {}),
         total,
         shippingAddress: payload.shippingAddress,
         destination: payload.destination || null,
