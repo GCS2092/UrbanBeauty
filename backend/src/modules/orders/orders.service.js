@@ -218,6 +218,16 @@ async function createOrder(payload, user, ip = null) {
     };
   });
 
+  // ✅ Garde-fou : rejette proprement une commande si un article n'a pas de prix
+  // exploitable, plutôt que de laisser un NaN se propager jusqu'au paiement.
+  for (const item of trustedItems) {
+    if (!Number.isFinite(item.price) || item.price <= 0) {
+      const error = new Error(`Le produit « ${item.productName} » n'a pas de prix valide.`);
+      error.status = 400;
+      throw error;
+    }
+  }
+
   const stockErrors = await checkStock(trustedItems);
   if (stockErrors.length > 0) {
     const error = new Error(stockErrors[0]);
@@ -276,7 +286,11 @@ async function createOrder(payload, user, ip = null) {
     const created = await tx.order.create({
       data: {
         orderNumber,
-        storeId: store.id,
+        // ✅ Relation explicite requise par Prisma (Checked Input) car cette
+        // écriture mélange un scalaire de FK obligatoire avec des créations
+        // imbriquées (items, tracking, statusHistory, payments). Sans "connect",
+        // Prisma lève "Argument `store` is missing." même si storeId est fourni.
+        store: { connect: { id: store.id } },
         userId,
         guestEmail,
         guestPhone: payload.guestPhone,
