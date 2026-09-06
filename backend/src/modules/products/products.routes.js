@@ -148,6 +148,20 @@ router.post(
 
 /**
  * @swagger
+ * /api/products/feed/pinterest.xml:
+ *   get:
+ *     summary: Flux XML du catalogue pour Pinterest Catalogs (public, sans auth)
+ *     tags: [Produits]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Fichier XML au format Google/Pinterest product feed
+ */
+// ⚠️ DOIT être avant /:slug pour ne pas être capturé comme slug
+router.get('/feed/pinterest.xml', productsController.getPinterestFeed);
+
+/**
+ * @swagger
  * /api/products/{slug}:
  *   get:
  *     summary: Détail d'un produit par slug
