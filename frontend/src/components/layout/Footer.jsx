@@ -1,11 +1,12 @@
 ﻿import { Link } from 'react-router-dom';
 import { Truck } from 'lucide-react';
-import { FaFacebook, FaTiktok, FaInstagram } from 'react-icons/fa';
+import { FaFacebook, FaTiktok, FaInstagram, FaPinterest } from 'react-icons/fa';
 
 const SOCIAL_LINKS = [
   { name: 'Facebook', url: 'https://www.facebook.com/share/17PicDQeZm/?mibextid=wwXIfr', icon: FaFacebook },
   { name: 'TikTok', url: 'https://www.tiktok.com/@sonshop221', icon: FaTiktok },
   { name: 'Instagram', url: 'https://www.instagram.com/sonshop221', icon: FaInstagram },
+  { name: 'Pinterest', url: 'https://www.pinterest.com/sonshop221', icon: FaPinterest },
 ];
 
 export default function Footer() {

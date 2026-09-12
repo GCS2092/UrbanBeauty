@@ -15,6 +15,7 @@ export function OrganizationSchema() {
           "https://www.facebook.com/share/17PicDQeZm/?mibextid=wwXIfr",
           "https://www.tiktok.com/@sonshop221",
           "https://www.instagram.com/sonshop221",
+          "https://www.pinterest.com/sonshop221",
         ],
       },
       {
